@@ -87,8 +87,12 @@ there isn't one.
 
 Distances switch between kilometres and miles from the header.
 
-Routing requests that fail with a rate-limit, a 5xx or a dropped connection are
-retried once; a genuine "no route" answer is not asked twice.
+Every request carries a 10 second timeout, and requests that fail with a
+timeout, a rate-limit, a 5xx or a dropped connection are retried once. A
+genuine "no route" answer is not asked twice. If something is still failing
+after that the page says so, distinguishing "nothing is getting through"
+from "the map is fine but a service is not answering", and the notice clears
+itself once things recover.
 
 ## Services used
 
@@ -112,6 +116,11 @@ only two places that need to change.
 **Blank map, no search results.** The page can't reach the internet. Almost
 always this is a sandboxed preview — open the file in a proper browser tab. The
 on-screen warning names which service failed.
+
+**Map draws but times stay on `…` or show a dash.** The routing servers are
+throttling or down. Tap *Try again* in the notice, or the ↻ in the travel modes
+panel. The notice tells these two cases apart: if tiles are drawing, your
+connection is fine and it is the service at fault.
 
 **"no route" in a cell.** OSRM couldn't connect that pin to the road network.
 Drag the pin a few metres towards a street.

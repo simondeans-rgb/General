@@ -997,13 +997,23 @@ footer.credits a{color:var(--ink-2)}
 
       <section class="card warn hidden" id="offline">
         <div class="card-body">
-          <b>Can't reach the map servers.</b>
-          <p>Placemap draws tiles, searches addresses and calculates routes by calling
-             OpenStreetMap, Nominatim and OSRM over the internet. Something is blocking
-             those requests — most often an in-app file preview or an embedded viewer,
-             which are sandboxed and cannot make outside requests.</p>
-          <p><b>Fix:</b> save this file and open it in Safari, Chrome or Firefox, or host
-             it on any static web host. It needs a live connection either way.</p>
+          <b id="offline-title">Can't reach the map servers.</b>
+          <div id="offline-sandbox">
+            <p>Placemap draws tiles, searches addresses and calculates routes by calling
+               OpenStreetMap, Nominatim and OSRM over the internet. Something is blocking
+               those requests — most often an in-app file preview or an embedded viewer,
+               which are sandboxed and cannot make outside requests.</p>
+            <p><b>Fix:</b> save this file and open it in Safari, Chrome or Firefox, or host
+               it on any static web host. It needs a live connection either way.</p>
+          </div>
+          <div id="offline-service" class="hidden">
+            <p>The map tiles are loading, so your connection is fine — one of the other
+               services just is not answering. Routing and address search run on free,
+               shared servers that occasionally rate-limit a burst of requests or go down
+               for a few minutes.</p>
+            <p><b>Fix:</b> give it a moment, then tap Try again. Anything that failed shows
+               a dash instead of a time.</p>
+          </div>
           <p class="muted" id="offline-detail"></p>
           <button class="btn sm" id="offline-retry">Try again</button>
         </div>
@@ -1233,6 +1243,18 @@ let focusId = null;            // place id whose routes are highlighted
 let armed = null;              // 'home' | 'place' | null  (map-click capture)
 let seq = 0;
 
+/* fetch() has no timeout of its own: a stalled connection hangs forever, and a
+   hung request permanently occupies one of the routing pool's workers. Four of
+   those and every remaining route sits in the queue unanswered. */
+const REQUEST_TIMEOUT = 10000;
+
+function fetchWithTimeout(url, opts = {}, ms = REQUEST_TIMEOUT){
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { ...opts, signal: ctrl.signal })
+    .finally(() => clearTimeout(timer));
+}
+
 const rid = () => (++seq).toString(36) + Math.floor(performance.now() % 1e6).toString(36);
 const rkey = (placeId, modeId) => placeId + '|' + modeId;
 
@@ -1272,19 +1294,54 @@ function nextColor(){
   return PALETTE.find(c => !used.has(c)) || PALETTE[state.places.length % PALETTE.length];
 }
 
-/* A blocked or offline network is the single most likely reason for this page
-   to look broken, so say so plainly rather than failing silently. */
-let netWarned = false;
-function warnOffline(detail){
-  if (netWarned) return;
+/* Say plainly what failed rather than failing silently — but diagnose it
+   honestly. Tiles arriving proves the page can reach the internet, so blaming
+   a sandbox in that case sends the reader off after the wrong problem. */
+let netWarned = false, netDetail = '', netSource = '', tileErrors = 0, tileLoads = 0;
+
+/* Which diagnosis applies depends on whether anything is getting through, and
+   that can change after the warning goes up — routing can fail in under two
+   seconds, well before the first tile lands. So the copy is repainted rather
+   than decided once. */
+function paintNetworkWarning(){
+  const reachable = tileLoads > 0;
+  $('#offline-title').textContent = reachable
+    ? 'A map service is not responding.'
+    : "Can't reach the map servers.";
+  $('#offline-sandbox').classList.toggle('hidden', reachable);
+  $('#offline-service').classList.toggle('hidden', !reachable);
+  $('#offline-detail').textContent = netDetail;
+}
+
+function warnNetwork(detail, source){
+  netDetail = detail;
+  netSource = source;
+  if (netWarned) return paintNetworkWarning();
   netWarned = true;
-  $('#offline-detail').textContent = detail;
+  paintNetworkWarning();
   $('#offline').classList.remove('hidden');
   $('#sidebar').scrollTop = 0;
 }
+
+/* Something answered. A transient wobble should not leave a permanent notice
+   contradicting a map that is plainly working — but only the service that
+   actually failed can clear its own warning, or a tile arriving would wave
+   away a broken address search. */
+function noteNetworkOk(source){
+  if (!netWarned) return;
+  if (source === 'tiles') paintNetworkWarning();   // we are online; re-diagnose
+  if (netSource !== source) return;
+  if (source === 'routing'){
+    for (const r of routes.values()) if (r.status === 'error') return;
+  }
+  netWarned = false;
+  $('#offline').classList.add('hidden');
+}
 const isNetworkError = err =>
   err instanceof TypeError ||
-  /failed to fetch|networkerror|load failed|network request failed/i.test(err && err.message || '');
+  (err && err.name === 'AbortError') ||
+  /failed to fetch|networkerror|load failed|network request failed|aborted/i
+    .test(err && err.message || '');
 function netMessage(err){
   return isNetworkError(err)
     ? 'No connection to the address search service.'
@@ -1330,12 +1387,15 @@ function nominatim(path, params){
     url.searchParams.set('format', 'jsonv2');
     let res;
     try {
-      res = await fetch(url, { headers: { Accept: 'application/json' } });
+      res = await fetchWithTimeout(url, { headers: { Accept: 'application/json' } });
     } catch (err){
-      if (isNetworkError(err)) warnOffline('Address search (nominatim.openstreetmap.org) is unreachable.');
+      if (isNetworkError(err)){
+        warnNetwork('Address search (nominatim.openstreetmap.org) is unreachable.', 'search');
+      }
       throw err;
     }
     if (!res.ok) throw new Error('Address lookup failed (' + res.status + ')');
+    noteNetworkOk('search');
     return res.json();
   };
   geoChain = geoChain.then(run, run);
@@ -1348,17 +1408,24 @@ const reverseGeocode = (lat, lon) =>
 
 /* ------------------------------ routing ------------------------------ */
 
+/* Never mutate a caught error: a DOMException's message is getter-only, so
+   assigning to it throws a second error that escapes the handler entirely. */
+function routingError(message, retryable){
+  const err = new Error(message);
+  err.retryable = retryable;
+  return err;
+}
+
 async function fetchRoute(mode, from, to){
   let lastErr;
   for (const host of mode.hosts){
     const url = `${host}/${from.lon},${from.lat};${to.lon},${to.lat}` +
                 `?overview=full&geometries=geojson&alternatives=false&steps=false`;
     try {
-      const res = await fetch(url);
+      const res = await fetchWithTimeout(url);
       if (!res.ok){
-        const err = new Error('routing service returned ' + res.status);
-        err.retryable = res.status === 429 || res.status >= 500;
-        throw err;
+        throw routingError('routing service returned ' + res.status,
+                           res.status === 429 || res.status >= 500);
       }
       const data = await res.json();
       if (data.code !== 'Ok' || !data.routes || !data.routes.length){
@@ -1371,11 +1438,17 @@ async function fetchRoute(mode, from, to){
         coords: r.geometry.coordinates.map(c => [c[1], c[0]]),
       };
     } catch (err){
-      if (isNetworkError(err)) err.retryable = true;
-      lastErr = err;
+      lastErr = isNetworkError(err)
+        ? routingError(err.name === 'AbortError'
+            ? 'the routing service timed out'
+            : 'could not reach the routing service', true)
+        : err;
     }
   }
-  if (isNetworkError(lastErr)) warnOffline('The routing service (routing.openstreetmap.de) is unreachable.');
+  /* A timeout, a dropped connection, a rate-limit or a 5xx are all worth
+     telling the user about. "No route found" is a legitimate answer to a
+     legitimate question, so it stays quiet. */
+  if (lastErr && lastErr.retryable) warnNetwork(`Routing: ${lastErr.message}.`, 'routing');
   throw lastErr || new Error('routing failed');
 }
 
@@ -1425,6 +1498,7 @@ async function ensureRoutes({ force = false } = {}){
         const current = routes.get(key);
         if (!current || current.token !== token) return;   // superseded
         routes.set(key, result);
+        if (result.status === 'ok') noteNetworkOk('routing');
         render();
       });
     }
@@ -1481,7 +1555,7 @@ function applyTheme(){
   $('#meta-theme').content = isDarkUI() ? '#161b22' : '#ffffff';
 }
 
-let tiles = null, tileErrors = 0, tileLoads = 0;
+let tiles = null;
 function applyBasemap(){
   const id = state.basemap === 'auto' ? (isDarkUI() ? 'dark' : 'clean') : state.basemap;
   const spec = BASEMAPS[id] || BASEMAPS.clean;
@@ -1492,10 +1566,10 @@ function applyBasemap(){
   }).addTo(map);
   /* If a screenful of tiles all fail and none has ever loaded, the network is
      the problem rather than one flaky tile. */
-  tiles.on('tileload', () => { tileLoads++; });
+  tiles.on('tileload', () => { tileLoads++; noteNetworkOk('tiles'); });
   tiles.on('tileerror', () => {
     if (++tileErrors >= 4 && tileLoads === 0)
-      warnOffline(`Map tiles (${spec.host}) are not loading.`);
+      warnNetwork(`Map tiles (${spec.host}) are not loading.`, 'tiles');
   });
 }
 applyBasemap();
@@ -2117,7 +2191,7 @@ $('#place-clear').addEventListener('click', () => {
 });
 
 $('#offline-retry').addEventListener('click', () => {
-  netWarned = false; tileErrors = 0;
+  netWarned = false; netDetail = ''; netSource = ''; tileErrors = 0;
   $('#offline').classList.add('hidden');
   tiles.redraw();
   invalidateRoutes();
