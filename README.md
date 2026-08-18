@@ -60,16 +60,21 @@ mode is drawn for *every* place simultaneously:
 Hover a route, a place card or a summary row and everything else dims, so a busy
 map stays readable.
 
-**Times on the map** — every pin carries a label with its travel time for each
-enabled mode, fanned outward from home so the middle of the map stays clear. On
-a narrow screen the labels shrink to a coloured dot and the times, because a
-full place name is half a phone wide. Toggle them off from the travel modes
-panel.
+**Times on the map** — every pin carries a label with its travel time, fanned
+outward from home so the middle of the map stays clear. Labels report **one
+mode at a time**; the 🚶 🚲 🚗 buttons on the map switch which. Three times per
+label becomes an unreadable pile as soon as two places sit near each other. On
+a narrow screen the label drops to a coloured dot and the time, because a full
+place name is half a phone wide. Toggle labels off entirely from the travel
+modes panel.
 
-**Map styles** — *Auto* follows your system light/dark setting. *Clean*,
-*Minimal* (no place names), *Streets* and *Dark* are muted CARTO basemaps that
-let the routes carry the eye; *Detailed* is the standard OpenStreetMap style if
-you want every shop and bus stop.
+**Map styles** — *Clean*, *Minimal* (no place names), *Streets* and *Dark* are
+muted CARTO basemaps that let the routes carry the eye; *Detailed* is the
+standard OpenStreetMap style if you want every shop and bus stop. *Auto*
+follows the app's own theme.
+
+**Theme** — light by default, whatever your device is set to. The ☀️ button in
+the header cycles light → dark → match device.
 
 **Summary table** — time and distance for every place × mode, with the quickest
 mode for each place highlighted. Export it as CSV.
@@ -80,6 +85,9 @@ the whole map in its fragment. Nothing is ever sent to a server of ours, because
 there isn't one.
 
 Distances switch between kilometres and miles from the header.
+
+Routing requests that fail with a rate-limit, a 5xx or a dropped connection are
+retried once; a genuine "no route" answer is not asked twice.
 
 ## Services used
 

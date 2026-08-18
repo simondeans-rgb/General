@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
@@ -10,8 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-title" content="Placemap" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
-<meta name="theme-color" content="#161b22" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#ffffff" id="meta-theme" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%F0%9F%97%BA%EF%B8%8F%3C/text%3E%3C/svg%3E" />
 <!-- Leaflet 1.9.4 stylesheet, inlined so the page has no external dependencies.
      Upstream: https://unpkg.com/leaflet@1.9.4/dist/leaflet.css (BSD-2-Clause) -->
@@ -697,8 +696,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
   --shadow:0 1px 2px rgba(16,24,40,.06), 0 4px 14px rgba(16,24,40,.06);
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
+:root[data-theme="dark"]{
+    --bg:#0d1117; --panel:#161b22; --panel-2:#1c232d; --ink:#e6edf3; --ink-2:#a9b4c2;
+    --ink-3:#7d8794; --line:#262d38; --line-2:#333c48; --accent:#4f8cff; --accent-ink:#0b1220;
+    --danger:#ff6b5e; --ok:#3fc07f; --warn:#e0a458;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.35);
+}
 @media (prefers-color-scheme: dark){
-  :root{
+  :root[data-theme="auto"]{
     --bg:#0d1117; --panel:#161b22; --panel-2:#1c232d; --ink:#e6edf3; --ink-2:#a9b4c2;
     --ink-3:#7d8794; --line:#262d38; --line-2:#333c48; --accent:#4f8cff; --accent-ink:#0b1220;
     --danger:#ff6b5e; --ok:#3fc07f; --warn:#e0a458;
@@ -725,6 +730,14 @@ header.topbar{
 .brand .glyph{font-size:19px;line-height:1}
 .brand small{font-weight:500;color:var(--ink-3);font-size:12px;letter-spacing:0;white-space:nowrap}
 #units{width:auto;padding:6px 8px;flex:0 0 auto}
+@media (max-width:400px){
+  header.topbar{gap:5px;padding:8px 9px}
+  header.topbar .btn{padding:6px 8px}
+  #units{padding:6px 2px;font-size:13px}
+  .brand{font-size:14px;min-width:0}
+  .brand .glyph{font-size:17px}
+}
+@media (max-width:344px){ .brand .wordmark{display:none} }
 @media (max-width:640px){
   .leaflet-tooltip.map-label{font-size:11px;padding:4px 7px;border-radius:8px}
   .map-label .ml-name{font-size:11.5px}
@@ -745,7 +758,7 @@ main{flex:1;display:flex;min-height:0}
 @media (max-width:900px){
   main{flex-direction:column-reverse}
   #sidebar{width:auto;flex:1 1 auto;border-right:0;border-top:1px solid var(--line)}
-  #mapwrap{flex:0 0 46dvh}
+  #mapwrap{flex:0 0 52dvh}
 }
 
 /* ---------- primitives ---------- */
@@ -920,6 +933,13 @@ table.summary .pl .dot{width:16px;height:16px;flex:0 0 16px;font-size:9.5px;box-
 .map-label .ml-dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px;align-self:center}
 .map-label.home{border-color:var(--ink)}
 .map-tools select{width:auto;text-align:center}
+.seg{display:flex;background:var(--panel);border:1px solid var(--line-2);border-radius:8px;
+  overflow:hidden;box-shadow:var(--shadow)}
+.seg button{border:0;background:transparent;padding:7px 11px;cursor:pointer;font-size:15px;
+  line-height:1;color:inherit}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent)}
+.seg button:hover:not([aria-pressed="true"]){background:var(--panel-2)}
 
 /* ---------- dialog ---------- */
 dialog{
@@ -953,13 +973,14 @@ footer.credits a{color:var(--ink-2)}
 <body>
 <div id="app">
   <header class="topbar">
-    <div class="brand"><span class="glyph">🗺️</span><span>Placemap</span>
+    <div class="brand"><span class="glyph">🗺️</span><span class="wordmark">Placemap</span>
       <small>walking · cycling · driving</small></div>
     <div class="spacer"></div>
     <select id="units" class="btn" style="padding:6px 8px" title="Distance units">
       <option value="metric">km</option>
       <option value="imperial">miles</option>
     </select>
+    <button class="btn icon" id="btn-theme" title="Light / dark / match device">☀️</button>
     <button class="btn" id="btn-saved" title="Saved maps">💾<span class="btxt">Saved</span></button>
     <button class="btn" id="btn-share" title="Share or export">🔗<span class="btxt">Share</span></button>
   </header>
@@ -1055,7 +1076,8 @@ footer.credits a{color:var(--ink-2)}
             <span class="lbl">Show times on the map</span>
           </label>
           <p class="muted" style="margin:9px 0 0">
-            Line style shows the mode, colour shows the place. Hover a route or row to isolate it.
+            Line style shows the mode, colour shows the place. The map labels report one mode at a
+            time — switch which with the buttons on the map. Hover a route or row to isolate it.
           </p>
         </div>
       </section>
@@ -1081,6 +1103,7 @@ footer.credits a{color:var(--ink-2)}
     <div id="mapwrap">
       <div id="map"></div>
       <div class="map-tools">
+        <div class="seg" id="label-mode" role="group" aria-label="Which travel time to show on the map"></div>
         <select id="basemap" class="btn" title="Map style" aria-label="Map style">
           <option value="auto">Auto</option>
           <option value="clean">Clean</option>
@@ -1202,6 +1225,8 @@ const state = {
   units: 'metric',
   basemap: 'auto',
   mapLabels: true,
+  labelMode: 'foot',   // which single mode the on-map labels report
+  theme: 'light',      // 'light' | 'dark' | 'auto'
 };
 const routes = new Map();      // `${placeId}|${modeId}` -> {status,duration,distance,coords,error}
 let focusId = null;            // place id whose routes are highlighted
@@ -1331,7 +1356,11 @@ async function fetchRoute(mode, from, to){
                 `?overview=full&geometries=geojson&alternatives=false&steps=false`;
     try {
       const res = await fetch(url);
-      if (!res.ok) throw new Error('routing service returned ' + res.status);
+      if (!res.ok){
+        const err = new Error('routing service returned ' + res.status);
+        err.retryable = res.status === 429 || res.status >= 500;
+        throw err;
+      }
       const data = await res.json();
       if (data.code !== 'Ok' || !data.routes || !data.routes.length){
         throw new Error(data.message || 'no route found');
@@ -1342,7 +1371,10 @@ async function fetchRoute(mode, from, to){
         duration: r.duration,
         coords: r.geometry.coordinates.map(c => [c[1], c[0]]),
       };
-    } catch (err){ lastErr = err; }
+    } catch (err){
+      if (isNetworkError(err)) err.retryable = true;
+      lastErr = err;
+    }
   }
   if (isNetworkError(lastErr)) warnOffline('The routing service (routing.openstreetmap.de) is unreachable.');
   throw lastErr || new Error('routing failed');
@@ -1378,10 +1410,18 @@ async function ensureRoutes({ force = false } = {}){
       routes.set(key, { status: 'loading', token });
       jobs.push(async () => {
         let result;
-        try {
-          result = { status: 'ok', ...await fetchRoute(mode, origin, place) };
-        } catch (err){
-          result = { status: 'error', error: err.message || String(err) };
+        for (let attempt = 0; ; attempt++){
+          try {
+            result = { status: 'ok', ...await fetchRoute(mode, origin, place) };
+            break;
+          } catch (err){
+            result = { status: 'error', error: err.message || String(err) };
+            /* One retry for a rate-limit, a 5xx or a dropped connection. These
+               servers are free and shared, so a burst of additions does get
+               throttled — but a genuine "no route" is not worth asking twice. */
+            if (attempt === 0 && err.retryable){ await sleep(1500); continue; }
+            break;
+          }
         }
         const current = routes.get(key);
         if (!current || current.token !== token) return;   // superseded
@@ -1426,12 +1466,25 @@ const BASEMAPS = {
               host: 'tile.openstreetmap.org' },
 };
 const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+const THEMES = { light: '☀️', dark: '🌙', auto: '🌗' };
+
+/* Light unless asked otherwise. Matching the device meant a phone in dark mode
+   got a near-black map, which is rarely what you want from a printed-looking
+   plan of your neighbourhood. */
+const isDarkUI = () =>
+  state.theme === 'dark' || (state.theme === 'auto' && prefersDark.matches);
+
+function applyTheme(){
+  document.documentElement.dataset.theme = state.theme;
+  $('#btn-theme').textContent = THEMES[state.theme];
+  $('#btn-theme').setAttribute('aria-label',
+    `Theme: ${state.theme}. Click to change.`);
+  $('#meta-theme').content = isDarkUI() ? '#161b22' : '#ffffff';
+}
 
 let tiles = null, tileErrors = 0, tileLoads = 0;
 function applyBasemap(){
-  const id = state.basemap === 'auto'
-    ? (prefersDark.matches ? 'dark' : 'clean')
-    : state.basemap;
+  const id = state.basemap === 'auto' ? (isDarkUI() ? 'dark' : 'clean') : state.basemap;
   const spec = BASEMAPS[id] || BASEMAPS.clean;
   if (tiles) map.removeLayer(tiles);
   tileErrors = 0;
@@ -1448,6 +1501,8 @@ function applyBasemap(){
 }
 applyBasemap();
 prefersDark.addEventListener('change', () => {
+  if (state.theme !== 'auto') return;
+  applyTheme();
   if (state.basemap === 'auto') applyBasemap();
 });
 
@@ -1473,19 +1528,26 @@ function pinIcon(color, text, isHome){
    times there — the pin is numbered and the sidebar carries the names. */
 const isCompact = () => map.getSize().x < 640;
 
+/* The label reports one mode at a time. Three stacked times turn into an
+   unreadable pile the moment two places sit near each other. */
+function activeLabelMode(){
+  if (state.modes[state.labelMode]) return MODE_BY_ID[state.labelMode];
+  return MODES.find(m => state.modes[m.id]) || null;
+}
+
 function placeLabelHtml(place){
-  const times = MODES.filter(m => state.modes[m.id]).map(mode => {
-    const r = routes.get(rkey(place.id, mode.id));
-    const val = !r || r.status === 'loading' ? '…'
-              : r.status === 'ok' ? formatDuration(r.duration) : '—';
-    return `<span>${mode.icon} <b>${val}</b></span>`;
-  }).join('');
-  const showTimes = state.home && times;
-  if (showTimes && isCompact()){
-    return `<span class="ml-times"><i class="ml-dot" style="background:${place.color}"></i>${times}</span>`;
+  const mode = activeLabelMode();
+  const r = mode && routes.get(rkey(place.id, mode.id));
+  const showTime = state.home && mode;
+  const val = !showTime ? ''
+            : !r || r.status === 'loading' ? '…'
+            : r.status === 'ok' ? formatDuration(r.duration) : '—';
+  const time = showTime ? `<span>${mode.icon} <b>${val}</b></span>` : '';
+  if (time && isCompact()){
+    return `<span class="ml-times"><i class="ml-dot" style="background:${place.color}"></i>${time}</span>`;
   }
   return `<span class="ml-name"><i style="background:${place.color}"></i>${esc(place.label)}</span>` +
-         (showTimes ? `<span class="ml-times">${times}</span>` : '');
+         (time ? `<span class="ml-times">${time}</span>` : '');
 }
 function homeLabelHtml(){
   return `<span class="ml-name">🏠 ${esc(state.home.label || 'Home')}</span>` +
@@ -1645,8 +1707,10 @@ function labelPadding(){
     h = Math.max(h, el.offsetHeight);
   });
   if (!w) return [40, 40];
+  /* A side-fanned label hangs entirely off one edge of its pin, so budget its
+     full width rather than half of it. */
   const size = map.getSize();
-  return [Math.min(Math.round(w * 0.62), Math.round(size.x * 0.32)),
+  return [Math.min(w + 14, Math.round(size.x * 0.34)),
           Math.min(h + 28, Math.round(size.y * 0.26))];
 }
 
@@ -1742,7 +1806,27 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && armed) arm
 
 /* ------------------------------ rendering ---------------------------- */
 
+function renderLabelSwitch(){
+  const box = $('#label-mode');
+  const enabled = MODES.filter(m => state.modes[m.id]);
+  const active = activeLabelMode();
+  box.classList.toggle('hidden', !state.mapLabels || enabled.length < 2);
+  if (!state.mapLabels || enabled.length < 2) return;
+  box.innerHTML = enabled.map(m =>
+    `<button type="button" data-label-mode="${m.id}" title="Show ${m.label.toLowerCase()} times"
+      aria-pressed="${active && active.id === m.id}">${m.icon}</button>`).join('');
+  box.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.labelMode = btn.dataset.labelMode;
+      renderLabelSwitch();
+      syncMarkers();
+      persist();
+    });
+  });
+}
+
 function render(){
+  renderLabelSwitch();
   renderHome();
   renderPlaces();
   renderModes();
@@ -2047,8 +2131,17 @@ $('#basemap').addEventListener('change', e => {
 });
 $('#map-labels').addEventListener('change', e => {
   state.mapLabels = e.target.checked;
+  renderLabelSwitch();
   syncMarkers();
   persist();
+});
+$('#btn-theme').addEventListener('click', () => {
+  const order = ['light', 'dark', 'auto'];
+  state.theme = order[(order.indexOf(state.theme) + 1) % order.length];
+  applyTheme();
+  if (state.basemap === 'auto') applyBasemap();
+  persist();
+  toast(state.theme === 'auto' ? 'Theme follows your device.' : `Theme: ${state.theme}.`);
 });
 
 $('#btn-fit').addEventListener('click', fitAll);
@@ -2148,6 +2241,8 @@ function snapshot(){
     units: state.units,
     basemap: state.basemap,
     mapLabels: state.mapLabels,
+    labelMode: state.labelMode,
+    theme: state.theme,
   };
 }
 function applySnapshot(snap){
@@ -2167,6 +2262,9 @@ function applySnapshot(snap){
   if (snap.units === 'imperial' || snap.units === 'metric') state.units = snap.units;
   if (snap.basemap === 'auto' || BASEMAPS[snap.basemap]) state.basemap = snap.basemap;
   if (typeof snap.mapLabels === 'boolean') state.mapLabels = snap.mapLabels;
+  if (MODE_BY_ID[snap.labelMode]) state.labelMode = snap.labelMode;
+  if (THEMES[snap.theme]) state.theme = snap.theme;
+  applyTheme();
   $('#units').value = state.units;
   $('#basemap').value = state.basemap;
   $('#map-labels').checked = state.mapLabels;
@@ -2279,6 +2377,8 @@ function shareUrl(){
     u: state.units,
     b: state.basemap,
     l: state.mapLabels,
+    lm: state.labelMode,
+    t: state.theme,
   };
   /* href minus any existing hash — also works when opened straight from disk */
   return location.href.split('#')[0] + '#m=' + b64encode(JSON.stringify(payload));
@@ -2292,7 +2392,7 @@ function loadFromHash(){
       home: d.h ? { lat:d.h[0], lon:d.h[1], label:d.h[2], addr:d.h[3] } : null,
       places: (d.p || []).map(a => ({ lat:a[0], lon:a[1], label:a[2], addr:a[3], note:a[4] })),
       modes: Object.fromEntries(MODES.map(m => [m.id, (d.m || []).includes(m.id)])),
-      units: d.u, basemap: d.b, mapLabels: d.l,
+      units: d.u, basemap: d.b, mapLabels: d.l, labelMode: d.lm, theme: d.t,
     });
   } catch { toast('That share link could not be read.', 'err'); return false; }
 }
@@ -2309,6 +2409,7 @@ $('#btn-share').addEventListener('click', () => {
 
 /* -------------------------------- boot ------------------------------- */
 
+applyTheme();
 $('#units').value = state.units;
 $('#basemap').value = state.basemap;
 $('#map-labels').checked = state.mapLabels;
