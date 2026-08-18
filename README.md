@@ -3,17 +3,26 @@
 A custom map builder. Pick a home location, plot the places that matter, and see
 **walking, cycling and driving** routes and times to every one of them at once.
 
-Everything lives in a single self-contained `index.html`. No build step, no
-server, no API keys, no account.
+Everything lives in a single self-contained `index.html` — Leaflet is inlined,
+so the file has no external dependencies of its own. No build step, no server,
+no API keys, no account.
 
 ![Placemap](docs/screenshot.jpg)
 
 ## Try it
 
-Open `index.html` in a browser, or host the file anywhere static (GitHub Pages,
-Netlify, an S3 bucket). Hosting it is preferable to opening it from disk — some
-browsers restrict `localStorage` on `file://` URLs, which disables the save
-feature.
+Save `index.html` and open it in a **real browser tab** — Safari, Chrome or
+Firefox — or host it anywhere static (GitHub Pages, Netlify, an S3 bucket).
+
+> **It must be a browser tab, not a preview pane.** In-app file previews,
+> chat attachment viewers and embedded webviews are sandboxed and cannot make
+> outside requests, so the map stays blank and address search returns nothing.
+> Placemap detects this and says so on screen. Hosting it is also preferable to
+> opening it from disk, because some browsers restrict `localStorage` on
+> `file://` URLs, which disables the save feature.
+
+The page needs a live internet connection in any case: tiles, address search and
+routing are all remote calls.
 
 ## What it does
 
@@ -58,13 +67,25 @@ All key-free and free to use:
 | Map tiles | [OpenStreetMap](https://www.openstreetmap.org/copyright) |
 | Address search / reverse geocoding | [Nominatim](https://nominatim.openstreetmap.org/) |
 | Routing (foot / bike / car profiles) | [OSRM](https://project-osrm.org/) hosted by [FOSSGIS](https://routing.openstreetmap.de/) |
-| Map library | [Leaflet 1.9.4](https://leafletjs.com/) via unpkg (SRI-pinned) |
+| Map library | [Leaflet 1.9.4](https://leafletjs.com/), BSD-2-Clause, inlined into the page |
 
 These are volunteer-funded public endpoints, so the app plays by their rules:
 geocoding requests are funnelled through a single queue spaced 1.1 s apart, and
 routing requests are capped at four in flight. For heavy or commercial use,
 swap in a paid provider — `MODES[].hosts` and the `NOMINATIM` constant are the
 only two places that need to change.
+
+## Troubleshooting
+
+**Blank map, no search results.** The page can't reach the internet. Almost
+always this is a sandboxed preview — open the file in a proper browser tab. The
+on-screen warning names which service failed.
+
+**"no route" in a cell.** OSRM couldn't connect that pin to the road network.
+Drag the pin a few metres towards a street.
+
+**Nothing saves between visits.** `localStorage` is unavailable, usually because
+the page was opened from `file://` or in a private window. Host the file instead.
 
 ## Caveats
 
