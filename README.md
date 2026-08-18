@@ -63,10 +63,11 @@ map stays readable.
 **Times on the map** — every pin carries a label with its travel time, fanned
 outward from home so the middle of the map stays clear. Labels report **one
 mode at a time**; the 🚶 🚲 🚗 buttons on the map switch which. Three times per
-label becomes an unreadable pile as soon as two places sit near each other. On
-a narrow screen the label drops to a coloured dot and the time, because a full
-place name is half a phone wide. Toggle labels off entirely from the travel
-modes panel.
+label becomes an unreadable pile as soon as two places sit near each other, and
+for the same reason the label shows the bare minutes with no mode icon — the
+switcher already says which mode is on screen. On a narrow screen the label
+drops to a coloured dot and the time, because a full place name is half a phone
+wide. Toggle labels off entirely from the travel modes panel.
 
 **Map styles** — *Clean*, *Minimal* (no place names), *Streets* and *Dark* are
 muted CARTO basemaps that let the routes carry the eye; *Detailed* is the
