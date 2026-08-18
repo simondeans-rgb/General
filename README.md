@@ -34,6 +34,8 @@ This repo is laid out for GitHub Pages: `index.html` sits at the root and
 Once it's on a URL, Safari's **Share → Add to Home Screen** installs it as a
 full-screen app.
 
+![Placemap on a phone](docs/phone.jpg)
+
 ## What it does
 
 **Home location** — search for an address, use your device's location, or click
@@ -58,6 +60,17 @@ mode is drawn for *every* place simultaneously:
 Hover a route, a place card or a summary row and everything else dims, so a busy
 map stays readable.
 
+**Times on the map** — every pin carries a label with its travel time for each
+enabled mode, fanned outward from home so the middle of the map stays clear. On
+a narrow screen the labels shrink to a coloured dot and the times, because a
+full place name is half a phone wide. Toggle them off from the travel modes
+panel.
+
+**Map styles** — *Auto* follows your system light/dark setting. *Clean*,
+*Minimal* (no place names), *Streets* and *Dark* are muted CARTO basemaps that
+let the routes carry the eye; *Detailed* is the standard OpenStreetMap style if
+you want every shop and bus stop.
+
 **Summary table** — time and distance for every place × mode, with the quickest
 mode for each place highlighted. Export it as CSV.
 
@@ -74,7 +87,7 @@ All key-free and free to use:
 
 | Purpose | Service |
 |---|---|
-| Map tiles | [OpenStreetMap](https://www.openstreetmap.org/copyright) |
+| Map tiles | [CARTO basemaps](https://carto.com/attributions) and [OpenStreetMap](https://www.openstreetmap.org/copyright) |
 | Address search / reverse geocoding | [Nominatim](https://nominatim.openstreetmap.org/) |
 | Routing (foot / bike / car profiles) | [OSRM](https://project-osrm.org/) hosted by [FOSSGIS](https://routing.openstreetmap.de/) |
 | Map library | [Leaflet 1.9.4](https://leafletjs.com/), BSD-2-Clause, inlined into the page |

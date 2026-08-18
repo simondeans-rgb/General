@@ -726,6 +726,9 @@ header.topbar{
 .brand small{font-weight:500;color:var(--ink-3);font-size:12px;letter-spacing:0;white-space:nowrap}
 #units{width:auto;padding:6px 8px;flex:0 0 auto}
 @media (max-width:640px){
+  .leaflet-tooltip.map-label{font-size:11px;padding:4px 7px;border-radius:8px}
+  .map-label .ml-name{font-size:11.5px}
+  .map-label .ml-times{gap:7px}
   .brand small{display:none}
   header.topbar{gap:7px;padding:9px 11px}
   .btxt{display:none}
@@ -898,6 +901,26 @@ table.summary .pl .dot{width:16px;height:16px;flex:0 0 16px;font-size:9.5px;box-
 .leaflet-container{font:inherit;background:var(--panel-2)}
 .leaflet-tooltip.route-tip{font-size:12px;font-weight:600;padding:3px 7px}
 
+/* permanent on-map labels: place name + travel time per enabled mode */
+.leaflet-tooltip.map-label{
+  background:var(--panel);color:var(--ink);border:1px solid var(--line-2);border-radius:10px;
+  padding:5px 9px;font-size:12px;line-height:1.35;white-space:nowrap;opacity:1;
+  box-shadow:0 2px 10px rgba(16,24,40,.22);
+}
+.leaflet-tooltip.map-label.leaflet-tooltip-top::before{border-top-color:var(--panel)}
+.leaflet-tooltip.map-label.leaflet-tooltip-bottom::before{border-bottom-color:var(--panel)}
+.leaflet-tooltip.map-label.leaflet-tooltip-left::before{border-left-color:var(--panel)}
+.leaflet-tooltip.map-label.leaflet-tooltip-right::before{border-right-color:var(--panel)}
+.map-label .ml-name{display:flex;align-items:center;gap:5px;font-weight:650;font-size:12.5px}
+.map-label .ml-name i{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+.map-label .ml-sub{display:block;color:var(--ink-3);font-size:11px;margin-top:1px}
+.map-label .ml-times{display:flex;gap:9px;margin-top:3px;color:var(--ink-2);
+  font-variant-numeric:tabular-nums}
+.map-label .ml-times b{color:var(--ink);font-weight:650}
+.map-label .ml-dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px;align-self:center}
+.map-label.home{border-color:var(--ink)}
+.map-tools select{width:auto;text-align:center}
+
 /* ---------- dialog ---------- */
 dialog{
   border:1px solid var(--line-2);border-radius:14px;padding:0;background:var(--panel);color:var(--ink);
@@ -1026,6 +1049,11 @@ footer.credits a{color:var(--ink-2)}
         </div>
         <div class="card-body">
           <div class="modes" id="modes"></div>
+          <label class="mode" style="margin-top:6px">
+            <input type="checkbox" id="map-labels" checked />
+            <span class="ico">🏷️</span>
+            <span class="lbl">Show times on the map</span>
+          </label>
           <p class="muted" style="margin:9px 0 0">
             Line style shows the mode, colour shows the place. Hover a route or row to isolate it.
           </p>
@@ -1053,6 +1081,14 @@ footer.credits a{color:var(--ink-2)}
     <div id="mapwrap">
       <div id="map"></div>
       <div class="map-tools">
+        <select id="basemap" class="btn" title="Map style" aria-label="Map style">
+          <option value="auto">Auto</option>
+          <option value="clean">Clean</option>
+          <option value="minimal">Minimal</option>
+          <option value="streets">Streets</option>
+          <option value="dark">Dark</option>
+          <option value="detailed">Detailed</option>
+        </select>
         <button class="btn icon" id="btn-fit" title="Zoom to fit all points">⤢</button>
       </div>
       <div class="map-banner hidden" id="banner">
@@ -1164,6 +1200,8 @@ const state = {
   places: [],                                   // {id,lat,lon,label,addr,note,color}
   modes: { foot:true, bike:true, car:true },
   units: 'metric',
+  basemap: 'auto',
+  mapLabels: true,
 };
 const routes = new Map();      // `${placeId}|${modeId}` -> {status,duration,distance,coords,error}
 let focusId = null;            // place id whose routes are highlighted
@@ -1369,18 +1407,48 @@ function invalidateRoutes(placeId){
 const map = L.map('map', { zoomControl: true, worldCopyJump: true })
   .setView([51.5074, -0.1278], 12);
 
-const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 19,
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-}).addTo(map);
+const OSM_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+const CARTO_ATTR = OSM_ATTR + ' &copy; <a href="https://carto.com/attributions">CARTO</a>';
+const CARTO = (style, maxZoom = 20) => ({
+  url: `https://{s}.basemaps.cartocdn.com/${style}/{z}/{x}/{y}{r}.png`,
+  attr: CARTO_ATTR, subdomains: 'abcd', maxZoom, host: 'basemaps.cartocdn.com',
+});
 
-/* If a screenful of tiles all fail and none has ever loaded, the network is
-   the problem rather than one flaky tile. */
-let tileErrors = 0, tileLoads = 0;
-tiles.on('tileload', () => { tileLoads++; });
-tiles.on('tileerror', () => {
-  if (++tileErrors >= 4 && tileLoads === 0)
-    warnOffline('Map tiles (tile.openstreetmap.org) are not loading.');
+/* Muted styles first: on a busy street map the routes are what matter, and a
+   quiet basemap is what makes several overlapping ones readable. */
+const BASEMAPS = {
+  clean:    CARTO('light_all'),
+  minimal:  CARTO('light_nolabels'),
+  streets:  CARTO('rastertiles/voyager'),
+  dark:     CARTO('dark_all'),
+  detailed: { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+              attr: OSM_ATTR, subdomains: 'abc', maxZoom: 19,
+              host: 'tile.openstreetmap.org' },
+};
+const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+let tiles = null, tileErrors = 0, tileLoads = 0;
+function applyBasemap(){
+  const id = state.basemap === 'auto'
+    ? (prefersDark.matches ? 'dark' : 'clean')
+    : state.basemap;
+  const spec = BASEMAPS[id] || BASEMAPS.clean;
+  if (tiles) map.removeLayer(tiles);
+  tileErrors = 0;
+  tiles = L.tileLayer(spec.url, {
+    maxZoom: spec.maxZoom, subdomains: spec.subdomains, attribution: spec.attr,
+  }).addTo(map);
+  /* If a screenful of tiles all fail and none has ever loaded, the network is
+     the problem rather than one flaky tile. */
+  tiles.on('tileload', () => { tileLoads++; });
+  tiles.on('tileerror', () => {
+    if (++tileErrors >= 4 && tileLoads === 0)
+      warnOffline(`Map tiles (${spec.host}) are not loading.`);
+  });
+}
+applyBasemap();
+prefersDark.addEventListener('change', () => {
+  if (state.basemap === 'auto') applyBasemap();
 });
 
 const routeLayer  = L.layerGroup().addTo(map);
@@ -1394,8 +1462,66 @@ function pinIcon(color, text, isHome){
     html: `<div class="pin${isHome ? ' home' : ''}" style="background:${color}"><span>${esc(text)}</span></div>`,
     iconSize: [26, 26],
     iconAnchor: isHome ? [13, 13] : [13, 26],
-    tooltipAnchor: [0, isHome ? -14 : -26],
+    tooltipAnchor: [0, isHome ? 16 : -26],
   });
+}
+
+/* Compact label drawn beside a pin: who it is, and how long it takes to get
+   there by each enabled mode. */
+/* On a phone a label carrying the full place name is half the map wide, and
+   fanning those outward guarantees they clip. Drop to the coloured dot and the
+   times there — the pin is numbered and the sidebar carries the names. */
+const isCompact = () => map.getSize().x < 640;
+
+function placeLabelHtml(place){
+  const times = MODES.filter(m => state.modes[m.id]).map(mode => {
+    const r = routes.get(rkey(place.id, mode.id));
+    const val = !r || r.status === 'loading' ? '…'
+              : r.status === 'ok' ? formatDuration(r.duration) : '—';
+    return `<span>${mode.icon} <b>${val}</b></span>`;
+  }).join('');
+  const showTimes = state.home && times;
+  if (showTimes && isCompact()){
+    return `<span class="ml-times"><i class="ml-dot" style="background:${place.color}"></i>${times}</span>`;
+  }
+  return `<span class="ml-name"><i style="background:${place.color}"></i>${esc(place.label)}</span>` +
+         (showTimes ? `<span class="ml-times">${times}</span>` : '');
+}
+function homeLabelHtml(){
+  return `<span class="ml-name">🏠 ${esc(state.home.label || 'Home')}</span>` +
+         (state.home.addr && !isCompact()
+           ? `<span class="ml-sub">${esc(shortAddr(state.home.addr))}</span>` : '');
+}
+
+/* Fan the labels outward from home, the way a hand-drawn version would: a
+   place to the east gets its label on the right, one to the north gets it
+   above. Costs nothing and keeps the middle of the map from silting up. */
+function labelDirection(place){
+  if (!state.home) return 'top';
+  const dx = place.lon - state.home.lon;
+  const dy = place.lat - state.home.lat;
+  if (Math.abs(dx) > Math.abs(dy) * 1.2) return dx > 0 ? 'right' : 'left';
+  return dy < 0 ? 'bottom' : 'top';
+}
+
+/* One tooltip per marker, so the permanent label and the hover card are the
+   same object swapped in and out. Rebinding is only needed when the kind
+   changes; otherwise just replace the content, which avoids a flicker on
+   every re-render. */
+function bindMarkerLabel(marker, kind, permanentHtml, hoverHtml, direction){
+  const want = (state.mapLabels ? 'perm' : 'hover') + ':' + kind + ':' + direction;
+  if (marker._labelKind === want){
+    marker.setTooltipContent(state.mapLabels ? permanentHtml : hoverHtml);
+    return;
+  }
+  marker.unbindTooltip();
+  marker.bindTooltip(
+    state.mapLabels ? permanentHtml : hoverHtml,
+    state.mapLabels
+      ? { permanent: true, direction, interactive: false,
+          className: 'map-label' + (kind === 'home' ? ' home' : '') }
+      : { direction });
+  marker._labelKind = want;
 }
 
 function syncMarkers(){
@@ -1419,9 +1545,9 @@ function syncMarkers(){
     } else {
       homeMarker.setLatLng([state.home.lat, state.home.lon]);
     }
-    homeMarker.bindTooltip(
+    bindMarkerLabel(homeMarker, 'home', homeLabelHtml(),
       `<b>${esc(state.home.label || 'Home')}</b><br>${esc(shortAddr(state.home.addr))}`,
-      { direction: 'top' });
+      'bottom');
   } else if (homeMarker){
     markerLayer.removeLayer(homeMarker);
     homeMarker = null;
@@ -1463,10 +1589,10 @@ function syncMarkers(){
         : r.status === 'loading' ? '…' : 'no route';
       return `${m.icon} ${val}`;
     });
-    marker.bindTooltip(
+    bindMarkerLabel(marker, 'place', placeLabelHtml(place),
       `<b>${esc(place.label)}</b><br>${esc(shortAddr(place.addr))}` +
       (lines.length ? '<br>' + lines.join('<br>') : ''),
-      { direction: 'top' });
+      labelDirection(place));
   });
 }
 
@@ -1509,14 +1635,29 @@ function setFocus(id){
     tr.classList.toggle('focus', tr.dataset.id === id));
 }
 
+/* Pad the fit by the size of the labels actually rendered, so nothing gets
+   cropped at the edge of the viewport. */
+function labelPadding(){
+  if (!state.mapLabels) return [32, 32];
+  let w = 0, h = 0;
+  document.querySelectorAll('#map .leaflet-tooltip.map-label').forEach(el => {
+    w = Math.max(w, el.offsetWidth);
+    h = Math.max(h, el.offsetHeight);
+  });
+  if (!w) return [40, 40];
+  const size = map.getSize();
+  return [Math.min(Math.round(w * 0.62), Math.round(size.x * 0.32)),
+          Math.min(h + 28, Math.round(size.y * 0.26))];
+}
+
 function fitAll(){
   const pts = [];
   if (state.home) pts.push([state.home.lat, state.home.lon]);
   state.places.forEach(p => pts.push([p.lat, p.lon]));
   for (const r of routes.values()) if (r.status === 'ok') pts.push(...r.coords);
   if (!pts.length) return;
-  if (pts.length === 1) map.setView(pts[0], 14);
-  else map.fitBounds(L.latLngBounds(pts).pad(0.08), { animate: true });
+  if (pts.length === 1) return map.setView(pts[0], 14);
+  map.fitBounds(L.latLngBounds(pts), { padding: labelPadding(), animate: true });
 }
 
 /* Reverse-geocode a dropped pin; fall back to plain coordinates. */
@@ -1899,6 +2040,17 @@ $('#offline-retry').addEventListener('click', () => {
   ensureRoutes({ force: true });
 });
 
+$('#basemap').addEventListener('change', e => {
+  state.basemap = e.target.value;
+  applyBasemap();
+  persist();
+});
+$('#map-labels').addEventListener('change', e => {
+  state.mapLabels = e.target.checked;
+  syncMarkers();
+  persist();
+});
+
 $('#btn-fit').addEventListener('click', fitAll);
 $('#btn-refresh').addEventListener('click', () => {
   invalidateRoutes();
@@ -1994,6 +2146,8 @@ function snapshot(){
     places: state.places.map(p => ({ ...p })),
     modes: { ...state.modes },
     units: state.units,
+    basemap: state.basemap,
+    mapLabels: state.mapLabels,
   };
 }
 function applySnapshot(snap){
@@ -2011,7 +2165,12 @@ function applySnapshot(snap){
     }));
   if (snap.modes) for (const m of MODES) state.modes[m.id] = !!snap.modes[m.id];
   if (snap.units === 'imperial' || snap.units === 'metric') state.units = snap.units;
+  if (snap.basemap === 'auto' || BASEMAPS[snap.basemap]) state.basemap = snap.basemap;
+  if (typeof snap.mapLabels === 'boolean') state.mapLabels = snap.mapLabels;
   $('#units').value = state.units;
+  $('#basemap').value = state.basemap;
+  $('#map-labels').checked = state.mapLabels;
+  applyBasemap();
   routes.clear();
   markers.forEach(m => markerLayer.removeLayer(m));
   markers.clear();
@@ -2118,6 +2277,8 @@ function shareUrl(){
     p: state.places.map(p => [round(p.lat), round(p.lon), p.label, p.addr, p.note || '']),
     m: MODES.filter(m => state.modes[m.id]).map(m => m.id),
     u: state.units,
+    b: state.basemap,
+    l: state.mapLabels,
   };
   /* href minus any existing hash — also works when opened straight from disk */
   return location.href.split('#')[0] + '#m=' + b64encode(JSON.stringify(payload));
@@ -2131,7 +2292,7 @@ function loadFromHash(){
       home: d.h ? { lat:d.h[0], lon:d.h[1], label:d.h[2], addr:d.h[3] } : null,
       places: (d.p || []).map(a => ({ lat:a[0], lon:a[1], label:a[2], addr:a[3], note:a[4] })),
       modes: Object.fromEntries(MODES.map(m => [m.id, (d.m || []).includes(m.id)])),
-      units: d.u,
+      units: d.u, basemap: d.b, mapLabels: d.l,
     });
   } catch { toast('That share link could not be read.', 'err'); return false; }
 }
@@ -2149,13 +2310,15 @@ $('#btn-share').addEventListener('click', () => {
 /* -------------------------------- boot ------------------------------- */
 
 $('#units').value = state.units;
+$('#basemap').value = state.basemap;
+$('#map-labels').checked = state.mapLabels;
 if (!loadFromHash()){
   const last = readStore().last;
   if (last) applySnapshot(last);
   else render();
 }
 setTimeout(() => map.invalidateSize(), 120);
-window.addEventListener('resize', () => map.invalidateSize());
+window.addEventListener('resize', () => { map.invalidateSize(); syncMarkers(); });
 </script>
 </body>
 </html>
