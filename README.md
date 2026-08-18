@@ -24,6 +24,16 @@ Firefox — or host it anywhere static (GitHub Pages, Netlify, an S3 bucket).
 The page needs a live internet connection in any case: tiles, address search and
 routing are all remote calls.
 
+### On a phone
+
+iOS will not open a downloaded `.html` file in Safari — Files previews it in the
+same sandbox, and `file://` URLs are blocked. Host it and open the URL instead.
+This repo is laid out for GitHub Pages: `index.html` sits at the root and
+`.nojekyll` is present, so enabling Pages on the default branch serves it as-is.
+
+Once it's on a URL, Safari's **Share → Add to Home Screen** installs it as a
+full-screen app.
+
 ## What it does
 
 **Home location** — search for an address, use your device's location, or click
