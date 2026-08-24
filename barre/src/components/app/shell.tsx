@@ -5,12 +5,13 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   CalendarDays, LayoutGrid, Users, GraduationCap, Route, ClipboardCheck,
-  Home, LogOut, Baby, Settings2, Rocket,
+  Home, Baby, Settings2, Rocket,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useSession, type Role } from '@/lib/auth/session';
 import { BarreMark } from './database-gate';
 import { EmptyState, Button } from '@/components/ui';
+import { PersonSwitcher } from './person-switcher';
 
 type NavItem = { href: string; label: string; icon: React.ElementType };
 
@@ -105,13 +106,12 @@ export function Shell({
             <RailLink item={{ href: '/onboarding', label: 'Setup', icon: Rocket }} pathname={pathname} />
           )}
         </nav>
-        <div className="border-t border-line p-3">
-          <p className="truncate text-sm font-medium">{session.name}</p>
-          <p className="text-[12.5px] capitalize text-ink-3">{session.role}</p>
-          <button onClick={() => { signOut(); router.replace('/'); }}
-                  className="mt-2 inline-flex items-center gap-1.5 text-[13px] text-ink-2 hover:text-ink">
-            <LogOut className="size-3.5" aria-hidden /> Switch person
-          </button>
+        <div className="flex items-center gap-2.5 border-t border-line p-3">
+          <PersonSwitcher />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium">{session.name}</p>
+            <p className="text-[12.5px] capitalize text-ink-3">{session.role}</p>
+          </div>
         </div>
       </aside>
 
@@ -127,6 +127,7 @@ export function Shell({
               {subtitle && <div className="truncate text-[13px] text-ink-2">{subtitle}</div>}
             </div>
             {actions}
+            <PersonSwitcher className="lg:hidden" />
           </div>
         </header>
 

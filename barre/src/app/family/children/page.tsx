@@ -119,7 +119,7 @@ function AbsenceDialog({ child, onClose }: { child: Child; onClose: () => void }
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 sm:items-center" onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-labelledby="absence-title"
            onClick={e => e.stopPropagation()}
-           className="w-full max-w-md rounded-t-[var(--radius-xl)] border border-line bg-surface p-4 pb-safe shadow-lg sm:rounded-[var(--radius-xl)]">
+           className="max-h-[88dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-[var(--radius-xl)] border border-line bg-surface p-4 pb-safe shadow-lg sm:rounded-[var(--radius-xl)]">
         {done ? (
           <div className="py-4 text-center">
             <span className="mx-auto mb-3 grid size-11 place-items-center rounded-full bg-positive-soft text-positive" aria-hidden>
