@@ -1,7 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { CalendarX2, MapPin, User } from 'lucide-react';
+import Link from 'next/link';
+import { CalendarX2, ChevronRight, MapPin, User } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
 import { Badge, Card, EmptyState, Skeleton, ErrorState, type Tone } from '@/components/ui';
@@ -44,22 +45,26 @@ export default function FamilySchedule() {
               {list.map(s => {
                 const cancelled = s.status === 'cancelled';
                 return (
-                  <li key={`${s.id}-${s.student_id}`} className={cn('flex items-start gap-3 px-4 py-3', cancelled && 'opacity-60')}>
-                    <span className={cn('tnum w-14 shrink-0 font-semibold', cancelled && 'line-through')}>
-                      {time(s.starts_at)}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex flex-wrap items-center gap-2">
-                        <span className={cn('font-medium', cancelled && 'line-through')}>{s.name}</span>
-                        {s.style && <Badge tone={TONES[s.colour ?? ''] ?? 'neutral'}>{s.style}</Badge>}
-                        {cancelled && <Badge tone="critical">Cancelled</Badge>}
+                  <li key={`${s.id}-${s.student_id}`} className={cn(cancelled && 'opacity-60')}>
+                    <Link href={`/class/?id=${s.class_id}`} aria-label={`${s.name}, open class`}
+                          className="flex items-start gap-3 px-4 py-3 hover:bg-surface-2">
+                      <span className={cn('tnum w-14 shrink-0 font-semibold', cancelled && 'line-through')}>
+                        {time(s.starts_at)}
                       </span>
-                      <span className="mt-0.5 flex flex-wrap items-center gap-x-3 text-[12.5px] text-ink-2">
-                        <span>{s.child}</span>
-                        {s.teacher && <span className="inline-flex items-center gap-1"><User className="size-3.5" aria-hidden />{s.teacher}</span>}
-                        {s.room && <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" aria-hidden />{s.room}</span>}
+                      <span className="min-w-0 flex-1">
+                        <span className="flex flex-wrap items-center gap-2">
+                          <span className={cn('font-medium', cancelled && 'line-through')}>{s.name}</span>
+                          {s.style && <Badge tone={TONES[s.colour ?? ''] ?? 'neutral'}>{s.style}</Badge>}
+                          {cancelled && <Badge tone="critical">Cancelled</Badge>}
+                        </span>
+                        <span className="mt-0.5 flex flex-wrap items-center gap-x-3 text-[12.5px] text-ink-2">
+                          <span>{s.child}</span>
+                          {s.teacher && <span className="inline-flex items-center gap-1"><User className="size-3.5" aria-hidden />{s.teacher}</span>}
+                          {s.room && <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" aria-hidden />{s.room}</span>}
+                        </span>
                       </span>
-                    </span>
+                      <ChevronRight className="size-4 shrink-0 self-center text-ink-3" aria-hidden />
+                    </Link>
                   </li>
                 );
               })}

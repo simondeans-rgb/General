@@ -22,7 +22,7 @@ export const NS = {
   enrolment: 18, trial: 19, waitlist: 20, enquiry: 21,
   invoice: 22, item: 23, payment: 24, comm: 25, notification: 26,
   resource: 27, assignment: 28, feedback: 29, assessment: 30,
-  event: 31, participant: 32, request: 33,
+  event: 31, participant: 32, request: 33, file: 34,
 } as const;
 
 export const STUDIO_ID = uid(NS.studio, 1);
@@ -660,26 +660,29 @@ select s.studio_id, s.id, ${q(STYLE.ballet)}, ${q(skill)}, ${q(level)}::assessme
   });
 
   // ── Resources ────────────────────────────────────────────────────────────
-  const resources: [number, string, string, string, string, string | null, number | null][] = [
-    [1,  'video', 'Grade 3 barre — full exercise', 'Technique', 'https://vimeo.com/76979871', null, 742],
-    [2,  'video', 'Port de bras, slowly', 'Technique', 'https://vimeo.com/76979871', null, 305],
-    [3,  'video', 'Summer show routine — Street Seniors', 'Choreography', 'https://vimeo.com/76979871', null, 218],
-    [4,  'video', 'Tap: shuffle drills at three speeds', 'Technique', 'https://vimeo.com/76979871', null, 411],
-    [5,  'audio', 'Grade 3 exam music — full', 'Exam music', 'https://example.com/tracks/grade3-full.mp3', null, 1680],
-    [6,  'audio', 'Grade 3 exam music — barre only', 'Exam music', 'https://example.com/tracks/grade3-barre.mp3', null, 620],
-    [7,  'audio', 'Street Seniors show track (clean edit)', 'Show music', 'https://example.com/tracks/street-show.mp3', null, 194],
-    [8,  'audio', 'Warm-up mix', 'Class music', 'https://example.com/tracks/warmup.mp3', null, 540],
-    [9,  'document', 'Uniform and shoes — what to buy', 'Uniform', 'https://example.com/docs/uniform.pdf', null, null],
-    [10, 'document', 'Exam day: what to expect', 'Exams', 'https://example.com/docs/exam-day.pdf', null, null],
-    [11, 'document', 'Competition packing list', 'Competitions', 'https://example.com/docs/packing.pdf', null, null],
-    [12, 'link', 'How to do a secure bun', 'Uniform', 'https://example.com/guides/bun', null, null],
-    [13, 'document', 'Stretching safely at home', 'Wellbeing', 'https://example.com/docs/stretching.pdf', null, null],
+  // The last column is the staff member who put it there: a teacher owns the
+  // material for their own classes, and the office owns the studio-wide pages.
+  const resources: [number, string, string, string, string, string | null, number | null, number][] = [
+    [1,  'video', 'Grade 3 barre — full exercise', 'Technique', 'https://vimeo.com/76979871', null, 742, 1],
+    [2,  'video', 'Port de bras, slowly', 'Technique', 'https://vimeo.com/76979871', null, 305, 1],
+    [3,  'video', 'Summer show routine — Street Seniors', 'Choreography', 'https://vimeo.com/76979871', null, 218, 4],
+    [4,  'video', 'Tap: shuffle drills at three speeds', 'Technique', 'https://vimeo.com/76979871', null, 411, 2],
+    [5,  'audio', 'Grade 3 exam music — full', 'Exam music', 'https://example.com/tracks/grade3-full.mp3', null, 1680, 1],
+    [6,  'audio', 'Grade 3 exam music — barre only', 'Exam music', 'https://example.com/tracks/grade3-barre.mp3', null, 620, 1],
+    [7,  'audio', 'Street Seniors show track (clean edit)', 'Show music', 'https://example.com/tracks/street-show.mp3', null, 194, 4],
+    [8,  'audio', 'Warm-up mix', 'Class music', 'https://example.com/tracks/warmup.mp3', null, 540, 5],
+    [9,  'document', 'Uniform and shoes — what to buy', 'Uniform', 'https://example.com/docs/uniform.pdf', null, null, 5],
+    [10, 'document', 'Exam day: what to expect', 'Exams', 'https://example.com/docs/exam-day.pdf', null, null, 5],
+    [11, 'document', 'Competition packing list', 'Competitions', 'https://example.com/docs/packing.pdf', null, null, 5],
+    [12, 'link', 'How to do a secure bun', 'Uniform', 'https://example.com/guides/bun', null, null, 5],
+    [13, 'document', 'Stretching safely at home', 'Wellbeing', 'https://example.com/docs/stretching.pdf', null, null, 5],
   ];
-  push(`insert into resource (id,studio_id,kind,title,category,url,poster_url,duration_sec,description) values
+  push(`insert into resource (id,studio_id,kind,title,category,url,poster_url,duration_sec,description,created_by) values
     ${resources.map(r => row([uid(NS.resource, r[0]), STUDIO_ID, r[1], r[2], r[3], r[4], r[5], r[6],
       r[1] === 'audio' ? 'Play or download for practice at home.'
       : r[1] === 'video' ? 'Watch as many times as you like — the counts are called out.'
-      : 'Everything you need in one page.'])).join(',\n    ')};`);
+      : 'Everything you need in one page.',
+      uid(NS.user, r[7])])).join(',\n    ')};`);
 
   // Scope: some studio-wide, some per class, one to a single student.
   const assigns: [number, number, string, string | null][] = [
@@ -692,6 +695,44 @@ select s.studio_id, s.id, ${q(STYLE.ballet)}, ${q(skill)}, ${q(level)}::assessme
   ];
   push(`insert into resource_assignment (id,studio_id,resource_id,scope,class_id) values
     ${assigns.map(a => row([uid(NS.assignment, a[0]), STUDIO_ID, uid(NS.resource, a[1]), a[2], a[3]])).join(',\n    ')};`);
+
+  // ── Two of them are real uploaded files ──────────────────────────────────
+  // Everything above is a link, which would make the demo's "Play" button a
+  // promise rather than a feature. These two carry actual bytes through the
+  // same path a teacher's upload takes: resource_file holds them, and
+  // resource.storage_path is the handle the storage adapter resolves.
+  const files: [number, number, string, string, string, string, number, number | null, string][] = [
+    [14, 5, 'audio', 'Junior Tap — count-in (8 bars)', 'Class music',
+     'junior-tap-count-in.wav', 2, 12,
+     'Clap along at home. Eight bars in, then the shuffle starts on one.'],
+    [15, 5, 'document', 'Junior Tap — this term at a glance', 'Term plan',
+     'junior-tap-term-plan.pdf', 2, null,
+     'One page: what we cover each week, and what to practise.'],
+  ];
+  push(`insert into resource (id,studio_id,kind,title,category,storage_path,duration_sec,description,created_by) values
+    ${files.map(f => row([uid(NS.resource, f[0]), STUDIO_ID, f[2], f[3], f[4],
+      `local:${uid(NS.file, f[0])}`, f[7], f[8], uid(NS.user, f[6])])).join(',\n    ')};`);
+  push(`insert into resource_file (id,studio_id,resource_id,file_name,mime_type,size_bytes,bytes,uploaded_by) values
+    ${files.map(f => {
+      const bytes = f[2] === 'audio' ? countInWav() : termPlanPdf();
+      return `(${q(uid(NS.file, f[0]))},${q(STUDIO_ID)},${q(uid(NS.resource, f[0]))},${q(f[5])},`
+           + `${q(f[2] === 'audio' ? 'audio/wav' : 'application/pdf')},${bytes.length},`
+           + `'\\x${hex(bytes)}'::bytea,${q(uid(NS.user, f[6]))})`;
+    }).join(',\n    ')};`);
+  // Marcus's two tap classes get both.
+  push(`insert into resource_assignment (id,studio_id,resource_id,scope,class_id) values
+    ${row([uid(NS.assignment, 14), STUDIO_ID, uid(NS.resource, 14), 'class', classIds[4]!])},
+    ${row([uid(NS.assignment, 15), STUDIO_ID, uid(NS.resource, 15), 'class', classIds[4]!])},
+    ${row([uid(NS.assignment, 16), STUDIO_ID, uid(NS.resource, 14), 'class', classIds[5]!])};`);
+  // And so does whatever class a student with their own login is actually in,
+  // so signing in as one of them always shows a file that genuinely plays.
+  push(`insert into resource_assignment (studio_id,resource_id,scope,class_id)
+select distinct s.studio_id, ${q(uid(NS.resource, 14))}::uuid, 'class'::resource_scope, e.class_id
+  from student s
+  join enrolment e on e.student_id = s.id and e.status = 'active' and e.deleted_at is null
+ where s.login_enabled
+   and not exists (select 1 from resource_assignment a
+                    where a.resource_id = ${q(uid(NS.resource, 14))} and a.class_id = e.class_id);`);
 
   // ── Feedback ─────────────────────────────────────────────────────────────
   // Written against real enrolments so every note belongs to a child who is
@@ -843,4 +884,71 @@ select ${q(uid(NS.request, n))}, s.studio_id, s.family_id, s.id, ${q(kind)}::req
   });
 
   return out.join('\n');
+}
+
+/* ---------------------------------------------------------------------------
+   Small binary files, generated rather than checked in.
+   Real bytes matter here: the demo's audio player and download link have to
+   work, and a placeholder would be exactly the dead UI this build avoids.
+   --------------------------------------------------------------------------- */
+const hex = (b: Uint8Array) => Array.from(b, x => x.toString(16).padStart(2, '0')).join('');
+
+/** 8 kHz, 8-bit mono WAV: eight wood-block-ish clicks, one per beat. */
+function countInWav(): Uint8Array {
+  const rate = 8000, beats = 8, beat = Math.round(rate * 0.5), n = beats * beat;
+  const pcm = new Uint8Array(n);
+  for (let i = 0; i < n; i++) {
+    const into = i % beat;
+    // A short decaying 1 kHz burst on the beat, silence in between.
+    const env = into < rate * 0.05 ? 1 - into / (rate * 0.05) : 0;
+    pcm[i] = 128 + Math.round(60 * env * Math.sin((2 * Math.PI * 1000 * i) / rate));
+  }
+  const out = new Uint8Array(44 + n);
+  const view = new DataView(out.buffer);
+  const ascii = (at: number, t: string) => { for (let i = 0; i < t.length; i++) out[at + i] = t.charCodeAt(i); };
+  ascii(0, 'RIFF'); view.setUint32(4, 36 + n, true); ascii(8, 'WAVEfmt ');
+  view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+  view.setUint32(24, rate, true); view.setUint32(28, rate, true);
+  view.setUint16(32, 1, true); view.setUint16(34, 8, true);
+  ascii(36, 'data'); view.setUint32(40, n, true);
+  out.set(pcm, 44);
+  return out;
+}
+
+/** A one-page PDF, written out by hand — no library, no binary blob in git. */
+function termPlanPdf(): Uint8Array {
+  const lines = [
+    ['Junior Tap - this term', 20, 760],
+    ['Northstar Dance Academy', 11, 738],
+    ['Weeks 1-3   Shuffle, ball change, and keeping the knees soft.', 11, 700],
+    ['Weeks 4-6   Time steps at two speeds. Counts called out loud.', 11, 682],
+    ['Weeks 7-9   The routine, section by section.', 11, 664],
+    ['Weeks 10-12 Whole routine, then the end-of-term showing.', 11, 646],
+    ['At home     Five minutes of shuffles. Little and often beats an hour', 11, 610],
+    ['            the night before.', 11, 594],
+  ] as const;
+  const content =
+    'BT\n' + lines.map(([t, size, y]) =>
+      `/F1 ${size} Tf 1 0 0 1 62 ${y} Tm (${t.replace(/([()\\])/g, '\\$1')}) Tj`).join('\n') + '\nET\n';
+
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] '
+      + '/Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>',
+    `<< /Length ${content.length} >>\nstream\n${content}endstream`,
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+  ];
+
+  let pdf = '%PDF-1.4\n';
+  const offsets: number[] = [];
+  objects.forEach((body, i) => { offsets.push(pdf.length); pdf += `${i + 1} 0 obj\n${body}\nendobj\n`; });
+  const xref = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`
+       + offsets.map(o => `${String(o).padStart(10, '0')} 00000 n \n`).join('')
+       + `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+
+  const out = new Uint8Array(pdf.length);
+  for (let i = 0; i < pdf.length; i++) out[i] = pdf.charCodeAt(i) & 0xff;
+  return out;
 }

@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import {
-  CalendarDays, PlayCircle, Trophy, MessageSquare, ChevronRight, Sparkles, MapPin, User,
+  CalendarDays, PlayCircle, Trophy, MessageSquare, ChevronRight, Sparkles, MapPin, User, FolderOpen,
 } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
@@ -58,6 +58,14 @@ export default function LearnHome() {
               {(next.room || next.location) && <span className="inline-flex items-center gap-1.5">
                 <MapPin className="size-3.5" aria-hidden />{[next.location, next.room].filter(Boolean).join(' · ')}</span>}
             </div>
+            {next.class_id && (
+              <Link href={`/class/?id=${next.class_id}`}
+                    className="flex items-center gap-2 border-t border-line px-4 py-3 text-sm font-medium hover:bg-surface-2">
+                <FolderOpen className="size-4 text-ink-3" aria-hidden />
+                Videos, music and notes for this class
+                <ChevronRight className="ml-auto size-4 text-ink-3" aria-hidden />
+              </Link>
+            )}
           </Card>
         )}
         {!next && !timetable.isLoading && (

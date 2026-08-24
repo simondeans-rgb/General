@@ -315,3 +315,167 @@ describe('the student read policies stay narrow', () => {
     });
   });
 });
+
+/* ==========================================================================
+   Class material: a teacher shares files with their class, and the class —
+   and only that class — can open them.
+   ========================================================================== */
+describe('teachers own the material for the classes they take', () => {
+  it('can create a resource and pin it to a class they teach', async () => {
+    await asUser(USERS.teacherTap, async q => {
+      const [r] = await q(
+        `insert into resource (studio_id, kind, title, category, url, created_by)
+         values ($1, 'video', 'Shuffle drill — slow', 'Technique',
+                 'https://example.com/v', auth.uid())
+         returning id`, [STUDIO_ID]);
+      expect(r.id).toBeTruthy();
+
+      const [a] = await q(
+        `insert into resource_assignment (studio_id, resource_id, scope, class_id)
+         values ($1, $2, 'class', $3) returning id`, [STUDIO_ID, r.id, CLASS.juniorTap]);
+      expect(a.id).toBeTruthy();
+    });
+  });
+
+  it('cannot pin material to a class they do not teach', async () => {
+    await asUser(USERS.teacherTap, async q => {
+      const [r] = await q(
+        `insert into resource (studio_id, kind, title, url, created_by)
+         values ($1, 'link', 'Nothing to do with tap', 'https://example.com/x', auth.uid())
+         returning id`, [STUDIO_ID]);
+      expect(await expectRejected(() => q(
+        `insert into resource_assignment (studio_id, resource_id, scope, class_id)
+         values ($1, $2, 'class', $3) returning id`, [STUDIO_ID, r.id, CLASS.grade3Ballet])))
+        .toMatch(/row-level security/i);
+    });
+  });
+
+  it('cannot claim someone else’s resource by inserting it under their name', async () => {
+    await asUser(USERS.teacherTap, async q => {
+      expect(await expectRejected(() => q(
+        `insert into resource (studio_id, kind, title, url, created_by)
+         values ($1, 'link', 'Filed under Priya', 'https://example.com/y', $2) returning id`,
+        [STUDIO_ID, USERS.teacherModern])))
+        .toMatch(/row-level security/i);
+    });
+  });
+
+  it('cannot edit or delete another teacher’s resource', async () => {
+    await asUser(USERS.teacherTap, async (q, svc) => {
+      const [mine] = await svc(
+        `insert into resource (studio_id, kind, title, url, created_by)
+         values ($1, 'link', 'Priya''s warm-up', 'https://example.com/z', $2) returning id`,
+        [STUDIO_ID, USERS.teacherModern]);
+
+      expect(await q(`update resource set title = 'mine now' where id = $1 returning id`, [mine.id]))
+        .toHaveLength(0);
+      expect(await expectRejected(() => q(`select app.retire_resource($1)`, [mine.id])))
+        .toMatch(/only the office, or whoever added it/i);
+    });
+  });
+
+  it('a file is only ever as visible as the resource it belongs to', async () => {
+    // Pinned to Grade 3 Ballet. Each reader arranges the fixture inside its own
+    // transaction, because asUser rolls back when it returns.
+    const arrange = async (svc: any) => {
+      const [r] = await svc(
+        `insert into resource (studio_id, kind, title, storage_path, created_by)
+         values ($1, 'audio', 'Grade 3 accompaniment', 'local:pending', $2) returning id`,
+        [STUDIO_ID, USERS.owner]);
+      await svc(`insert into resource_assignment (studio_id, resource_id, scope, class_id)
+                 values ($1, $2, 'class', $3)`, [STUDIO_ID, r.id, CLASS.grade3Ballet]);
+      const [f] = await svc(
+        `insert into resource_file (studio_id, resource_id, file_name, mime_type, size_bytes, bytes, uploaded_by)
+         values ($1, $2, 'g3.wav', 'audio/wav', 4, '\\x00010203'::bytea, $3) returning id`,
+        [STUDIO_ID, r.id, USERS.owner]);
+      return f.id;
+    };
+
+    // The bytes follow the resource: readable exactly when the class is theirs.
+    await asUser(STUDENT_A, async (q, svc) => {
+      const fileId = await arrange(svc);
+      const inThatClass = await q(
+        `select 1 from enrolment e where e.class_id = $1 and e.status = 'active'`, [CLASS.grade3Ballet]);
+      const rows = await q(`select id from resource_file where id = $1`, [fileId]);
+      expect(rows.length).toBe(inThatClass.length ? 1 : 0);
+    });
+
+    await asUser(USERS.owner, async (q, svc) => {
+      const fileId = await arrange(svc);
+      expect(await q(`select id from resource_file where id = $1`, [fileId])).toHaveLength(1);
+    });
+  });
+
+  it('a student sees a file pinned to their own class and not one pinned elsewhere', async () => {
+    await asUser(STUDENT_A, async (q, svc) => {
+      const [mine] = await q(`select class_id from enrolment limit 1`);
+      const [other] = await svc(
+        `select c.id from class c
+          where c.deleted_at is null
+            and c.id not in (select class_id from enrolment
+                              where student_id = app.student_self_id() and deleted_at is null)
+          limit 1`);
+
+      const make = async (classId: string, title: string) => {
+        const [r] = await svc(
+          `insert into resource (studio_id, kind, title, storage_path, created_by)
+           values ($1, 'document', $2, 'local:x', $3) returning id`, [STUDIO_ID, title, USERS.owner]);
+        await svc(`insert into resource_assignment (studio_id, resource_id, scope, class_id)
+                   values ($1, $2, 'class', $3)`, [STUDIO_ID, r.id, classId]);
+        const [f] = await svc(
+          `insert into resource_file (studio_id, resource_id, file_name, mime_type, size_bytes, bytes, uploaded_by)
+           values ($1, $2, 'a.pdf', 'application/pdf', 2, '\\x0102'::bytea, $3) returning id`,
+          [STUDIO_ID, r.id, USERS.owner]);
+        return f.id;
+      };
+
+      const visible = await make(mine.class_id, 'For my class');
+      const hidden = await make(other.id, 'For another class');
+
+      const seen = await q(`select id from resource_file where id = any($1)`, [[visible, hidden]]);
+      expect(seen.map((x: any) => x.id)).toEqual([visible]);
+    });
+  });
+
+  it('a family cannot read a file the studio marked staff-only', async () => {
+    await asUser(USERS.guardianA, async (q, svc) => {
+      const [child] = await q(`select id from student limit 1`);
+      const [enr] = await svc(`select class_id from enrolment
+                                where student_id = $1 and status = 'active' limit 1`, [child.id]);
+      const [r] = await svc(
+        `insert into resource (studio_id, kind, title, storage_path, created_by,
+                               visible_to_students, visible_to_guardians)
+         values ($1, 'document', 'Staff notes', 'local:x', $2, false, false) returning id`,
+        [STUDIO_ID, USERS.owner]);
+      await svc(`insert into resource_assignment (studio_id, resource_id, scope, class_id)
+                 values ($1, $2, 'class', $3)`, [STUDIO_ID, r.id, enr.class_id]);
+      const [f] = await svc(
+        `insert into resource_file (studio_id, resource_id, file_name, mime_type, size_bytes, bytes, uploaded_by)
+         values ($1, $2, 'notes.pdf', 'application/pdf', 2, '\\x0102'::bytea, $3) returning id`,
+        [STUDIO_ID, r.id, USERS.owner]);
+
+      expect(await q(`select id from resource where id = $1`, [r.id])).toHaveLength(0);
+      expect(await q(`select id from resource_file where id = $1`, [f.id])).toHaveLength(0);
+    });
+  });
+
+  it('the demo ships material that is a real file, not a dead link', async () => {
+    await asUser(USERS.teacherTap, async q => {
+      const rows = await q(
+        `select r.title, r.storage_path, f.size_bytes, f.mime_type
+           from resource r join resource_file f on f.resource_id = r.id
+          where r.deleted_at is null order by r.title`);
+      expect(rows.length).toBeGreaterThanOrEqual(2);
+      for (const r of rows) {
+        expect(r.storage_path).toBe(`local:${r.storage_path.slice(6)}`);
+        expect(r.size_bytes).toBeGreaterThan(0);
+      }
+      // Both are pinned to a class, and the tap teacher takes that class.
+      const pinned = await q(
+        `select a.class_id from resource_assignment a
+           join resource_file f on f.resource_id = a.resource_id
+          where a.class_id in (select app.teacher_class_ids())`);
+      expect(pinned.length).toBeGreaterThan(0);
+    });
+  });
+});

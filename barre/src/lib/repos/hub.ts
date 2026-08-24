@@ -17,17 +17,21 @@ export type Resource = {
   id: string; kind: 'video' | 'audio' | 'document' | 'link';
   title: string; description: string | null; category: string | null;
   url: string | null; poster_url: string | null; duration_sec: number | null;
+  storage_path: string | null; file_name: string | null;
+  mime_type: string | null; size_bytes: number | null;
   scope_label: string | null;
 };
 
 export const RESOURCES = `
 select r.id, r.kind, r.title, r.description, r.category, r.url, r.poster_url, r.duration_sec,
+       r.storage_path, f.file_name, f.mime_type, f.size_bytes,
        (select string_agg(distinct coalesce(c.name, lv.name, 'Everyone'), ', ')
           from resource_assignment a
           left join class c on c.id = a.class_id
           left join level lv on lv.id = a.level_id
          where a.resource_id = r.id and a.deleted_at is null) as scope_label
   from resource r
+  left join resource_file f on f.resource_id = r.id and f.deleted_at is null
  where r.deleted_at is null
  order by r.kind, r.category nulls last, r.title`;
 
@@ -112,7 +116,7 @@ returning id`;
 
 /** The student's own timetable, including events they are confirmed for. */
 export const MY_TIMETABLE = `
-select cs.id, c.name, cs.starts_at, cs.ends_at, cs.status,
+select cs.id, c.id as class_id, c.name, cs.starts_at, cs.ends_at, cs.status,
        ds.name as style, ds.colour, coalesce(sr.name, r.name) as room, l.name as location,
        coalesce(cover.display_name, st.display_name) as teacher,
        'class' as entry_kind
@@ -127,7 +131,7 @@ select cs.id, c.name, cs.starts_at, cs.ends_at, cs.status,
   left join location l on l.id = c.location_id
  where cs.deleted_at is null and cs.starts_at >= $1::timestamptz and cs.starts_at < $2::timestamptz
 union all
-select ev.id, ev.title, ev.starts_at, ev.ends_at, 'scheduled',
+select ev.id, null::uuid, ev.title, ev.starts_at, ev.ends_at, 'scheduled',
        ev.kind::text, 'indigo', null, ev.venue, sm.display_name, 'event'
   from studio_event ev
   join event_participant p on p.event_id = ev.id and p.status = 'confirmed' and p.deleted_at is null
@@ -176,3 +180,88 @@ update studio_request
    set status = 'answered', answer = $2, answered_by = auth.uid(), answered_at = now()
  where id = $1
 returning id`;
+
+/* ── One class, and the material attached to it ─────────────────────────── */
+
+export type ClassDetail = {
+  id: string; name: string; description: string | null;
+  style: string | null; colour: string | null; level: string | null;
+  teacher: string | null; assistant: string | null;
+  room: string | null; location: string | null;
+  day_of_week: number; start_time: string; duration_min: number;
+  capacity: number; enrolled: number; term_name: string | null;
+  i_teach: boolean;
+};
+
+export const CLASS_DETAIL = `
+select c.id, c.name, c.description,
+       ds.name as style, ds.colour, lv.name as level,
+       st.display_name as teacher, asst.display_name as assistant,
+       r.name as room, l.name as location,
+       c.day_of_week, c.start_time, c.duration_min, c.capacity,
+       app.class_enrolled_count(c.id) as enrolled,
+       t.name as term_name,
+       (c.id in (select app.teacher_class_ids())) as i_teach
+  from class c
+  left join dance_style ds on ds.id = c.dance_style_id
+  left join level lv on lv.id = c.level_id
+  left join staff_member st on st.id = c.teacher_id
+  left join staff_member asst on asst.id = c.assistant_id
+  left join room r on r.id = c.room_id
+  left join location l on l.id = c.location_id
+  left join term t on t.id = c.term_id
+ where c.id = $1 and c.deleted_at is null`;
+
+export type ClassResource = Resource & {
+  added_by: string | null; created_at: Stamp; mine: boolean;
+};
+
+/**
+ * Material for one class: everything pinned to this class, plus anything the
+ * studio shares with everyone. RLS has already decided which of those rows
+ * this person may see, so there is no visibility filter here.
+ */
+export const CLASS_RESOURCES = `
+select r.id, r.kind, r.title, r.description, r.category, r.url, r.poster_url,
+       r.duration_sec, r.storage_path, r.created_at,
+       f.file_name, f.mime_type, f.size_bytes,
+       u.full_name as added_by,
+       (r.created_by = auth.uid()) as mine,
+       case when a.class_id is null then 'Everyone' else null end as scope_label
+  from resource r
+  left join resource_assignment a
+         on a.resource_id = r.id and a.deleted_at is null and a.class_id = $1
+  left join resource_file f on f.resource_id = r.id and f.deleted_at is null
+  left join user_account u on u.id = r.created_by
+ where r.deleted_at is null
+   and (a.id is not null
+        or not exists (select 1 from resource_assignment a2
+                        where a2.resource_id = r.id and a2.deleted_at is null))
+ order by (a.id is null), r.kind, r.created_at desc`;
+
+/** Create the resource row first; the file upload then fills in storage_path. */
+export const CREATE_RESOURCE = `
+insert into resource (studio_id, kind, title, description, category, url,
+                      duration_sec, visible_to_students, visible_to_guardians, created_by)
+select c.studio_id, $2::resource_kind, $3, $4, $5, $6, $7, $8, $9, auth.uid()
+  from class c where c.id = $1
+returning id, studio_id`;
+
+export const ASSIGN_RESOURCE_TO_CLASS = `
+insert into resource_assignment (studio_id, resource_id, scope, class_id)
+select c.studio_id, $2, 'class', c.id from class c where c.id = $1
+returning id`;
+
+/** Clears the assignments and the stored bytes along with it. */
+export const DELETE_RESOURCE = `
+select app.retire_resource($1) as ok`;
+
+/** The classes a teacher can attach material to. */
+export const MY_TEACHING_CLASSES = `
+select c.id, c.name, ds.name as style, ds.colour,
+       (select count(*)::int from resource_assignment a
+         where a.class_id = c.id and a.deleted_at is null) as resources
+  from class c
+  left join dance_style ds on ds.id = c.dance_style_id
+ where c.deleted_at is null and c.id in (select app.teacher_class_ids())
+ order by c.day_of_week, c.start_time`;

@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 import { Suspense } from 'react';
-import { GraduationCap, AlertTriangle, Users, Clock } from 'lucide-react';
+import Link from 'next/link';
+import { GraduationCap, AlertTriangle, Users, Clock, FolderOpen, ChevronRight } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection, KeyValue } from '@/components/app/detail-panel';
 import { useRows } from '@/lib/query';
@@ -122,6 +123,16 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
               ['Sessions left', `${c.sessions_left}`],
               ['Trials', c.trials_enabled ? 'Open for trials' : 'Not taking trials'],
             ]} />
+          </DetailSection>
+
+          <DetailSection title="Material">
+            <Link href={`/class/?id=${c.id}`}
+                  className="flex items-center gap-2.5 rounded-[var(--radius-md)] border border-line px-3 py-2.5
+                             text-sm font-medium hover:bg-surface-2">
+              <FolderOpen className="size-4 text-ink-3" aria-hidden />
+              Videos, music and notes for this class
+              <ChevronRight className="ml-auto size-4 text-ink-3" aria-hidden />
+            </Link>
           </DetailSection>
 
           <DetailSection title={`Register (${roster.data?.length ?? 0})`}>

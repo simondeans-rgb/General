@@ -1,7 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { CalendarX2, MapPin, User } from 'lucide-react';
+import Link from 'next/link';
+import { CalendarX2, ChevronRight, MapPin, User } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
 import { Badge, Card, EmptyState, Skeleton, ErrorState, type Tone } from '@/components/ui';
@@ -45,8 +46,10 @@ export default function StudentTimetable() {
               {list.map((s, i) => {
                 const cancelled = s.status === 'cancelled';
                 const isEvent = s.entry_kind === 'event';
-                return (
-                  <li key={`${s.id}-${i}`} className={cn('flex items-start gap-3 px-4 py-3', cancelled && 'opacity-60')}>
+                // A class row opens the class, where its videos, music and
+                // handouts live. An event has no class behind it.
+                const body = (
+                  <>
                     <span className={cn('tnum w-14 shrink-0 font-semibold', cancelled && 'line-through')}>
                       {time(s.starts_at)}
                     </span>
@@ -65,6 +68,16 @@ export default function StudentTimetable() {
                           <MapPin className="size-3.5" aria-hidden />{[s.location, s.room].filter(Boolean).join(' · ')}</span>}
                       </span>
                     </span>
+                    {s.class_id && <ChevronRight className="size-4 shrink-0 self-center text-ink-3" aria-hidden />}
+                  </>
+                );
+                const row = 'flex items-start gap-3 px-4 py-3';
+                return (
+                  <li key={`${s.id}-${i}`} className={cn(cancelled && 'opacity-60')}>
+                    {s.class_id
+                      ? <Link href={`/class/?id=${s.class_id}`} className={cn(row, 'hover:bg-surface-2')}
+                              aria-label={`${s.name}, open class`}>{body}</Link>
+                      : <div className={row}>{body}</div>}
                   </li>
                 );
               })}
