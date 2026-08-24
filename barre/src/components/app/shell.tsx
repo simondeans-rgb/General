@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   CalendarDays, LayoutGrid, Users, GraduationCap, Route, ClipboardCheck,
-  MessageSquare, CreditCard, Home, LogOut, Baby,
+  Home, LogOut, Baby, Settings2, Rocket,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useSession, type Role } from '@/lib/auth/session';
@@ -24,6 +24,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: '/people', label: 'People', icon: Users },
     { href: '/classes', label: 'Classes', icon: GraduationCap },
     { href: '/enrolment', label: 'Enrolment', icon: Route },
+    { href: '/studio', label: 'Studio', icon: Settings2 },
   ],
   admin: [
     { href: '/today', label: 'Today', icon: LayoutGrid },
@@ -31,6 +32,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: '/people', label: 'People', icon: Users },
     { href: '/classes', label: 'Classes', icon: GraduationCap },
     { href: '/enrolment', label: 'Enrolment', icon: Route },
+    { href: '/studio', label: 'Studio', icon: Settings2 },
   ],
   teacher: [
     { href: '/teach', label: 'Today', icon: ClipboardCheck },
@@ -39,8 +41,6 @@ const NAV: Record<Role, NavItem[]> = {
   guardian: [
     { href: '/family', label: 'Home', icon: Home },
     { href: '/family/schedule', label: 'Schedule', icon: CalendarDays },
-    { href: '/family/messages', label: 'Messages', icon: MessageSquare },
-    { href: '/family/payments', label: 'Payments', icon: CreditCard },
     { href: '/family/children', label: 'Family', icon: Baby },
   ],
 };
@@ -101,6 +101,9 @@ export function Shell({
         </p>
         <nav className="flex-1 px-2" aria-label="Main">
           {nav.map(item => <RailLink key={item.href} item={item} pathname={pathname} />)}
+          {(session.role === 'owner' || session.role === 'admin') && (
+            <RailLink item={{ href: '/onboarding', label: 'Setup', icon: Rocket }} pathname={pathname} />
+          )}
         </nav>
         <div className="border-t border-line p-3">
           <p className="truncate text-sm font-medium">{session.name}</p>
@@ -134,7 +137,7 @@ export function Shell({
       <nav aria-label="Main"
            className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-surface/95
                       pb-safe backdrop-blur lg:hidden">
-        {nav.map(item => <TabLink key={item.href} item={item} pathname={pathname} />)}
+        {nav.slice(0, 5).map(item => <TabLink key={item.href} item={item} pathname={pathname} />)}
       </nav>
     </div>
   );

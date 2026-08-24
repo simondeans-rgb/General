@@ -1,0 +1,53 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,95468,e=>{"use strict";let t=(0,e.i(75254).default)("circle-check",[["circle",{cx:"12",cy:"12",r:"10",key:"1mglay"}],["path",{d:"m9 12 2 2 4-4",key:"dzmm74"}]]);e.s(["CheckCircle2",0,t],95468)},61659,e=>{"use strict";let t=(0,e.i(75254).default)("credit-card",[["rect",{width:"20",height:"14",x:"2",y:"5",rx:"2",key:"ynyp8z"}],["line",{x1:"2",x2:"22",y1:"10",y2:"10",key:"1b3vmo"}]]);e.s(["CreditCard",0,t],61659)},79624,e=>{"use strict";var t=e.i(43476),a=e.i(71645),s=e.i(89853),i=e.i(61659);let n=(0,e.i(75254).default)("megaphone",[["path",{d:"M11 6a13 13 0 0 0 8.4-2.8A1 1 0 0 1 21 4v12a1 1 0 0 1-1.6.8A13 13 0 0 0 11 14H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z",key:"q8bfy3"}],["path",{d:"M6 14a12 12 0 0 0 2.4 7.2 2 2 0 0 0 3.2-2.4A8 8 0 0 1 10 14",key:"1853fq"}],["path",{d:"M8 6v8",key:"15ugcq"}]]);var d=e.i(95468),l=e.i(77326),r=e.i(13927),c=e.i(31502),o=e.i(17658),m=e.i(8199),u=e.i(75379);e.s(["default",0,function(){let{session:e}=(0,c.useSession)(),[h]=a.useMemo(()=>(0,u.dayRange)(0),[]),x=a.useMemo(()=>{let e=new Date(h);return e.setDate(e.getDate()+14),e.toISOString()},[h]),_=(0,r.useRows)(["my-schedule",h],m.MY_SCHEDULE,[h,x]),p=(0,r.useRow)(["my-balance"],m.MY_BALANCE),f=(0,r.useRows)(["my-messages"],m.MY_MESSAGES),g=(_.data??[]).filter(e=>"cancelled"!==e.status),y=g[0],j=g.filter(e=>"Today"===(0,u.relativeDay)(e.starts_at)),N=p.data&&Number(p.data.balance_minor)>0;return(0,t.jsx)(l.Shell,{title:`${(0,u.greeting)()}, ${e?.name.split(" ")[0]??""}`,allow:["guardian"],children:(0,t.jsxs)("div",{className:"mx-auto max-w-lg space-y-4",children:[_.isLoading&&(0,t.jsx)(o.Card,{className:"p-4",children:(0,t.jsx)(o.Skeleton,{className:"h-24"})}),_.error&&(0,t.jsx)(o.ErrorState,{error:_.error,onRetry:()=>_.refetch()}),y&&(0,t.jsxs)(o.Card,{className:"overflow-hidden",children:[(0,t.jsxs)("div",{className:"bg-accent px-4 py-3 text-white",children:[(0,t.jsx)("p",{className:"text-[12px] font-medium uppercase tracking-[0.06em] text-white/75",children:"Today"===(0,u.relativeDay)(y.starts_at)?"Next up today":"Next class"}),(0,t.jsxs)("p",{className:"mt-0.5 text-[19px] font-semibold tracking-tight",children:[y.child," · ",y.name]}),(0,t.jsxs)("p",{className:"mt-0.5 text-white/85",children:[(0,u.relativeDay)(y.starts_at)," at ",(0,u.time)(y.starts_at)]})]}),(0,t.jsxs)("dl",{className:"grid grid-cols-2 gap-x-4 gap-y-2 p-4 text-sm",children:[y.teacher&&(0,t.jsxs)("div",{children:[(0,t.jsx)("dt",{className:"text-ink-3",children:"Teacher"}),(0,t.jsx)("dd",{className:"font-medium",children:y.teacher})]}),y.room&&(0,t.jsxs)("div",{children:[(0,t.jsx)("dt",{className:"text-ink-3",children:"Where"}),(0,t.jsx)("dd",{className:"font-medium",children:[y.location,y.room].filter(Boolean).join(" · ")})]})]})]}),!y&&!_.isLoading&&(0,t.jsx)(o.Card,{children:(0,t.jsx)(o.EmptyState,{icon:(0,t.jsx)(s.CalendarDays,{className:"size-5"}),title:"No classes coming up",body:"When your child is enrolled in a class, it will appear here."})}),j.length>1&&(0,t.jsxs)(o.Card,{children:[(0,t.jsx)(o.CardHeader,{title:"Also today"}),(0,t.jsx)("ul",{className:"divide-y divide-line",children:j.slice(1).map(e=>(0,t.jsxs)("li",{className:"flex items-center gap-3 px-4 py-3",children:[(0,t.jsx)("span",{className:"tnum w-14 shrink-0 font-semibold",children:(0,u.time)(e.starts_at)}),(0,t.jsxs)("span",{className:"min-w-0 flex-1",children:[(0,t.jsx)("span",{className:"block truncate font-medium",children:e.name}),(0,t.jsxs)("span",{className:"block truncate text-[13px] text-ink-2",children:[e.child,e.room?` \xb7 ${e.room}`:""]})]})]},`${e.id}-${e.student_id}`))})]}),(0,t.jsxs)(o.Card,{children:[(0,t.jsx)(o.CardHeader,{title:"Payments"}),(0,t.jsxs)("div",{className:"p-4",children:[p.isLoading&&(0,t.jsx)(o.Skeleton,{className:"h-10"}),p.data&&(N?(0,t.jsxs)("div",{className:"flex items-center gap-3",children:[(0,t.jsx)("span",{className:"grid size-9 shrink-0 place-items-center rounded-full bg-caution-soft text-caution","aria-hidden":!0,children:(0,t.jsx)(i.CreditCard,{className:"size-4"})}),(0,t.jsxs)("div",{className:"min-w-0 flex-1",children:[(0,t.jsxs)("p",{className:"font-medium",children:[(0,u.money)(p.data.balance_minor)," due"]}),(0,t.jsx)("p",{className:"text-[13px] text-ink-2",children:p.data.failed>0?"A card payment did not go through.":`${p.data.unpaid} invoice${1===p.data.unpaid?"":"s"} outstanding.`})]}),(0,t.jsx)(o.Badge,{tone:"neutral",children:"Card payments coming soon"})]}):(0,t.jsxs)("p",{className:"flex items-center gap-2 text-sm text-positive",children:[(0,t.jsx)(d.CheckCircle2,{className:"size-4","aria-hidden":!0})," Everything is paid. Nothing due."]}))]})]}),(0,t.jsxs)(o.Card,{children:[(0,t.jsx)(o.CardHeader,{title:"From the studio"}),f.isLoading&&(0,t.jsx)("div",{className:"space-y-2 p-4",children:[0,1].map(e=>(0,t.jsx)(o.Skeleton,{className:"h-12"},e))}),f.data?.length===0&&(0,t.jsx)(o.EmptyState,{title:"No messages yet"}),(0,t.jsx)("ul",{className:"divide-y divide-line",children:f.data?.map(e=>(0,t.jsx)("li",{className:"px-4 py-3",children:(0,t.jsxs)("div",{className:"flex items-start gap-2",children:[(0,t.jsx)("span",{className:"mt-0.5 shrink-0 text-ink-3","aria-hidden":!0,children:(0,t.jsx)(n,{className:"size-3.5"})}),(0,t.jsxs)("div",{className:"min-w-0 flex-1",children:[(0,t.jsx)("p",{className:"font-medium",children:e.subject}),(0,t.jsx)("p",{className:"mt-0.5 text-[13px] leading-relaxed text-ink-2",children:e.body}),(0,t.jsxs)("p",{className:"mt-1 text-[12px] text-ink-3",children:[e.class_name?`${e.class_name} \xb7 `:"",(0,u.relativeDay)(e.sent_at)]})]})]})},e.id))})]})]})})}],79624)},75379,e=>{"use strict";let t="Europe/London",a=e=>e instanceof Date?e:new Date(e),s=e=>new Intl.DateTimeFormat("en-GB",{weekday:"long",timeZone:t}).format(a(e)),i=e=>e?new Intl.DateTimeFormat("en-GB",{day:"numeric",month:"short",timeZone:t}).format(a(e)):"—";e.s(["ageFrom",0,function(e){if(!e)return null;let t=a(e),s=new Date,i=s.getFullYear()-t.getFullYear(),n=s.getMonth()-t.getMonth();return(n<0||0===n&&s.getDate()<t.getDate())&&(i-=1),i},"dateLong",0,e=>new Intl.DateTimeFormat("en-GB",{weekday:"long",day:"numeric",month:"long",timeZone:t}).format(a(e)),"dateShort",0,i,"dayName",0,s,"dayRange",0,function(e=0){let t=new Date,a=new Date(t.getFullYear(),t.getMonth(),t.getDate()+e),s=new Date(a);return s.setDate(s.getDate()+1),[a.toISOString(),s.toISOString()]},"greeting",0,()=>{let e=new Date().getHours();return e<12?"Good morning":e<18?"Good afternoon":"Good evening"},"initials",0,(...e)=>e.filter(Boolean).map(e=>e.trim()[0]?.toUpperCase()??"").join("").slice(0,2),"isoDate",0,e=>{let s=a(e),i=new Intl.DateTimeFormat("en-CA",{year:"numeric",month:"2-digit",day:"2-digit",timeZone:t}).formatToParts(s),n=e=>i.find(t=>t.type===e)?.value??"";return`${n("year")}-${n("month")}-${n("day")}`},"money",0,e=>new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"}).format(Number(e??0)/100),"relativeDay",0,function(e){let t=a(e),n=new Date,d=Math.round((Date.UTC(t.getFullYear(),t.getMonth(),t.getDate())-Date.UTC(n.getFullYear(),n.getMonth(),n.getDate()))/864e5);return 0===d?"Today":1===d?"Tomorrow":-1===d?"Yesterday":d>1&&d<7?s(t):i(t)},"time",0,e=>new Intl.DateTimeFormat("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:t}).format(a(e)),"weekRange",0,function(e){let t=new Date(e),a=(t.getDay()+6)%7;t.setDate(t.getDate()-a),t.setHours(0,0,0,0);let s=new Date(t);return s.setDate(s.getDate()+7),[t.toISOString(),s.toISOString()]}])},8199,e=>{"use strict";let t=`
+select cs.id, cs.class_id, c.name, cs.starts_at, cs.ends_at, cs.status,
+       ds.name as style, ds.colour,
+       coalesce(sr.name, r.name) as room, l.name as location,
+       coalesce(cover.display_name, st.display_name) as teacher,
+       s.first_name as child, s.id as student_id
+  from class_session cs
+  join class c on c.id = cs.class_id
+  join enrolment e on e.class_id = c.id and e.status = 'active' and e.deleted_at is null
+  join student s on s.id = e.student_id
+  left join dance_style ds on ds.id = c.dance_style_id
+  left join staff_member st on st.id = c.teacher_id
+  left join staff_member cover on cover.id = cs.teacher_id
+  left join room r on r.id = c.room_id
+  left join room sr on sr.id = cs.room_id
+  left join location l on l.id = c.location_id
+ where cs.deleted_at is null
+   and cs.starts_at >= $1::timestamptz and cs.starts_at < $2::timestamptz
+ order by cs.starts_at`,a=`
+select s.id, s.first_name, s.last_name, s.date_of_birth,
+       (select string_agg(c.name, ', ' order by c.name) from enrolment e
+          join class c on c.id = e.class_id
+         where e.student_id = s.id and e.status = 'active' and e.deleted_at is null) as class_names,
+       (select round(100.0 * count(*) filter (where ar.status in ('present','late'))
+                     / nullif(count(*),0))::int
+          from attendance_record ar where ar.student_id = s.id and ar.deleted_at is null) as attendance_pct,
+       coalesce((select m.requires_alert from medical_record m
+                  where m.student_id = s.id and m.deleted_at is null), false) as has_alert,
+       (select m.allergies from medical_record m
+         where m.student_id = s.id and m.deleted_at is null) as allergies,
+       (select cr.granted from consent_record cr
+         where cr.student_id = s.id and cr.kind = 'photography' and cr.deleted_at is null) as photo_consent
+  from student s
+ where s.deleted_at is null
+ order by s.date_of_birth`,s=`
+select f.id, f.name, f.balance_minor,
+       (select count(*)::int from invoice i
+         where i.family_id = f.id and i.deleted_at is null and i.status in ('issued','part_paid')) as unpaid,
+       (select count(*)::int from payment p
+         where p.family_id = f.id and p.deleted_at is null
+           and p.failure_code is not null and p.succeeded_at is null) as failed
+  from family f where f.deleted_at is null`,i=`
+select cm.id, cm.kind, cm.subject, cm.body, cm.sent_at, c.name as class_name
+  from communication cm
+  left join class c on c.id = cm.class_id
+ where cm.deleted_at is null
+ order by cm.sent_at desc limit 8`,n=`
+insert into communication (studio_id, kind, channel, family_id, subject, body, sent_by)
+select s.studio_id, 'direct', 'in_app', s.family_id,
+       'Absence: ' || s.first_name || ' — ' || to_char($2::timestamptz, 'FMDay DD Mon'),
+       $3, auth.uid()
+  from student s where s.id = $1
+returning id`;e.s(["MY_BALANCE",0,s,"MY_CHILDREN",0,a,"MY_MESSAGES",0,i,"MY_SCHEDULE",0,t,"REPORT_ABSENCE",0,n])}]);

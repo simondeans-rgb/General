@@ -17,6 +17,9 @@ import type { PGlite } from '@electric-sql/pglite';
 import { migrations } from './migrations/generated';
 import { buildSeedSql } from './seed/data';
 
+/** Where the prebuilt PGlite runtime is served from (see scripts/copy-pglite.mjs). */
+const PGLITE_URL = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/pglite/index.js`;
+
 export type Row = Record<string, unknown>;
 export type Query = <T = Row>(sql: string, params?: unknown[]) => Promise<T[]>;
 
@@ -38,7 +41,11 @@ export function getDb(): Promise<PGlite> {
 
 async function boot(): Promise<PGlite> {
   onPhase('starting');
-  const { PGlite: PG } = await import('@electric-sql/pglite');
+  // Loaded from a URL, not an import specifier: the bundler's minifier breaks
+  // the Emscripten glue inside this package. webpackIgnore keeps it out of the
+  // graph in dev, and the template literal keeps Turbopack from resolving it.
+  const mod = await import(/* webpackIgnore: true */ /* @vite-ignore */ `${PGLITE_URL}`);
+  const PG = (mod as { PGlite: typeof PGlite }).PGlite;
   const db = await PG.create(STORAGE);
 
   const installed = await db.query<{ n: number }>(
