@@ -15,7 +15,7 @@ import { uid, NS } from '@/lib/db/seed/data';
  * Moving to Supabase Auth replaces this file and nothing else: the rest of the
  * app only ever asks for `session.userId`.
  */
-export type Role = 'owner' | 'admin' | 'teacher' | 'guardian';
+export type Role = 'owner' | 'admin' | 'teacher' | 'guardian' | 'student';
 
 export type Persona = {
   userId: string;
@@ -33,7 +33,9 @@ export const PERSONAS: Persona[] = [
   { userId: uid(NS.user, 2), name: 'Marcus Bell', role: 'teacher', title: 'Teacher',
     blurb: 'Teaches the two tap classes. Sees only his own students — and no billing.' },
   { userId: uid(NS.user, 11), name: 'Hannah Wright', role: 'guardian', title: 'Parent',
-    blurb: 'Two children at the studio. Sees her family and nobody else’s.' },
+    blurb: 'Three children at the studio. Sees her family and nobody else’s.' },
+  { userId: uid(NS.user, 40), name: 'Amir Wright', role: 'student', title: 'Student',
+    blurb: 'Fifteen, and old enough for his own login — which his mum approved.' },
 ];
 
 export type Session = { userId: string; role: Role; name: string } | null;
@@ -93,6 +95,7 @@ export const CAN: Record<string, Role[]> = {
   settings:   ['owner'],
   teach:      ['owner', 'admin', 'teacher'],
   family:     ['guardian'],
+  learn:      ['student'],
 };
 
 export const allows = (area: keyof typeof CAN, role: Role | undefined) =>

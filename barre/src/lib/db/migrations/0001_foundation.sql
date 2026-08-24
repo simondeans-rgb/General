@@ -34,7 +34,7 @@ $$;
 -- Enums. Named types rather than check constraints so the TypeScript layer can
 -- generate unions from them and a bad value fails at the database boundary.
 -- ---------------------------------------------------------------------------
-create type app_role          as enum ('owner', 'admin', 'teacher', 'guardian');
+create type app_role          as enum ('owner', 'admin', 'teacher', 'guardian', 'student');
 create type staff_status      as enum ('active', 'inactive');
 create type term_status       as enum ('draft', 'published', 'archived');
 create type class_visibility  as enum ('public', 'unlisted', 'private');

@@ -27,6 +27,25 @@ export type Session = { userId: string; role: string } | null;
 
 const STORAGE = 'idb://barre-demo-v1';
 
+/**
+ * The demo database is persisted in the browser, so a returning visitor keeps
+ * whatever they did last time — which is the point. It also means a schema or
+ * seed change would otherwise leave them on a stale copy for ever, with new
+ * screens querying tables that do not exist there yet.
+ *
+ * The fingerprint below changes whenever a migration or the seed changes, and
+ * a mismatch rebuilds from scratch. Cheap, and it fails safe.
+ */
+const SEED_VERSION = 2;
+
+function fingerprint(): string {
+  let h = 5381;
+  for (const m of migrations) {
+    for (let i = 0; i < m.sql.length; i++) h = ((h * 33) ^ m.sql.charCodeAt(i)) >>> 0;
+  }
+  return `${h.toString(36)}.${SEED_VERSION}`;
+}
+
 let ready: Promise<PGlite> | null = null;
 
 /** Progress reporting, so a first load can say what it is doing. */
@@ -48,36 +67,49 @@ async function boot(): Promise<PGlite> {
   const PG = (mod as { PGlite: typeof PGlite }).PGlite;
   const db = await PG.create(STORAGE);
 
-  const installed = await db.query<{ n: number }>(
-    `select count(*)::int n from information_schema.tables
-      where table_schema = 'public' and table_name = 'studio'`);
+  const want = fingerprint();
+  let have: string | null = null;
+  try {
+    const r = await db.query<{ value: string }>(`select value from app_meta where key = 'build'`);
+    have = r.rows[0]?.value ?? null;
+  } catch { /* first run: the table does not exist yet */ }
 
-  if (!installed.rows[0]?.n) {
+  if (have !== want) {
     onPhase('schema');
-    for (const m of migrations) {
-      try { await db.exec(m.sql); }
-      catch (e) { throw new Error(`${m.name}: ${(e as Error).message}`); }
-    }
-    onPhase('seeding');
-    await db.exec('set role service_role');
-    await db.exec(buildSeedSql({}));
-    await db.exec('reset role');
+    await install(db, want);
   }
   onPhase('ready');
   return db;
 }
 
+async function install(db: PGlite, version: string): Promise<void> {
+  // reset role first: a previous attempt may have left the session as
+  // service_role. Recreating `public` also drops its default grants, which is
+  // what "permission denied for schema public" was — the node reset path had
+  // this line and the browser path did not.
+  await db.exec(`reset role;
+                 drop schema if exists public cascade;
+                 drop schema if exists app cascade;
+                 drop schema if exists auth cascade;
+                 create schema public;
+                 grant all on schema public to public;`);
+  for (const m of migrations) {
+    try { await db.exec(m.sql); }
+    catch (e) { throw new Error(`${m.name}: ${(e as Error).message}`); }
+  }
+  onPhase('seeding');
+  await db.exec('set role service_role');
+  await db.exec(buildSeedSql({}));
+  await db.exec(`create table if not exists app_meta (key text primary key, value text not null);`);
+  await db.query(`insert into app_meta (key, value) values ('build', $1)
+                  on conflict (key) do update set value = excluded.value`, [version]);
+  await db.exec('reset role');
+}
+
 /** Wipe and rebuild — the demo's "start again" button. */
 export async function resetDemo(): Promise<void> {
   const db = await getDb();
-  await db.exec(`drop schema if exists public cascade;
-                 drop schema if exists app cascade;
-                 drop schema if exists auth cascade;
-                 create schema public;`);
-  for (const m of migrations) await db.exec(m.sql);
-  await db.exec('set role service_role');
-  await db.exec(buildSeedSql({}));
-  await db.exec('reset role');
+  await install(db, fingerprint());
 }
 
 /**

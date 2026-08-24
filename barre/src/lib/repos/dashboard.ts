@@ -166,3 +166,13 @@ select cm.id, cm.kind, cm.subject, cm.body, cm.sent_at,
  where cm.deleted_at is null
  order by cm.sent_at desc
  limit 5`;
+
+/** Card 5 — families waiting on the studio to answer or confirm. */
+export const ATTENTION_REQUESTS = `
+select
+  (select count(*)::int from studio_request
+    where deleted_at is null and status in ('open','in_progress')) as open_requests,
+  (select count(*)::int from event_participant
+    where deleted_at is null and status = 'requested') as pending_entries,
+  (select count(*)::int from studio_request
+    where deleted_at is null and status = 'open' and kind = 'medical_update') as medical_updates`;

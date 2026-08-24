@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import {
-  AlertCircle, CreditCard, Users, UserPlus, TrendingDown, ChevronRight, CalendarX2,
+  AlertCircle, CreditCard, Users, UserPlus, TrendingDown, ChevronRight, CalendarX2, Inbox,
 } from 'lucide-react';
 import { Shell } from './shell';
 import { useRows, useRow } from '@/lib/query';
@@ -101,11 +101,32 @@ function NeedsAttention() {
     ['att-trials'], Q.ATTENTION_TRIALS);
   const lapsed = useRows<{ id: string; first_name: string; last_name: string; class_name: string }>(
     ['att-lapsed'], Q.ATTENTION_LAPSED);
+  const reqs = useRow<{ open_requests: number; pending_entries: number; medical_updates: number }>(
+    ['att-requests'], Q.ATTENTION_REQUESTS);
 
-  const loading = pay.isLoading || cap.isLoading || trials.isLoading || lapsed.isLoading;
+  const loading = pay.isLoading || cap.isLoading || trials.isLoading || lapsed.isLoading || reqs.isLoading;
   if (loading) return <Card className="p-4"><Skeleton className="h-5 w-40" /><Skeleton className="mt-3 h-16" /></Card>;
 
   const cards: React.ReactNode[] = [];
+
+  // Families waiting on a person come before anything else on the list: a
+  // request nobody has answered is the failure they will actually notice.
+  if (reqs.data && (reqs.data.open_requests > 0 || reqs.data.pending_entries > 0)) {
+    const bits = [
+      reqs.data.pending_entries > 0
+        ? `${reqs.data.pending_entries} event ${reqs.data.pending_entries === 1 ? 'entry' : 'entries'} to confirm` : null,
+      reqs.data.open_requests > 0
+        ? `${reqs.data.open_requests} question${reqs.data.open_requests === 1 ? '' : 's'} unanswered` : null,
+    ].filter(Boolean);
+    cards.push(
+      <AttentionCard key="reqs" href="/requests"
+        tone={reqs.data.medical_updates > 0 ? 'critical' : 'info'}
+        icon={<Inbox className="size-4" />}
+        headline={reqs.data.medical_updates > 0
+          ? `${reqs.data.medical_updates} medical update${reqs.data.medical_updates === 1 ? '' : 's'} to record`
+          : 'Families are waiting on you'}
+        detail={bits.join(' · ')} />);
+  }
 
   if (pay.data && (pay.data.failed > 0 || Number(pay.data.outstanding_minor) > 0)) {
     cards.push(

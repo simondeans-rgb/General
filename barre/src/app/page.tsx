@@ -8,7 +8,7 @@ import { ROLE_HOME } from '@/components/app/shell';
 import { BarreMark } from '@/components/app/database-gate';
 import { Badge } from '@/components/ui';
 
-const TONE = { owner: 'accent', admin: 'info', teacher: 'teal', guardian: 'rose' } as const;
+const TONE = { owner: 'accent', admin: 'info', teacher: 'teal', guardian: 'rose', student: 'amber' } as const;
 
 export default function SignIn() {
   const { signIn, session, loaded } = useSession();

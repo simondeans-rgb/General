@@ -1,15 +1,19 @@
 'use client';
 
 import * as React from 'react';
-import { AlertTriangle, Users } from 'lucide-react';
+import { AlertTriangle, Users, MessageSquarePlus } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
-import { Badge, Card, EmptyState, Input, Skeleton, ErrorState } from '@/components/ui';
+import { Badge, Button, Card, EmptyState, Input, Skeleton, ErrorState } from '@/components/ui';
+import { FeedbackComposer } from '@/components/app/feedback-composer';
 import * as T from '@/lib/repos/teaching';
 import { ageFrom, initials } from '@/lib/format';
 
+type Student = { id: string; first_name: string; last_name: string };
+
 export default function MyStudents() {
   const [q, setQ] = React.useState('');
+  const [writing, setWriting] = React.useState<Student | null>(null);
   const rows = useRows<{ id: string; first_name: string; last_name: string; date_of_birth: string;
                          requires_alert: boolean; allergies: string | null;
                          class_names: string | null; attendance_pct: number | null }>(
@@ -52,12 +56,17 @@ export default function MyStudents() {
                       {s.attendance_pct}%
                     </Badge>
                   )}
+                  <Button size="sm" variant="ghost" aria-label={`Write feedback for ${s.first_name} ${s.last_name}`}
+                          onClick={() => setWriting(s)}>
+                    <MessageSquarePlus className="size-4" aria-hidden />
+                  </Button>
                 </li>
               ))}
             </ul>
           </Card>
         )}
       </div>
+      {writing && <FeedbackComposer student={writing} onClose={() => setWriting(null)} />}
     </Shell>
   );
 }

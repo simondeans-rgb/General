@@ -21,6 +21,8 @@ export const NS = {
   term: 13, break: 14, style: 15, level: 16, class: 17,
   enrolment: 18, trial: 19, waitlist: 20, enquiry: 21,
   invoice: 22, item: 23, payment: 24, comm: 25, notification: 26,
+  resource: 27, assignment: 28, feedback: 29, assessment: 30,
+  event: 31, participant: 32, request: 33,
 } as const;
 
 export const STUDIO_ID = uid(NS.studio, 1);
@@ -227,7 +229,9 @@ function buildClassesAndPeople(ctx: Ctx): string {
     for (let c = 0; c < childCount; c++) {
       studentN += 1;
       const id = uid(NS.student, studentN);
-      const age = AGE_POOL[ageCursor++ % AGE_POOL.length]!;
+      // Families 1-3 are the ones with guardian logins. Give each an older
+      // child so a student account has a guardian who can actually approve it.
+      const age = (f < 3 && c === 0) ? [15, 14, 16][f]! : AGE_POOL[ageCursor++ % AGE_POOL.length]!;
       const useGirl = rnd() > 0.26;
       // Siblings must not end up with the same first name.
       let first = useGirl ? girls[(studentN * 7 + c) % girls.length]!
@@ -539,6 +543,304 @@ function buildMedicalBillingComms(ctx: ActivityCtx): string {
       'Grade 3 Ballet is full', '8 students are waiting for a place.', '/classes'])},
     ${row([uid(NS.notification, 3), STUDIO_ID, uid(NS.user, 1), 'medical_updated',
       'Medical details updated', 'A guardian updated an allergy record this week.', '/people'])};`);
+
+  return out.join('\n') + '\n' + buildHubs(ctx);
+}
+
+/* ==========================================================================
+   Student and Parent hubs: logins, resources, feedback, events, requests
+   ========================================================================== */
+function buildHubs(ctx: ActivityCtx): string {
+  const { base, students, classIds, STAFF, STYLE, LEVEL } = ctx;
+  const out: string[] = [];
+  const push = (s: string) => out.push(s);
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  const addDays = (d: Date, n: number) => { const x = new Date(d); x.setUTCDate(x.getUTCDate() + n); return x; };
+  const at = (days: number, hhmm: string) => {
+    const d = addDays(base, days);
+    return `${iso(d)}T${hhmm}:00Z`;
+  };
+
+  // ── Student logins ───────────────────────────────────────────────────────
+  // Only for the three families that have a guardian login, because a student
+  // account is not allowed to exist without a named guardian approving it.
+  // The database enforces both that and the age threshold, so if any of this
+  // is wrong the seed fails loudly rather than quietly producing nothing.
+  const loginFamilies = [1, 2, 3];
+  loginFamilies.forEach((famNo, i) => {
+    const userId = uid(NS.user, 40 + i);
+    push(`
+insert into user_account (id, email, full_name)
+select ${q(userId)},
+       lower(s.first_name) || '.' || lower(s.last_name) || '@example.com',
+       s.first_name || ' ' || s.last_name
+  from student s
+ where s.family_id = ${q(uid(NS.family, famNo))}
+   and extract(year from age(current_date, s.date_of_birth)) >= 14
+ order by s.date_of_birth limit 1;`);
+    push(`
+insert into membership (id, user_id, studio_id, role)
+select ${q(uid(NS.membership, 40 + i))}, ${q(userId)}, ${q(STUDIO_ID)}, 'student'
+ where exists (select 1 from user_account where id = ${q(userId)});`);
+    push(`
+update student s
+   set user_id = ${q(userId)},
+       login_enabled = true,
+       login_approved_by = (select g.user_id from guardian g
+                             where g.family_id = s.family_id and g.user_id is not null
+                             order by g.is_primary desc limit 1),
+       login_approved_at = now()
+ where s.id = (select s2.id from student s2
+                where s2.family_id = ${q(uid(NS.family, famNo))}
+                  and extract(year from age(current_date, s2.date_of_birth)) >= 14
+                order by s2.date_of_birth limit 1)
+   and exists (select 1 from user_account where id = ${q(userId)});`);
+  });
+
+  // Every student who can log in needs a timetable and some feedback, or the
+  // hub is technically correct and completely empty — which demonstrates
+  // nothing. Built explicitly rather than left to the enrolment lottery.
+  push(`
+insert into enrolment (studio_id, class_id, student_id, status, started_on)
+select s.studio_id, c.id, s.id, 'active', current_date - 30
+  from student s
+  cross join lateral (
+    select c2.id from class c2
+     where c2.deleted_at is null
+       and extract(year from age(current_date, s.date_of_birth)) between c2.age_min and c2.age_max
+       and app.class_enrolled_count(c2.id) < c2.capacity
+     order by c2.day_of_week limit 2) c
+ where s.login_enabled
+   and not exists (select 1 from enrolment e
+                    where e.student_id = s.id and e.status = 'active' and e.deleted_at is null)
+on conflict do nothing;`);
+
+  push(`
+insert into attendance_record (studio_id, session_id, student_id, status, marked_at)
+select e.studio_id, cs.id, e.student_id,
+       case when (('x' || substr(md5(cs.id::text || e.student_id::text), 1, 7))::bit(28)::int % 100) < 12
+            then 'late'::attendance_status else 'present'::attendance_status end,
+       cs.starts_at + interval '10 minutes'
+  from class_session cs
+  join enrolment e on e.class_id = cs.class_id and e.status = 'active'
+  join student s on s.id = e.student_id and s.login_enabled
+ where cs.starts_at < now() and cs.status = 'scheduled'
+on conflict do nothing;`);
+
+  const studentNotes = [
+    ['Really strong week', 'Your timing in the fast section is spot on now, and you kept the shoulders down through the whole barre.', 'Spotting on the turns — pick one point on the back wall and stay with it.'],
+    ['Good progress', 'You picked the new routine up quickly and helped two others with the counts.', 'Land more quietly. Think about rolling through the foot rather than dropping onto it.'],
+  ] as const;
+  studentNotes.forEach(([headline, well, work], k) => {
+    push(`
+insert into feedback_note (studio_id, student_id, class_id, author_id, headline, going_well, work_on,
+                           shared_at, share_with_student, share_with_guardian, created_at)
+select s.studio_id, s.id, e.class_id, c.teacher_id, ${q(headline)}, ${q(well)}, ${q(work)},
+       now() - interval '${k * 7 + 2} days', true, true, now() - interval '${k * 7 + 2} days'
+  from student s
+  join enrolment e on e.student_id = s.id and e.status = 'active' and e.deleted_at is null
+  join class c on c.id = e.class_id
+ where s.login_enabled
+   and e.id = (select e2.id from enrolment e2 where e2.student_id = s.id
+                and e2.status = 'active' and e2.deleted_at is null order by e2.id limit 1);`);
+  });
+
+  const studentSkills: [string, string][] = [
+    ['Plié — all positions', 'secure'], ['Port de bras', 'mastered'],
+    ['Pirouette en dehors', 'developing'], ['Musicality and timing', 'secure'],
+    ['Grand jeté', 'developing'], ['Reverence', 'not_started'],
+  ];
+  studentSkills.forEach(([skill, level]) => {
+    push(`
+insert into skill_assessment (studio_id, student_id, dance_style_id, skill, level, assessed_by, assessed_on)
+select s.studio_id, s.id, ${q(STYLE.ballet)}, ${q(skill)}, ${q(level)}::assessment_level,
+       (select id from staff_member where display_name = 'Freya Lindqvist' limit 1),
+       current_date - 4
+  from student s where s.login_enabled;`);
+  });
+
+  // ── Resources ────────────────────────────────────────────────────────────
+  const resources: [number, string, string, string, string, string | null, number | null][] = [
+    [1,  'video', 'Grade 3 barre — full exercise', 'Technique', 'https://vimeo.com/76979871', null, 742],
+    [2,  'video', 'Port de bras, slowly', 'Technique', 'https://vimeo.com/76979871', null, 305],
+    [3,  'video', 'Summer show routine — Street Seniors', 'Choreography', 'https://vimeo.com/76979871', null, 218],
+    [4,  'video', 'Tap: shuffle drills at three speeds', 'Technique', 'https://vimeo.com/76979871', null, 411],
+    [5,  'audio', 'Grade 3 exam music — full', 'Exam music', 'https://example.com/tracks/grade3-full.mp3', null, 1680],
+    [6,  'audio', 'Grade 3 exam music — barre only', 'Exam music', 'https://example.com/tracks/grade3-barre.mp3', null, 620],
+    [7,  'audio', 'Street Seniors show track (clean edit)', 'Show music', 'https://example.com/tracks/street-show.mp3', null, 194],
+    [8,  'audio', 'Warm-up mix', 'Class music', 'https://example.com/tracks/warmup.mp3', null, 540],
+    [9,  'document', 'Uniform and shoes — what to buy', 'Uniform', 'https://example.com/docs/uniform.pdf', null, null],
+    [10, 'document', 'Exam day: what to expect', 'Exams', 'https://example.com/docs/exam-day.pdf', null, null],
+    [11, 'document', 'Competition packing list', 'Competitions', 'https://example.com/docs/packing.pdf', null, null],
+    [12, 'link', 'How to do a secure bun', 'Uniform', 'https://example.com/guides/bun', null, null],
+    [13, 'document', 'Stretching safely at home', 'Wellbeing', 'https://example.com/docs/stretching.pdf', null, null],
+  ];
+  push(`insert into resource (id,studio_id,kind,title,category,url,poster_url,duration_sec,description) values
+    ${resources.map(r => row([uid(NS.resource, r[0]), STUDIO_ID, r[1], r[2], r[3], r[4], r[5], r[6],
+      r[1] === 'audio' ? 'Play or download for practice at home.'
+      : r[1] === 'video' ? 'Watch as many times as you like — the counts are called out.'
+      : 'Everything you need in one page.'])).join(',\n    ')};`);
+
+  // Scope: some studio-wide, some per class, one to a single student.
+  const assigns: [number, number, string, string | null][] = [
+    [1, 1, 'class', classIds[3]!], [2, 2, 'class', classIds[3]!],
+    [3, 3, 'class', classIds[9]!], [4, 4, 'class', classIds[4]!],
+    [5, 5, 'class', classIds[3]!], [6, 6, 'class', classIds[3]!],
+    [7, 7, 'class', classIds[9]!], [8, 8, 'studio', null],
+    [9, 9, 'studio', null], [10, 10, 'studio', null],
+    [11, 11, 'studio', null], [12, 12, 'studio', null], [13, 13, 'studio', null],
+  ];
+  push(`insert into resource_assignment (id,studio_id,resource_id,scope,class_id) values
+    ${assigns.map(a => row([uid(NS.assignment, a[0]), STUDIO_ID, uid(NS.resource, a[1]), a[2], a[3]])).join(',\n    ')};`);
+
+  // ── Feedback ─────────────────────────────────────────────────────────────
+  // Written against real enrolments so every note belongs to a child who is
+  // genuinely in that class. Some shared, some still a draft.
+  const notes = [
+    ['Lovely week', 'Really strong port de bras — the arms finally look unhurried and the shoulders stayed down all lesson.', 'Spotting on the turns. Pick one point on the back wall and stay with it.', 3, 0, true],
+    ['Exam prep going well', 'Knows the whole barre without prompting now, and the timing is secure.', 'The reverence is rushed. Slow down and finish the arm before you step back.', 3, 2, true],
+    ['Great energy', 'Picked up the new eight-count faster than anyone and helped two others with it.', 'Land more quietly — think about rolling through the foot.', 9, 6, true],
+    ['Coming along', 'Much more confident in the centre than last term.', 'Practise the shuffle drill at the slower speed before trying it fast.', 4, 4, true],
+    ['Careful this week', 'Working hard and clearly enjoying it.', 'Keep the knee tracking over the toe in plié — I will keep an eye on it.', 3, 4, false],
+  ] as const;
+  push(`
+insert into feedback_note (id, studio_id, student_id, class_id, author_id, headline, going_well, work_on,
+                           shared_at, share_with_student, share_with_guardian)
+select ${q(uid(NS.feedback, 1))}, e.studio_id, e.student_id, e.class_id, c.teacher_id,
+       'placeholder', 'placeholder', 'placeholder', null, true, true
+  from enrolment e join class c on c.id = e.class_id
+ where false;`);
+  notes.forEach(([headline, well, work, classIdx, offset, shared], i) => {
+    push(`
+insert into feedback_note (id, studio_id, student_id, class_id, author_id, headline, going_well, work_on,
+                           shared_at, share_with_student, share_with_guardian, created_at)
+select ${q(uid(NS.feedback, i + 1))}, e.studio_id, e.student_id, e.class_id, c.teacher_id,
+       ${q(headline)}, ${q(well)}, ${q(work)},
+       ${shared ? q(addDays(base, -(i + 1)).toISOString()) : 'null'}, true, true,
+       ${q(addDays(base, -(i + 1)).toISOString())}
+  from enrolment e join class c on c.id = e.class_id
+ where e.class_id = ${q(classIds[classIdx]!)} and e.status = 'active' and e.deleted_at is null
+ order by e.student_id offset ${offset} limit 1;`);
+  });
+
+  // Progress against a small syllabus, for the students who have feedback.
+  const skills: [string, string][] = [
+    ['Plié — all positions', 'secure'], ['Port de bras', 'mastered'],
+    ['Pirouette en dehors', 'developing'], ['Grand jeté', 'developing'],
+    ['Musicality and timing', 'secure'], ['Reverence', 'not_started'],
+  ];
+  skills.forEach(([skill, level], i) => {
+    push(`
+insert into skill_assessment (id, studio_id, student_id, dance_style_id, skill, level, assessed_by, assessed_on)
+select ${q(uid(NS.assessment, i + 1))}, f.studio_id, f.student_id, ${q(STYLE.ballet)}, ${q(skill)},
+       ${q(level)}::assessment_level, f.author_id, ${q(iso(addDays(base, -4)))}
+  from feedback_note f where f.id = ${q(uid(NS.feedback, 1))};`);
+  });
+
+  return out.join('\n') + '\n' + buildEventsAndRequests(ctx);
+}
+
+function buildEventsAndRequests(ctx: ActivityCtx): string {
+  const { base, classIds, STAFF, LOC } = ctx as ActivityCtx & { LOC: Record<string, string> };
+  const out: string[] = [];
+  const push = (s: string) => out.push(s);
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  const addDays = (d: Date, n: number) => { const x = new Date(d); x.setUTCDate(x.getUTCDate() + n); return x; };
+  const at = (days: number, hhmm: string) => `${iso(addDays(base, days))}T${hhmm}:00Z`;
+
+  // ── Events ───────────────────────────────────────────────────────────────
+  const events: [number, string, string, string, number, string, string, string | null, number | null, number | null][] = [
+    [1, 'competition', 'Thames Valley Dance Festival', 'Two days of solos, duets and troupes. Entries close three weeks before — let us know early if you would like to compete.', 26, '09:00', 'Watford Colosseum', null, 3500, 40],
+    [2, 'show',        'Summer Show — Greenwich Theatre', 'Our whole-school show. Every class performs. Two rehearsals in the fortnight beforehand.', 48, '18:30', 'Greenwich Theatre', null, 1800, null],
+    [3, 'exam',        'RAD Grade 3 Ballet examinations', 'Examiner visiting the Greenwich studio. Candidates should arrive 30 minutes early, hair in a bun.', 19, '10:00', 'Greenwich Studio', null, 6200, 14],
+    [4, 'workshop',    'Commercial workshop with a guest choreographer', 'Open to Street Seniors and Contemporary Seniors. Two hours, finishing with a filmed routine.', 12, '14:00', 'Blackheath Studio', null, 2500, 24],
+    [5, 'rehearsal',   'Summer Show — full dress rehearsal', 'Everyone in costume. Please arrive with hair and make-up done.', 45, '17:00', 'Greenwich Theatre', null, null, null],
+  ];
+  push(`insert into studio_event (id,studio_id,kind,status,title,description,starts_at,ends_at,venue,cost_minor,capacity,entries_close_on,requests_open,teacher_id) values
+    ${events.map(e => row([uid(NS.event, e[0]), STUDIO_ID, e[1], 'published', e[2], e[3],
+      at(e[4], e[5]), at(e[4], e[1] === 'competition' ? '17:00' : '20:30'), e[6], e[8], e[9],
+      iso(addDays(base, Math.max(1, e[4] - 21))), true,
+      e[1] === 'exam' ? STAFF.freya : e[1] === 'workshop' ? STAFF.tomasz : null])).join(',\n    ')};`);
+
+  // Private lessons belong to one child, and only that family can see them.
+  for (let i = 0; i < 4; i++) {
+    push(`
+insert into studio_event (id, studio_id, kind, status, title, description, starts_at, ends_at,
+                          venue, teacher_id, student_id, cost_minor, requests_open)
+select ${q(uid(NS.event, 20 + i))}, e.studio_id, 'private_lesson', 'published',
+       'Private lesson — ' || s.first_name,
+       'One-to-one, focusing on exam variations.',
+       ${q(at(3 + i * 2, ['16:00','17:00','15:30','18:00'][i]!))},
+       ${q(at(3 + i * 2, ['16:45','17:45','16:15','18:45'][i]!))},
+       'Greenwich Studio', c.teacher_id, s.id, 3000, false
+  from enrolment e join class c on c.id = e.class_id join student s on s.id = e.student_id
+ where e.class_id = ${q(classIds[3]!)} and e.status = 'active' and e.deleted_at is null
+ order by s.id offset ${i} limit 1;`);
+  }
+
+  // ── Who is going ─────────────────────────────────────────────────────────
+  // A mix of confirmed places and requests still waiting on the studio, so the
+  // owner's queue has something real in it.
+  const cohorts: [number, string, string, number, number][] = [
+    [1, uid(NS.event, 1), 'confirmed', 3, 0],   // competition, from Grade 3
+    [2, uid(NS.event, 1), 'requested', 3, 6],
+    [3, uid(NS.event, 3), 'confirmed', 3, 0],   // exam cohort
+    [4, uid(NS.event, 4), 'requested', 9, 0],   // workshop, Street Seniors
+    [5, uid(NS.event, 4), 'confirmed', 9, 4],
+  ];
+  cohorts.forEach(([n, eventId, status, classIdx, offset], i) => {
+    const take = status === 'confirmed' ? 6 : 3;
+    push(`
+insert into event_participant (id, studio_id, event_id, student_id, status, decided_by, decided_at)
+select gen_random_uuid(), e.studio_id, ${q(eventId)}, e.student_id, ${q(status)}::participant_status,
+       ${status === 'confirmed' ? q(uid(NS.user, 1)) : 'null'},
+       ${status === 'confirmed' ? q(addDays(base, -5).toISOString()) : 'null'}
+  from enrolment e
+ where e.class_id = ${q(classIds[classIdx]!)} and e.status = 'active' and e.deleted_at is null
+ order by e.student_id offset ${offset} limit ${take}
+on conflict (event_id, student_id) do nothing;`);
+  });
+
+  // Every private lesson has its own child confirmed on it.
+  push(`
+insert into event_participant (studio_id, event_id, student_id, status, decided_by, decided_at)
+select ev.studio_id, ev.id, ev.student_id, 'confirmed', ${q(uid(NS.user, 1))}, now()
+  from studio_event ev
+ where ev.kind = 'private_lesson' and ev.student_id is not null
+on conflict (event_id, student_id) do nothing;`);
+
+  // ── Requests waiting on the studio ───────────────────────────────────────
+  const requests: [number, string, string, string, string, number][] = [
+    [1, 'private_lesson', 'open',
+     'Could we book a private before the exam?',
+     'She is nervous about the reverence and I think half an hour one-to-one would settle her. Any evening except Thursday works for us.', 2],
+    [2, 'question', 'answered',
+     'Which shoes for Grade 3?',
+     'Are the canvas ones fine or does she need leather for the exam?', 6],
+    [3, 'medical_update', 'open',
+     'New inhaler — please update her record',
+     'The dose has changed and she now carries a blue inhaler in the front pocket of her bag rather than in the side.', 1],
+    [4, 'event_interest', 'in_progress',
+     'Interested in the festival',
+     'We would love him to enter a solo if there is still space. Happy to pay the entry fee this week.', 3],
+  ];
+  requests.forEach(([n, kind, status, subject, body, daysAgo]) => {
+    push(`
+insert into studio_request (id, studio_id, family_id, student_id, kind, status, subject, body,
+                            raised_by, answered_by, answered_at, answer, created_at)
+select ${q(uid(NS.request, n))}, s.studio_id, s.family_id, s.id, ${q(kind)}::request_kind,
+       ${q(status)}::request_status, ${q(subject)}, ${q(body)},
+       (select g.user_id from guardian g where g.family_id = s.family_id and g.user_id is not null limit 1),
+       ${status === 'answered' ? q(uid(NS.user, 5)) : 'null'},
+       ${status === 'answered' ? q(addDays(base, -(daysAgo - 1)).toISOString()) : 'null'},
+       ${status === 'answered'
+          ? q('Canvas is absolutely fine for the exam — most of the class wear them. Leather lasts longer if you are buying new anyway.')
+          : 'null'},
+       ${q(addDays(base, -daysAgo).toISOString())}
+  from student s
+ where s.family_id in (${[1,2,3].map(x => q(uid(NS.family, x))).join(',')})
+ order by s.id offset ${n - 1} limit 1;`);
+  });
 
   return out.join('\n');
 }

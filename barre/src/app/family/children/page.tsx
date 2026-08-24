@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, CameraOff, Camera, Check, CalendarOff } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
@@ -76,8 +77,10 @@ export default function FamilyChildren() {
                       <AlertTriangle className="size-3.5" aria-hidden /> {c.allergies ?? 'On record'}
                     </span>
                     <p className="mt-1 text-[12.5px] text-ink-3">
-                      Teachers see allergies and the emergency plan only. To change any of this,
-                      message the studio.
+                      Teachers see allergies and the emergency plan only — never the full record.
+                      To change any of it,{' '}
+                      <Link href="/family/enquiries" className="text-accent hover:underline">
+                        tell the studio</Link>, so there is a record of who changed what.
                     </p>
                   </dd>
                 </div>

@@ -63,9 +63,15 @@ export async function closeDb(): Promise<void> {
  * for the transaction, role dropped to `authenticated`, everything rolled back
  * afterwards so tests cannot contaminate one another.
  */
+export type Q = (sql: string, params?: unknown[]) => Promise<any[]>;
+
 export async function asUser<T>(
   userId: string | null,
-  fn: (q: (sql: string, params?: unknown[]) => Promise<any[]>) => Promise<T>,
+  /** `q` runs as the user; `svc` runs the same transaction with RLS bypassed,
+   *  for arranging a fixture the user is not allowed to see. Nesting asService
+   *  inside asUser cannot work — both would begin and roll back the same
+   *  connection, leaving no transaction for the savepoints to sit in. */
+  fn: (q: Q, svc: Q) => Promise<T>,
 ): Promise<T> {
   const c = await db();
   await c.query('begin');
@@ -73,10 +79,29 @@ export async function asUser<T>(
     await c.query(`select set_config('request.jwt.claims', $1, true)`,
       [JSON.stringify(userId ? { sub: userId, role: 'authenticated' } : { role: 'anon' })]);
     await c.query('set local role authenticated');
-    return await fn(savepointed(c));
+    return await fn(savepointed(c), elevated(c));
   } finally {
     await c.query('rollback');
   }
+}
+
+/** Runs a statement as service_role inside the caller's transaction. */
+function elevated(c: Client): Q {
+  let n = 0;
+  return async (sql, params) => {
+    const sp = `el_${++n}`;
+    await c.query(`savepoint ${sp}`);
+    try {
+      await c.query('set local role service_role');
+      const r = await c.query(sql, params);
+      return r.rows;
+    } catch (err) {
+      await c.query(`rollback to savepoint ${sp}`);
+      throw err;
+    } finally {
+      await c.query('set local role authenticated');
+    }
+  };
 }
 
 /**

@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { CalendarDays, MapPin, User, CreditCard, Megaphone, Clock, CheckCircle2 } from 'lucide-react';
+import { CalendarDays, MapPin, User, CreditCard, Megaphone, CheckCircle2,
+         Trophy, MessageSquarePlus } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { useRows, useRow } from '@/lib/query';
 import { useSession } from '@/lib/auth/session';
@@ -106,6 +107,27 @@ export default function FamilyHome() {
             )}
           </div>
         </Card>
+
+        {/* Events and enquiries have no tab of their own — five is the most a
+            bottom bar can carry — so they get a way in from here. */}
+        <div className="grid grid-cols-2 gap-3">
+          <Link href="/family/events"
+                className="card flex flex-col gap-2 p-4 transition-colors hover:bg-surface-2">
+            <span className="grid size-9 place-items-center rounded-full bg-amber-soft text-amber" aria-hidden>
+              <Trophy className="size-5" />
+            </span>
+            <span className="text-sm font-medium leading-tight">Competitions and events</span>
+            <span className="text-[12.5px] text-ink-3">Shows, exams, privates</span>
+          </Link>
+          <Link href="/family/enquiries"
+                className="card flex flex-col gap-2 p-4 transition-colors hover:bg-surface-2">
+            <span className="grid size-9 place-items-center rounded-full bg-accent-soft text-accent-ink" aria-hidden>
+              <MessageSquarePlus className="size-5" />
+            </span>
+            <span className="text-sm font-medium leading-tight">Ask the studio</span>
+            <span className="text-[12.5px] text-ink-3">Questions and updates</span>
+          </Link>
+        </div>
 
         <Card>
           <CardHeader title="From the studio" />
