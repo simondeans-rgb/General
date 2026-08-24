@@ -14,6 +14,9 @@ const config: NextConfig = {
   trailingSlash: true,
   reactStrictMode: true,
   typedRoutes: false,
+  // Dev-only: Next 16 blocks dev asset requests from origins it does not
+  // recognise, and the headless browser used for testing hits 127.0.0.1.
+  allowedDevOrigins: ['127.0.0.1', 'localhost'],
 };
 
 export default config;

@@ -190,8 +190,10 @@ function buildClassesAndPeople(ctx: Ctx): string {
                     'Novak','Whitfield','Mbeki','Grant','Sullivan','Ellery','Nakamura','Byrne',
                     'Ackah','Salvatore','Petrov','Lindgren','Haddad','Moreau','Quinn','Ibrahim',
                     'Fenwick','Oyelaran','Mackenzie','Rossi','Dlamini','Torres'];
-  const girls = ['Ava','Isla','Maya','Freya','Nia','Sofia','Amara','Elsie','Lily','Zara','Rosa','Iris',
-                 'Willow','Esme','Bea','Anaya','Clara','Nell','Sena','Ottilie'];
+  // No 'Freya': the studio owner is called Freya, and two of them in one
+  // list makes the demo read like a bug.
+  const girls = ['Ava','Isla','Maya','Nia','Sofia','Amara','Elsie','Lily','Zara','Rosa','Iris',
+                 'Willow','Esme','Bea','Anaya','Clara','Nell','Sena','Ottilie','Marnie'];
   const boys  = ['Noah','Kai','Elias','Theo','Jonah','Amir','Luca','Reuben','Idris','Milo','Arlo','Rafe'];
   const parents = ['Hannah','Joseph','Clare','Marta','Abena','Rachel','Sana','Inês','Petra','Emma',
                    'Thandi','Alex','Grace','Duncan','Yuki','Aoife','Kwabena','Giulia','Nikolai',
@@ -227,9 +229,15 @@ function buildClassesAndPeople(ctx: Ctx): string {
       const id = uid(NS.student, studentN);
       const age = AGE_POOL[ageCursor++ % AGE_POOL.length]!;
       const useGirl = rnd() > 0.26;
-      const first = useGirl
-        ? girls[(studentN * 7 + c) % girls.length]!
-        : boys[(studentN * 5 + c) % boys.length]!;
+      // Siblings must not end up with the same first name.
+      let first = useGirl ? girls[(studentN * 7 + c) % girls.length]!
+                          : boys[(studentN * 5 + c) % boys.length]!;
+      let bump = 0;
+      while (students.some(st => st.famIdx === f && st.name.startsWith(first + ' ')) && bump < 20) {
+        bump += 1;
+        first = useGirl ? girls[(studentN * 7 + c + bump) % girls.length]!
+                        : boys[(studentN * 5 + c + bump) % boys.length]!;
+      }
       students.push({ id, famIdx: f, age, name: `${first} ${surname}` });
       studRows.push(row([id, STUDIO_ID, famId, first, surname, null,
         iso(addDays(base, -(age * 365 + Math.floor(rnd() * 320)))), null,
@@ -305,32 +313,52 @@ function buildEnrolmentsAndActivity(ctx: ActivityCtx): string {
   });
 
   // ── Attendance for every session already past ────────────────────────────
+  // 28 bits, not 32: bit(32)::int is signed, so half the hashes came out
+  // negative and every negative value fell into the first bucket — which
+  // marked two thirds of the studio absent.
   push(`
 insert into attendance_record (studio_id, session_id, student_id, status, marked_by, marked_at)
 select e.studio_id, cs.id, e.student_id,
-       case
-         when (('x' || substr(md5(cs.id::text || e.student_id::text), 1, 8))::bit(32)::int % 100) < 6  then 'absent'::attendance_status
-         when (('x' || substr(md5(cs.id::text || e.student_id::text), 1, 8))::bit(32)::int % 100) < 11 then 'late'::attendance_status
-         when (('x' || substr(md5(cs.id::text || e.student_id::text), 1, 8))::bit(32)::int % 100) < 14 then 'excused'::attendance_status
-         else 'present'::attendance_status end,
+       case (('x' || substr(md5(cs.id::text || e.student_id::text), 1, 7))::bit(28)::int % 100)
+         when 0 then 'absent'::attendance_status
+         else case
+           when (('x' || substr(md5(cs.id::text || e.student_id::text), 1, 7))::bit(28)::int % 100) < 5  then 'absent'::attendance_status
+           when (('x' || substr(md5(cs.id::text || e.student_id::text), 1, 7))::bit(28)::int % 100) < 9  then 'late'::attendance_status
+           when (('x' || substr(md5(cs.id::text || e.student_id::text), 1, 7))::bit(28)::int % 100) < 12 then 'excused'::attendance_status
+           else 'present'::attendance_status end
+       end,
        null, cs.starts_at + interval '10 minutes'
   from class_session cs
   join enrolment e on e.class_id = cs.class_id and e.status = 'active' and e.deleted_at is null
  where cs.starts_at < now() and cs.status = 'scheduled'
 on conflict do nothing;`);
 
-  // Eleven children who have quietly stopped attending — the exact signal the
-  // owner dashboard is supposed to surface before a family drifts away.
+  // Nine children who have quietly stopped attending one particular class —
+  // the exact signal the owner dashboard exists to surface before a family
+  // drifts away. Built precisely rather than by chance, so the number on the
+  // dashboard is the number that was intended.
   push(`
-with lapsing as (
-  select distinct e.student_id from enrolment e
+with one_class_each as (
+  select distinct on (e.student_id) e.student_id, e.class_id
+    from enrolment e
    where e.status = 'active' and e.deleted_at is null
-   order by e.student_id limit 11)
-update attendance_record ar set status = 'absent'
-  from class_session cs
- where cs.id = ar.session_id
-   and cs.starts_at > now() - interval '24 days'
-   and ar.student_id in (select student_id from lapsing);`);
+   order by e.student_id, e.class_id
+),
+picked as (
+  select student_id, class_id, row_number() over (order by student_id) as rn
+    from one_class_each
+),
+last_three as (
+  select ar.id,
+         row_number() over (partition by ar.student_id, cs.class_id
+                                order by cs.starts_at desc) as k
+    from attendance_record ar
+    join class_session cs on cs.id = ar.session_id
+    join picked p on p.student_id = ar.student_id and p.class_id = cs.class_id and p.rn <= 9
+   where cs.starts_at < now()
+)
+update attendance_record set status = 'absent'
+ where id in (select id from last_three where k <= 3);`);
 
   // ── Enquiry funnel ───────────────────────────────────────────────────────
   const prospects = [
