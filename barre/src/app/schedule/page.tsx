@@ -1,9 +1,10 @@
 'use client';
 
 import * as React from 'react';
-import { ChevronLeft, ChevronRight, CalendarX2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarX2, Plus } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { SessionRow } from '@/components/app/session-row';
+import { ClassForm } from '@/components/app/class-form';
 import { useRows } from '@/lib/query';
 import { Button, Card, EmptyState, Skeleton, ErrorState, Badge } from '@/components/ui';
 import * as Q from '@/lib/repos/dashboard';
@@ -14,6 +15,7 @@ type View = 'week' | 'day' | 'teacher' | 'room';
 
 export default function SchedulePage() {
   const [anchor, setAnchor] = React.useState(() => new Date());
+  const [adding, setAdding] = React.useState(false);
   const [view, setView] = React.useState<View>('week');
   const [from, to] = React.useMemo(() => weekRange(anchor), [anchor]);
   const sessions = useRows<Q.SessionRow>(['week', from], Q.SESSIONS_BETWEEN, [from, to]);
@@ -33,11 +35,15 @@ export default function SchedulePage() {
           <Button size="sm" variant="ghost" onClick={() => shift(-1)} aria-label="Previous week">
             <ChevronLeft className="size-4" aria-hidden />
           </Button>
-          <Button size="sm" variant={thisWeek ? 'secondary' : 'primary'} onClick={() => setAnchor(new Date())}>
+          <Button size="sm" variant="secondary" onClick={() => setAnchor(new Date())}
+                  disabled={thisWeek}>
             {thisWeek ? 'This week' : 'Back to today'}
           </Button>
           <Button size="sm" variant="ghost" onClick={() => shift(1)} aria-label="Next week">
             <ChevronRight className="size-4" aria-hidden />
+          </Button>
+          <Button size="sm" variant="primary" onClick={() => setAdding(true)}>
+            <Plus className="size-4" aria-hidden /> New class
           </Button>
         </div>
       }
@@ -64,6 +70,7 @@ export default function SchedulePage() {
           <Grouped sessions={sessions.data} view={view} />
         )}
       </div>
+      {adding && <ClassForm onClose={() => setAdding(false)} />}
     </Shell>
   );
 }

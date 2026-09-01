@@ -7,6 +7,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Clock, Upload, MapPin, User, Users, FolderOpen, X, Check } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { ResourceRow } from '@/components/app/resource-row';
+import { ClassNotices } from '@/components/app/class-notices';
 import { useRow, useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
@@ -65,6 +66,7 @@ function ClassView() {
         )}
 
         {c && <Summary c={c} />}
+        {c && <ClassNotices classId={id} className={c.name} canPost={canAdd} />}
         {c && <Material classId={id} canAdd={canAdd} isOffice={isOffice} />}
       </div>
 
@@ -123,9 +125,9 @@ function Material({ classId, canAdd, isOffice }: {
       <Card>
         <CardHeader title="For this class"
           subtitle={pinned.length === 0 ? undefined : `${pinned.length} item${pinned.length === 1 ? '' : 's'}`} />
-        {rows.isLoading && <div className="space-y-3 p-4">{[0,1].map(i => <Skeleton key={i} className="h-14" />)}</div>}
+        {rows.isPending && <div className="space-y-3 p-4">{[0,1].map(i => <Skeleton key={i} className="h-14" />)}</div>}
         {rows.error && <div className="p-4"><ErrorState error={rows.error} onRetry={() => rows.refetch()} /></div>}
-        {!rows.isLoading && pinned.length === 0 && (
+        {!rows.isPending && pinned.length === 0 && (
           <EmptyState icon={<FolderOpen className="size-5" />} title="Nothing shared yet"
             body={canAdd
               ? 'Add a routine video, the music for this term, or a handout — everyone in this class will see it.'

@@ -3,13 +3,14 @@
 import * as React from 'react';
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { GraduationCap, AlertTriangle, Users, Clock, FolderOpen, ChevronRight } from 'lucide-react';
+import { GraduationCap, AlertTriangle, Users, Clock, FolderOpen, ChevronRight, Plus, Pencil } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection, KeyValue } from '@/components/app/detail-panel';
 import { useRows } from '@/lib/query';
 import { useSelection } from '@/lib/use-selection';
-import { Badge, Card, EmptyState, Skeleton, ErrorState, type Tone } from '@/components/ui';
+import { Badge, Button, Card, EmptyState, Skeleton, ErrorState, type Tone } from '@/components/ui';
 import * as C from '@/lib/repos/classes';
+import { ClassForm } from '@/components/app/class-form';
 import { money, ageFrom, dateShort } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
@@ -23,6 +24,7 @@ export default function ClassesPage() {
 function Classes() {
   const rows = useRows<C.ClassRow>(['classes'], C.CLASSES);
   const { selected, select } = useSelection();
+  const [adding, setAdding] = React.useState(false);
 
   const byDay = React.useMemo(() => {
     const map = new Map<number, C.ClassRow[]>();
@@ -40,7 +42,10 @@ function Classes() {
   return (
     <Shell title="Classes"
       subtitle={rows.data ? `${totals.classes} classes · ${totals.taken} of ${totals.places} places filled (${totals.pct}%)` : undefined}
-      allow={['owner', 'admin']}>
+      allow={['owner', 'admin']}
+      actions={<Button size="sm" variant="primary" onClick={() => setAdding(true)}>
+        <Plus className="size-4" aria-hidden /> New class
+      </Button>}>
       <div className="mx-auto max-w-6xl">
         <div className={cn('gap-5', selected ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,400px)]' : 'block')}>
           <div className="min-w-0 space-y-4">
@@ -63,6 +68,7 @@ function Classes() {
           {selected && <ClassDetail id={selected} rows={rows.data ?? []} onClose={() => select(null)} />}
         </div>
       </div>
+      {adding && <ClassForm onClose={() => setAdding(false)} />}
     </Shell>
   );
 }
@@ -103,6 +109,7 @@ function ClassLine({ c, active, onSelect }: { c: C.ClassRow; active: boolean; on
 
 function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; onClose: () => void }) {
   const c = rows.find(r => r.id === id);
+  const [editing, setEditing] = React.useState(false);
   const roster = useRows<{ id: string; first_name: string; last_name: string; date_of_birth: string;
                            family_name: string; has_alert: boolean; attendance_pct: number | null }>(
     ['roster', id], C.CLASS_ROSTER, [id]);
@@ -123,6 +130,16 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
               ['Sessions left', `${c.sessions_left}`],
               ['Trials', c.trials_enabled ? 'Open for trials' : 'Not taking trials'],
             ]} />
+          </DetailSection>
+
+          <DetailSection title="Setup">
+            <Button className="w-full" onClick={() => setEditing(true)}>
+              <Pencil className="size-4" aria-hidden /> Edit this class
+            </Button>
+            <p className="mt-1.5 text-[12.5px] text-ink-3">
+              Day, time, room, teacher, places and price. Moving the class rebuilds
+              the sessions nobody has registered yet.
+            </p>
           </DetailSection>
 
           <DetailSection title="Material">
@@ -177,6 +194,7 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
           )}
         </>
       )}
+      {editing && <ClassForm classId={id} onClose={() => setEditing(false)} />}
     </DetailPanel>
   );
 }

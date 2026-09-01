@@ -79,8 +79,6 @@ on conflict (session_id, student_id) do update
       client_marked_at = excluded.client_marked_at
 returning id, status`;
 
-export const CLOSE_REGISTER = `
-update class_session set register_closed_at = now() where id = $1 returning id`;
 
 /** Everyone a teacher may see, which is everyone in their own classes. */
 export const MY_STUDENTS = `
@@ -97,3 +95,74 @@ select s.id, s.first_name, s.last_name, s.date_of_birth,
   left join student_safety_brief b on b.student_id = s.id
  where s.deleted_at is null
  order by s.last_name, s.first_name`;
+
+/* ── Running the room: notes, register close, class notices ─────────────── */
+
+/** What the teacher wrote about how the session went. */
+export const SESSION_NOTES = `
+select cs.id, cs.notes, cs.register_closed_at, cs.status, cs.class_id
+  from class_session cs where cs.id = $1 and cs.deleted_at is null`;
+
+export const SAVE_SESSION_NOTES = `
+update class_session set notes = nullif(btrim($2), ''), updated_at = now()
+ where id = $1
+returning id, notes`;
+
+/** MARK_ATTENDANCE clears the reason along with the mark, which is right: a
+ *  child marked present has no absence to explain. This sets the reason on a
+ *  mark already made, without disturbing it. */
+export const SET_REASON = `
+update attendance_record set reason = nullif(btrim($3), ''), updated_at = now()
+ where session_id = $1 and student_id = $2 and deleted_at is null
+returning id, reason`;
+
+/** Refuses while anyone is unmarked, so "closed" always means complete. */
+export const CLOSE_REGISTER = `select app.close_register($1) as ok`;
+
+export const REOPEN_REGISTER = `
+update class_session set register_closed_at = null, updated_at = now()
+ where id = $1
+returning id`;
+
+export type Notice = {
+  id: string; subject: string | null; body: string; sent_at: Stamp;
+  sent_by_name: string | null; class_name: string | null; mine: boolean;
+};
+
+/** Notices pinned to one class, newest first. RLS decides who sees them. */
+export const CLASS_NOTICES = `
+select cm.id, cm.subject, cm.body, cm.sent_at,
+       coalesce(sm.display_name, u.full_name) as sent_by_name,
+       c.name as class_name,
+       (cm.sent_by = auth.uid()) as mine
+  from communication cm
+  left join class c on c.id = cm.class_id
+  left join user_account u on u.id = cm.sent_by
+  left join staff_member sm on sm.user_id = cm.sent_by and sm.deleted_at is null
+ where cm.deleted_at is null and cm.kind = 'class_broadcast' and cm.class_id = $1
+ order by cm.sent_at desc`;
+
+export const POST_NOTICE = `
+insert into communication (studio_id, kind, channel, class_id, subject, body, sent_by)
+select c.studio_id, 'class_broadcast', 'in_app', c.id, nullif(btrim($2), ''), btrim($3), auth.uid()
+  from class c where c.id = $1
+returning id`;
+
+export const EDIT_NOTICE = `
+update communication set subject = nullif(btrim($2), ''), body = btrim($3), updated_at = now()
+ where id = $1
+returning id`;
+
+export const WITHDRAW_NOTICE = `select app.withdraw_notice($1) as ok`;
+
+/** Everything a teacher has sent lately, across all their classes. */
+export const MY_NOTICES = `
+select cm.id, cm.subject, cm.body, cm.sent_at, c.name as class_name,
+       (cm.sent_by = auth.uid()) as mine,
+       (select count(*)::int from enrolment e
+         where e.class_id = cm.class_id and e.status = 'active' and e.deleted_at is null) as reaches
+  from communication cm
+  join class c on c.id = cm.class_id
+ where cm.deleted_at is null and cm.kind = 'class_broadcast'
+ order by cm.sent_at desc
+ limit 40`;
