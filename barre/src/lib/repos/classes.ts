@@ -30,7 +30,7 @@ select c.id, c.name, ds.name as style, ds.colour, lv.name as level,
  order by c.day_of_week, c.start_time`;
 
 export const CLASS_ROSTER = `
-select s.id, s.first_name, s.last_name, s.date_of_birth, e.started_on,
+select s.id, e.id as enrolment_id, s.first_name, s.last_name, s.date_of_birth, e.started_on,
        f.name as family_name,
        coalesce((select m.requires_alert from medical_record m
                   where m.student_id = s.id and m.deleted_at is null), false) as has_alert,
@@ -148,3 +148,88 @@ select c.id, c.name, c.term_id, c.dance_style_id, c.level_id, c.location_id, c.r
        (select count(*)::int from class_session cs
          where cs.class_id = c.id and cs.deleted_at is null and cs.starts_at > now()) as future_sessions
   from class c where c.id = $1 and c.deleted_at is null`;
+
+/* ── Moving people through the pipeline ─────────────────────────────────── */
+
+/** A plain insert: app.enforce_capacity refuses a thirteenth child in a class
+ *  of twelve, and enrolment_one_active_place refuses the same child twice. */
+export const ENROL = `
+insert into enrolment (studio_id, class_id, student_id, status, started_on, note, created_by)
+select c.studio_id, c.id, $2, 'active', coalesce($3::date, current_date),
+       nullif(btrim($4),''), auth.uid()
+  from class c where c.id = $1
+returning id`;
+
+/** Withdrawing offers the freed place to whoever has waited longest, and
+ *  returns that waiting-list entry so the UI can say who was offered it. */
+export const WITHDRAW = `select app.withdraw_enrolment($1, $2) as offered`;
+
+export const MOVE_CLASS = `
+update enrolment set class_id = $2, updated_at = now(),
+       note = coalesce(nullif(btrim($3),''), note)
+ where id = $1 and status = 'active'
+returning id`;
+
+export const JOIN_WAITLIST = `
+insert into waitlist_entry (studio_id, class_id, student_id, status, position, note)
+select c.studio_id, c.id, $2, 'waiting', 0, nullif(btrim($3),'')
+  from class c where c.id = $1
+returning id, position`;
+
+export const OFFER_PLACE   = `select app.offer_waitlist_place($1, $2) as ok`;
+export const ACCEPT_PLACE  = `select app.accept_waitlist_place($1) as enrolment_id`;
+export const DECLINE_PLACE = `select app.decline_waitlist_place($1, $2) as ok`;
+
+export const BOOK_TRIAL = `
+insert into trial (studio_id, class_id, session_id, student_id, status, price_minor, created_by)
+select cs.studio_id, cs.class_id, cs.id, $2, 'booked', c.trial_price_minor, auth.uid()
+  from class_session cs join class c on c.id = cs.class_id
+ where cs.id = $1
+returning id`;
+
+export const TRIAL_OUTCOME = `select app.record_trial_outcome($1, $2, $3) as ok`;
+export const CONVERT_TRIAL = `select app.convert_trial($1, $2) as enrolment_id`;
+
+export type TrialRow = {
+  id: string; status: string; starts_at: string; class_name: string;
+  student_name: string | null; student_id: string | null;
+  contact_name: string | null; enquiry_id: string | null;
+};
+
+export const TRIALS = `
+select t.id, t.status::text as status, cs.starts_at, c.name as class_name,
+       case when s.id is null then null
+            else s.first_name || ' ' || s.last_name end as student_name,
+       s.id as student_id, e.contact_name, t.enquiry_id
+  from trial t
+  join class c on c.id = t.class_id
+  left join class_session cs on cs.id = t.session_id
+  left join student s on s.id = t.student_id
+  left join enquiry e on e.id = t.enquiry_id
+ where t.deleted_at is null
+ order by (t.status in ('requested','booked')) desc, cs.starts_at nulls last`;
+
+/** Upcoming sessions of one class, for booking a trial into a real date. */
+export const CLASS_SESSIONS_AHEAD = `
+select cs.id, cs.starts_at
+  from class_session cs
+ where cs.class_id = $1 and cs.deleted_at is null
+   and cs.starts_at > now() and cs.status = 'scheduled'
+ order by cs.starts_at limit 8`;
+
+/** Children not already in a given class — the candidates to enrol. */
+export const ENROLLABLE_STUDENTS = `
+select s.id, s.first_name, s.last_name, s.date_of_birth, f.name as family_name
+  from student s
+  join family f on f.id = s.family_id
+ where s.deleted_at is null and s.left_on is null
+   and not exists (select 1 from enrolment e
+                    where e.student_id = s.id and e.class_id = $1
+                      and e.status = 'active' and e.deleted_at is null)
+ order by s.last_name, s.first_name`;
+
+export const SET_ENQUIRY_STAGE = `
+update enquiry set stage = $2::enquiry_stage, updated_at = now(),
+       next_action_on = $3::date
+ where id = $1
+returning id`;

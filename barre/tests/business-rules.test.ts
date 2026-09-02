@@ -572,3 +572,218 @@ describe('the office describes the studio', () => {
     });
   });
 });
+
+/* ==========================================================================
+   The pipeline: places given, given up, and passed on.
+   ========================================================================== */
+describe('enrolling and withdrawing', () => {
+  const spareStudent = async (q: any, classId: string) => {
+    const [s] = await q(
+      `select s.id from student s
+        where s.deleted_at is null
+          and not exists (select 1 from enrolment e where e.student_id = s.id
+                           and e.class_id = $1 and e.status = 'active' and e.deleted_at is null)
+        limit 1`, [classId]);
+    return s.id as string;
+  };
+  const enrol = (q: any, classId: string, studentId: string) =>
+    q(`insert into enrolment (studio_id, class_id, student_id, created_by)
+       select c.studio_id, c.id, $2, auth.uid() from class c where c.id = $1 returning id`,
+      [classId, studentId]);
+
+  it('an admin can enrol a child, and cannot enrol the same child twice', async () => {
+    await asUser(USERS.admin, async q => {
+      const student = await spareStudent(q, CLASS.juniorTap);
+      const [e] = await enrol(q, CLASS.juniorTap, student);
+      expect(e.id).toBeTruthy();
+      expect(await expectRejected(() => enrol(q, CLASS.juniorTap, student)))
+        .toMatch(/duplicate key|enrolment_one_active_place/i);
+    });
+  });
+
+  it('a full class refuses the next child', async () => {
+    await asUser(USERS.admin, async q => {
+      // Grade 3 Ballet is seeded full.
+      const student = await spareStudent(q, CLASS.grade3Ballet);
+      expect(await expectRejected(() => enrol(q, CLASS.grade3Ballet, student)))
+        .toMatch(/CLASS_FULL/);
+    });
+  });
+
+  it('withdrawing frees the place and offers it to whoever waited longest', async () => {
+    await asUser(USERS.admin, async q => {
+      const [top] = await q(
+        `select id, position, student_id from waitlist_entry
+          where class_id = $1 and status = 'waiting' and deleted_at is null
+          order by position limit 1`, [CLASS.grade3Ballet]);
+      expect(top).toBeTruthy();
+
+      const [place] = await q(
+        `select id from enrolment where class_id = $1 and status = 'active'
+           and deleted_at is null limit 1`, [CLASS.grade3Ballet]);
+      const [res] = await q(`select app.withdraw_enrolment($1, 'Moving away') as offered`, [place.id]);
+
+      expect(res.offered).toBe(top.id);
+      const [w] = await q(`select status, offered_at, offer_expires_at from waitlist_entry
+                            where id = $1`, [top.id]);
+      expect(w.status).toBe('offered');
+      expect(w.offered_at).toBeTruthy();
+      expect(w.offer_expires_at).toBeTruthy();
+
+      const [left] = await q(`select status, ended_on, note from enrolment where id = $1`, [place.id]);
+      expect(left.status).toBe('left');
+      expect(left.ended_on).toBeTruthy();
+      expect(left.note).toBe('Moving away');
+    });
+  });
+
+  it('accepting an offer creates the enrolment and closes the entry, in one step', async () => {
+    await asUser(USERS.admin, async q => {
+      const [place] = await q(`select id from enrolment where class_id = $1 and status = 'active'
+                                and deleted_at is null limit 1`, [CLASS.grade3Ballet]);
+      const [res] = await q(`select app.withdraw_enrolment($1) as offered`, [place.id]);
+
+      const [enrolId] = await q(`select app.accept_waitlist_place($1) as id`, [res.offered]);
+      expect(enrolId.id).toBeTruthy();
+
+      const [w] = await q(`select status, responded_at, student_id from waitlist_entry
+                            where id = $1`, [res.offered]);
+      expect(w.status).toBe('accepted');
+      expect(w.responded_at).toBeTruthy();
+
+      const [e] = await q(`select student_id, class_id, status, note from enrolment where id = $1`,
+                          [enrolId.id]);
+      expect(e.student_id).toBe(w.student_id);
+      expect(e.class_id).toBe(CLASS.grade3Ballet);
+      expect(e.status).toBe('active');
+      expect(e.note).toBe('From the waiting list');
+    });
+  });
+
+  it('an offer accepted into a class that filled up again is still refused', async () => {
+    await asUser(USERS.admin, async q => {
+      const [top] = await q(`select id from waitlist_entry where class_id = $1
+                              and status = 'waiting' and deleted_at is null
+                              order by position limit 1`, [CLASS.grade3Ballet]);
+      await q(`select app.offer_waitlist_place($1)`, [top.id]);
+      // The class was never actually emptied, so the capacity trigger holds.
+      expect(await expectRejected(() => q(`select app.accept_waitlist_place($1)`, [top.id])))
+        .toMatch(/CLASS_FULL/);
+    });
+  });
+
+  it('declining passes the place down the list', async () => {
+    await asUser(USERS.admin, async q => {
+      const [place] = await q(`select id from enrolment where class_id = $1 and status = 'active'
+                                and deleted_at is null limit 1`, [CLASS.grade3Ballet]);
+      const [res] = await q(`select app.withdraw_enrolment($1) as offered`, [place.id]);
+      const [second] = await q(`select id from waitlist_entry where class_id = $1
+                                 and status = 'waiting' and deleted_at is null
+                                 order by position limit 1`, [CLASS.grade3Ballet]);
+
+      await q(`select app.decline_waitlist_place($1, 'Found another class')`, [res.offered]);
+      const [next] = await q(`select status from waitlist_entry where id = $1`, [second.id]);
+      expect(next.status).toBe('offered');
+    });
+  });
+
+  it('a teacher can do none of it', async () => {
+    await asUser(USERS.teacherTap, async q => {
+      const [e] = await q(`select id from enrolment limit 1`);
+      expect(await expectRejected(() => q(`select app.withdraw_enrolment($1)`, [e.id])))
+        .toMatch(/only the office/i);
+      const [w] = await q(`select id from waitlist_entry limit 1`);
+      if (w) {
+        expect(await expectRejected(() => q(`select app.accept_waitlist_place($1)`, [w.id])))
+          .toMatch(/only the office/i);
+      }
+    });
+  });
+});
+
+describe('trials', () => {
+  it('converting an enquiry trial creates the family, the child and the place', async () => {
+    await asUser(USERS.admin, async q => {
+      // Every seeded trial comes from an enquiry: the studio knows a name and
+      // a date of birth, and nothing else. This is the common case.
+      const [t] = await q(
+        `select t.id, t.class_id, t.enquiry_id, e.child_name, e.contact_name
+           from trial t join enquiry e on e.id = t.enquiry_id
+          where t.deleted_at is null and t.student_id is null
+            and t.status in ('booked','attended')
+            and e.child_name is not null and e.child_dob is not null
+          limit 1`);
+      expect(t).toBeTruthy();
+
+      const before = await q(`select count(*)::int n from student`);
+      const [res] = await q(`select app.convert_trial($1, 'Loved it') as id`, [t.id]);
+      expect(res.id).toBeTruthy();
+
+      const after = await q(`select count(*)::int n from student`);
+      expect(after[0].n).toBe(before[0].n + 1);
+
+      const [e] = await q(
+        `select e.status, e.class_id, e.note, s.first_name, f.name as family_name,
+                (select count(*)::int from guardian g where g.family_id = f.id) as guardians
+           from enrolment e
+           join student s on s.id = e.student_id
+           join family f on f.id = s.family_id
+          where e.id = $1`, [res.id]);
+      expect(e.status).toBe('active');
+      expect(e.class_id).toBe(t.class_id);
+      expect(e.note).toBe('Loved it');
+      expect(t.child_name).toContain(e.first_name);
+      expect(e.guardians).toBe(1);
+      expect(e.family_name).toMatch(/family$/);
+
+      const [trial] = await q(`select status, student_id from trial where id = $1`, [t.id]);
+      expect(trial.status).toBe('converted');
+      expect(trial.student_id).toBeTruthy();
+
+      const [enq] = await q(`select stage::text as stage from enquiry where id = $1`, [t.enquiry_id]);
+      expect(enq.stage).toBe('enrolled');
+    });
+  });
+
+  it('refuses to convert the same trial twice', async () => {
+    await asUser(USERS.admin, async q => {
+      const [t] = await q(`select id from trial where status = 'converted' and deleted_at is null limit 1`);
+      expect(await expectRejected(() => q(`select app.convert_trial($1)`, [t.id])))
+        .toMatch(/ALREADY_CONVERTED/);
+    });
+  });
+
+  it('recording an outcome keeps the enquiry stage honest', async () => {
+    await asUser(USERS.admin, async q => {
+      const [t] = await q(`select id, enquiry_id from trial
+                            where enquiry_id is not null and deleted_at is null limit 1`);
+      await q(`select app.record_trial_outcome($1, 'missed', 'No show')`, [t.id]);
+      const [enq] = await q(`select stage::text as stage from enquiry where id = $1`, [t.enquiry_id]);
+      expect(enq.stage).toBe('trial_missed');
+
+      await q(`select app.record_trial_outcome($1, 'attended')`, [t.id]);
+      const [enq2] = await q(`select stage::text as stage from enquiry where id = $1`, [t.enquiry_id]);
+      expect(enq2.stage).toBe('trial_attended');
+    });
+  });
+
+  it('rejects an outcome that is not one of the three', async () => {
+    await asUser(USERS.admin, async q => {
+      const [t] = await q(`select id from trial where deleted_at is null limit 1`);
+      expect(await expectRejected(() => q(`select app.record_trial_outcome($1, 'brilliant')`, [t.id])))
+        .toMatch(/BAD_OUTCOME/);
+    });
+  });
+
+  it('a trial with neither a child nor an enquiry cannot be converted', async () => {
+    await asUser(USERS.admin, async q => {
+      const [c] = await q(`select id, studio_id from class limit 1`);
+      const [e] = await q(`insert into enquiry (studio_id, contact_name, stage)
+                           values ($1, 'No Details', 'trial_booked') returning id`, [c.studio_id]);
+      const [t] = await q(`insert into trial (studio_id, class_id, enquiry_id, status)
+                           values ($1, $2, $3, 'booked') returning id`, [c.studio_id, c.id, e.id]);
+      expect(await expectRejected(() => q(`select app.convert_trial($1)`, [t.id])))
+        .toMatch(/NO_CHILD_DETAILS/);
+    });
+  });
+});

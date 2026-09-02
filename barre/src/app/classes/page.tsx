@@ -3,7 +3,8 @@
 import * as React from 'react';
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { GraduationCap, AlertTriangle, Users, Clock, FolderOpen, ChevronRight, Plus, Pencil } from 'lucide-react';
+import { GraduationCap, AlertTriangle, Users, Clock, FolderOpen, ChevronRight,
+         Plus, Pencil, UserPlus, UserMinus, Sparkles } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection, KeyValue } from '@/components/app/detail-panel';
 import { useRows } from '@/lib/query';
@@ -11,6 +12,9 @@ import { useSelection } from '@/lib/use-selection';
 import { Badge, Button, Card, EmptyState, Skeleton, ErrorState, type Tone } from '@/components/ui';
 import * as C from '@/lib/repos/classes';
 import { ClassForm } from '@/components/app/class-form';
+import {
+  EnrolSheet, WithdrawSheet, WaitlistActions, BookTrialSheet,
+} from '@/components/app/enrolment-actions';
 import { money, ageFrom, dateShort } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
@@ -110,10 +114,17 @@ function ClassLine({ c, active, onSelect }: { c: C.ClassRow; active: boolean; on
 function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; onClose: () => void }) {
   const c = rows.find(r => r.id === id);
   const [editing, setEditing] = React.useState(false);
-  const roster = useRows<{ id: string; first_name: string; last_name: string; date_of_birth: string;
-                           family_name: string; has_alert: boolean; attendance_pct: number | null }>(
+  const [enrolling, setEnrolling] = React.useState(false);
+  const [trialling, setTrialling] = React.useState(false);
+  const [withdrawing, setWithdrawing] = React.useState<
+    { id: string; name: string } | null>(null);
+  const full = !!c && c.enrolled >= c.capacity;
+  const roster = useRows<{ id: string; enrolment_id: string; first_name: string; last_name: string;
+                           date_of_birth: string; family_name: string; has_alert: boolean;
+                           attendance_pct: number | null }>(
     ['roster', id], C.CLASS_ROSTER, [id]);
-  const waitlist = useRows<{ id: string; position: number; first_name: string; last_name: string; family_name: string }>(
+  const waitlist = useRows<{ id: string; position: number; status: string; first_name: string;
+                             last_name: string; family_name: string }>(
     ['waitlist', id], C.CLASS_WAITLIST, [id]);
 
   return (
@@ -152,6 +163,22 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
             </Link>
           </DetailSection>
 
+          <DetailSection title="Places">
+            <div className="flex gap-2">
+              <Button className="flex-1" onClick={() => setEnrolling(true)}>
+                <UserPlus className="size-4" aria-hidden /> {full ? 'Waiting list' : 'Enrol'}
+              </Button>
+              <Button className="flex-1" onClick={() => setTrialling(true)}>
+                <Sparkles className="size-4" aria-hidden /> Book a trial
+              </Button>
+            </div>
+            {full && (
+              <p className="mt-1.5 text-[12.5px] text-caution">
+                Full. New names join the waiting list and are offered the next place automatically.
+              </p>
+            )}
+          </DetailSection>
+
           <DetailSection title={`Register (${roster.data?.length ?? 0})`}>
             {roster.isLoading && <Skeleton className="h-20" />}
             {roster.data?.length === 0 && <p className="text-sm text-ink-3">Nobody enrolled yet.</p>}
@@ -169,6 +196,12 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
                     <span className={cn('tnum shrink-0 text-[12.5px]',
                       s.attendance_pct >= 85 ? 'text-ink-3' : 'font-medium text-caution')}>{s.attendance_pct}%</span>
                   )}
+                  <Button size="sm" variant="ghost"
+                    aria-label={`Withdraw ${s.first_name} ${s.last_name}`}
+                    onClick={() => setWithdrawing({ id: s.enrolment_id,
+                      name: `${s.first_name} ${s.last_name}` })}>
+                    <UserMinus className="size-4" aria-hidden />
+                  </Button>
                 </li>
               ))}
             </ul>
@@ -178,12 +211,16 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
             <DetailSection title={`Waiting list (${waitlist.data!.length})`}>
               <ol className="divide-y divide-line rounded-[var(--radius-md)] border border-line">
                 {waitlist.data!.map(w => (
-                  <li key={w.id} className="flex items-center gap-3 px-3 py-2">
-                    <span className="tnum grid size-6 shrink-0 place-items-center rounded-full bg-surface-2 text-[12px] font-semibold text-ink-2">
-                      {w.position}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-sm">{w.first_name} {w.last_name}</span>
-                    <span className="shrink-0 truncate text-[12px] text-ink-3">{w.family_name}</span>
+                  <li key={w.id} className="px-3 py-2">
+                    <div className="flex items-center gap-3">
+                      <span className="tnum grid size-6 shrink-0 place-items-center rounded-full bg-surface-2 text-[12px] font-semibold text-ink-2">
+                        {w.position}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-sm">{w.first_name} {w.last_name}</span>
+                      {w.status === 'offered' && <Badge tone="info">Offered</Badge>}
+                      <span className="shrink-0 truncate text-[12px] text-ink-3">{w.family_name}</span>
+                    </div>
+                    <WaitlistActions entry={w} />
                   </li>
                 ))}
               </ol>
@@ -195,6 +232,16 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
         </>
       )}
       {editing && <ClassForm classId={id} onClose={() => setEditing(false)} />}
+      {enrolling && c && (
+        <EnrolSheet classId={id} className={c.name} full={full} onClose={() => setEnrolling(false)} />
+      )}
+      {trialling && c && (
+        <BookTrialSheet classId={id} className={c.name} onClose={() => setTrialling(false)} />
+      )}
+      {withdrawing && (
+        <WithdrawSheet enrolmentId={withdrawing.id} name={withdrawing.name}
+                       onClose={() => setWithdrawing(null)} />
+      )}
     </DetailPanel>
   );
 }

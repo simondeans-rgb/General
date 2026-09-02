@@ -1,12 +1,13 @@
 'use client';
 
 import * as React from 'react';
-import { Route, Phone, Mail, CalendarClock } from 'lucide-react';
+import { Route, Phone, Mail, CalendarClock, Sparkles } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { useRows, useRow } from '@/lib/query';
 import { Badge, Card, CardHeader, EmptyState, Skeleton, ErrorState, type Tone } from '@/components/ui';
 import * as C from '@/lib/repos/classes';
-import { dateShort, ageFrom } from '@/lib/format';
+import { TrialActions } from '@/components/app/enrolment-actions';
+import { dateShort, ageFrom, time, relativeDay } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 const STAGE: Record<string, { label: string; tone: Tone }> = {
@@ -44,6 +45,8 @@ export default function EnrolmentPage() {
             ]} />}
           </div>
         </Card>
+
+        <Trials />
 
         <Card>
           <CardHeader title="Pipeline"
@@ -91,6 +94,48 @@ export default function EnrolmentPage() {
         </Card>
       </div>
     </Shell>
+  );
+}
+
+/**
+ * Trials, and the one question that decides the funnel: did they come, and are
+ * they joining? Saying "joining" here builds the family, the child and the
+ * place in one step — most trials arrive from an enquiry with no child record
+ * behind them at all.
+ */
+function Trials() {
+  const rows = useRows<C.TrialRow>(['trials'], C.TRIALS);
+  const live = (rows.data ?? []).filter(t => !['converted', 'cancelled'].includes(t.status));
+  const done = (rows.data ?? []).filter(t => t.status === 'converted');
+
+  return (
+    <Card>
+      <CardHeader title="Trials"
+        subtitle={live.length ? `${live.length} still to settle` : 'All settled'} />
+      {rows.isPending && <div className="space-y-3 p-4">{[0,1].map(i => <Skeleton key={i} className="h-14" />)}</div>}
+      {rows.error && <div className="p-4"><ErrorState error={rows.error} onRetry={() => rows.refetch()} /></div>}
+      {!rows.isPending && rows.data?.length === 0 && (
+        <EmptyState icon={<Sparkles className="size-5" />} title="No trials booked"
+          body="Book one from a class, and the outcome will land here." />
+      )}
+      {(live.length > 0 || done.length > 0) && (
+        <ul className="divide-y divide-line">
+          {[...live, ...done.slice(0, 3)].map(t => (
+            <li key={t.id} className="flex flex-wrap items-start gap-x-3 gap-y-2 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <p className="font-medium">{t.student_name ?? t.contact_name ?? 'Someone'}</p>
+                <p className="mt-0.5 text-[13px] text-ink-2">{t.class_name}</p>
+                <p className="text-[12.5px] text-ink-3">
+                  {t.starts_at ? `${relativeDay(t.starts_at)} at ${time(t.starts_at)}` : 'No date yet'}
+                  {!t.student_id && ' · no child record yet'}
+                </p>
+              </div>
+              <TrialActions trial={t} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
   );
 }
 
