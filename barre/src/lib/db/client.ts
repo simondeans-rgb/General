@@ -36,7 +36,7 @@ const STORAGE = 'idb://barre-demo-v1';
  * The fingerprint below changes whenever a migration or the seed changes, and
  * a mismatch rebuilds from scratch. Cheap, and it fails safe.
  */
-const SEED_VERSION = 4;
+const SEED_VERSION = 5;
 
 function fingerprint(): string {
   let h = 5381;

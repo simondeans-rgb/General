@@ -453,3 +453,122 @@ describe('class notices go one way, and only to a teacher’s own classes', () =
     });
   });
 });
+
+/* ==========================================================================
+   Studio setup: the things a studio must describe before it can teach.
+   ========================================================================== */
+describe('the office describes the studio', () => {
+  it('an admin can add a location, a room inside it, and a term', async () => {
+    await asUser(USERS.admin, async q => {
+      const [loc] = await q(
+        `insert into location (studio_id, name, city) select id, 'Deptford Studio', 'London'
+           from studio limit 1 returning id`);
+      expect(loc.id).toBeTruthy();
+
+      const [room] = await q(
+        `insert into room (studio_id, location_id, name, capacity)
+         select l.studio_id, l.id, 'Studio Three', 18 from location l where l.id = $1
+         returning id`, [loc.id]);
+      expect(room.id).toBeTruthy();
+
+      const [term] = await q(
+        `insert into term (studio_id, name, starts_on, ends_on, status)
+         select id, 'Spring 2027', current_date + 200, current_date + 290, 'draft'
+           from studio limit 1 returning id`);
+      expect(term.id).toBeTruthy();
+    });
+  });
+
+  it('a term break makes the generator skip those weeks', async () => {
+    await asUser(USERS.admin, async q => {
+      const [term] = await q(
+        `insert into term (studio_id, name, starts_on, ends_on, status)
+         select id, 'Break Test', current_date, current_date + 55, 'published'
+           from studio limit 1 returning id, studio_id`);
+      const [style] = await q(`select id from dance_style limit 1`);
+      const [room] = await q(`select id, location_id from room limit 1`);
+      const [cls] = await q(
+        `insert into class (studio_id, term_id, dance_style_id, location_id, room_id, name,
+                            day_of_week, start_time, duration_min, capacity, price_minor, pricing)
+         select t.studio_id, t.id, $2, $3, $4, 'Break Test Class', 1, '17:00', 60, 10, 5000, 'term'
+           from term t where t.id = $1 returning id`,
+        [term.id, style.id, room.location_id, room.id]);
+
+      const [before] = await q(`select app.generate_class_sessions($1) as n`, [cls.id]);
+      await q(`delete from class_session where class_id = $1`, [cls.id]);
+
+      // Close the studio for a fortnight in the middle of the term.
+      await q(`insert into term_break (studio_id, term_id, name, starts_on, ends_on)
+               select t.studio_id, t.id, 'Half term', current_date + 21, current_date + 34
+                 from term t where t.id = $1`, [term.id]);
+      const [after] = await q(`select app.generate_class_sessions($1) as n`, [cls.id]);
+
+      expect(after.n).toBeLessThan(before.n);
+    });
+  });
+
+  it('refuses to retire a room that classes are still taught in', async () => {
+    await asUser(USERS.admin, async q => {
+      const [room] = await q(`select room_id from class where room_id is not null
+                               and deleted_at is null limit 1`);
+      expect(await expectRejected(() => q(`select app.retire_setup('room', $1)`, [room.room_id])))
+        .toMatch(/IN_USE/);
+      // And it is still there.
+      expect(await q(`select id from room where id = $1 and deleted_at is null`, [room.room_id]))
+        .toHaveLength(1);
+    });
+  });
+
+  it('retires an unused room, and takes a term’s breaks with the term', async () => {
+    await asUser(USERS.admin, async q => {
+      const [loc] = await q(`select id, studio_id from location limit 1`);
+      const [room] = await q(`insert into room (studio_id, location_id, name)
+                              values ($1, $2, 'Spare Room') returning id`, [loc.studio_id, loc.id]);
+      const [ok] = await q(`select app.retire_setup('room', $1) as ok`, [room.id]);
+      expect(ok.ok).toBe(true);
+      expect(await q(`select id from room where id = $1`, [room.id])).toHaveLength(0);
+
+      const [term] = await q(`insert into term (studio_id, name, starts_on, ends_on)
+                              values ($1, 'Empty Term', current_date + 400, current_date + 450)
+                              returning id`, [loc.studio_id]);
+      await q(`insert into term_break (studio_id, term_id, name, starts_on, ends_on)
+               values ($1, $2, 'A break', current_date + 410, current_date + 412)`,
+              [loc.studio_id, term.id]);
+      await q(`select app.retire_setup('term', $1)`, [term.id]);
+      expect(await q(`select id from term_break where term_id = $1`, [term.id])).toHaveLength(0);
+    });
+  });
+
+  it('a teacher cannot change the studio’s setup', async () => {
+    await asUser(USERS.teacherTap, async q => {
+      expect(await expectRejected(() => q(
+        `insert into location (studio_id, name) values ($1, 'My Own Studio') returning id`,
+        [STUDIO_ID]))).toMatch(/row-level security/i);
+
+      const [loc] = await q(`select id from location limit 1`);
+      expect(await expectRejected(() => q(`select app.retire_setup('location', $1)`, [loc.id])))
+        .toMatch(/only the office/i);
+      expect(await q(`update location set name = 'Renamed' where id = $1 returning id`, [loc.id]))
+        .toHaveLength(0);
+    });
+  });
+
+  it('only the owner may change the studio record itself', async () => {
+    await asUser(USERS.admin, async q => {
+      expect(await q(`update studio set name = 'Nadia Dance' where id = $1 returning id`, [STUDIO_ID]))
+        .toHaveLength(0);
+    });
+    await asUser(USERS.owner, async q => {
+      expect(await q(`update studio set contact_phone = '020 7946 0000' where id = $1 returning id`,
+                     [STUDIO_ID])).toHaveLength(1);
+    });
+  });
+
+  it('retire_setup refuses a table that is not part of setup', async () => {
+    await asUser(USERS.admin, async q => {
+      const [s] = await q(`select id from student limit 1`);
+      expect(await expectRejected(() => q(`select app.retire_setup('student', $1)`, [s.id])))
+        .toMatch(/RETIRE_UNSUPPORTED/);
+    });
+  });
+});
