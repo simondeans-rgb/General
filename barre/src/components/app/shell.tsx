@@ -98,9 +98,17 @@ export function Shell({
         <EmptyState
           title="Not part of your role"
           body={`Signed in as ${session.name}. This area belongs to a different role.`}
-          action={<Button variant="primary" onClick={() => router.replace(ROLE_HOME[session.role])}>
-            Go to your home
-          </Button>}
+          action={
+            /* The switcher belongs here too. Without it this screen is a dead
+               end: the one place you land when you are the wrong person is the
+               one place you cannot become someone else. */
+            <div className="flex items-center justify-center gap-2">
+              <Button variant="primary" onClick={() => router.replace(ROLE_HOME[session.role])}>
+                Go to your home
+              </Button>
+              <PersonSwitcher />
+            </div>
+          }
         />
       </div>
     );

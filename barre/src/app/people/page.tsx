@@ -2,13 +2,17 @@
 
 import * as React from 'react';
 import { Suspense } from 'react';
-import { Search, AlertTriangle, CameraOff, Users, ChevronRight, Mail, Phone } from 'lucide-react';
+import { Search, AlertTriangle, CameraOff, Users, ChevronRight, Mail, Phone,
+         Plus, Pencil, HeartPulse, UserPlus } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection, KeyValue } from '@/components/app/detail-panel';
 import { useRows, useRow } from '@/lib/query';
 import { useSelection } from '@/lib/use-selection';
 import { Badge, Card, Input, EmptyState, Skeleton, ErrorState, Button } from '@/components/ui';
 import * as P from '@/lib/repos/people';
+import {
+  FamilySheet, GuardianSheet, StudentSheet, MedicalSheet, StaffSheet,
+} from '@/components/app/people-sheets';
 import { money, dateShort, ageFrom, initials } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
@@ -23,8 +27,15 @@ function People() {
   const [q, setQ] = React.useState('');
   const { selected, select } = useSelection();
 
+  const [adding, setAdding] = React.useState(false);
+  const ADD_LABEL: Record<Tab, string> = {
+    families: 'New family', students: 'Add a child', staff: 'Add a teacher' };
+
   return (
-    <Shell title="People" allow={['owner', 'admin']}>
+    <Shell title="People" allow={['owner', 'admin']}
+      actions={<Button size="sm" variant="primary" onClick={() => setAdding(true)}>
+        <Plus className="size-4" aria-hidden /> {ADD_LABEL[tab]}
+      </Button>}>
       <div className="mx-auto max-w-6xl">
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <div role="tablist" aria-label="People"
@@ -55,6 +66,10 @@ function People() {
           {selected && tab === 'students' && <StudentDetail id={selected} onClose={() => select(null)} />}
         </div>
       </div>
+
+      {adding && tab === 'families' && <FamilySheet row={null} onClose={() => setAdding(false)} />}
+      {adding && tab === 'students' && <StudentSheet row={null} onClose={() => setAdding(false)} />}
+      {adding && tab === 'staff' && <StaffSheet row={null} onClose={() => setAdding(false)} />}
     </Shell>
   );
 }
@@ -115,6 +130,10 @@ function FamilyDetail({ id, onClose }: { id: string; onClose: () => void }) {
   const messages = useRows<{ id: string; subject: string; body: string; sent_at: string }>(
     ['family-messages', id], P.FAMILY_MESSAGES, [id]);
 
+  const [editing, setEditing] = React.useState(false);
+  const [guardian, setGuardian] = React.useState<any | 'new' | null>(null);
+  const [child, setChild] = React.useState<'new' | null>(null);
+
   const f = family.data;
   return (
     <DetailPanel open onClose={onClose} title={f?.name ?? 'Family'}
@@ -128,6 +147,10 @@ function FamilyDetail({ id, onClose }: { id: string; onClose: () => void }) {
                 ? <span className="font-medium text-caution">{money(f.balance_minor)} outstanding</span>
                 : <span className="text-positive">Up to date</span>],
             ]} />
+            {f.notes && <p className="mt-2 rounded-[var(--radius-md)] bg-surface-2 p-3 text-[13px] text-ink-2">{f.notes}</p>}
+            <Button className="mt-3 w-full" onClick={() => setEditing(true)}>
+              <Pencil className="size-4" aria-hidden /> Edit family
+            </Button>
           </DetailSection>
 
           <DetailSection title={`Guardians (${guardians.data?.length ?? 0})`}>
@@ -145,9 +168,15 @@ function FamilyDetail({ id, onClose }: { id: string; onClose: () => void }) {
                     {g.phone && <a href={`tel:${g.phone}`} className="flex items-center gap-1.5 hover:text-ink">
                       <Phone className="size-3.5" aria-hidden />{g.phone}</a>}
                   </div>
+                  <Button size="sm" className="mt-2 w-full" onClick={() => setGuardian(g)}>
+                    <Pencil className="size-3.5" aria-hidden /> Edit
+                  </Button>
                 </li>
               ))}
             </ul>
+            <Button className="mt-2 w-full" onClick={() => setGuardian('new')}>
+              <UserPlus className="size-4" aria-hidden /> Add a guardian
+            </Button>
           </DetailSection>
 
           <DetailSection title={`Children (${students.data?.length ?? 0})`}>
@@ -163,6 +192,9 @@ function FamilyDetail({ id, onClose }: { id: string; onClose: () => void }) {
                 </li>
               ))}
             </ul>
+            <Button className="mt-2 w-full" onClick={() => setChild('new')}>
+              <Plus className="size-4" aria-hidden /> Add a child
+            </Button>
           </DetailSection>
 
           <DetailSection title="Invoices">
@@ -193,6 +225,16 @@ function FamilyDetail({ id, onClose }: { id: string; onClose: () => void }) {
             </ul>
           </DetailSection>
         </>
+      )}
+
+      {editing && f && <FamilySheet row={f as any} onClose={() => setEditing(false)} />}
+      {guardian && f && (
+        <GuardianSheet familyId={f.id} row={guardian === 'new' ? null : guardian}
+                       onClose={() => setGuardian(null)} />
+      )}
+      {child && f && (
+        <StudentSheet familyId={f.id} familyName={f.name} row={null}
+                      onClose={() => setChild(null)} />
       )}
     </DetailPanel>
   );
@@ -245,6 +287,9 @@ function StudentList({ q, selected, onSelect }: { q: string; selected: string | 
 
 function StudentDetail({ id, onClose }: { id: string; onClose: () => void }) {
   const rows = useRows<P.StudentRow>(['students'], P.STUDENTS);
+  const detail = useRow<P.StudentDetail>(['student-detail', id], P.STUDENT_DETAIL, [id]);
+  const [editing, setEditing] = React.useState(false);
+  const [medical, setMedical] = React.useState(false);
   const s = rows.data?.find(r => r.id === id);
   const safety = useRow<{ allergies: string | null; action_plan: string | null; requires_alert: boolean;
                           emergency_contact_name: string | null; emergency_contact_phone: string | null }>(
@@ -276,6 +321,18 @@ function StudentDetail({ id, onClose }: { id: string; onClose: () => void }) {
                 : s.photo_consent ? 'Given' : 'Not recorded'],
             ]} />
           </DetailSection>
+          <DetailSection title="Record">
+            <Button className="w-full" onClick={() => setEditing(true)}>
+              <Pencil className="size-4" aria-hidden /> Edit details
+            </Button>
+            <Button className="mt-2 w-full" onClick={() => setMedical(true)}>
+              <HeartPulse className="size-4" aria-hidden /> Medical and emergency contacts
+            </Button>
+            <p className="mt-1.5 text-[12.5px] text-ink-3">
+              Health data is held separately and every change is recorded against your name.
+            </p>
+          </DetailSection>
+
           {safety.data?.emergency_contact_name && (
             <DetailSection title="Emergency contact">
               <KeyValue rows={[
@@ -288,36 +345,61 @@ function StudentDetail({ id, onClose }: { id: string; onClose: () => void }) {
           )}
         </>
       )}
+
+      {editing && detail.data && (
+        <StudentSheet row={detail.data} familyName={detail.data.family_name}
+                      onClose={() => setEditing(false)} />
+      )}
+      {medical && s && (
+        <MedicalSheet studentId={id} studentName={`${s.preferred_name ?? s.first_name} ${s.last_name}`}
+                      onClose={() => setMedical(false)} />
+      )}
     </DetailPanel>
   );
 }
 
 /* ── Staff ───────────────────────────────────────────────────────────────── */
 function StaffList({ q }: { q: string }) {
-  const rows = useRows<{ id: string; display_name: string; email: string; phone: string; status: string;
-                         bio: string; classes: number; students: number; has_login: boolean }>(['staff'], P.STAFF);
-  const filtered = (rows.data ?? []).filter(s => !q || s.display_name.toLowerCase().includes(q.toLowerCase()));
-  if (rows.isLoading) return <ListSkeleton />;
-  if (filtered.length === 0) return <Card><EmptyState title="No staff match that search" /></Card>;
+  const rows = useRows<P.StaffRow & { students: number; has_login: boolean }>(['staff-full'], P.STAFF_FULL);
+  const [editing, setEditing] = React.useState<P.StaffRow | null>(null);
+  const filtered = (rows.data ?? []).filter(s =>
+    !q || s.display_name.toLowerCase().includes(q.toLowerCase()));
+
+  if (rows.isPending) return <ListSkeleton />;
+  if (filtered.length === 0) {
+    return <Card><EmptyState icon={<Users className="size-5" />}
+      title={q ? 'No staff match that search' : 'No teachers yet'}
+      body={q ? undefined : 'Add the people who take your classes. They appear on the timetable straight away.'} /></Card>;
+  }
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      {filtered.map(s => (
-        <Card key={s.id} className="p-4">
-          <div className="flex items-center gap-3">
-            <span aria-hidden className="grid size-10 place-items-center rounded-full bg-surface-2 text-sm font-semibold text-ink-2">
-              {initials(s.display_name)}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium">{s.display_name}</p>
-              <p className="text-[13px] text-ink-2">{s.classes} classes · {s.students} students</p>
-            </div>
-            {s.status !== 'active' && <Badge tone="neutral">Inactive</Badge>}
-          </div>
-          {s.bio && <p className="mt-3 text-[13px] text-ink-2">{s.bio}</p>}
-          {s.email && <a href={`mailto:${s.email}`} className="mt-2 block truncate text-[13px] text-accent hover:underline">{s.email}</a>}
-        </Card>
-      ))}
-    </div>
+    <>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {filtered.map(s => (
+          <Card key={s.id} className="p-4">
+            <button onClick={() => setEditing(s)}
+                    className="flex w-full items-center gap-3 text-left"
+                    aria-label={`Edit ${s.display_name}`}>
+              <span aria-hidden className="grid size-10 place-items-center rounded-full bg-surface-2 text-sm font-semibold text-ink-2">
+                {initials(s.display_name)}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium">{s.display_name}</span>
+                <span className="block text-[13px] text-ink-2">
+                  {s.classes} class{s.classes === 1 ? '' : 'es'}
+                  {s.user_id ? '' : ' · no login'}
+                </span>
+              </span>
+              {s.status !== 'active' && <Badge tone="neutral">Inactive</Badge>}
+              <Pencil className="size-4 shrink-0 text-ink-3" aria-hidden />
+            </button>
+            {s.bio && <p className="mt-3 text-[13px] text-ink-2">{s.bio}</p>}
+            {s.email && <a href={`mailto:${s.email}`}
+              className="mt-2 block truncate text-[13px] text-accent hover:underline">{s.email}</a>}
+          </Card>
+        ))}
+      </div>
+      {editing && <StaffSheet row={editing} onClose={() => setEditing(null)} />}
+    </>
   );
 }
 
