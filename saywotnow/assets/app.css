@@ -543,6 +543,21 @@ button { cursor: pointer; }
 .zone-results li:last-child .zone-result { border-bottom: 0; }
 .zone-result:hover { background: var(--surface-2); }
 
+/* ---------- Currency converter ---------- */
+.cur-amount { margin: 8px 0 4px; }
+.cur-amount-field { display: flex; align-items: center; gap: 0; border: 1.5px solid var(--line); border-radius: var(--radius-sm); background: var(--bg); }
+.cur-amount-field:focus-within { border-color: var(--focus); box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 30%, transparent); }
+.cur-code { padding: 0 4px 0 14px; font-weight: 800; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.cur-amount-field .input { border: 0; background: transparent; box-shadow: none; font-size: 1.6rem; font-weight: 800; font-variant-numeric: tabular-nums; min-height: 56px; }
+.cur-big { font-size: 1.45rem; text-align: right; overflow-wrap: anywhere; }
+.cur-list .tz-when { max-width: 62vw; }
+.cur-list .tz-state { justify-content: flex-end; }
+.rates-status { margin: 18px 0 8px; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--surface-2); color: var(--ink-2); }
+.rates-status p { display: flex; gap: 8px; align-items: flex-start; margin: 0; }
+.rates-status .icon { flex: none; margin-top: 2px; }
+.rates-status .btn-row { align-items: center; }
+.btn:disabled { opacity: .55; cursor: default; }
+
 /* Tablets: centred column, a little more air */
 @media (min-width: 600px) {
   .topbar h1 { font-size: 1.6rem; }

@@ -59,7 +59,7 @@ function check(schema, value, path, file, defs) {
 
 /* ---------- Load and schema-check ---------- */
 
-const NAMES = ['home', 'templates', 'guides', 'reactions', 'tools', 'pages', 'timezones'];
+const NAMES = ['home', 'templates', 'guides', 'reactions', 'tools', 'pages', 'timezones', 'currencies'];
 const content = {};
 for (const name of NAMES) {
   const file = `content/${name}.json`;
@@ -126,6 +126,23 @@ if (content.timezones) {
     else if (!content.timezones.places.some((p) => p.tz === tz)) fail(f, '.defaults', `"${tz}" needs a matching entry in places`);
   }
   unique(f, content.timezones.places.map((p) => `${p.city}|${p.tz}`), 'place');
+}
+if (content.currencies && content.timezones) {
+  const f = 'content/currencies.json';
+  const C = content.currencies;
+  if (C.bundledRates.rates.USD !== 1) fail(f, '.bundledRates', 'USD must be 1 (rates are per US dollar)');
+  for (const [country, code] of Object.entries(C.countryCurrency)) {
+    if (!(code in C.bundledRates.rates)) fail(f, `.countryCurrency.${country}`, `no bundled rate for ${code}`);
+  }
+  for (const k of C.defaults) {
+    const [city, country] = k.split('|');
+    if (!content.timezones.places.some((p) => p.city === city && p.country === country)) fail(f, '.defaults', `"${k}" isn't a place in timezones.json`);
+    else if (!C.countryCurrency[country]) fail(f, '.defaults', `no currency for ${country}`);
+  }
+  const index = readFileSync(join(root, 'index.html'), 'utf8');
+  if (!index.includes(new URL(C.source.endpoint).origin)) fail('index.html', '', `the Content Security Policy must allow ${new URL(C.source.endpoint).origin}`);
+  const lib = readFileSync(join(root, 'src/lib/calc/currency.js'), 'utf8');
+  if (!lib.includes(C.source.endpoint)) fail('src/lib/calc/currency.js', '', 'RATES_URL must match source.endpoint in currencies.json');
 }
 if (content.reactions) unique('content/reactions.json', content.reactions.reactions.map((r) => r.id), 'reaction id');
 if (content.tools) unique('content/tools.json', content.tools.tools.map((t) => t.id), 'tool id');

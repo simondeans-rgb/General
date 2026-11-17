@@ -400,6 +400,66 @@ await check('Time zone converter: defaults, set a time, day offsets, saved zones
   await ctx.close();
 });
 
+const RATES_FIXTURE = { result: 'success', base_code: 'USD', time_last_update_utc: 'Wed, 18 Nov 2026 00:02:31 +0000',
+  rates: { USD: 1, GBP: 0.75, EUR: 0.9, AED: 3.6725, INR: 94, CNY: 6.7, AUD: 1.5, JPY: 155, CAD: 1.4, CHF: 0.8, SEK: 10, NOK: 10.5, DKK: 6.7, PLN: 4, CZK: 22, HUF: 360, SGD: 1.3, HKD: 7.8, NZD: 1.7, ZAR: 18, MXN: 18, BRL: 5 } };
+
+await check('Currency converter: live rates, defaults, convert, swap, saved locations', async () => {
+  const { ctx, page, log } = await newApp();
+  const rateCalls = [];
+  await ctx.route('https://open.er-api.com/**', (route) => { rateCalls.push(route.request().url()); route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(RATES_FIXTURE) }); });
+  await page.goto(BASE + '#/tool/currency');
+  await page.getByText(/Rates updated/).waitFor();
+  assert.deepEqual(rateCalls, ['https://open.er-api.com/v6/latest/USD']);
+  const names = await page.locator('.cur-list .tz-name').allInnerTexts();
+  assert.deepEqual(names, ['London', 'Paris', 'Dubai', 'Delhi', 'Beijing', 'Sydney']);
+  assert.match(await page.locator('.zone-btn').innerText(), /Maryland[\s\S]*USD/);
+  const amt = (n) => page.locator('.cur-list .tz-row', { hasText: n }).locator('.cur-big');
+  assert.equal(await amt('London').innerText(), '£75.00');
+  assert.equal(await amt('Dubai').innerText(), 'AED 367.25');
+  await page.fill('#cur-amount', '1,000');
+  assert.equal(await amt('Delhi').innerText(), '₹94,000.00');
+  assert.equal(await amt('Sydney').innerText(), 'A$1,500.00');
+  await shot(page, '28-currency');
+  // Tap London: convert from GBP, keeping the value.
+  await amt('London').click();
+  assert.equal(await page.inputValue('#cur-amount'), '750');
+  assert.match(await page.locator('.zone-btn').innerText(), /London[\s\S]*GBP/);
+  assert.equal(await page.locator('.cur-list .tz-row', { hasText: 'Maryland' }).locator('.cur-big').innerText(), 'US$1,000.00');
+  // Swap Beijing for Tokyo; saved as a preference (keys only), and the amount isn't stored.
+  await page.getByRole('button', { name: 'Remove Beijing' }).click();
+  await page.getByRole('button', { name: 'Add a location' }).click();
+  await page.getByRole('searchbox', { name: /Search by city, country or currency/ }).fill('yen');
+  await page.getByRole('button', { name: /^Tokyo/ }).click();
+  assert.equal(await amt('Tokyo').innerText(), 'JP¥155,000');
+  const stored = await page.evaluate(() => localStorage.getItem('saywotnow.prefs.v1'));
+  const prefs = JSON.parse(stored);
+  assert.deepEqual(prefs.savedCurrencyPlaces, ['Maryland|USA', 'London|UK', 'Paris|France', 'Dubai|United Arab Emirates', 'Delhi|India', 'Sydney|Australia', 'Tokyo|Japan']);
+  assert.equal(prefs.currencyRates.rates.GBP, 0.75);
+  assert.doesNotMatch(stored, /750|1,000/);
+  // Reopening within the hour doesn't fetch again.
+  await page.goto(BASE + '#/toolkit');
+  await page.goto(BASE + '#/tool/currency');
+  await page.getByText(/Rates updated/).waitFor();
+  assert.equal(rateCalls.length, 1);
+  assert.equal(await page.inputValue('#cur-amount'), '100');
+  assert.deepEqual(log.external.filter((u) => !u.startsWith('https://open.er-api.com/')), []);
+  assert.deepEqual(log.errors, []);
+  await ctx.close();
+});
+
+await check('Currency converter: falls back to built-in rates when the service is unreachable', async () => {
+  const { ctx, page, log } = await newApp();
+  await ctx.route('https://open.er-api.com/**', (route) => route.abort('internetdisconnected'));
+  await page.goto(BASE + '#/tool/currency');
+  await page.getByText(/Using rates built into the app, as at 17 November 2026/).waitFor();
+  await page.getByText(/Couldn’t reach the rates service/).waitFor();
+  assert.match(await page.locator('.cur-list .tz-row', { hasText: 'London' }).locator('.cur-big').innerText(), /^£\d+\.\d\d$/);
+  await page.getByRole('link', { name: 'Rates by Exchange Rate API' }).waitFor();
+  await shot(page, '29-currency-offline');
+  assert.deepEqual(log.errors.filter((e) => !/Failed to load resource|ERR_INTERNET_DISCONNECTED/.test(e)), []);
+  await ctx.close();
+});
+
 await check('AC-04/05: works offline after first load; no external requests', async () => {
   const { ctx, page, log } = await newApp();
   await page.evaluate(async () => { await navigator.serviceWorker.ready; });

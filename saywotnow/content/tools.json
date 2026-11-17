@@ -21,6 +21,31 @@
       "note": "Working hours are shown as 08:00–18:00, Monday to Friday. Check local working patterns and public holidays before booking."
     },
     {
+      "id": "currency",
+      "title": "Currency converter",
+      "summary": "Convert an amount into the local currency of the places you work with.",
+      "icon": "coins",
+      "keywords": [
+        "currency",
+        "exchange rate",
+        "money",
+        "convert",
+        "fx",
+        "dollar",
+        "pound",
+        "euro",
+        "dirham",
+        "rupee",
+        "yuan",
+        "salary",
+        "expenses",
+        "travel"
+      ],
+      "status": "ready",
+      "howItWorks": "Enter an amount and choose where it's from. Each location shows the amount in its local currency, using mid-market rates. When you're online, SayWotNow downloads the latest rates (at most once an hour). This is the only time it connects to the internet: it asks for the day's rates and sends nothing you've typed. Offline, it uses the last rates it downloaded, or rates built into the app.",
+      "note": "Rates are indicative mid-market rates. Your bank, card or payroll provider will use its own rate and fees, so check with Finance before agreeing any pay or expenses."
+    },
+    {
       "id": "interview",
       "title": "Interview pack generator",
       "summary": "Build a structured interview pack with questions, probes and scoring.",

@@ -12,6 +12,7 @@ import { buildSbi } from '../lib/calc/sbi.js';
 import { formatWithDay, todayISO } from '../lib/dates.js';
 import { copySensitive } from '../platform.js';
 import { TimeZones } from './timezones.js';
+import { Currency } from './currency.js';
 
 const PRIVATE = { autocomplete: 'off', autocorrect: 'off', spellcheck: false };
 
@@ -198,7 +199,11 @@ function TimeZoneTool({ tool, prefs }) {
   return html`<${ToolShell} tool=${tool} prefs=${prefs}><${TimeZones} tool=${tool} prefs=${prefs} /></${ToolShell}>`;
 }
 
-const TOOLS = { holiday: Holiday, notice: Notice_, bradford: Bradford, sbi: Sbi, timezones: TimeZoneTool };
+function CurrencyTool({ tool, prefs }) {
+  return html`<${ToolShell} tool=${tool} prefs=${prefs}><${Currency} tool=${tool} prefs=${prefs} /></${ToolShell}>`;
+}
+
+const TOOLS = { holiday: Holiday, notice: Notice_, bradford: Bradford, sbi: Sbi, timezones: TimeZoneTool, currency: CurrencyTool };
 
 export function Tool({ id, prefs }) {
   const tool = content().toolById[id];

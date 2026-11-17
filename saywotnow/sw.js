@@ -1,6 +1,6 @@
 // Service worker: caches the whole app on install so it works fully offline,
 // and never talks to any other origin. Bump VERSION on every release.
-const VERSION = 'saywotnow-1.1.0-1';
+const VERSION = 'saywotnow-1.2.0-1';
 
 const FILES = [
   './',
@@ -23,6 +23,7 @@ const FILES = [
   'content/tools.json',
   'content/pages.json',
   'content/timezones.json',
+  'content/currencies.json',
   'src/main.js',
   'src/content.js',
   'src/prefs.js',
@@ -39,6 +40,7 @@ const FILES = [
   'src/lib/calc/bradford.js',
   'src/lib/calc/sbi.js',
   'src/lib/calc/timezones.js',
+  'src/lib/calc/currency.js',
   'src/ui/core.js',
   'src/ui/icons.js',
   'src/ui/fields.js',
@@ -49,6 +51,7 @@ const FILES = [
   'src/ui/tools.js',
   'src/ui/settings.js',
   'src/ui/timezones.js',
+  'src/ui/currency.js',
 ];
 
 self.addEventListener('install', (event) => {

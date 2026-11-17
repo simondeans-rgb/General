@@ -14,6 +14,8 @@ export const DEFAULTS = Object.freeze({
   emailFooterEnabled: true,
   bradfordBands: [],
   savedTimeZones: [],
+  savedCurrencyPlaces: [],
+  currencyRates: null,
   contentVersionSeen: '',
   theme: 'system',
 });
@@ -25,6 +27,15 @@ function sanitise(key, value) {
   switch (key) {
     case 'favourites':
       return Array.isArray(value) ? value.filter((v) => /^[A-Za-z0-9_-]{1,24}$/.test(v)).slice(0, 100) : d;
+    case 'savedCurrencyPlaces':
+      return Array.isArray(value) ? value.filter((v) => typeof v === 'string' && /^[^|]{1,60}\|[^|]{1,60}$/.test(v)).slice(0, 8) : d;
+    case 'currencyRates': {
+      // Downloaded exchange rates (public data, not personal). Numbers only.
+      if (!value || typeof value !== 'object' || !value.rates) return null;
+      const rates = {};
+      for (const [k, v] of Object.entries(value.rates)) if (/^[A-Z]{3}$/.test(k) && typeof v === 'number' && Number.isFinite(v) && v > 0) rates[k] = v;
+      return { base: 'USD', rates, updated: Number(value.updated) || 0, fetched: Number(value.fetched) || 0 };
+    }
     case 'savedTimeZones':
       return Array.isArray(value) ? value.filter((v) => typeof v === 'string' && v.length < 64).slice(0, 6) : d;
     case 'bradfordBands':
