@@ -12,6 +12,7 @@ touching any code.
 | `reactions.json` | The shared "If they react…" library |
 | `tools.json` | Toolkit names, "How this works" text, notes and SBI examples |
 | `pages.json` | Onboarding, disclaimer, privacy statement, About, support email |
+| `timezones.json` | Places you can search in the time zone converter, and its default zones |
 
 ## Making a change
 

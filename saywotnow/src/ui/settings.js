@@ -9,7 +9,7 @@ import { validateBands } from '../lib/calc/bradford.js';
 import { formatLong } from '../lib/dates.js';
 import { openMail } from '../platform.js';
 
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '1.1.0';
 export const APP_BUILD = '1';
 
 function Row({ children, href, onClick, icon }) {

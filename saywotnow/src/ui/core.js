@@ -197,11 +197,12 @@ function Dialog({ d }) {
     <div ref=${ref} class=${`dialog ${opts.sheet ? 'sheet' : ''}`} role=${opts.alert ? 'alertdialog' : 'dialog'} aria-modal="true" aria-labelledby=${titleId} aria-describedby=${opts.body ? bodyId : undefined}>
       <h2 id=${titleId} class="dialog-title">${opts.title}</h2>
       ${opts.body ? html`<p id=${bodyId} class="dialog-body">${opts.body}</p>` : null}
+      ${opts.contentFirst && opts.content ? opts.content(d.resolve) : null}
       ${opts.actions && opts.actions.length ? html`<div class="dialog-actions">
         ${opts.actions.map((a, i) => html`<button type="button" class=${`btn ${a.primary ? 'btn-primary' : a.danger ? 'btn-danger' : 'btn-secondary'}`}
           data-autofocus=${i === 0 ? true : undefined} onClick=${() => d.resolve(a.value)}>${a.label}</button>`)}
       </div>` : null}
-      ${opts.content ? opts.content(d.resolve) : null}
+      ${!opts.contentFirst && opts.content ? opts.content(d.resolve) : null}
     </div>
   </div>`;
 }

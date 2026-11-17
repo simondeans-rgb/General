@@ -11,6 +11,7 @@ import { bradford, bandFor } from '../lib/calc/bradford.js';
 import { buildSbi } from '../lib/calc/sbi.js';
 import { formatWithDay, todayISO } from '../lib/dates.js';
 import { copySensitive } from '../platform.js';
+import { TimeZones } from './timezones.js';
 
 const PRIVATE = { autocomplete: 'off', autocorrect: 'off', spellcheck: false };
 
@@ -193,7 +194,11 @@ function Pending({ tool, prefs }) {
   </${ToolShell}>`;
 }
 
-const TOOLS = { holiday: Holiday, notice: Notice_, bradford: Bradford, sbi: Sbi };
+function TimeZoneTool({ tool, prefs }) {
+  return html`<${ToolShell} tool=${tool} prefs=${prefs}><${TimeZones} tool=${tool} prefs=${prefs} /></${ToolShell}>`;
+}
+
+const TOOLS = { holiday: Holiday, notice: Notice_, bradford: Bradford, sbi: Sbi, timezones: TimeZoneTool };
 
 export function Tool({ id, prefs }) {
   const tool = content().toolById[id];

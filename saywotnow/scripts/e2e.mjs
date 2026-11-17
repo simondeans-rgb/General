@@ -38,8 +38,8 @@ async function check(name, fn) {
   catch (e) { failures++; results.push(`  ✗ ${name}\n      ${String(e.message || e).split('\n').slice(0, 4).join('\n      ')}`); }
 }
 
-async function newApp({ dark = false, onboarded = true, prefs = {} } = {}) {
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, colorScheme: dark ? 'dark' : 'light', permissions: ['clipboard-read', 'clipboard-write'], serviceWorkers: 'allow' });
+async function newApp({ dark = false, onboarded = true, prefs = {}, timezoneId = 'Europe/London' } = {}) {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, colorScheme: dark ? 'dark' : 'light', timezoneId, locale: 'en-GB', permissions: ['clipboard-read', 'clipboard-write'], serviceWorkers: 'allow' });
   const page = await ctx.newPage();
   const log = { errors: [], external: [], mailto: [] };
   page.on('pageerror', (e) => log.errors.push(e.message));
@@ -356,6 +356,50 @@ await check('Tools: holiday, notice, Bradford, SBI work; inputs clear on leaving
   await ctx.close();
 });
 
+await check('Time zone converter: defaults, set a time, day offsets, saved zones, planner', async () => {
+  const { ctx, page, log } = await newApp();
+  await page.goto(BASE + '#/tool/timezones');
+  await page.locator('.zone-btn', { hasText: 'London' }).waitFor();
+  // The original tool's other six regions are the default comparisons.
+  const names = await page.locator('.tz-name').allInnerTexts();
+  assert.deepEqual(names, ['Maryland', 'Paris', 'Dubai', 'Delhi', 'Beijing', 'Sydney']);
+  await page.fill('#tz-date', '2026-11-17');
+  await page.fill('#tz-time', '14:00');
+  const row = (n) => page.locator('.tz-row', { hasText: n });
+  assert.equal(await row('Maryland').locator('.tz-big').innerText(), '09:00');
+  assert.equal(await row('Delhi').locator('.tz-big').innerText(), '19:30');
+  assert.match(await row('Sydney').innerText(), /01:00[\s\S]*Wed 18 Nov[\s\S]*\+1 day/);
+  assert.match(await row('Maryland').innerText(), /Working hours/);
+  assert.match(await row('Beijing').innerText(), /Outside working hours/);
+  await page.getByRole('button', { name: 'Forward 1 hour' }).click();
+  assert.equal(await row('Maryland').locator('.tz-big').innerText(), '10:00');
+  await shot(page, '23-timezones');
+  // Swap in Tokyo for Beijing; the list is saved as a preference.
+  await page.getByRole('button', { name: 'Remove Beijing' }).click();
+  await page.getByRole('button', { name: 'Add a time zone' }).click();
+  await page.getByRole('searchbox', { name: 'Search by city or country' }).fill('japan');
+  await page.getByRole('button', { name: /^Tokyo/ }).click();
+  await row('Tokyo').waitFor();
+  const prefs = await page.evaluate(() => JSON.parse(localStorage.getItem('saywotnow.prefs.v1')));
+  assert.deepEqual(prefs.savedTimeZones, ['America/New_York', 'Europe/Paris', 'Asia/Dubai', 'Asia/Kolkata', 'Australia/Sydney', 'Asia/Tokyo']);
+  // Planner: London + Maryland only share 13:00–18:00.
+  for (const n of ['Paris', 'Dubai', 'Delhi', 'Sydney', 'Tokyo']) await page.getByRole('button', { name: `Remove ${n}` }).click();
+  await page.getByRole('tab', { name: 'Find a meeting time' }).click();
+  await page.getByText('Everyone is in working hours from 13:00–18:00 London time.').waitFor();
+  await shot(page, '24-timezones-planner');
+  await page.getByRole('button', { name: /^16:00 Tuesday in London/ }).click();
+  await page.getByRole('tab', { name: 'Compare' }).click();
+  assert.equal(await row('Maryland').locator('.tz-big').innerText(), '11:00');
+  // Leaving and coming back keeps the saved zones but not the time that was set.
+  await page.goto(BASE + '#/toolkit');
+  await page.goto(BASE + '#/tool/timezones');
+  assert.deepEqual(await page.locator('.tz-name').allInnerTexts(), ['Maryland']);
+  assert.match(await page.locator('.live').innerText(), /Live/);
+  assert.deepEqual(log.external, []);
+  assert.deepEqual(log.errors, []);
+  await ctx.close();
+});
+
 await check('AC-04/05: works offline after first load; no external requests', async () => {
   const { ctx, page, log } = await newApp();
   await page.evaluate(async () => { await navigator.serviceWorker.ready; });
@@ -409,7 +453,7 @@ await check('Accessibility basics: every input has a label; buttons have names',
 
 await check('No console errors during a full session', async () => {
   const { ctx, page, log } = await newApp();
-  for (const path of ['#/', '#/meetings', '#/conversations', '#/toolkit', '#/search', '#/template/T06', '#/template/T07', '#/guide/G07', '#/tool/timezones', '#/page/about', '#/page/content', '#/onboarding/replay']) {
+  for (const path of ['#/', '#/meetings', '#/conversations', '#/toolkit', '#/search', '#/template/T06', '#/template/T07', '#/guide/G07', '#/tool/timezones', '#/tool/interview', '#/page/about', '#/page/content', '#/onboarding/replay']) {
     await page.goto(BASE + path);
     await page.waitForTimeout(80);
   }

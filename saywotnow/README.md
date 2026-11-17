@@ -13,7 +13,7 @@ Cream; Nunito).
 |---|---|
 | Meetings | 8 templates (T01–T08) rendered by one form engine from `content/templates.json` |
 | Conversations | 15 guides (G01–G15) rendered by one guide screen from `content/guides.json`, plus the shared "If they react…" library |
-| Toolkit | Holiday, notice period, Bradford Factor and SBI feedback builder. The time zone converter and interview pack generator are placeholders until their existing code is supplied (spec Q3). |
+| Toolkit | Time zone converter (ported from the Worldly Explorer world clock), holiday, notice period, Bradford Factor and SBI feedback builder. The interview pack generator is a placeholder until its existing code and question library are supplied (spec Q3). |
 | Settings | HR contact, default 1:1 format, email footer, Bradford bands, appearance, About / Disclaimer / Privacy / Content information |
 
 ## Run it
@@ -97,9 +97,18 @@ scripts/              content validator, e2e checks, icon renderer
 - For the holiday statutory check, when the entitlement excludes bank holidays,
   8 bank holidays (England and Wales), pro-rated, are added before comparing.
 - A checklist with nothing ticked counts as empty and is left out of the email.
+- **Time zone converter.** This is ported from worldly-explorer.com/worldclock.html and
+  keeps its Intl-based maths, live "now", ±15 min / ±1 h buttons, "Copy all times"
+  and tappable 24-hour planner. Its seven regions are the defaults: the device's
+  zone plus the other six. The spec's rules are followed where the two differ:
+  working hours are 08:00–18:00 (green), 07:00–08:00 and 18:00–20:00 (amber), and
+  grey otherwise, rather than the original's 9–6 office hours. Weekends are grey.
+  You can compare up to 6 zones, searched by city or country from
+  `content/timezones.json`, or by any time zone name the device knows. The list is
+  saved as `savedTimeZones`. The "from" zone and the time you set are not saved.
 
 ## Still needed from the client
 
-1. Time zone converter and interview pack generator source (spec Q3).
+1. Interview pack generator source and question library (spec Q3).
 2. Support email (spec Q5): set `supportEmail` in `content/pages.json`.
 3. Content review by an HR professional or employment lawyer (spec Q4).

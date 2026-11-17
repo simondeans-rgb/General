@@ -59,7 +59,7 @@ function check(schema, value, path, file, defs) {
 
 /* ---------- Load and schema-check ---------- */
 
-const NAMES = ['home', 'templates', 'guides', 'reactions', 'tools', 'pages'];
+const NAMES = ['home', 'templates', 'guides', 'reactions', 'tools', 'pages', 'timezones'];
 const content = {};
 for (const name of NAMES) {
   const file = `content/${name}.json`;
@@ -116,6 +116,16 @@ if (content.templates) {
 if (content.guides) {
   const f = 'content/guides.json';
   unique(f, content.guides.guides.map((g) => g.id), 'guide id');
+}
+if (content.timezones) {
+  const f = 'content/timezones.json';
+  const valid = (tz) => { try { new Intl.DateTimeFormat('en-GB', { timeZone: tz }); return true; } catch { return false; } };
+  content.timezones.places.forEach((p, i) => { if (!valid(p.tz)) fail(f, `.places[${i}]`, `"${p.tz}" isn't a time zone this device knows`); });
+  for (const tz of content.timezones.defaults) {
+    if (!valid(tz)) fail(f, '.defaults', `"${tz}" isn't a valid time zone`);
+    else if (!content.timezones.places.some((p) => p.tz === tz)) fail(f, '.defaults', `"${tz}" needs a matching entry in places`);
+  }
+  unique(f, content.timezones.places.map((p) => `${p.city}|${p.tz}`), 'place');
 }
 if (content.reactions) unique('content/reactions.json', content.reactions.reactions.map((r) => r.id), 'reaction id');
 if (content.tools) unique('content/tools.json', content.tools.tools.map((t) => t.id), 'tool id');
