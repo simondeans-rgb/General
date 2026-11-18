@@ -34,6 +34,7 @@
     --warn-soft: #fbf0d6;
     --quiet: #4b5568;
     --quiet-soft: #eceff4;
+    --shadow: rgb(23 32 49 / 0.16);
 
     --sans: "Schibsted Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
     --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
@@ -45,7 +46,7 @@
       --office: #4a3c16; --office-ink: #ffe3a1; --edge: #212c40; --edge-ink: #c5d0e6;
       --night: #090d17; --night-ink: #75829d;
       --good: #6fd3a0; --good-soft: #143426; --warn: #f0c46a; --warn-soft: #362b12;
-      --quiet: #aab4c5; --quiet-soft: #1f2836;
+      --quiet: #aab4c5; --quiet-soft: #1f2836; --shadow: rgb(0 0 0 / 0.55);
       color-scheme: dark;
     }
   }
@@ -55,7 +56,7 @@
     --office: #4a3c16; --office-ink: #ffe3a1; --edge: #212c40; --edge-ink: #c5d0e6;
     --night: #090d17; --night-ink: #75829d;
     --good: #6fd3a0; --good-soft: #143426; --warn: #f0c46a; --warn-soft: #362b12;
-    --quiet: #aab4c5; --quiet-soft: #1f2836;
+    --quiet: #aab4c5; --quiet-soft: #1f2836; --shadow: rgb(0 0 0 / 0.55);
     color-scheme: dark;
   }
 
@@ -206,6 +207,36 @@
     background: none; color: var(--muted); cursor: pointer; display: grid; place-items: center;
   }
   .rm:hover { border-color: var(--line); color: var(--ink); background: var(--field); }
+  .cal-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    font: 500 0.8rem var(--sans); color: var(--accent); background: var(--surface);
+    border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; cursor: pointer; white-space: nowrap;
+  }
+  .cal-btn:hover, .cal-btn[aria-expanded="true"] { border-color: var(--accent); }
+
+  /* Add-to-calendar menu */
+  .cal-menu {
+    position: absolute; z-index: 20; width: min(340px, calc(100vw - 32px));
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    box-shadow: 0 12px 32px var(--shadow); padding: 14px; display: grid; gap: 10px;
+  }
+  .cal-menu h3 { margin: 0; font-size: 0.95rem; font-weight: 600; }
+  .cal-when { margin: -6px 0 0; color: var(--muted); font-size: 0.85rem; }
+  .cal-len { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--muted); }
+  .cal-len select {
+    font: inherit; color: var(--ink); background: var(--field);
+    border: 1px solid var(--line); border-radius: 8px; padding: 4px 6px;
+  }
+  .cal-opts { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .cal-opt {
+    display: grid; gap: 1px; width: 100%; text-align: left; font: inherit; color: var(--ink);
+    background: none; border: 1px solid transparent; border-radius: 8px; padding: 8px 10px;
+    cursor: pointer; text-decoration: none;
+  }
+  .cal-opt:hover, .cal-opt:focus-visible { background: var(--accent-soft); }
+  .cal-opt strong { font-weight: 600; font-size: 0.92rem; }
+  .cal-opt span { color: var(--muted); font-size: 0.8rem; }
+  .cal-note { margin: 0; color: var(--muted); font-size: 0.8rem; }
 
   @container (max-width: 720px) {
     .zt-grid {
@@ -379,6 +410,28 @@
         <span><i class="sw night"></i>Night, 10 pm – 7 am</span>
       </div>
     </section>
+  </div>
+
+  <div class="cal-menu" id="cal-menu" role="dialog" aria-labelledby="cal-title" hidden>
+    <h3 id="cal-title">Add to calendar</h3>
+    <p class="cal-when" id="cal-when"></p>
+    <label class="cal-len">Length
+      <select id="cal-length">
+        <option value="15">15 minutes</option>
+        <option value="30">30 minutes</option>
+        <option value="45">45 minutes</option>
+        <option value="60" selected>1 hour</option>
+        <option value="90">1 hour 30 minutes</option>
+        <option value="120">2 hours</option>
+      </select>
+    </label>
+    <ul class="cal-opts">
+      <li id="cal-ics-item"><button class="cal-opt" id="cal-ics" type="button"><strong>Outlook or Apple Calendar</strong><span>Downloads an invite that opens in your calendar app</span></button></li>
+      <li><a class="cal-opt" id="cal-o365" href="#" target="_blank" rel="noopener"><strong>Outlook on the web</strong><span>Work or school account (Microsoft 365)</span></a></li>
+      <li><a class="cal-opt" id="cal-outlook" href="#" target="_blank" rel="noopener"><strong>Outlook.com</strong><span>Personal Microsoft account</span></a></li>
+      <li><a class="cal-opt" id="cal-google" href="#" target="_blank" rel="noopener"><strong>Google Calendar</strong><span>Opens in a new tab</span></a></li>
+    </ul>
+    <p class="cal-note" id="cal-note">Add a title and attendees in your calendar, then send the invite.</p>
   </div>
 
   <footer class="notes">
@@ -600,9 +653,11 @@ let cells = {};
 let headers = {};
 let colInstants = [];
 
+const CAL_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4M12 13v5M9.5 15.5h5"/></svg>';
 const REMOVE_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 
 function buildZones() {
+  if (typeof closeCal === "function") closeCal(false);
   const zones = activeZones();
   if (!zones.some((z) => z.id === state.refId)) state.refId = zones[0].id;
   list.innerHTML = "";
@@ -622,7 +677,7 @@ function buildZones() {
           <input class="date-input" type="date" id="date-${z.id}" aria-label="Date in ${esc(z.region)}" required>
         </div>
       </div>
-      <div class="state"><span class="chips"></span>${zones.length > 1 ? `<button class="rm" type="button" aria-label="Remove ${esc(z.region)}" title="Remove ${esc(z.region)}">${REMOVE_ICON}</button>` : ""}</div>
+      <div class="state"><span class="chips"></span><button class="cal-btn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Create a calendar invite at this time in ${esc(z.region)}">${CAL_ICON}<span>Invite</span></button>${zones.length > 1 ? `<button class="rm" type="button" aria-label="Remove ${esc(z.region)}" title="Remove ${esc(z.region)}">${REMOVE_ICON}</button>` : ""}</div>
       </div></div>
       <div class="zm"></div>`;
     list.appendChild(li);
@@ -651,6 +706,7 @@ function buildZones() {
     r.date.addEventListener("input", applyFromInputs);
     r.time.addEventListener("blur", () => render());
     r.date.addEventListener("blur", () => render());
+    li.querySelector(".cal-btn").addEventListener("click", (e) => toggleCal(z, e.currentTarget));
     const rm = li.querySelector(".zt .rm");
     if (rm) rm.addEventListener("click", () => removeZone(z.id));
 
@@ -765,6 +821,8 @@ function render() {
     });
   }
 
+  if (calZone) updateCal();
+
   // When the starting hour changes, scroll back to the start on narrow screens.
   const selKey = state.refId + start;
   if (selKey !== lastSelKey) {
@@ -819,6 +877,132 @@ copyBtn.addEventListener("click", () => {
     showFallback();
   }
 });
+
+/* ---------- Calendar invites ---------- */
+const calMenu = document.getElementById("cal-menu");
+const calLength = document.getElementById("cal-length");
+const inClaude = typeof window.claude === "object" && window.claude !== null;
+let calZone = null;
+let calOpener = null;
+
+const isoUtc = (ms) => new Date(ms).toISOString().replace(/\.\d{3}Z$/, "Z");      // 2026-11-18T13:00:00Z
+const icsUtc = (ms) => isoUtc(ms).replace(/[-:]/g, "");                           // 20261118T130000Z
+
+function meetingDetails(z) {
+  const p = parts(z.tz, state.instant);
+  const lines = [`Meeting time: ${time12(p.h, p.mi)} ${z.region} time, ${DAY_NAMES[p.wd]} ${p.d} ${MONTHS[p.m - 1]} ${p.y}`, "", "Local times:"];
+  for (const x of activeZones()) {
+    const q = parts(x.tz, state.instant);
+    const label = abbreviation(x, state.instant) || offsetLabel(offsetMinutes(x.tz, state.instant));
+    lines.push(`${x.region} (${label}): ${time12(q.h, q.mi)}, ${q.wd} ${q.d} ${MONTHS[q.m - 1]}`);
+  }
+  return lines.join("\n");
+}
+
+function updateCal() {
+  if (!calZone) return;
+  const z = calZone;
+  const start = state.instant;
+  const end = start + Number(calLength.value) * 60000;
+  const p = parts(z.tz, start);
+  const e = parts(z.tz, end);
+  document.getElementById("cal-when").textContent =
+    `${DAY_NAMES[p.wd]} ${p.d} ${MONTHS[p.m - 1]}, ${time12(p.h, p.mi)} – ${time12(e.h, e.mi)} ${z.region} time`;
+  const body = meetingDetails(z);
+  const outlook = (host) => `https://${host}/calendar/0/deeplink/compose?` + new URLSearchParams({
+    path: "/calendar/action/compose", rru: "addevent",
+    startdt: isoUtc(start), enddt: isoUtc(end), subject: "Meeting", body,
+  });
+  document.getElementById("cal-o365").href = outlook("outlook.office.com");
+  document.getElementById("cal-outlook").href = outlook("outlook.live.com");
+  document.getElementById("cal-google").href = "https://calendar.google.com/calendar/render?" + new URLSearchParams({
+    action: "TEMPLATE", text: "Meeting", dates: `${icsUtc(start)}/${icsUtc(end)}`, details: body,
+  });
+}
+
+// iCalendar text: escape special characters and fold lines at 75 bytes.
+const icsText = (t) => t.replace(/\\/g, "\\\\").replace(/;/g, "\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+function icsFold(line) {
+  const enc = new TextEncoder();
+  let out = "", bytes = 0;
+  for (const ch of line) {
+    const b = enc.encode(ch).length;
+    if (bytes + b > 74) { out += "\r\n "; bytes = 1; }
+    out += ch;
+    bytes += b;
+  }
+  return out;
+}
+function buildIcs(z) {
+  const start = state.instant;
+  const end = start + Number(calLength.value) * 60000;
+  const uid = `${start}-${Math.random().toString(36).slice(2, 10)}@seven-zone-converter`;
+  return [
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Seven-Zone Time Converter//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+    "BEGIN:VEVENT", `UID:${uid}`, `DTSTAMP:${icsUtc(Date.now())}`, `DTSTART:${icsUtc(start)}`, `DTEND:${icsUtc(end)}`,
+    "SUMMARY:Meeting", `DESCRIPTION:${icsText(meetingDetails(z))}`, "END:VEVENT", "END:VCALENDAR",
+  ].map(icsFold).join("\r\n") + "\r\n";
+}
+document.getElementById("cal-ics").addEventListener("click", () => {
+  const z = calZone;
+  const p = parts(z.tz, state.instant);
+  const blob = new Blob([buildIcs(z)], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `meeting-${p.y}-${pad(p.m)}-${pad(p.d)}-${pad(p.h)}${pad(p.mi)}.ics`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  document.getElementById("cal-note").textContent =
+    "Invite downloaded. Open it if your calendar doesn't open by itself, then add a title and attendees and send.";
+});
+
+function positionCal(btn) {
+  const r = btn.getBoundingClientRect();
+  const w = calMenu.offsetWidth;
+  const maxLeft = document.documentElement.clientWidth - w - 16;
+  const left = Math.max(16, Math.min(r.right - w, maxLeft));
+  calMenu.style.left = left + window.scrollX + "px";
+  calMenu.style.top = r.bottom + 6 + window.scrollY + "px";
+}
+function openCal(z, btn) {
+  if (calOpener) calOpener.setAttribute("aria-expanded", "false");
+  calZone = z;
+  calOpener = btn;
+  btn.setAttribute("aria-expanded", "true");
+  document.getElementById("cal-ics-item").hidden = inClaude;
+  document.getElementById("cal-note").textContent = inClaude
+    ? "Pick your calendar, then add a title and attendees and send. The copy of this page on your website can also create an invite for Outlook or Apple Calendar."
+    : "Pick your calendar, then add a title and attendees and send.";
+  updateCal();
+  calMenu.hidden = false;
+  positionCal(btn);
+  calMenu.querySelector(".cal-opts li:not([hidden]) .cal-opt").focus({ preventScroll: true });
+}
+function closeCal(returnFocus) {
+  if (calMenu.hidden) return;
+  calMenu.hidden = true;
+  if (calOpener) {
+    calOpener.setAttribute("aria-expanded", "false");
+    if (returnFocus && document.body.contains(calOpener)) calOpener.focus();
+  }
+  calZone = null;
+  calOpener = null;
+}
+function toggleCal(z, btn) {
+  if (!calMenu.hidden && calOpener === btn) closeCal(false);
+  else openCal(z, btn);
+}
+calLength.addEventListener("change", updateCal);
+document.addEventListener("click", (e) => {
+  if (calMenu.hidden) return;
+  if (calMenu.contains(e.target) || (calOpener && calOpener.contains(e.target))) return;
+  closeCal(false);
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeCal(true); });
+window.addEventListener("resize", () => closeCal(false));
 
 /* ---------- Add a location ---------- */
 const addBtn = document.getElementById("add-btn");

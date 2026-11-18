@@ -24,6 +24,12 @@ with seven regions:
 - The **Across the day** grid shows the next 24 hours for every region, shaded for
   office hours, early morning or evening, and night. Select any hour to jump to it.
 - **Copy all times** copies a plain-text list for an email or meeting invite.
+- **Invite** on any row opens an add-to-calendar menu for the time shown, with a
+  choice of length (15 minutes to 2 hours). It can download an `.ics` invite that
+  opens in Outlook, Apple Calendar or another desktop calendar, or open a new
+  event in Outlook on the web (work or personal) or Google Calendar. The event
+  description lists the meeting time in every location. Inside Claude, where
+  pages can't download files, only the web calendars are offered.
 - **+ Add a location** searches about 70 cities and countries. A new location is
   slotted into the list by UTC offset, west to east. Use the × on a row to remove it, and **Reset to the original seven** to go back. The list is saved
   in the visitor's browser.
