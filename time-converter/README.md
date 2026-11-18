@@ -24,8 +24,8 @@ with seven regions:
 - The **Across the day** grid shows the next 24 hours for every region, shaded for
   office hours, early morning or evening, and night. Select any hour to jump to it.
 - **Copy all times** copies a plain-text list for an email or meeting invite.
-- **+ Add a location** searches about 70 cities and countries. Use the × on a row
-  to remove it, and **Reset to the original seven** to go back. The list is saved
+- **+ Add a location** searches about 70 cities and countries. A new location is
+  slotted into the list by UTC offset, west to east. Use the × on a row to remove it, and **Reset to the original seven** to go back. The list is saved
   in the visitor's browser.
 
 ## Currency

@@ -554,12 +554,19 @@ function period(p) {
 }
 
 /* ---------- State ---------- */
+// Order locations west to east by their UTC offset right now. Locations with the
+// same offset keep their existing order.
+function sortByOffset(ids) {
+  const now = Date.now();
+  const off = new Map(ids.map((id) => [id, offsetMinutes(CATALOG.get(id).tz, now)]));
+  return ids.slice().sort((a, b) => off.get(a) - off.get(b));
+}
 function loadZoneIds() {
   try {
     const ids = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
     if (Array.isArray(ids)) {
       const ok = ids.filter((id) => CATALOG.has(id));
-      if (ok.length) return ok;
+      if (ok.length) return sortByOffset(ok);
     }
   } catch (e) { /* storage unavailable */ }
   return DEFAULT_IDS.slice();
@@ -678,7 +685,7 @@ function buildZones() {
 
 function addZone(id) {
   if (state.zoneIds.includes(id)) return;
-  state.zoneIds.push(id);
+  state.zoneIds = sortByOffset([...state.zoneIds, id]);
   saveZoneIds();
   buildZones();
 }
