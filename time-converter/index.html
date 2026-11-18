@@ -296,6 +296,8 @@
     width: 100%; min-width: 0; padding: 8px 0; text-align: right;
   }
   .amount input:disabled { color: var(--muted); }
+  .zm.has-lakh > div:first-child { grid-row: span 2; }
+  .lakh { grid-column: 2; justify-self: end; font-family: var(--mono); font-size: 0.8rem; color: var(--muted); padding-right: 10px; }
   .money-note { margin: 0; color: var(--muted); font-size: 0.8rem; display: grid; gap: 4px; }
   .money-note p { margin: 0; }
 
@@ -906,6 +908,12 @@ const formatAmount = (n, c) => {
   return n.toLocaleString("en-GB", { minimumFractionDigits: fd, maximumFractionDigits: fd });
 };
 const formatRate = (n) => n.toLocaleString("en-GB", { maximumSignificantDigits: 5 });
+// Rupees as lakh (1 lakh = 1,00,000): two decimals from 1 lakh up, three significant figures below.
+const formatLakh = (rupees) => {
+  const l = rupees / 100000;
+  const opts = l >= 1 ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { maximumSignificantDigits: 3 };
+  return `${l.toLocaleString("en-IN", opts)} lakh`;
+};
 
 // If the location the amount was typed in has been removed, keep the amount on
 // another location with that currency, or carry it over to GBP or the first location.
@@ -932,13 +940,15 @@ function buildMoney(z, el) {
     </div>
     <label class="amount">${sym ? `<span class="sym" aria-hidden="true">${esc(sym)}</span>` : ""}
       <input type="text" inputmode="decimal" autocomplete="off" id="amount-${z.id}" aria-label="Amount in ${esc(name)} (${esc(z.region)})">
-    </label>`;
+    </label>${cur === "INR" ? `<div class="lakh"></div>` : ""}`;
+  el.classList.toggle("has-lakh", cur === "INR");
   const row = {
     el,
     cur,
     input: el.querySelector("input"),
     rate: el.querySelector(".cur-rate"),
     chips: el.querySelector(".chips"),
+    lakh: el.querySelector(".lakh"),
   };
   moneyRows[z.id] = row;
   row.input.addEventListener("input", () => {
@@ -965,6 +975,7 @@ function renderMoney() {
       if (!isSrc) row.input.value = "";
       row.rate.textContent = "Rate not available";
       row.chips.innerHTML = "";
+      if (row.lakh) row.lakh.textContent = "";
       continue;
     }
     row.input.disabled = false;
@@ -972,6 +983,7 @@ function renderMoney() {
     if (document.activeElement !== row.input) row.input.value = formatAmount(value, cur);
     row.rate.textContent = cur === src ? "" : `1 ${src} = ${formatRate(rate / srcRate)} ${cur}`;
     row.chips.innerHTML = isSrc ? `<span class="chip set">Entered here</span>` : "";
+    if (row.lakh) row.lakh.textContent = formatLakh(value);
   }
 }
 

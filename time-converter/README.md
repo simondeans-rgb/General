@@ -34,6 +34,9 @@ Shows one amount in each location's currency, starting at £1 GBP. Typing an
 amount in any location's currency updates all the others. Locations that share a
 currency (Dubai and Abu Dhabi, say) show the same amount.
 
+Under any INR amount the page also shows the value in lakh (1 lakh = ₹1,00,000),
+for example ₹2,50,000 shows as 2.50 lakh.
+
 - Rates come from the free [Exchange Rate API](https://www.exchangerate-api.com)
   (`open.er-api.com`). It needs no key and updates once a day. If it can't be
   reached, the page tries the free
