@@ -1,7 +1,8 @@
 # Seven-Zone Time Converter
 
-Converts times and money between the places you work with. Time is on the left
-and currency on the right; on a phone they stack.
+Converts times and money between the places you work with. Each location is one
+row, with its time on the left and its currency on the right, so they always line
+up. On a phone the currency sits under the time.
 
 ## Time
 
@@ -29,9 +30,9 @@ with seven regions:
 
 ## Currency
 
-Shows one amount in the currency of every listed location, starting at £1 GBP.
-Typing an amount in any currency updates all the others. Adding a location adds
-its currency, unless it's already listed.
+Shows one amount in each location's currency, starting at £1 GBP. Typing an
+amount in any location's currency updates all the others. Locations that share a
+currency (Dubai and Abu Dhabi, say) show the same amount.
 
 - Rates come from the free [Exchange Rate API](https://www.exchangerate-api.com)
   (`open.er-api.com`). It needs no key and updates once a day. If it can't be

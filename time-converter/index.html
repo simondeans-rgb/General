@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-  /* Layout: time on the left (editable zone list, then a 24-hour planner), currency on the right. Stacks on narrow screens. */
+  /* Layout: one row per location, time on the left and its currency on the right; a 24-hour planner below. Stacks on narrow screens. */
   :root {
     --bg: #f3f5f8;
     --surface: #ffffff;
@@ -90,13 +90,27 @@
   h2 { margin: 0; font-size: 1.15rem; font-weight: 600; letter-spacing: -0.01em; }
   .intro { margin: 6px 0 0; color: var(--muted); max-width: 66ch; }
 
-  .layout { display: grid; gap: 32px; grid-template-columns: minmax(0, 1fr); align-items: start; }
-  @media (min-width: 1100px) {
-    .layout { grid-template-columns: minmax(0, 1.75fr) minmax(330px, 1fr); }
-    .money-panel { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); }
+  /* The board and each location row share the same two columns, so a currency always sits beside its time. */
+  .board {
+    display: grid; gap: 16px 0;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "time-head" "money-head" "zones" "add" "note" "planner";
   }
-  .time-panel { container-type: inline-size; display: grid; gap: 16px; min-width: 0; }
-  .time-panel > * { min-width: 0; }
+  .board > * { min-width: 0; }
+  .time-head { grid-area: time-head; display: grid; gap: 14px; }
+  .money-head { grid-area: money-head; display: grid; gap: 8px; }
+  .zones { grid-area: zones; }
+  .add { grid-area: add; }
+  .money-note { grid-area: note; }
+  .planner { grid-area: planner; margin-top: 12px; }
+  @media (min-width: 1100px) {
+    .board {
+      grid-template-columns: minmax(0, 1.75fr) minmax(330px, 1fr);
+      grid-template-areas: "time-head money-head" "zones zones" "add note" "planner planner";
+    }
+    .time-head, .money-head { align-self: end; }
+    .money-head, .money-note { padding-left: 25px; }
+  }
   .panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
   .panel-head .hint { color: var(--muted); font-size: 0.86rem; }
 
@@ -132,12 +146,25 @@
     background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
     list-style: none; margin: 0; padding: 0; overflow: hidden;
   }
-  .zone {
+  .zone { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .zt { container-type: inline-size; padding: 14px 18px; min-width: 0; }
+  .zt-grid {
     display: grid;
     grid-template-columns: minmax(0, 1.4fr) 6.5rem auto minmax(0, 1fr);
     grid-template-areas: "who tz when state";
     align-items: center; gap: 8px 18px;
-    padding: 14px 18px;
+  }
+  .zm {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 9.5rem);
+    align-items: center; gap: 4px 14px; min-width: 0;
+    margin: 0 18px; padding: 12px 0 14px; border-top: 1px dashed var(--line);
+  }
+  @media (min-width: 1100px) {
+    .zone { grid-template-columns: minmax(0, 1.75fr) minmax(330px, 1fr); }
+    .zm {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 11.5rem);
+      margin: 0; padding: 14px 18px 14px 24px; border-top: 0; border-left: 1px solid var(--line);
+    }
   }
   .zone + .zone { border-top: 1px solid var(--line); }
   .zone.ref { background: var(--accent-soft); }
@@ -181,10 +208,9 @@
   .rm:hover { border-color: var(--line); color: var(--ink); background: var(--field); }
 
   @container (max-width: 720px) {
-    .zone {
+    .zt-grid {
       grid-template-columns: minmax(0, 1fr) auto;
       grid-template-areas: "who when" "tz state";
-      padding: 14px 16px;
     }
     .tz { grid-auto-flow: column; justify-content: start; gap: 8px; align-items: baseline; }
     .when { justify-items: end; }
@@ -251,20 +277,9 @@
   .sw.night { background: var(--night); }
 
   /* Currency */
-  .money-panel {
-    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
-    padding: 18px 18px 16px; display: grid; gap: 12px; min-width: 0;
-  }
   .rate-status { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 0.85rem; color: var(--muted); }
-  .currencies { list-style: none; margin: 0; padding: 0; }
-  .cur {
-    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 11.5rem);
-    align-items: center; gap: 4px 14px; padding: 12px 0;
-  }
-  .cur + .cur { border-top: 1px solid var(--line); }
   .cur-code { font-family: var(--mono); font-weight: 500; font-size: 1rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .cur-name { font-size: 0.86rem; }
-  .cur-where { color: var(--muted); font-size: 0.8rem; }
   .cur-rate { color: var(--muted); font-size: 0.8rem; font-family: var(--mono); }
   .amount {
     display: flex; align-items: center; gap: 6px;
@@ -273,7 +288,7 @@
   }
   .amount:hover { border-color: var(--accent); }
   .amount:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); background: var(--surface); }
-  .cur.src .amount { border-color: var(--accent); background: var(--surface); }
+  .zm.src .amount { border-color: var(--accent); background: var(--surface); }
   .sym { color: var(--muted); font-family: var(--mono); font-size: 0.95rem; flex: none; }
   .amount input {
     font-family: var(--mono); font-size: 1.15rem; font-weight: 500; font-variant-numeric: tabular-nums;
@@ -302,8 +317,8 @@
     <p class="intro">Change the time in any region and every other region updates to match. Type an amount in any currency to see it in the others.</p>
   </header>
 
-  <div class="layout">
-    <section class="time-panel" aria-labelledby="time-title">
+  <div class="board">
+    <div class="time-head">
       <div class="panel-head">
         <h2 id="time-title">Time</h2>
         <span class="hint">Daylight saving is applied for the date you pick.</span>
@@ -321,47 +336,47 @@
         <button class="btn" id="copy-btn" type="button">Copy all times</button>
       </div>
       <textarea class="copy-fallback" id="copy-fallback" hidden readonly aria-label="Times to copy"></textarea>
+    </div>
 
-      <ul class="zones" id="zones" aria-label="Time in each location"></ul>
-
-      <div class="add">
-        <div class="add-row">
-          <button class="btn" id="add-btn" type="button" aria-expanded="false" aria-controls="add-box">+ Add a location</button>
-          <button class="link-btn" id="reset-btn" type="button" hidden>Reset to the original seven</button>
-        </div>
-        <div class="add-box" id="add-box" hidden>
-          <label for="add-input">Find a city or country</label>
-          <input class="search" id="add-input" type="search" autocomplete="off" placeholder="For example Tokyo, Toronto or Kenya">
-          <ul class="results" id="add-results" aria-label="Matching locations"></ul>
-        </div>
-      </div>
-
-      <section class="planner" aria-labelledby="planner-title">
-        <h2 id="planner-title">Across the day</h2>
-        <p class="sub" id="planner-sub"></p>
-        <div class="grid-wrap" id="grid-wrap">
-          <table class="hours" id="hours"><tbody></tbody></table>
-        </div>
-        <div class="legend" aria-hidden="true">
-          <span><i class="sw office"></i>Office hours, 9 am – 6 pm</span>
-          <span><i class="sw edge"></i>Early morning or evening</span>
-          <span><i class="sw night"></i>Night, 10 pm – 7 am</span>
-        </div>
-      </section>
-    </section>
-
-    <aside class="money-panel" aria-labelledby="money-title">
+    <div class="money-head">
       <div class="panel-head">
         <h2 id="money-title">Currency</h2>
         <button class="btn" id="refresh-btn" type="button">Refresh rates</button>
       </div>
       <p class="rate-status"><span class="dot" id="rate-dot"></span><span id="rate-text">Fetching live rates…</span></p>
-      <ul class="currencies" id="currencies" aria-label="Amount in each currency"></ul>
-      <div class="money-note">
-        <p id="rate-source"></p>
-        <p>These are mid-market rates for guidance. Banks and card providers usually add a margin.</p>
+    </div>
+
+    <ul class="zones" id="zones" aria-label="Time and currency in each location"></ul>
+
+    <div class="add">
+      <div class="add-row">
+        <button class="btn" id="add-btn" type="button" aria-expanded="false" aria-controls="add-box">+ Add a location</button>
+        <button class="link-btn" id="reset-btn" type="button" hidden>Reset to the original seven</button>
       </div>
-    </aside>
+      <div class="add-box" id="add-box" hidden>
+        <label for="add-input">Find a city or country</label>
+        <input class="search" id="add-input" type="search" autocomplete="off" placeholder="For example Tokyo, Toronto or Kenya">
+        <ul class="results" id="add-results" aria-label="Matching locations"></ul>
+      </div>
+    </div>
+
+    <div class="money-note">
+      <p id="rate-source"></p>
+      <p>These are mid-market rates for guidance. Banks and card providers usually add a margin.</p>
+    </div>
+
+    <section class="planner" aria-labelledby="planner-title">
+      <h2 id="planner-title">Across the day</h2>
+      <p class="sub" id="planner-sub"></p>
+      <div class="grid-wrap" id="grid-wrap">
+        <table class="hours" id="hours"><tbody></tbody></table>
+      </div>
+      <div class="legend" aria-hidden="true">
+        <span><i class="sw office"></i>Office hours, 9 am – 6 pm</span>
+        <span><i class="sw edge"></i>Early morning or evening</span>
+        <span><i class="sw night"></i>Night, 10 pm – 7 am</span>
+      </div>
+    </section>
   </div>
 
   <footer class="notes">
@@ -563,7 +578,7 @@ const state = {
   refId: "uk",
   live: true,
   zoneIds: loadZoneIds(),
-  money: { cur: "GBP", amount: 1 },
+  money: { cur: "GBP", amount: 1, zoneId: "uk" },
   // Saved rates show straight away; live rates replace them once loaded.
   rates: { map: SAVED_RATES.rates, updated: SAVED_RATES.updated, source: "saved" },
 };
@@ -583,12 +598,13 @@ function buildZones() {
   if (!zones.some((z) => z.id === state.refId)) state.refId = zones[0].id;
   list.innerHTML = "";
   tbody.innerHTML = "";
-  rows = {}; cells = {}; headers = {};
+  rows = {}; cells = {}; headers = {}; moneyRows = {};
+  keepMoneySource(zones);
 
   for (const z of zones) {
     const li = document.createElement("li");
     li.className = "zone";
-    li.innerHTML = `
+    li.innerHTML = `<div class="zt"><div class="zt-grid">
       <div class="who"><div class="region">${esc(z.region)}</div><div class="place">${esc(z.place)}</div></div>
       <div class="tz"><span class="abbr"></span><span class="offset"></span></div>
       <div class="when">
@@ -597,8 +613,11 @@ function buildZones() {
           <input class="date-input" type="date" id="date-${z.id}" aria-label="Date in ${esc(z.region)}" required>
         </div>
       </div>
-      <div class="state"><span class="chips"></span>${zones.length > 1 ? `<button class="rm" type="button" aria-label="Remove ${esc(z.region)}" title="Remove ${esc(z.region)}">${REMOVE_ICON}</button>` : ""}</div>`;
+      <div class="state"><span class="chips"></span>${zones.length > 1 ? `<button class="rm" type="button" aria-label="Remove ${esc(z.region)}" title="Remove ${esc(z.region)}">${REMOVE_ICON}</button>` : ""}</div>
+      </div></div>
+      <div class="zm"></div>`;
     list.appendChild(li);
+    buildMoney(z, li.querySelector(".zm"));
     const r = {
       li,
       abbr: li.querySelector(".abbr"),
@@ -623,7 +642,7 @@ function buildZones() {
     r.date.addEventListener("input", applyFromInputs);
     r.time.addEventListener("blur", () => render());
     r.date.addEventListener("blur", () => render());
-    const rm = li.querySelector(".rm");
+    const rm = li.querySelector(".zt .rm");
     if (rm) rm.addEventListener("click", () => removeZone(z.id));
 
     // Planner row
@@ -653,7 +672,7 @@ function buildZones() {
 
   document.getElementById("reset-btn").hidden = isDefaultSet();
   lastSelKey = "";
-  buildCurrencies();
+  renderMoney();
   render();
 }
 
@@ -862,8 +881,7 @@ document.getElementById("reset-btn").addEventListener("click", () => {
 });
 
 /* ---------- Currency ---------- */
-const curList = document.getElementById("currencies");
-let curRows = {};
+let moneyRows = {};
 const curNames = (() => { try { return new Intl.DisplayNames(["en-GB"], { type: "currency" }); } catch (e) { return null; } })();
 const fractionDigits = (c) => {
   try { return new Intl.NumberFormat("en-GB", { style: "currency", currency: c }).resolvedOptions().maximumFractionDigits; }
@@ -882,69 +900,58 @@ const formatAmount = (n, c) => {
 };
 const formatRate = (n) => n.toLocaleString("en-GB", { maximumSignificantDigits: 5 });
 
-// Currencies in the order their locations appear, each listed once.
-function currencyGroups() {
-  const groups = new Map();
-  for (const z of activeZones()) {
-    if (!groups.has(z.cur)) groups.set(z.cur, []);
-    groups.get(z.cur).push(z.region);
-  }
-  return groups;
+// If the location the amount was typed in has been removed, keep the amount on
+// another location with that currency, or carry it over to GBP or the first location.
+function keepMoneySource(zones) {
+  if (zones.some((z) => z.id === state.money.zoneId)) return;
+  const same = zones.find((z) => z.cur === state.money.cur);
+  if (same) { state.money.zoneId = same.id; return; }
+  const to = zones.find((z) => z.cur === "GBP") || zones[0];
+  const map = state.rates.map;
+  const amount = map[state.money.cur] && map[to.cur] ? state.money.amount / map[state.money.cur] * map[to.cur] : 1;
+  state.money = { cur: to.cur, amount, zoneId: to.id };
 }
 
-function buildCurrencies() {
-  const groups = currencyGroups();
-  if (!groups.has(state.money.cur)) {
-    // The currency the amount was typed in has gone: carry the value over to GBP, or the first one left.
-    const first = groups.has("GBP") ? "GBP" : groups.keys().next().value;
-    const map = state.rates ? state.rates.map : SAVED_RATES.rates;
-    const amount = map[state.money.cur] && map[first] ? state.money.amount / map[state.money.cur] * map[first] : 1;
-    state.money = { cur: first, amount };
-  }
-  curList.innerHTML = "";
-  curRows = {};
-  for (const [cur, places] of groups) {
-    const li = document.createElement("li");
-    li.className = "cur";
-    const sym = symbolFor(cur);
-    const name = curNames ? curNames.of(cur) : cur;
-    li.innerHTML = `
-      <div>
-        <div class="cur-code">${cur}<span class="chips"></span></div>
-        <div class="cur-name">${esc(name)}</div>
-        <div class="cur-where">${esc(places.join(", "))}</div>
-        <div class="cur-rate"></div>
-      </div>
-      <label class="amount">${sym ? `<span class="sym" aria-hidden="true">${esc(sym)}</span>` : ""}
-        <input type="text" inputmode="decimal" autocomplete="off" id="amount-${cur}" aria-label="Amount in ${esc(name)}">
-      </label>`;
-    curList.appendChild(li);
-    const row = {
-      li,
-      input: li.querySelector("input"),
-      rate: li.querySelector(".cur-rate"),
-      chips: li.querySelector(".chips"),
-    };
-    curRows[cur] = row;
-    row.input.addEventListener("input", () => {
-      const n = parseFloat(row.input.value.replace(/[,\s]/g, ""));
-      if (!Number.isFinite(n) || n < 0) return;
-      state.money = { cur, amount: n };
-      renderMoney();
-    });
-    row.input.addEventListener("blur", () => renderMoney());
-    row.input.addEventListener("focus", () => row.input.select());
-  }
-  renderMoney();
+// The currency half of a location row.
+function buildMoney(z, el) {
+  const cur = z.cur;
+  const sym = symbolFor(cur);
+  const name = curNames ? curNames.of(cur) : cur;
+  el.innerHTML = `
+    <div>
+      <div class="cur-code">${cur}<span class="chips"></span></div>
+      <div class="cur-name">${esc(name)}</div>
+      <div class="cur-rate"></div>
+    </div>
+    <label class="amount">${sym ? `<span class="sym" aria-hidden="true">${esc(sym)}</span>` : ""}
+      <input type="text" inputmode="decimal" autocomplete="off" id="amount-${z.id}" aria-label="Amount in ${esc(name)} (${esc(z.region)})">
+    </label>`;
+  const row = {
+    el,
+    cur,
+    input: el.querySelector("input"),
+    rate: el.querySelector(".cur-rate"),
+    chips: el.querySelector(".chips"),
+  };
+  moneyRows[z.id] = row;
+  row.input.addEventListener("input", () => {
+    const n = parseFloat(row.input.value.replace(/[,\s]/g, ""));
+    if (!Number.isFinite(n) || n < 0) return;
+    state.money = { cur, amount: n, zoneId: z.id };
+    renderMoney();
+  });
+  row.input.addEventListener("blur", () => renderMoney());
+  row.input.addEventListener("focus", () => row.input.select());
 }
 
 function renderMoney() {
   const map = state.rates.map;
   const src = state.money.cur;
   const srcRate = map[src];
-  for (const [cur, row] of Object.entries(curRows)) {
-    const isSrc = cur === src;
-    row.li.classList.toggle("src", isSrc);
+  for (const [id, row] of Object.entries(moneyRows)) {
+    const cur = row.cur;
+    const isSrc = id === state.money.zoneId;
+    row.el.classList.toggle("src", isSrc);
     const rate = map[cur];
     if (!rate || !srcRate) {
       row.input.disabled = !isSrc;
@@ -954,10 +961,10 @@ function renderMoney() {
       continue;
     }
     row.input.disabled = false;
-    const value = isSrc ? state.money.amount : state.money.amount / srcRate * rate;
+    const value = state.money.amount / srcRate * rate;
     if (document.activeElement !== row.input) row.input.value = formatAmount(value, cur);
-    row.rate.textContent = isSrc ? "" : `1 ${src} = ${formatRate(rate / srcRate)} ${cur}`;
-    row.chips.innerHTML = isSrc ? `<span class="chip set">Amount entered here</span>` : "";
+    row.rate.textContent = cur === src ? "" : `1 ${src} = ${formatRate(rate / srcRate)} ${cur}`;
+    row.chips.innerHTML = isSrc ? `<span class="chip set">Entered here</span>` : "";
   }
 }
 
