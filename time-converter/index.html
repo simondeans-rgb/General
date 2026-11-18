@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Seven-Zone Time Converter</title>
+<meta name="description" content="Convert times and currencies between Maryland, the UK, Europe, Dubai, India, China, Australia and any locations you add.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%232f56c9'/%3E%3Cpath d='M16 8v8l5 3' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: time on the left (editable zone list, then a 24-hour planner), currency on the right. Stacks on narrow screens. */
+  :root {
+    --bg: #f3f5f8;
+    --surface: #ffffff;
+    --field: #f6f8fb;
+    --ink: #172031;
+    --muted: #5a6577;
+    --line: #dde2ea;
+    --accent: #2f56c9;
+    --accent-soft: #e8eefc;
+
+    --office: #fde8b3;
+    --office-ink: #5e4307;
+    --edge: #e3e9f4;
+    --edge-ink: #2f3c55;
+    --night: #26324d;
+    --night-ink: #c3cde3;
+
+    --good: #1d7a4d;
+    --good-soft: #e1f3e9;
+    --warn: #8a5a00;
+    --warn-soft: #fbf0d6;
+    --quiet: #4b5568;
+    --quiet-soft: #eceff4;
+
+    --sans: "Schibsted Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e131b; --surface: #151c27; --field: #1b2431; --ink: #e5eaf2; --muted: #95a1b4;
+      --line: #263142; --accent: #86a3ff; --accent-soft: #1d2741;
+      --office: #4a3c16; --office-ink: #ffe3a1; --edge: #212c40; --edge-ink: #c5d0e6;
+      --night: #090d17; --night-ink: #75829d;
+      --good: #6fd3a0; --good-soft: #143426; --warn: #f0c46a; --warn-soft: #362b12;
+      --quiet: #aab4c5; --quiet-soft: #1f2836;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e131b; --surface: #151c27; --field: #1b2431; --ink: #e5eaf2; --muted: #95a1b4;
+    --line: #263142; --accent: #86a3ff; --accent-soft: #1d2741;
+    --office: #4a3c16; --office-ink: #ffe3a1; --edge: #212c40; --edge-ink: #c5d0e6;
+    --night: #090d17; --night-ink: #75829d;
+    --good: #6fd3a0; --good-soft: #143426; --warn: #f0c46a; --warn-soft: #362b12;
+    --quiet: #aab4c5; --quiet-soft: #1f2836;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  :root { color-scheme: light; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  .page {
+    max-width: 1380px;
+    margin: 0 auto;
+    padding-block: 28px 56px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    display: grid;
+    gap: 28px;
+  }
+  .page > * { min-width: 0; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  a { color: var(--accent); }
+
+  h1 {
+    margin: 0; font-size: clamp(1.6rem, 3.4vw, 2.2rem); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.1; text-wrap: balance;
+  }
+  h2 { margin: 0; font-size: 1.15rem; font-weight: 600; letter-spacing: -0.01em; }
+  .intro { margin: 6px 0 0; color: var(--muted); max-width: 66ch; }
+
+  .layout { display: grid; gap: 32px; grid-template-columns: minmax(0, 1fr); align-items: start; }
+  @media (min-width: 1100px) {
+    .layout { grid-template-columns: minmax(0, 1.75fr) minmax(330px, 1fr); }
+    .money-panel { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); }
+  }
+  .time-panel { container-type: inline-size; display: grid; gap: 16px; min-width: 0; }
+  .time-panel > * { min-width: 0; }
+  .panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .panel-head .hint { color: var(--muted); font-size: 0.86rem; }
+
+  /* Toolbar */
+  .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .status {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 999px;
+    background: var(--surface); border: 1px solid var(--line);
+    font-size: 0.85rem; font-weight: 500; margin-right: 4px;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
+  .live .dot, .dot.live { background: var(--good); box-shadow: 0 0 0 3px var(--good-soft); }
+  .dot.saved { background: var(--warn); box-shadow: 0 0 0 3px var(--warn-soft); }
+  .btn {
+    font: 500 0.88rem var(--sans); color: var(--ink);
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+    padding: 7px 12px; cursor: pointer; font-variant-numeric: tabular-nums;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+  .btn.primary:hover { filter: brightness(1.08); color: var(--surface); }
+  .btn-group { display: inline-flex; gap: 4px; }
+  .spacer { flex: 1; }
+  .link-btn {
+    font: 500 0.86rem var(--sans); color: var(--muted); background: none; border: 0;
+    padding: 6px 4px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
+  }
+  .link-btn:hover { color: var(--accent); }
+
+  /* Zone list */
+  .zones {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    list-style: none; margin: 0; padding: 0; overflow: hidden;
+  }
+  .zone {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) 6.5rem auto minmax(0, 1fr);
+    grid-template-areas: "who tz when state";
+    align-items: center; gap: 8px 18px;
+    padding: 14px 18px;
+  }
+  .zone + .zone { border-top: 1px solid var(--line); }
+  .zone.ref { background: var(--accent-soft); }
+  .who { grid-area: who; min-width: 0; }
+  .region { font-size: 1.1rem; font-weight: 600; letter-spacing: -0.01em; }
+  .place { color: var(--muted); font-size: 0.85rem; }
+  .tz { grid-area: tz; display: grid; gap: 1px; }
+  .abbr { font-family: var(--mono); font-weight: 500; font-size: 0.95rem; }
+  .offset { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); }
+  .when { grid-area: when; display: grid; gap: 4px; justify-items: start; }
+  .time-input {
+    font-family: var(--mono); font-size: 1.6rem; font-weight: 500;
+    font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+    color: var(--ink); background: var(--field);
+    border: 1px solid var(--line); border-radius: 10px;
+    padding: 2px 8px; min-width: 0;
+  }
+  .time-input:hover { border-color: var(--accent); }
+  .zone.ref .time-input { border-color: var(--accent); background: var(--surface); }
+  .date-row { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 0.86rem; }
+  .weekday { font-weight: 600; color: var(--ink); min-width: 2.2em; }
+  .date-input {
+    font: inherit; color: var(--muted); background: transparent;
+    border: 1px solid transparent; border-radius: 6px; padding: 1px 4px;
+  }
+  .date-input:hover { border-color: var(--line); }
+  .state { grid-area: state; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; justify-content: flex-end; }
+  .chip {
+    font-size: 0.78rem; font-weight: 600; padding: 3px 9px; border-radius: 999px;
+    white-space: nowrap;
+  }
+  .chip.office { background: var(--good-soft); color: var(--good); }
+  .chip.edge { background: var(--warn-soft); color: var(--warn); }
+  .chip.night, .chip.weekend { background: var(--quiet-soft); color: var(--quiet); }
+  .chip.day { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
+  .chip.set { background: var(--accent); color: var(--surface); }
+  .rm {
+    width: 28px; height: 28px; border-radius: 8px; border: 1px solid transparent;
+    background: none; color: var(--muted); cursor: pointer; display: grid; place-items: center;
+  }
+  .rm:hover { border-color: var(--line); color: var(--ink); background: var(--field); }
+
+  @container (max-width: 720px) {
+    .zone {
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-areas: "who when" "tz state";
+      padding: 14px 16px;
+    }
+    .tz { grid-auto-flow: column; justify-content: start; gap: 8px; align-items: baseline; }
+    .when { justify-items: end; }
+    .time-input { font-size: 1.4rem; }
+  }
+
+  /* Add a location */
+  .add { display: grid; gap: 10px; }
+  .add-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .add-box {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    padding: 14px; display: grid; gap: 10px;
+  }
+  .add-box label { font-weight: 600; font-size: 0.9rem; }
+  .search {
+    font: inherit; font-size: 1rem; color: var(--ink); background: var(--field);
+    border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; width: 100%;
+  }
+  .search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .results { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 330px; overflow-y: auto; }
+  .result {
+    width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    text-align: left; font: inherit; color: var(--ink); background: none;
+    border: 1px solid transparent; border-radius: 8px; padding: 8px 10px; cursor: pointer;
+  }
+  .result:hover, .result:focus-visible { background: var(--accent-soft); border-color: var(--accent-soft); }
+  .result .r-name { font-weight: 600; }
+  .result .r-place { color: var(--muted); font-size: 0.86rem; }
+  .result .r-meta { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); white-space: nowrap; text-align: right; }
+  .no-results { color: var(--muted); font-size: 0.9rem; padding: 6px 10px; }
+
+  /* Planner */
+  .planner .sub { margin: 4px 0 12px; color: var(--muted); font-size: 0.9rem; }
+  .grid-wrap {
+    overflow-x: auto; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 14px; padding: 10px 10px 10px 0;
+  }
+  table.hours { border-collapse: separate; border-spacing: 3px 4px; font-variant-numeric: tabular-nums; }
+  table.hours th {
+    position: sticky; left: 0; z-index: 1; background: var(--surface);
+    text-align: left; font-weight: 500; font-size: 0.85rem; white-space: nowrap;
+    padding: 0 12px 0 14px;
+  }
+  table.hours th .abbr-s { display: block; font-family: var(--mono); font-size: 0.72rem; color: var(--muted); font-weight: 400; }
+  table.hours tr.ref th { font-weight: 700; color: var(--accent); }
+  table.hours td { padding: 0; }
+  .cell {
+    width: 100%; min-width: 40px; height: 44px; padding: 0 3px; border: 0; border-radius: 6px; cursor: pointer;
+    display: grid; place-content: center; gap: 0; line-height: 1.05;
+    font-family: var(--mono); font-size: 0.9rem; font-weight: 500;
+  }
+  .cell small { font-size: 0.62rem; font-weight: 400; opacity: 0.85; font-family: var(--sans); }
+  .cell.office { background: var(--office); color: var(--office-ink); }
+  .cell.edge { background: var(--edge); color: var(--edge-ink); }
+  .cell.night { background: var(--night); color: var(--night-ink); }
+  .cell.newday small { font-weight: 700; opacity: 1; }
+  .cell:hover { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .cell.sel { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; font-size: 0.82rem; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .sw { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+  .sw.office { background: var(--office); }
+  .sw.edge { background: var(--edge); border: 1px solid var(--line); }
+  .sw.night { background: var(--night); }
+
+  /* Currency */
+  .money-panel {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    padding: 18px 18px 16px; display: grid; gap: 12px; min-width: 0;
+  }
+  .rate-status { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 0.85rem; color: var(--muted); }
+  .currencies { list-style: none; margin: 0; padding: 0; }
+  .cur {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 11.5rem);
+    align-items: center; gap: 4px 14px; padding: 12px 0;
+  }
+  .cur + .cur { border-top: 1px solid var(--line); }
+  .cur-code { font-family: var(--mono); font-weight: 500; font-size: 1rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .cur-name { font-size: 0.86rem; }
+  .cur-where { color: var(--muted); font-size: 0.8rem; }
+  .cur-rate { color: var(--muted); font-size: 0.8rem; font-family: var(--mono); }
+  .amount {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--field); border: 1px solid var(--line); border-radius: 10px;
+    padding: 0 10px; min-width: 0;
+  }
+  .amount:hover { border-color: var(--accent); }
+  .amount:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); background: var(--surface); }
+  .cur.src .amount { border-color: var(--accent); background: var(--surface); }
+  .sym { color: var(--muted); font-family: var(--mono); font-size: 0.95rem; flex: none; }
+  .amount input {
+    font-family: var(--mono); font-size: 1.15rem; font-weight: 500; font-variant-numeric: tabular-nums;
+    color: var(--ink); background: transparent; border: 0; outline: none;
+    width: 100%; min-width: 0; padding: 8px 0; text-align: right;
+  }
+  .amount input:disabled { color: var(--muted); }
+  .money-note { margin: 0; color: var(--muted); font-size: 0.8rem; display: grid; gap: 4px; }
+  .money-note p { margin: 0; }
+
+  .notes { color: var(--muted); font-size: 0.85rem; max-width: 76ch; display: grid; gap: 4px; }
+  .notes p { margin: 0; }
+
+  .copy-fallback { width: 100%; min-height: 9em; font-family: var(--mono); font-size: 0.85rem; color: var(--ink); background: var(--field); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .zone { transition: background-color 0.25s; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header>
+    <h1>Seven-Zone Time Converter</h1>
+    <p class="intro">Change the time in any region and every other region updates to match. Type an amount in any currency to see it in the others.</p>
+  </header>
+
+  <div class="layout">
+    <section class="time-panel" aria-labelledby="time-title">
+      <div class="panel-head">
+        <h2 id="time-title">Time</h2>
+        <span class="hint">Daylight saving is applied for the date you pick.</span>
+      </div>
+      <div class="toolbar">
+        <span class="status live" id="status"><span class="dot"></span><span id="status-text">Live: showing the time now</span></span>
+        <button class="btn primary" id="now-btn" type="button">Back to now</button>
+        <span class="btn-group" role="group" aria-label="Shift all times">
+          <button class="btn" type="button" data-shift="-60">−1 h</button>
+          <button class="btn" type="button" data-shift="-15">−15 m</button>
+          <button class="btn" type="button" data-shift="15">+15 m</button>
+          <button class="btn" type="button" data-shift="60">+1 h</button>
+        </span>
+        <span class="spacer"></span>
+        <button class="btn" id="copy-btn" type="button">Copy all times</button>
+      </div>
+      <textarea class="copy-fallback" id="copy-fallback" hidden readonly aria-label="Times to copy"></textarea>
+
+      <ul class="zones" id="zones" aria-label="Time in each location"></ul>
+
+      <div class="add">
+        <div class="add-row">
+          <button class="btn" id="add-btn" type="button" aria-expanded="false" aria-controls="add-box">+ Add a location</button>
+          <button class="link-btn" id="reset-btn" type="button" hidden>Reset to the original seven</button>
+        </div>
+        <div class="add-box" id="add-box" hidden>
+          <label for="add-input">Find a city or country</label>
+          <input class="search" id="add-input" type="search" autocomplete="off" placeholder="For example Tokyo, Toronto or Kenya">
+          <ul class="results" id="add-results" aria-label="Matching locations"></ul>
+        </div>
+      </div>
+
+      <section class="planner" aria-labelledby="planner-title">
+        <h2 id="planner-title">Across the day</h2>
+        <p class="sub" id="planner-sub"></p>
+        <div class="grid-wrap" id="grid-wrap">
+          <table class="hours" id="hours"><tbody></tbody></table>
+        </div>
+        <div class="legend" aria-hidden="true">
+          <span><i class="sw office"></i>Office hours, 9 am – 6 pm</span>
+          <span><i class="sw edge"></i>Early morning or evening</span>
+          <span><i class="sw night"></i>Night, 10 pm – 7 am</span>
+        </div>
+      </section>
+    </section>
+
+    <aside class="money-panel" aria-labelledby="money-title">
+      <div class="panel-head">
+        <h2 id="money-title">Currency</h2>
+        <button class="btn" id="refresh-btn" type="button">Refresh rates</button>
+      </div>
+      <p class="rate-status"><span class="dot" id="rate-dot"></span><span id="rate-text">Fetching live rates…</span></p>
+      <ul class="currencies" id="currencies" aria-label="Amount in each currency"></ul>
+      <div class="money-note">
+        <p id="rate-source"></p>
+        <p>These are mid-market rates for guidance. Banks and card providers usually add a margin.</p>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="notes">
+    <p><strong>Europe</strong> uses Central European Time (Paris, Berlin, Madrid, Rome, Amsterdam). Portugal and Ireland follow UK time; Greece and Finland are an hour ahead.</p>
+    <p><strong>Australia</strong> shows Sydney, Melbourne and Canberra. Add Brisbane, Adelaide or Perth separately if you need them.</p>
+    <p>Clocks change on different dates in the USA, UK, Europe and Australia, so the gaps between regions shift by an hour for a few weeks each spring and autumn. Locations you add are remembered in this browser.</p>
+  </footer>
+</div>
+
+<script>
+/* ---------- Locations ---------- */
+const DEFAULT_ZONES = [
+  { id: "us", region: "USA", place: "Maryland · US Eastern Time", tz: "America/New_York", cur: "USD", abbrLocale: "en-US" },
+  { id: "uk", region: "UK", place: "London · GMT / BST", tz: "Europe/London", cur: "GBP", abbrLocale: "en-GB" },
+  { id: "eu", region: "Europe", place: "Paris · Berlin · Madrid", tz: "Europe/Paris", cur: "EUR", abbrLocale: "en-GB" },
+  { id: "ae", region: "Dubai", place: "United Arab Emirates", tz: "Asia/Dubai", cur: "AED", abbr: "GST" },
+  { id: "in", region: "India", place: "Delhi · Mumbai · Bengaluru", tz: "Asia/Kolkata", cur: "INR", abbr: "IST" },
+  { id: "cn", region: "China", place: "Beijing · Shanghai", tz: "Asia/Shanghai", cur: "CNY", abbr: "CST" },
+  { id: "au", region: "Australia", place: "Sydney · Melbourne · Canberra", tz: "Australia/Sydney", cur: "AUD", abbrLocale: "en-AU" },
+];
+// [name, country, IANA zone, currency, locale for the zone abbreviation]
+const EXTRA_ZONES = [
+  ["New York", "USA", "America/New_York", "USD", "en-US"],
+  ["Chicago", "USA", "America/Chicago", "USD", "en-US"],
+  ["Denver", "USA", "America/Denver", "USD", "en-US"],
+  ["Phoenix", "USA", "America/Phoenix", "USD", "en-US"],
+  ["Los Angeles", "USA", "America/Los_Angeles", "USD", "en-US"],
+  ["San Francisco", "USA", "America/Los_Angeles", "USD", "en-US"],
+  ["Seattle", "USA", "America/Los_Angeles", "USD", "en-US"],
+  ["Anchorage", "USA", "America/Anchorage", "USD", "en-US"],
+  ["Honolulu", "USA", "Pacific/Honolulu", "USD", "en-US"],
+  ["Toronto", "Canada", "America/Toronto", "CAD", "en-CA"],
+  ["Vancouver", "Canada", "America/Vancouver", "CAD", "en-CA"],
+  ["Mexico City", "Mexico", "America/Mexico_City", "MXN", "en-US"],
+  ["São Paulo", "Brazil", "America/Sao_Paulo", "BRL"],
+  ["Buenos Aires", "Argentina", "America/Argentina/Buenos_Aires", "ARS"],
+  ["Bogotá", "Colombia", "America/Bogota", "COP"],
+  ["Lima", "Peru", "America/Lima", "PEN"],
+  ["Santiago", "Chile", "America/Santiago", "CLP"],
+  ["Dublin", "Ireland", "Europe/Dublin", "EUR", "en-IE"],
+  ["Lisbon", "Portugal", "Europe/Lisbon", "EUR", "en-GB"],
+  ["Madrid", "Spain", "Europe/Madrid", "EUR", "en-GB"],
+  ["Paris", "France", "Europe/Paris", "EUR", "en-GB"],
+  ["Amsterdam", "Netherlands", "Europe/Amsterdam", "EUR", "en-GB"],
+  ["Brussels", "Belgium", "Europe/Brussels", "EUR", "en-GB"],
+  ["Berlin", "Germany", "Europe/Berlin", "EUR", "en-GB"],
+  ["Rome", "Italy", "Europe/Rome", "EUR", "en-GB"],
+  ["Vienna", "Austria", "Europe/Vienna", "EUR", "en-GB"],
+  ["Zurich", "Switzerland", "Europe/Zurich", "CHF", "en-GB"],
+  ["Stockholm", "Sweden", "Europe/Stockholm", "SEK", "en-GB"],
+  ["Oslo", "Norway", "Europe/Oslo", "NOK", "en-GB"],
+  ["Copenhagen", "Denmark", "Europe/Copenhagen", "DKK", "en-GB"],
+  ["Warsaw", "Poland", "Europe/Warsaw", "PLN", "en-GB"],
+  ["Prague", "Czech Republic", "Europe/Prague", "CZK", "en-GB"],
+  ["Budapest", "Hungary", "Europe/Budapest", "HUF", "en-GB"],
+  ["Athens", "Greece", "Europe/Athens", "EUR", "en-GB"],
+  ["Helsinki", "Finland", "Europe/Helsinki", "EUR", "en-GB"],
+  ["Kyiv", "Ukraine", "Europe/Kyiv", "UAH", "en-GB"],
+  ["Istanbul", "Turkey", "Europe/Istanbul", "TRY"],
+  ["Moscow", "Russia", "Europe/Moscow", "RUB"],
+  ["Reykjavík", "Iceland", "Atlantic/Reykjavik", "ISK"],
+  ["Abu Dhabi", "United Arab Emirates", "Asia/Dubai", "AED"],
+  ["Riyadh", "Saudi Arabia", "Asia/Riyadh", "SAR"],
+  ["Doha", "Qatar", "Asia/Qatar", "QAR"],
+  ["Kuwait City", "Kuwait", "Asia/Kuwait", "KWD"],
+  ["Manama", "Bahrain", "Asia/Bahrain", "BHD"],
+  ["Muscat", "Oman", "Asia/Muscat", "OMR"],
+  ["Tel Aviv", "Israel", "Asia/Jerusalem", "ILS"],
+  ["Cairo", "Egypt", "Africa/Cairo", "EGP"],
+  ["Casablanca", "Morocco", "Africa/Casablanca", "MAD"],
+  ["Lagos", "Nigeria", "Africa/Lagos", "NGN"],
+  ["Nairobi", "Kenya", "Africa/Nairobi", "KES"],
+  ["Johannesburg", "South Africa", "Africa/Johannesburg", "ZAR"],
+  ["Cape Town", "South Africa", "Africa/Johannesburg", "ZAR"],
+  ["Karachi", "Pakistan", "Asia/Karachi", "PKR"],
+  ["Dhaka", "Bangladesh", "Asia/Dhaka", "BDT"],
+  ["Colombo", "Sri Lanka", "Asia/Colombo", "LKR"],
+  ["Kathmandu", "Nepal", "Asia/Kathmandu", "NPR"],
+  ["Bangkok", "Thailand", "Asia/Bangkok", "THB"],
+  ["Ho Chi Minh City", "Vietnam", "Asia/Ho_Chi_Minh", "VND"],
+  ["Jakarta", "Indonesia", "Asia/Jakarta", "IDR"],
+  ["Kuala Lumpur", "Malaysia", "Asia/Kuala_Lumpur", "MYR"],
+  ["Singapore", "Singapore", "Asia/Singapore", "SGD"],
+  ["Manila", "Philippines", "Asia/Manila", "PHP"],
+  ["Hong Kong", "Hong Kong", "Asia/Hong_Kong", "HKD"],
+  ["Taipei", "Taiwan", "Asia/Taipei", "TWD"],
+  ["Seoul", "South Korea", "Asia/Seoul", "KRW"],
+  ["Tokyo", "Japan", "Asia/Tokyo", "JPY"],
+  ["Perth", "Australia", "Australia/Perth", "AUD", "en-AU"],
+  ["Darwin", "Australia", "Australia/Darwin", "AUD", "en-AU"],
+  ["Adelaide", "Australia", "Australia/Adelaide", "AUD", "en-AU"],
+  ["Brisbane", "Australia", "Australia/Brisbane", "AUD", "en-AU"],
+  ["Auckland", "New Zealand", "Pacific/Auckland", "NZD", "en-NZ"],
+  ["Fiji", "Fiji", "Pacific/Fiji", "FJD"],
+].map(([region, place, tz, cur, abbrLocale]) => ({
+  id: region.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z]+/g, "-"),
+  region, place, tz, cur, abbrLocale, extra: true,
+}));
+const CATALOG = new Map([...DEFAULT_ZONES, ...EXTRA_ZONES].map((z) => [z.id, z]));
+const DEFAULT_IDS = DEFAULT_ZONES.map((z) => z.id);
+
+// Saved rates (per 1 GBP) from Exchange Rate API, used when live rates can't be fetched.
+const SAVED_RATES = {
+  updated: Date.UTC(2026, 10, 18, 0, 2),
+  rates: {"GBP":1,"USD":1.319965,"EUR":1.200421,"AED":4.84783,"INR":123.39351,"CNY":8.810822,"AUD":1.959506,"CAD":1.887136,"MXN":24.349854,"BRL":7.629489,"ARS":2049.041681,"COP":4379.951713,"PEN":4.507573,"CLP":1317.553902,"CHF":1.10964,"SEK":13.361438,"NOK":12.704201,"DKK":8.971858,"PLN":5.284428,"CZK":29.264959,"HUF":439.007613,"TRY":66.624982,"RUB":108.865186,"ISK":164.178513,"UAH":59.899245,"SAR":4.950133,"QAR":4.804929,"KWD":0.408914,"BHD":0.496333,"OMR":0.50755,"ILS":4.288469,"EGP":70.835778,"NGN":1763.322785,"KES":171.671521,"ZAR":22.347685,"MAD":13.163807,"PKR":365.433973,"BDT":164.797394,"LKR":439.214334,"NPR":197.434494,"THB":44.652768,"IDR":24126.022346,"MYR":5.403289,"SGD":1.700939,"PHP":84.086225,"VND":33930.810032,"HKD":10.354885,"TWD":43.48472,"KRW":1762.787024,"JPY":210.416333,"NZD":2.401485,"FJD":3.030979},
+};
+
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const DAY_NAMES = { Mon: "Monday", Tue: "Tuesday", Wed: "Wednesday", Thu: "Thursday", Fri: "Friday", Sat: "Saturday", Sun: "Sunday" };
+const STORE_KEY = "seven-zone-converter.zones";
+
+/* ---------- Time-zone maths ---------- */
+const partFormatters = new Map();
+function parts(tz, ms) {
+  let f = partFormatters.get(tz);
+  if (!f) {
+    f = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz, hourCycle: "h23", weekday: "short",
+      year: "numeric", month: "numeric", day: "numeric",
+      hour: "numeric", minute: "numeric", second: "numeric",
+    });
+    partFormatters.set(tz, f);
+  }
+  const o = {};
+  for (const p of f.formatToParts(ms)) o[p.type] = p.value;
+  return { y: +o.year, m: +o.month, d: +o.day, h: (+o.hour) % 24, mi: +o.minute, wd: o.weekday };
+}
+// Minutes the zone is ahead of UTC at a given instant.
+function offsetMinutes(tz, ms) {
+  const p = parts(tz, ms);
+  const asUtc = Date.UTC(p.y, p.m - 1, p.d, p.h, p.mi);
+  return Math.round((asUtc - Math.floor(ms / 60000) * 60000) / 60000);
+}
+// The instant at which a zone's wall clock shows y-m-d h:mi.
+function wallToInstant(tz, y, m, d, h, mi) {
+  const guess = Date.UTC(y, m - 1, d, h, mi);
+  const o1 = offsetMinutes(tz, guess);
+  let t = guess - o1 * 60000;
+  const o2 = offsetMinutes(tz, t);
+  if (o2 !== o1) t = guess - o2 * 60000;
+  return t;
+}
+const abbrFormatters = new Map();
+// A zone's short name such as EDT or GMT, or "" where only a numeric offset exists.
+function abbreviation(zone, ms) {
+  if (zone.abbr) return zone.abbr;
+  const locale = zone.abbrLocale || "en-US";
+  const key = locale + zone.tz;
+  let f = abbrFormatters.get(key);
+  if (!f) {
+    f = new Intl.DateTimeFormat(locale, { timeZone: zone.tz, timeZoneName: "short" });
+    abbrFormatters.set(key, f);
+  }
+  const v = f.formatToParts(ms).find((p) => p.type === "timeZoneName").value;
+  return /^(GMT|UTC)[+−-]/.test(v) ? "" : v;
+}
+function offsetLabel(min) {
+  if (min === 0) return "UTC+0";
+  const sign = min > 0 ? "+" : "−";
+  const a = Math.abs(min), h = Math.floor(a / 60), m = a % 60;
+  return "UTC" + sign + h + (m ? ":" + String(m).padStart(2, "0") : "");
+}
+const pad = (n) => String(n).padStart(2, "0");
+const floorMinute = (ms) => Math.floor(ms / 60000) * 60000;
+const time12 = (h, mi) => `${(h % 12) || 12}:${pad(mi)} ${h < 12 ? "am" : "pm"}`;
+const dayIndex = (p) => Date.UTC(p.y, p.m - 1, p.d) / 86400000;
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function period(p) {
+  const mins = p.h * 60 + p.mi;
+  if (mins < 7 * 60 || mins >= 22 * 60) return { cls: "night", label: "Night" };
+  if (p.wd === "Sat" || p.wd === "Sun") return { cls: "weekend", label: "Weekend" };
+  if (mins >= 9 * 60 && mins < 18 * 60) return { cls: "office", label: "Office hours" };
+  return { cls: "edge", label: mins < 9 * 60 ? "Early morning" : "Evening" };
+}
+
+/* ---------- State ---------- */
+function loadZoneIds() {
+  try {
+    const ids = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
+    if (Array.isArray(ids)) {
+      const ok = ids.filter((id) => CATALOG.has(id));
+      if (ok.length) return ok;
+    }
+  } catch (e) { /* storage unavailable */ }
+  return DEFAULT_IDS.slice();
+}
+function saveZoneIds() {
+  try {
+    if (isDefaultSet()) localStorage.removeItem(STORE_KEY);
+    else localStorage.setItem(STORE_KEY, JSON.stringify(state.zoneIds));
+  } catch (e) { /* storage unavailable */ }
+}
+const isDefaultSet = () => state.zoneIds.join() === DEFAULT_IDS.join();
+const activeZones = () => state.zoneIds.map((id) => CATALOG.get(id));
+
+const state = {
+  instant: floorMinute(Date.now()),
+  refId: "uk",
+  live: true,
+  zoneIds: loadZoneIds(),
+  money: { cur: "GBP", amount: 1 },
+  // Saved rates show straight away; live rates replace them once loaded.
+  rates: { map: SAVED_RATES.rates, updated: SAVED_RATES.updated, source: "saved" },
+};
+
+/* ---------- Zone list and planner rows ---------- */
+const list = document.getElementById("zones");
+const tbody = document.querySelector("#hours tbody");
+let rows = {};
+let cells = {};
+let headers = {};
+let colInstants = [];
+
+const REMOVE_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
+function buildZones() {
+  const zones = activeZones();
+  if (!zones.some((z) => z.id === state.refId)) state.refId = zones[0].id;
+  list.innerHTML = "";
+  tbody.innerHTML = "";
+  rows = {}; cells = {}; headers = {};
+
+  for (const z of zones) {
+    const li = document.createElement("li");
+    li.className = "zone";
+    li.innerHTML = `
+      <div class="who"><div class="region">${esc(z.region)}</div><div class="place">${esc(z.place)}</div></div>
+      <div class="tz"><span class="abbr"></span><span class="offset"></span></div>
+      <div class="when">
+        <input class="time-input" type="time" id="time-${z.id}" aria-label="Time in ${esc(z.region)}" required>
+        <div class="date-row"><span class="weekday"></span>
+          <input class="date-input" type="date" id="date-${z.id}" aria-label="Date in ${esc(z.region)}" required>
+        </div>
+      </div>
+      <div class="state"><span class="chips"></span>${zones.length > 1 ? `<button class="rm" type="button" aria-label="Remove ${esc(z.region)}" title="Remove ${esc(z.region)}">${REMOVE_ICON}</button>` : ""}</div>`;
+    list.appendChild(li);
+    const r = {
+      li,
+      abbr: li.querySelector(".abbr"),
+      offset: li.querySelector(".offset"),
+      time: li.querySelector(".time-input"),
+      date: li.querySelector(".date-input"),
+      weekday: li.querySelector(".weekday"),
+      chips: li.querySelector(".chips"),
+    };
+    rows[z.id] = r;
+
+    const applyFromInputs = () => {
+      const t = /^(\d{2}):(\d{2})/.exec(r.time.value);
+      const d = /^(\d{4})-(\d{2})-(\d{2})$/.exec(r.date.value);
+      if (!t || !d) return;
+      state.instant = wallToInstant(z.tz, +d[1], +d[2], +d[3], +t[1], +t[2]);
+      state.refId = z.id;
+      state.live = false;
+      render();
+    };
+    r.time.addEventListener("input", applyFromInputs);
+    r.date.addEventListener("input", applyFromInputs);
+    r.time.addEventListener("blur", () => render());
+    r.date.addEventListener("blur", () => render());
+    const rm = li.querySelector(".rm");
+    if (rm) rm.addEventListener("click", () => removeZone(z.id));
+
+    // Planner row
+    const tr = document.createElement("tr");
+    const th = document.createElement("th");
+    th.scope = "row";
+    th.innerHTML = `${esc(z.region)}<span class="abbr-s"></span>`;
+    tr.appendChild(th);
+    headers[z.id] = { tr, abbr: th.querySelector(".abbr-s") };
+    cells[z.id] = [];
+    for (let c = 0; c < 24; c++) {
+      const td = document.createElement("td");
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "cell";
+      b.addEventListener("click", () => {
+        state.instant = colInstants[c];
+        state.live = false;
+        render();
+      });
+      td.appendChild(b);
+      tr.appendChild(td);
+      cells[z.id].push(b);
+    }
+    tbody.appendChild(tr);
+  }
+
+  document.getElementById("reset-btn").hidden = isDefaultSet();
+  lastSelKey = "";
+  buildCurrencies();
+  render();
+}
+
+function addZone(id) {
+  if (state.zoneIds.includes(id)) return;
+  state.zoneIds.push(id);
+  saveZoneIds();
+  buildZones();
+}
+function removeZone(id) {
+  if (state.zoneIds.length <= 1) return;
+  state.zoneIds = state.zoneIds.filter((x) => x !== id);
+  saveZoneIds();
+  buildZones();
+}
+
+/* ---------- Render times ---------- */
+let lastSelKey = "";
+function render() {
+  const zones = activeZones();
+  const ref = CATALOG.get(state.refId);
+  const refP = parts(ref.tz, state.instant);
+  const refDay = dayIndex(refP);
+
+  document.getElementById("status").classList.toggle("live", state.live);
+  document.getElementById("status-text").textContent = state.live
+    ? "Live: showing the time now"
+    : `Showing ${time12(refP.h, refP.mi)} ${ref.region} time`;
+  document.getElementById("now-btn").hidden = state.live;
+
+  for (const z of zones) {
+    const r = rows[z.id];
+    const p = parts(z.tz, state.instant);
+    const isRef = z.id === state.refId;
+    const abbr = abbreviation(z, state.instant);
+    const off = offsetLabel(offsetMinutes(z.tz, state.instant));
+    r.li.classList.toggle("ref", isRef && !state.live);
+    r.abbr.textContent = abbr || off;
+    r.offset.textContent = abbr ? off : "";
+    if (document.activeElement !== r.time) r.time.value = `${pad(p.h)}:${pad(p.mi)}`;
+    if (document.activeElement !== r.date) r.date.value = `${p.y}-${pad(p.m)}-${pad(p.d)}`;
+    r.weekday.textContent = p.wd;
+    r.weekday.title = DAY_NAMES[p.wd];
+
+    const chips = [];
+    if (isRef && !state.live) chips.push(`<span class="chip set">Time set here</span>`);
+    const diff = dayIndex(p) - refDay;
+    if (diff !== 0) chips.push(`<span class="chip day">${diff > 0 ? "Next day" : "Previous day"}</span>`);
+    const per = period(p);
+    chips.push(`<span class="chip ${per.cls}">${per.label}</span>`);
+    r.chips.innerHTML = chips.join(" ");
+  }
+
+  // Planner: 24 columns, starting at the current hour in the reference zone.
+  const start = wallToInstant(ref.tz, refP.y, refP.m, refP.d, refP.h, 0);
+  colInstants = [];
+  for (let c = 0; c < 24; c++) colInstants.push(start + c * 3600000);
+
+  document.getElementById("planner-sub").textContent =
+    `The next 24 hours, starting from ${time12(refP.h, 0)} ${ref.region} time on ${DAY_NAMES[refP.wd]} ${refP.d} ${MONTHS[refP.m - 1]}. Select any hour to set every location to it.`;
+
+  for (const z of zones) {
+    headers[z.id].tr.classList.toggle("ref", z.id === state.refId);
+    headers[z.id].abbr.textContent = abbreviation(z, state.instant) || offsetLabel(offsetMinutes(z.tz, state.instant));
+    let prevDay = null;
+    cells[z.id].forEach((b, c) => {
+      const p = parts(z.tz, colInstants[c]);
+      const day = dayIndex(p);
+      const newDay = prevDay !== null && day !== prevDay;
+      prevDay = day;
+      const per = period(p);
+      const label = (p.h % 12) || 12;
+      const mins = p.mi ? ":" + pad(p.mi) : "";
+      const main = newDay ? label + mins : label;
+      const sub = newDay ? p.wd : mins + (p.h < 12 ? "am" : "pm");
+      b.className = "cell " + (per.cls === "weekend" ? "edge" : per.cls)
+        + (newDay ? " newday" : "") + (c === 0 ? " sel" : "");
+      b.innerHTML = `${main}<small>${sub}</small>`;
+      b.setAttribute("aria-label", `${time12(p.h, p.mi)} ${DAY_NAMES[p.wd]} in ${z.region}`);
+      if (c === 0) b.setAttribute("aria-current", "time"); else b.removeAttribute("aria-current");
+    });
+  }
+
+  // When the starting hour changes, scroll back to the start on narrow screens.
+  const selKey = state.refId + start;
+  if (selKey !== lastSelKey) {
+    lastSelKey = selKey;
+    document.getElementById("grid-wrap").scrollLeft = 0;
+  }
+}
+
+/* ---------- Time controls ---------- */
+document.getElementById("now-btn").addEventListener("click", () => {
+  state.instant = floorMinute(Date.now());
+  state.live = true;
+  render();
+});
+document.querySelectorAll("[data-shift]").forEach((b) =>
+  b.addEventListener("click", () => {
+    state.instant += Number(b.dataset.shift) * 60000;
+    state.live = false;
+    render();
+  })
+);
+
+function summaryText() {
+  const ref = CATALOG.get(state.refId);
+  const refP = parts(ref.tz, state.instant);
+  const lines = [`${time12(refP.h, refP.mi)} ${ref.region} time (${DAY_NAMES[refP.wd]} ${refP.d} ${MONTHS[refP.m - 1]}) is:`];
+  for (const z of activeZones()) {
+    const p = parts(z.tz, state.instant);
+    const label = abbreviation(z, state.instant) || offsetLabel(offsetMinutes(z.tz, state.instant));
+    lines.push(`${z.region} (${label}): ${time12(p.h, p.mi)}, ${p.wd} ${p.d} ${MONTHS[p.m - 1]}`);
+  }
+  return lines.join("\n");
+}
+const copyBtn = document.getElementById("copy-btn");
+const fallback = document.getElementById("copy-fallback");
+copyBtn.addEventListener("click", () => {
+  const text = summaryText();
+  const done = () => {
+    copyBtn.textContent = "Copied";
+    setTimeout(() => (copyBtn.textContent = "Copy all times"), 1600);
+  };
+  const showFallback = () => {
+    fallback.value = text;
+    fallback.hidden = false;
+    fallback.focus();
+    fallback.select();
+    copyBtn.textContent = "Select and copy the text below";
+  };
+  try {
+    navigator.clipboard.writeText(text).then(done, showFallback);
+  } catch (e) {
+    showFallback();
+  }
+});
+
+/* ---------- Add a location ---------- */
+const addBtn = document.getElementById("add-btn");
+const addBox = document.getElementById("add-box");
+const addInput = document.getElementById("add-input");
+const addResults = document.getElementById("add-results");
+
+function matches(q) {
+  const words = q.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").split(/\s+/).filter(Boolean);
+  const pool = [...EXTRA_ZONES, ...DEFAULT_ZONES].filter((z) => !state.zoneIds.includes(z.id));
+  return pool.filter((z) => {
+    const hay = `${z.region} ${z.place} ${z.cur} ${z.tz.replace(/[/_]/g, " ")}`
+      .toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+    return words.every((w) => hay.includes(w));
+  });
+}
+function showResults() {
+  const found = matches(addInput.value);
+  const now = Date.now();
+  addResults.innerHTML = "";
+  if (!found.length) {
+    addResults.innerHTML = `<li class="no-results">No match. Try a nearby major city or the country name.</li>`;
+    return;
+  }
+  for (const z of found) {
+    const p = parts(z.tz, now);
+    const off = offsetLabel(offsetMinutes(z.tz, now));
+    const li = document.createElement("li");
+    li.innerHTML = `<button class="result" type="button">
+        <span><span class="r-name">${esc(z.region)}</span> <span class="r-place">${esc(z.place)}</span></span>
+        <span class="r-meta">${time12(p.h, p.mi)} · ${off} · ${z.cur}</span>
+      </button>`;
+    li.firstElementChild.addEventListener("click", () => {
+      closeAdd();
+      addZone(z.id);
+    });
+    addResults.appendChild(li);
+  }
+}
+function openAdd() {
+  addBox.hidden = false;
+  addBtn.setAttribute("aria-expanded", "true");
+  addBtn.textContent = "Close";
+  addInput.value = "";
+  showResults();
+  addInput.focus();
+}
+function closeAdd() {
+  addBox.hidden = true;
+  addBtn.setAttribute("aria-expanded", "false");
+  addBtn.textContent = "+ Add a location";
+}
+addBtn.addEventListener("click", () => (addBox.hidden ? openAdd() : closeAdd()));
+addInput.addEventListener("input", showResults);
+addInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    const first = addResults.querySelector(".result");
+    if (first) first.click();
+  } else if (e.key === "Escape") {
+    closeAdd();
+    addBtn.focus();
+  }
+});
+document.getElementById("reset-btn").addEventListener("click", () => {
+  state.zoneIds = DEFAULT_IDS.slice();
+  saveZoneIds();
+  buildZones();
+});
+
+/* ---------- Currency ---------- */
+const curList = document.getElementById("currencies");
+let curRows = {};
+const curNames = (() => { try { return new Intl.DisplayNames(["en-GB"], { type: "currency" }); } catch (e) { return null; } })();
+const fractionDigits = (c) => {
+  try { return new Intl.NumberFormat("en-GB", { style: "currency", currency: c }).resolvedOptions().maximumFractionDigits; }
+  catch (e) { return 2; }
+};
+const symbolFor = (c) => {
+  try {
+    const s = new Intl.NumberFormat("en-GB", { style: "currency", currency: c, currencyDisplay: "narrowSymbol" })
+      .formatToParts(0).find((p) => p.type === "currency").value;
+    return s === c ? "" : s;
+  } catch (e) { return ""; }
+};
+const formatAmount = (n, c) => {
+  const fd = fractionDigits(c);
+  return n.toLocaleString("en-GB", { minimumFractionDigits: fd, maximumFractionDigits: fd });
+};
+const formatRate = (n) => n.toLocaleString("en-GB", { maximumSignificantDigits: 5 });
+
+// Currencies in the order their locations appear, each listed once.
+function currencyGroups() {
+  const groups = new Map();
+  for (const z of activeZones()) {
+    if (!groups.has(z.cur)) groups.set(z.cur, []);
+    groups.get(z.cur).push(z.region);
+  }
+  return groups;
+}
+
+function buildCurrencies() {
+  const groups = currencyGroups();
+  if (!groups.has(state.money.cur)) {
+    // The currency the amount was typed in has gone: carry the value over to GBP, or the first one left.
+    const first = groups.has("GBP") ? "GBP" : groups.keys().next().value;
+    const map = state.rates ? state.rates.map : SAVED_RATES.rates;
+    const amount = map[state.money.cur] && map[first] ? state.money.amount / map[state.money.cur] * map[first] : 1;
+    state.money = { cur: first, amount };
+  }
+  curList.innerHTML = "";
+  curRows = {};
+  for (const [cur, places] of groups) {
+    const li = document.createElement("li");
+    li.className = "cur";
+    const sym = symbolFor(cur);
+    const name = curNames ? curNames.of(cur) : cur;
+    li.innerHTML = `
+      <div>
+        <div class="cur-code">${cur}<span class="chips"></span></div>
+        <div class="cur-name">${esc(name)}</div>
+        <div class="cur-where">${esc(places.join(", "))}</div>
+        <div class="cur-rate"></div>
+      </div>
+      <label class="amount">${sym ? `<span class="sym" aria-hidden="true">${esc(sym)}</span>` : ""}
+        <input type="text" inputmode="decimal" autocomplete="off" id="amount-${cur}" aria-label="Amount in ${esc(name)}">
+      </label>`;
+    curList.appendChild(li);
+    const row = {
+      li,
+      input: li.querySelector("input"),
+      rate: li.querySelector(".cur-rate"),
+      chips: li.querySelector(".chips"),
+    };
+    curRows[cur] = row;
+    row.input.addEventListener("input", () => {
+      const n = parseFloat(row.input.value.replace(/[,\s]/g, ""));
+      if (!Number.isFinite(n) || n < 0) return;
+      state.money = { cur, amount: n };
+      renderMoney();
+    });
+    row.input.addEventListener("blur", () => renderMoney());
+    row.input.addEventListener("focus", () => row.input.select());
+  }
+  renderMoney();
+}
+
+function renderMoney() {
+  const map = state.rates.map;
+  const src = state.money.cur;
+  const srcRate = map[src];
+  for (const [cur, row] of Object.entries(curRows)) {
+    const isSrc = cur === src;
+    row.li.classList.toggle("src", isSrc);
+    const rate = map[cur];
+    if (!rate || !srcRate) {
+      row.input.disabled = !isSrc;
+      if (!isSrc) row.input.value = "";
+      row.rate.textContent = "Rate not available";
+      row.chips.innerHTML = "";
+      continue;
+    }
+    row.input.disabled = false;
+    const value = isSrc ? state.money.amount : state.money.amount / srcRate * rate;
+    if (document.activeElement !== row.input) row.input.value = formatAmount(value, cur);
+    row.rate.textContent = isSrc ? "" : `1 ${src} = ${formatRate(rate / srcRate)} ${cur}`;
+    row.chips.innerHTML = isSrc ? `<span class="chip set">Amount entered here</span>` : "";
+  }
+}
+
+function showRateStatus() {
+  const r = state.rates;
+  const dot = document.getElementById("rate-dot");
+  const text = document.getElementById("rate-text");
+  const source = document.getElementById("rate-source");
+  const when = new Date(r.updated).toLocaleString(undefined, {
+    weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit",
+  });
+  dot.className = "dot " + (r.source === "live" ? "live" : "saved");
+  if (r.source === "live") {
+    text.textContent = `Live rates, last updated ${when}`;
+    source.innerHTML = r.provider === "er"
+      ? `<a href="https://www.exchangerate-api.com" target="_blank" rel="noopener">Rates by Exchange Rate API</a>, updated once a day.`
+      : `Rates from the free <a href="https://github.com/fawazahmed0/exchange-api" target="_blank" rel="noopener">currency-api</a> project, updated once a day.`;
+  } else {
+    text.textContent = `Live rates couldn't load, so these are saved rates from ${new Date(r.updated).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}`;
+    source.innerHTML = `Saved rates from <a href="https://www.exchangerate-api.com" target="_blank" rel="noopener">Exchange Rate API</a>. Press Refresh rates to try again.`;
+  }
+}
+
+async function fetchJSON(url) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    const res = await fetch(url, { signal: ctrl.signal, cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+async function loadRates() {
+  const btn = document.getElementById("refresh-btn");
+  btn.disabled = true;
+  document.getElementById("rate-text").textContent = "Fetching live rates…";
+  let rates = null;
+  try {
+    const j = await fetchJSON("https://open.er-api.com/v6/latest/GBP");
+    if (j.result === "success" && j.rates && j.rates.GBP) {
+      rates = { map: j.rates, updated: j.time_last_update_unix * 1000, source: "live", provider: "er" };
+    }
+  } catch (e) { /* try the next source */ }
+  if (!rates) {
+    for (const url of [
+      "https://latest.currency-api.pages.dev/v1/currencies/gbp.min.json",
+      "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/gbp.min.json",
+    ]) {
+      try {
+        const j = await fetchJSON(url);
+        if (j && j.gbp) {
+          const map = { GBP: 1 };
+          for (const [k, v] of Object.entries(j.gbp)) map[k.toUpperCase()] = v;
+          rates = { map, updated: Date.parse(j.date + "T00:00:00Z"), source: "live", provider: "currency-api" };
+          break;
+        }
+      } catch (e) { /* try the next source */ }
+    }
+  }
+  if (!rates) rates = { map: SAVED_RATES.rates, updated: SAVED_RATES.updated, source: "saved" };
+  state.rates = rates;
+  btn.disabled = false;
+  showRateStatus();
+  renderMoney();
+}
+document.getElementById("refresh-btn").addEventListener("click", loadRates);
+
+/* ---------- Start ---------- */
+buildZones();
+loadRates();
+
+// Tick the clock while live, and refresh rates every hour.
+setInterval(() => {
+  if (!state.live) return;
+  const now = floorMinute(Date.now());
+  if (now !== state.instant) { state.instant = now; render(); }
+}, 1000);
+setInterval(loadRates, 60 * 60 * 1000);
+</script>
+</body>
+</html>
