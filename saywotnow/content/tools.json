@@ -1,0 +1,169 @@
+{
+  "contentVersion": "1.0.0",
+  "lastReviewed": "2026-11-16",
+  "tools": [
+    {
+      "id": "timezones",
+      "title": "Time zone converter",
+      "summary": "Compare times across your team's time zones and find a meeting slot.",
+      "icon": "globe",
+      "keywords": [
+        "time zone",
+        "timezone",
+        "world clock",
+        "meeting time",
+        "international",
+        "global",
+        "utc"
+      ],
+      "status": "ready",
+      "howItWorks": "Set a date and time in one zone and every other zone updates to match. Daylight saving is applied automatically for the date you pick, using your device's own time zone data. Clocks change on different dates in the USA, UK, Europe and Australia, so the gaps between places shift by an hour for a few weeks each spring and autumn. Your list of zones is saved on this device; the times you set aren't.",
+      "note": "Working hours are shown as 08:00–18:00, Monday to Friday. Check local working patterns and public holidays before booking."
+    },
+    {
+      "id": "currency",
+      "title": "Currency converter",
+      "summary": "Convert an amount into the local currency of the places you work with.",
+      "icon": "coins",
+      "keywords": [
+        "currency",
+        "exchange rate",
+        "money",
+        "convert",
+        "fx",
+        "dollar",
+        "pound",
+        "euro",
+        "dirham",
+        "rupee",
+        "yuan",
+        "salary",
+        "expenses",
+        "travel"
+      ],
+      "status": "ready",
+      "howItWorks": "Enter an amount and choose where it's from. Each location shows the amount in its local currency, using mid-market rates. When you're online, SayWotNow downloads the latest rates (at most once an hour). This is the only time it connects to the internet: it asks for the day's rates and sends nothing you've typed. Offline, it uses the last rates it downloaded, or rates built into the app.",
+      "note": "Rates are indicative mid-market rates. Your bank, card or payroll provider will use its own rate and fees, so check with Finance before agreeing any pay or expenses."
+    },
+    {
+      "id": "interview",
+      "title": "Interview pack generator",
+      "summary": "Build a structured interview pack with questions, probes and scoring.",
+      "icon": "doc",
+      "keywords": [
+        "interview",
+        "recruitment",
+        "hiring",
+        "questions",
+        "competency",
+        "candidate",
+        "pack"
+      ],
+      "status": "pending",
+      "pendingNote": "This tool is being ported from the existing interview pack generator and will arrive in a later build."
+    },
+    {
+      "id": "holiday",
+      "title": "Holiday calculator",
+      "summary": "Work out pro rata holiday for part-time and part-year employees.",
+      "icon": "sun",
+      "keywords": [
+        "holiday",
+        "annual leave",
+        "leave",
+        "pro rata",
+        "part time",
+        "entitlement",
+        "vacation"
+      ],
+      "status": "ready",
+      "howItWorks": "Entitlement × (employee's days ÷ full-time days) × (days employed in the holiday year ÷ days in the holiday year). The statutory minimum is 5.6 weeks (5.6 × days worked per week, capped at 28 days), pro-rated the same way for part-years.",
+      "note": "For irregular-hours or part-year workers, holiday may be calculated differently. Check with HR."
+    },
+    {
+      "id": "notice",
+      "title": "Notice period calculator",
+      "summary": "Check statutory and contractual notice and the last day of employment.",
+      "icon": "hourglass",
+      "keywords": [
+        "notice",
+        "notice period",
+        "resignation",
+        "resign",
+        "leaving",
+        "last day",
+        "termination",
+        "dismissal"
+      ],
+      "status": "ready",
+      "howItWorks": "Statutory minimum notice from the employer is 1 week after 1 month's service, then 1 week for each complete year of service from 2 years, up to 12 weeks. From the employee it's 1 week after 1 month's service. When the employer gives notice, the longer of statutory and contractual notice applies. Notice starts the day after it's given.",
+      "note": "Check the employment contract, and contact HR for anything involving dismissal."
+    },
+    {
+      "id": "bradford",
+      "title": "Bradford Factor",
+      "summary": "Score short-term absence over a rolling 52 weeks.",
+      "icon": "chart",
+      "keywords": [
+        "bradford",
+        "bradford factor",
+        "absence",
+        "sickness",
+        "sick",
+        "attendance",
+        "score"
+      ],
+      "status": "ready",
+      "howItWorks": "B = S² × D, where S is the number of separate absence spells and D is the total number of days absent, in a rolling 52-week period. Frequent short absences score higher than one long absence.",
+      "noteLevel": 2,
+      "noteFirst": true,
+      "note": "Don't use this score on its own. Exclude disability-related and pregnancy-related absences, and take advice from HR before taking action.",
+      "noBands": "Your company's absence policy sets the trigger points."
+    },
+    {
+      "id": "sbi",
+      "title": "Feedback builder (SBI)",
+      "summary": "Turn Situation, Behaviour and Impact into clear feedback.",
+      "icon": "spark",
+      "keywords": [
+        "feedback",
+        "sbi",
+        "situation behaviour impact",
+        "praise",
+        "developmental",
+        "constructive"
+      ],
+      "status": "ready",
+      "howItWorks": "Describe a specific situation, the behaviour you saw or heard (not your interpretation of it), and its impact. Then invite their view.",
+      "placeholders": {
+        "situation": "e.g. Tuesday's client call",
+        "behaviour": "e.g. you joined ten minutes late without letting us know",
+        "impact": "e.g. we had to restart the agenda and ran out of time"
+      },
+      "nextLine": {
+        "Developmental": "How did you see it?",
+        "Positive": "Thank you – please keep doing that."
+      },
+      "examples": [
+        {
+          "type": "Positive",
+          "situation": "the team meeting on Monday",
+          "behaviour": "you summarised the customer's feedback clearly and suggested three practical fixes",
+          "impact": "the team agreed a plan in ten minutes and the customer has already noticed the difference"
+        },
+        {
+          "type": "Developmental",
+          "situation": "this morning's project update",
+          "behaviour": "you interrupted Priya twice before she'd finished her point",
+          "impact": "she stopped contributing, and we didn't hear her concerns about the deadline"
+        },
+        {
+          "type": "Developmental",
+          "situation": "the last three weekly reports",
+          "behaviour": "the figures arrived after the Friday noon deadline",
+          "impact": "I had to delay the finance summary, and the directors noticed"
+        }
+      ]
+    }
+  ]
+}

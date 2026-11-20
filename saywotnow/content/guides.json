@@ -1,0 +1,937 @@
+{
+  "contentVersion": "1.0.0",
+  "lastReviewed": "2026-11-16",
+  "guides": [
+    {
+      "id": "G01",
+      "title": "Underperformance",
+      "category": "performance",
+      "flagLevel": 2,
+      "length": "30–45 mins",
+      "keywords": [
+        "performance",
+        "poor work",
+        "quality",
+        "deadlines",
+        "mistakes",
+        "capability",
+        "not good enough"
+      ],
+      "whenToUse": "The quality or amount of someone's work is below the expected standard, deadlines are being missed, or informal feedback hasn't led to improvement.",
+      "before": [
+        "Be clear on the standard expected and where it was set out (job description, objectives, previous 1:1s).",
+        "Gather 2–3 specific, recent examples with dates and the impact each had.",
+        "Consider whether training, tools, workload or unclear priorities could be part of the cause.",
+        "Think about whether health, personal circumstances or a disability could be a factor.",
+        "Check your company's performance or capability policy. Is this an informal conversation or a formal stage?",
+        "Decide what improvement looks like and a realistic timescale.",
+        "Book a private room or call with 30–45 minutes. Avoid Friday afternoons or the day before someone's holiday."
+      ],
+      "opening": [
+        "\"I want to talk about how [area of work] has been going. I've noticed some things I'm concerned about, and I want to help get it back on track.\"",
+        "\"This is an informal conversation. The aim is to understand what's happening and agree how I can support you.\""
+      ],
+      "during": [
+        "Describe each example and its impact, using Situation, Behaviour, Impact.",
+        "Ask: \"How do you think things have been going?\"",
+        "Ask: \"Is anything getting in the way – workload, training, tools, or anything outside work?\"",
+        "Ask: \"What would help you improve here?\"",
+        "Agree clear, measurable expectations and a timescale.",
+        "Agree the support you'll provide and dates for check-ins.",
+        "Check understanding: \"Can you sum up what we've agreed, so I know I've explained it clearly?\""
+      ],
+      "responses": [
+        {
+          "theySay": "\"No one told me that was the standard.\"",
+          "youCould": "Acknowledge it if that's fair. Make the standard clear now and agree to measure from today."
+        },
+        {
+          "theySay": "\"It's because of my workload.\"",
+          "youCould": "Explore it properly and reprioritise if that's fair, but keep the expected standard clear."
+        },
+        {
+          "theySay": "\"Other people do the same.\"",
+          "youCould": "\"I'm happy to look at that separately, but today I want to focus on your work and how I can help.\""
+        }
+      ],
+      "donts": [
+        "Don't generalise (\"You're always…\", \"You never…\").",
+        "Don't compare them with colleagues.",
+        "Don't raise problems that have never been mentioned before as if they're long-standing.",
+        "Don't speculate about health or diagnose anything.",
+        "Don't threaten formal action. If you need to explain the process, do it factually."
+      ],
+      "hrTriggers": [
+        "The employee mentions a health condition, disability, stress or mental health.",
+        "You're thinking about moving to a formal performance or capability process.",
+        "The employee raises a grievance or says they're being treated unfairly or discriminated against.",
+        "The issue has already been discussed informally and hasn't improved."
+      ],
+      "after": [
+        "Send the summary within 24 hours.",
+        "Put the agreed check-ins in your diary (weekly or fortnightly).",
+        "Provide the support you promised.",
+        "Review at the end of the timescale, and recognise improvement when you see it."
+      ],
+      "summary": {
+        "topic": "Underperformance",
+        "prompt": "The standard expected, the examples I shared and their impact.",
+        "recommended": true
+      }
+    },
+    {
+      "id": "G02",
+      "title": "Lateness and timekeeping",
+      "category": "performance",
+      "flagLevel": 1,
+      "length": "15–20 mins",
+      "keywords": [
+        "late",
+        "lateness",
+        "timekeeping",
+        "punctuality",
+        "start time",
+        "leaving early",
+        "attendance"
+      ],
+      "whenToUse": "An employee is regularly arriving late, taking long breaks or leaving early.",
+      "before": [
+        "Check the facts: dates and times over a set period (e.g. the last 4–6 weeks).",
+        "Check their contracted hours and any flexible arrangements already agreed.",
+        "Look for a pattern (e.g. Mondays, school-run times) that might suggest a cause.",
+        "Consider caring responsibilities, transport problems or health.",
+        "Check your company's timekeeping or attendance policy."
+      ],
+      "opening": [
+        "\"I wanted to have a quick word about timekeeping. You've been late on [number] occasions over the last [period], and I wanted to understand what's going on.\""
+      ],
+      "during": [
+        "Share the dates. Be factual, not accusatory.",
+        "Ask: \"Is there anything behind this that I should know about?\"",
+        "Explain the impact on the team or customers.",
+        "Restate the expected start and finish times.",
+        "If there's a genuine reason, explore options (e.g. a temporary change, or a formal flexible working request).",
+        "Agree the expectation and a review period."
+      ],
+      "responses": [
+        {
+          "theySay": "\"It's childcare / caring.\"",
+          "youCould": "Show understanding. Explain that they can make a flexible working request, and point them to the Flexible working guide (G13)."
+        },
+        {
+          "theySay": "\"I make the time up at the end of the day.\"",
+          "youCould": "Explain why start times matter in this role (cover, customers, meetings), or agree a trial of different hours."
+        }
+      ],
+      "donts": [
+        "Don't raise it in front of colleagues.",
+        "Don't assume you know the reason.",
+        "Don't informally agree a permanent change to hours. Use the proper process."
+      ],
+      "hrTriggers": [
+        "The lateness is linked to health or a disability.",
+        "Caring needs may lead to a flexible working request.",
+        "There's no improvement after an informal discussion (a possible formal stage).",
+        "You suspect alcohol or drug misuse."
+      ],
+      "after": [
+        "Send the summary.",
+        "Monitor timekeeping over the agreed period.",
+        "Recognise improvement and close the matter if things are resolved."
+      ],
+      "summary": {
+        "topic": "Lateness and timekeeping",
+        "prompt": "The dates discussed, the expected start/finish times and any reasons given.",
+        "recommended": true
+      }
+    },
+    {
+      "id": "G03",
+      "title": "Behaviour and conduct",
+      "category": "performance",
+      "flagLevel": 3,
+      "length": "20–30 mins",
+      "keywords": [
+        "behaviour",
+        "conduct",
+        "attitude",
+        "rude",
+        "inappropriate",
+        "misconduct",
+        "disciplinary",
+        "swearing"
+      ],
+      "whenToUse": "An employee has behaved in a way that falls below expected standards, for example being rude to colleagues or customers, using inappropriate language or breaking a workplace rule.",
+      "before": [
+        "STOP if this could be serious (gross) misconduct, such as harassment, bullying, discrimination, violence, theft, fraud, a data breach or being under the influence at work. Contact HR before speaking to the employee.",
+        "For minor issues, establish exactly what happened: date, place, what was said or done, and who saw it.",
+        "Separate facts from hearsay and opinion.",
+        "Check the relevant policy (code of conduct, dignity at work).",
+        "Plan to hear their side before reaching any conclusion."
+      ],
+      "opening": [
+        "\"I want to talk about something that happened on [date]. I'd like to hear your side first, and then explain why it's a concern.\""
+      ],
+      "during": [
+        "Describe what was seen or reported, factually.",
+        "Ask: \"Can you talk me through what happened from your point of view?\"",
+        "Listen without interrupting.",
+        "Explain the standard expected and why it matters.",
+        "Agree what happens next and what you expect from now on."
+      ],
+      "responses": [
+        {
+          "theySay": "\"Who complained?\"",
+          "youCould": "Don't reveal names without HR advice. \"I'd like us to focus on what happened and what needs to change.\""
+        },
+        {
+          "theySay": "\"It was just banter.\"",
+          "youCould": "Explain that how something is received matters as well as how it was meant, and restate the standard."
+        }
+      ],
+      "donts": [
+        "Don't run an informal \"investigation\" into serious allegations. HR should lead.",
+        "Don't promise anyone confidentiality you can't keep.",
+        "Don't reach a conclusion before hearing their account.",
+        "Don't discuss the matter with other team members."
+      ],
+      "hrTriggers": [
+        "BEFORE any conversation about possible harassment, bullying, discrimination, violence, theft, fraud, a data breach, or alcohol or drugs at work.",
+        "Whenever a formal disciplinary process might follow.",
+        "The employee alleges they're being treated unfairly or raises a grievance."
+      ],
+      "after": [
+        "For informal matters, send the summary and monitor.",
+        "For anything formal, follow HR's guidance on records and letters. Don't send your own summary unless HR agrees."
+      ],
+      "summary": {
+        "notice": "If this matter may become formal, check with HR before sending a summary.",
+        "topic": "Behaviour and conduct",
+        "prompt": "What happened, your account, and the standard expected.",
+        "recommended": true
+      }
+    },
+    {
+      "id": "G04",
+      "title": "Conflict between team members",
+      "category": "performance",
+      "flagLevel": 2,
+      "length": "20–30 mins per person",
+      "keywords": [
+        "conflict",
+        "falling out",
+        "tension",
+        "dispute",
+        "not getting on",
+        "argument",
+        "team"
+      ],
+      "whenToUse": "Two or more team members aren't getting on and it's affecting their work, the team or customers.",
+      "before": [
+        "Plan to speak to each person separately first.",
+        "Be clear about the impact on work. That's your reason for getting involved.",
+        "Stay neutral. Don't arrive with a view on who's right.",
+        "Watch for signs of bullying, harassment or discrimination. If you see any, contact HR first."
+      ],
+      "opening": [
+        "\"I've noticed some tension between you and [colleague], and I'd like to help sort it out. Can you tell me how things look from your side?\""
+      ],
+      "during": [
+        "In each one-to-one, listen, ask what's happened, what they need, and what they could do differently.",
+        "Ask if they'd be willing to meet together.",
+        "If you hold a joint meeting, set ground rules (each person speaks without interruption, focus on behaviours, not personalities).",
+        "Focus on the future: \"What needs to happen for you to work well together?\"",
+        "Agree specific working arrangements and a review date."
+      ],
+      "responses": [
+        {
+          "theySay": "\"I'm not willing to meet them.\"",
+          "youCould": "Don't force it. Agree working arrangements separately, and consider HR or mediation."
+        }
+      ],
+      "donts": [
+        "Don't take sides.",
+        "Don't force a joint meeting.",
+        "Don't repeat what one person told you in confidence without their agreement.",
+        "Don't ignore it and hope it goes away."
+      ],
+      "hrTriggers": [
+        "There are allegations of bullying, harassment or discrimination.",
+        "Either person raises a formal grievance.",
+        "You think mediation is needed."
+      ],
+      "after": [
+        "Send each person their own summary (only send a joint summary after a joint meeting).",
+        "Check in with each person after 2 weeks."
+      ],
+      "summary": {
+        "topic": "Conflict between team members",
+        "prompt": "The impact on work, your perspective and what we agreed about working together.",
+        "recommended": true,
+        "formNote": "Send one summary per person."
+      }
+    },
+    {
+      "id": "G05",
+      "title": "Frequent short-term sickness absence",
+      "category": "wellbeing",
+      "flagLevel": 2,
+      "length": "20–30 mins",
+      "keywords": [
+        "sickness",
+        "sick",
+        "absence",
+        "off sick",
+        "frequent absence",
+        "trigger",
+        "Bradford"
+      ],
+      "whenToUse": "An employee has had several short absences and they're starting to affect the team or have reached a trigger point in your absence policy.",
+      "before": [
+        "Check the absence record: dates, reasons and total days over the period.",
+        "Check whether the absences have reached a trigger point in your policy.",
+        "Make sure return to work meetings were held and recorded.",
+        "Consider whether there could be an underlying condition, disability, pregnancy-related illness or work-related stress.",
+        "Find out whether Occupational Health (OH) or an Employee Assistance Programme (EAP) is available."
+      ],
+      "opening": [
+        "\"I wanted to talk about your absences over the last [period]. This isn't about doubting that you've been unwell. I want to understand whether there's anything behind it and how we can support you.\""
+      ],
+      "during": [
+        "Share the record factually.",
+        "Ask: \"Is there an underlying reason, or anything that connects these absences?\"",
+        "Ask whether anything at work is contributing.",
+        "Explain the impact on the team.",
+        "Discuss support: OH referral, EAP, adjustments.",
+        "Explain your absence policy and what happens if absences continue, factually and without threat."
+      ],
+      "responses": [
+        {
+          "theySay": "\"I have a condition I haven't mentioned.\"",
+          "youCould": "Thank them for telling you. Discuss support, consider an OH referral and contact HR."
+        }
+      ],
+      "donts": [
+        "Don't ask for more medical detail than you need.",
+        "Don't suggest they're not genuinely ill.",
+        "Don't count pregnancy-related or disability-related absences in the usual way without HR advice.",
+        "Don't put medical details in the summary email."
+      ],
+      "hrTriggers": [
+        "There may be a disability or long-term health condition.",
+        "Absences are pregnancy-related.",
+        "Work-related stress or an injury at work is mentioned.",
+        "A formal stage of your absence policy has been reached.",
+        "The absence becomes long-term (often defined as 4 weeks or more)."
+      ],
+      "after": [
+        "Send the summary (without medical details).",
+        "Make the OH referral if agreed.",
+        "Hold the review on the agreed date."
+      ],
+      "summary": {
+        "topic": "Frequent short-term sickness absence",
+        "prompt": "The absence dates discussed, the support offered and the policy explained. No medical details.",
+        "recommended": true
+      }
+    },
+    {
+      "id": "G06",
+      "title": "Mental health disclosure or concern",
+      "category": "wellbeing",
+      "flagLevel": 2,
+      "length": "As long as needed",
+      "keywords": [
+        "mental health",
+        "stress",
+        "anxiety",
+        "depression",
+        "struggling",
+        "wellbeing",
+        "burnout",
+        "not coping"
+      ],
+      "whenToUse": "An employee tells you they're struggling with their mental health, or you've noticed signs that they may be.",
+      "urgentBanner": true,
+      "before": [
+        "If you're starting the conversation, note the changes you've seen (behaviour and work, not a diagnosis).",
+        "Find a private, comfortable space and allow plenty of time, with no hard stop.",
+        "Know the support available: EAP, OH, mental health first aiders, their GP, and crisis lines (e.g. Samaritans 116 123)."
+      ],
+      "opening": [
+        "\"I've noticed you haven't seemed yourself lately. How are you doing?\"",
+        "If they tell you something: \"Thank you for telling me. I'm glad you felt able to.\""
+      ],
+      "during": [
+        "Listen more than you talk. Silence is fine.",
+        "Ask open questions: \"How is it affecting you at work?\" \"What would help right now?\"",
+        "Ask what, if anything, they'd like shared, and with whom.",
+        "Discuss possible adjustments: temporary hours, workload, breaks, where they work.",
+        "Point them to support (EAP, GP, OH).",
+        "Agree when you'll next check in."
+      ],
+      "responses": [
+        {
+          "theySay": "\"I don't want anyone to know.\"",
+          "youCould": "Respect that. Explain who, if anyone, would need to know (e.g. HR to arrange adjustments). The exception is if there's a risk to their safety."
+        },
+        {
+          "theySay": "\"I'm fine.\" (when you're concerned)",
+          "youCould": "Don't push. \"OK, but my door's open. If anything changes, I'm here.\" Check in again soon."
+        }
+      ],
+      "donts": [
+        "Don't diagnose or give opinions about conditions.",
+        "Don't promise complete confidentiality if there's a risk to life.",
+        "Don't make assumptions about what they can or can't do.",
+        "Don't overwhelm them with solutions in the first conversation."
+      ],
+      "hrTriggers": [
+        "URGENT: If they say they may harm themselves or others, don't leave them alone. Call 999 or help them contact a crisis line, then contact HR.",
+        "Adjustments involving changes to hours, duties or contract.",
+        "A long-term condition is mentioned (it may count as a disability under the Equality Act 2010).",
+        "Stress is caused or made worse by work."
+      ],
+      "after": [
+        "Check in as agreed. Keep it regular and low-key.",
+        "Arrange the agreed adjustments.",
+        "Keep what they told you private."
+      ],
+      "summary": {
+        "notice": "Ask the employee whether they'd like a written summary. If they would, record only the support and actions agreed, not health details.",
+        "topic": "Mental health disclosure or concern",
+        "prompt": "The support and actions agreed. No health details.",
+        "recommended": true
+      }
+    },
+    {
+      "id": "G07",
+      "title": "Bereavement",
+      "category": "wellbeing",
+      "flagLevel": 1,
+      "length": "Short",
+      "keywords": [
+        "bereavement",
+        "death",
+        "died",
+        "grief",
+        "loss",
+        "funeral",
+        "compassionate leave"
+      ],
+      "whenToUse": "An employee has lost someone close to them, both when they first tell you and when they return to work.",
+      "before": [
+        "Check your bereavement or compassionate leave policy.",
+        "Be aware of statutory rights: reasonable time off for dependants, and parental bereavement leave for the loss of a child under 18 or a stillbirth after 24 weeks of pregnancy.",
+        "Think about what you can offer: leave, flexibility, a phased return."
+      ],
+      "opening": [
+        "\"I'm so sorry to hear about your [relationship]. Please don't worry about work right now. I want to make sure you have what you need.\""
+      ],
+      "during": [
+        "First conversation: keep it short and kind.",
+        "Ask how much time they think they need and explain what leave is available.",
+        "Ask whether and how they'd like the team told.",
+        "Agree how and how often they'd like to be contacted while they're off.",
+        "On their return: ask how they're doing, and offer a phased return or flexibility. Remind them about the EAP."
+      ],
+      "responses": [
+        {
+          "theySay": "\"I'd rather just carry on working.\"",
+          "youCould": "Respect that, and make it clear they can change their mind at any time."
+        }
+      ],
+      "donts": [
+        "Don't push for a return date in the first conversation.",
+        "Don't say \"I know how you feel\" or try to minimise their loss.",
+        "Don't share the news without their agreement.",
+        "Don't forget that anniversaries and key dates can be hard later on."
+      ],
+      "hrTriggers": [
+        "Leave is needed beyond your policy.",
+        "It's the death of a child (parental bereavement leave applies).",
+        "Grief is affecting their health or attendance over a longer period."
+      ],
+      "after": [
+        "Keep in touch as agreed.",
+        "Make a note to yourself of significant dates (e.g. anniversaries), but not in this app."
+      ],
+      "summary": {
+        "notice": "A full summary isn't usually appropriate after a bereavement conversation. This short version confirms only the leave and contact arrangements agreed.",
+        "topic": "Bereavement",
+        "prompt": "The leave and contact arrangements agreed.",
+        "recommended": false,
+        "short": true
+      }
+    },
+    {
+      "id": "G08",
+      "title": "Menopause",
+      "category": "wellbeing",
+      "flagLevel": 1,
+      "length": "20–30 mins",
+      "keywords": [
+        "menopause",
+        "perimenopause",
+        "hot flushes",
+        "symptoms",
+        "women's health"
+      ],
+      "whenToUse": "An employee tells you menopause symptoms are affecting them at work, or asks for support.",
+      "before": [
+        "Check whether your company has a menopause policy or support.",
+        "Be ready to listen. You don't need to be an expert.",
+        "Know the common adjustments: temperature control or a fan, uniform changes, extra breaks, flexible hours, home working, access to rest areas."
+      ],
+      "opening": [
+        "\"Thanks for raising this with me. I'd like to understand how it's affecting you at work and what would help.\""
+      ],
+      "during": [
+        "Ask which symptoms affect their work, only as much as they want to share.",
+        "Ask what adjustments would help.",
+        "Agree what you can put in place and a date to review.",
+        "Point them to support (EAP, GP, OH, any internal network)."
+      ],
+      "responses": [
+        {
+          "theySay": "\"I'm embarrassed to talk about it.\"",
+          "youCould": "Reassure them it's a normal workplace conversation and they only need to share what they're comfortable with."
+        }
+      ],
+      "donts": [
+        "Don't make jokes or assumptions.",
+        "Don't dismiss or play down symptoms.",
+        "Don't make comments about age."
+      ],
+      "hrTriggers": [
+        "Adjustments would change their contract (hours, duties).",
+        "Symptoms are linked to absence or performance concerns.",
+        "There's a risk of discrimination. Menopause-related treatment can raise age, sex or disability discrimination issues."
+      ],
+      "after": [
+        "Put the agreed adjustments in place.",
+        "Review on the agreed date."
+      ],
+      "summary": {
+        "topic": "Menopause",
+        "prompt": "The adjustments and support agreed.",
+        "recommended": true,
+        "formNote": "Record adjustments only, not symptoms."
+      }
+    },
+    {
+      "id": "G09",
+      "title": "Pregnancy announcement",
+      "category": "wellbeing",
+      "flagLevel": 2,
+      "length": "15–20 mins",
+      "keywords": [
+        "pregnant",
+        "pregnancy",
+        "maternity",
+        "baby",
+        "expecting",
+        "antenatal"
+      ],
+      "whenToUse": "An employee tells you they're pregnant.",
+      "before": [
+        "This conversation is usually started by the employee, so know the basics in advance.",
+        "Pregnant employees are protected from discrimination and unfavourable treatment.",
+        "They're entitled to paid time off for antenatal appointments.",
+        "A workplace risk assessment is needed.",
+        "HR will explain maternity leave and pay."
+      ],
+      "opening": [
+        "\"Congratulations! Thank you for letting me know.\""
+      ],
+      "during": [
+        "Ask how they're feeling and whether they need anything now.",
+        "Ask who knows and whether or when they'd like the team told.",
+        "Explain the next steps: HR will be in touch about leave and pay, a risk assessment will be done, and time off for appointments is fine.",
+        "Ask them to let you know if their needs change."
+      ],
+      "responses": [
+        {
+          "theySay": "\"I'm worried about my job / promotion.\"",
+          "youCould": "Reassure them that their pregnancy won't affect how they're treated, and that HR can answer detailed questions."
+        }
+      ],
+      "donts": [
+        "Don't ask whether they plan to come back, or about childcare.",
+        "Don't make assumptions about workload, travel or promotion.",
+        "Don't share the news without their agreement.",
+        "Don't change their duties without discussing it with them and carrying out a risk assessment."
+      ],
+      "hrTriggers": [
+        "Always tell HR, with the employee's agreement, so the risk assessment and maternity process can start.",
+        "The employee reports pregnancy-related illness or absence.",
+        "There are concerns about how they're being treated."
+      ],
+      "after": [
+        "Let HR know.",
+        "Arrange the risk assessment.",
+        "Keep the news confidential until they're ready."
+      ],
+      "summary": {
+        "topic": "Pregnancy announcement",
+        "prompt": "Next steps agreed (HR contact, risk assessment, appointments).",
+        "recommended": true,
+        "formNote": "Keep it short and warm."
+      }
+    },
+    {
+      "id": "G10",
+      "title": "Personal hygiene",
+      "category": "wellbeing",
+      "flagLevel": 1,
+      "length": "10–15 mins",
+      "keywords": [
+        "hygiene",
+        "body odour",
+        "smell",
+        "BO",
+        "appearance",
+        "dress",
+        "cleanliness"
+      ],
+      "whenToUse": "An employee's personal hygiene is noticeably and consistently affecting colleagues or customers.",
+      "before": [
+        "Make sure it's a genuine, consistent issue, not a one-off or a single complaint.",
+        "Consider possible causes: a medical condition, medication, mental health, money worries, home circumstances or cultural factors.",
+        "Choose a completely private setting, ideally towards the end of the day.",
+        "Have support information ready (EAP)."
+      ],
+      "opening": [
+        "\"There's something a bit sensitive I need to talk to you about. I'm going to be direct, because I think that's kinder than not saying anything. There have been times recently when there's been a noticeable body odour.\""
+      ],
+      "during": [
+        "Be direct, brief and factual. Then pause and let them respond.",
+        "Ask: \"Is there anything that might be contributing to this?\"",
+        "Offer support if there's an underlying reason.",
+        "Agree next steps and reassure them it stays private."
+      ],
+      "responses": [
+        {
+          "theySay": "Embarrassment or shock",
+          "youCould": "Give them a moment. \"I know this isn't easy to hear. I'm raising it because I want to help.\""
+        },
+        {
+          "theySay": "\"Who said something?\"",
+          "youCould": "Don't name anyone. \"I've noticed it myself, and I wanted to raise it with you privately.\""
+        }
+      ],
+      "donts": [
+        "Don't drop hints or leave anonymous notes or products.",
+        "Don't say \"people have been complaining\" or name colleagues.",
+        "Don't joke about it.",
+        "Don't drag it out."
+      ],
+      "hrTriggers": [
+        "There may be a medical cause or disability.",
+        "You have concerns about their mental health or circumstances at home.",
+        "The employee becomes very distressed.",
+        "The issue continues after the conversation."
+      ],
+      "after": [
+        "Monitor the situation discreetly.",
+        "If things improve, consider a brief, positive acknowledgement in private."
+      ],
+      "summary": {
+        "notice": "A written summary is optional. Consider whether it's needed.",
+        "topic": "Personal hygiene",
+        "prompt": "What we discussed and the support agreed.",
+        "recommended": false
+      }
+    },
+    {
+      "id": "G11",
+      "title": "Giving feedback",
+      "category": "everyday",
+      "flagLevel": 1,
+      "length": "5–15 mins",
+      "keywords": [
+        "feedback",
+        "praise",
+        "recognition",
+        "SBI",
+        "constructive",
+        "developmental",
+        "criticism"
+      ],
+      "whenToUse": "You want to give positive or developmental feedback about something specific.",
+      "before": [
+        "Pick one specific situation.",
+        "Note the behaviour (what you saw or heard) and its impact.",
+        "Give it soon after the event.",
+        "Positive feedback can be given in public. Developmental feedback should be given in private.",
+        "Tip: use the SBI Feedback Builder in the Toolkit to prepare."
+      ],
+      "opening": [
+        "\"Have you got 10 minutes? I wanted to give you some feedback on [situation].\""
+      ],
+      "during": [
+        "Situation: \"In yesterday's client meeting…\"",
+        "Behaviour: \"…you interrupted the client twice while they were explaining the issue…\"",
+        "Impact: \"…which meant we didn't fully understand their concern, and they seemed frustrated.\"",
+        "Ask: \"How did you see it?\"",
+        "Agree what to do next time (developmental), or say what you'd like them to keep doing (positive)."
+      ],
+      "responses": [
+        {
+          "theySay": "They disagree with your view",
+          "youCould": "Listen and ask for their perspective. You can accept that you see it differently, as long as the expectation is clear."
+        }
+      ],
+      "donts": [
+        "Don't hide the message by sandwiching it between compliments.",
+        "Don't use vague labels (\"unprofessional\", \"great job\"). Be specific.",
+        "Don't give too much at once."
+      ],
+      "hrTriggers": [
+        "Not usually needed. If the feedback is about conduct, use the Behaviour and conduct guide (G03)."
+      ],
+      "after": [
+        "Follow up on developmental feedback the next time the situation comes up."
+      ],
+      "summary": {
+        "topic": "Giving feedback",
+        "prompt": "The situation, behaviour and impact, and what we agreed.",
+        "recommended": false
+      }
+    },
+    {
+      "id": "G12",
+      "title": "Saying no to a request",
+      "category": "everyday",
+      "flagLevel": 1,
+      "length": "10–15 mins",
+      "keywords": [
+        "saying no",
+        "decline",
+        "refuse",
+        "request",
+        "turn down",
+        "reject",
+        "training request",
+        "leave request"
+      ],
+      "whenToUse": "You need to turn down a request for something like training, particular leave dates, a project or a budget.",
+      "before": [
+        "Be clear about why the answer is no.",
+        "Think about alternatives: a later date, a partial yes, or a different way to meet the need.",
+        "Check whether a formal process applies. Flexible working, statutory leave and disability adjustments must follow set procedures (see G13 or contact HR)."
+      ],
+      "opening": [
+        "\"Thanks for asking about [request]. I've thought about it carefully and I'm not able to agree to it right now. I want to explain why.\""
+      ],
+      "during": [
+        "Give the honest reason.",
+        "Acknowledge their disappointment.",
+        "Offer alternatives, or explain what would need to change for a yes.",
+        "Agree any next steps."
+      ],
+      "responses": [
+        {
+          "theySay": "\"That's not fair – [colleague] got it.\"",
+          "youCould": "Explain the difference in circumstances if you can, without discussing the colleague's details."
+        }
+      ],
+      "donts": [
+        "Don't put it off or avoid the conversation.",
+        "Don't blame others (\"HR won't let me\") if it's your decision.",
+        "Don't promise a future yes you can't guarantee."
+      ],
+      "hrTriggers": [
+        "The request is for flexible working, statutory leave (e.g. parental leave, time off for dependants) or an adjustment for a disability or health condition."
+      ],
+      "after": [
+        "Follow up on any alternative you offered."
+      ],
+      "summary": {
+        "topic": "Saying no to a request",
+        "prompt": "The request, the reason for the decision and any alternatives offered.",
+        "recommended": false
+      }
+    },
+    {
+      "id": "G13",
+      "title": "Flexible working request",
+      "category": "everyday",
+      "flagLevel": 3,
+      "length": "30 mins",
+      "keywords": [
+        "flexible working",
+        "part time",
+        "hours",
+        "compressed hours",
+        "hybrid",
+        "home working",
+        "job share",
+        "statutory request"
+      ],
+      "whenToUse": "An employee has made, or wants to make, a request to change their hours, times or place of work.",
+      "before": [
+        "Check whether it's a formal (statutory) request. In the UK, employees can make a request from their first day of employment, up to two requests in any 12-month period.",
+        "The employer must consult the employee before refusing, and must make a decision (including any appeal) within two months unless an extension is agreed.",
+        "A request can only be refused for one of the eight statutory business reasons.",
+        "Review the request: what's being asked for, the impact on the team, and whether a trial period could work.",
+        "Contact HR and check your company's policy before the meeting."
+      ],
+      "opening": [
+        "\"Thanks for your request. I'd like to talk it through so I fully understand what you're looking for, and we can explore what might work.\""
+      ],
+      "during": [
+        "Understand exactly what they're asking for. They don't have to give a reason.",
+        "Discuss how it could work in practice and any concerns about impact.",
+        "Explore alternatives or a compromise.",
+        "Consider a trial period.",
+        "Explain the next steps and when they'll get a written decision."
+      ],
+      "responses": [
+        {
+          "theySay": "\"Why do you need to know my reasons?\"",
+          "youCould": "You don't need them. \"You don't have to tell me. I just want to find something that works.\""
+        }
+      ],
+      "donts": [
+        "Don't refuse in the meeting before considering it properly.",
+        "Don't ask intrusive questions.",
+        "Don't treat requests differently depending on the reason (e.g. childcare vs other reasons).",
+        "Don't agree a change informally without it being recorded. An accepted request is usually a permanent change to the contract unless a trial or end date is agreed."
+      ],
+      "hrTriggers": [
+        "Always, before you respond in writing.",
+        "You're considering a refusal.",
+        "The request is linked to a disability (it may be a reasonable adjustment) or a return from maternity, adoption or shared parental leave."
+      ],
+      "after": [
+        "Send the meeting summary.",
+        "Work with HR on the formal written decision. This is separate from the summary."
+      ],
+      "summary": {
+        "topic": "Flexible working request",
+        "prompt": "What was requested, how it might work, alternatives discussed and the timescale for a decision.",
+        "recommended": true,
+        "formNote": "This is a meeting summary, not your formal decision."
+      }
+    },
+    {
+      "id": "G14",
+      "title": "Pay rise request",
+      "category": "everyday",
+      "flagLevel": 1,
+      "length": "20 mins",
+      "keywords": [
+        "pay rise",
+        "salary",
+        "raise",
+        "pay increase",
+        "money",
+        "compensation",
+        "promotion"
+      ],
+      "whenToUse": "An employee asks for a pay rise.",
+      "before": [
+        "Check the pay range for the role, their pay history, and when and how pay decisions are made.",
+        "Be clear about what you can and can't decide.",
+        "Think about their contribution and how it compares to the expectations of the role."
+      ],
+      "opening": [
+        "\"Thanks for raising this. I'd like to hear your case, and then I'll explain how pay decisions work here.\""
+      ],
+      "during": [
+        "Listen to their case in full.",
+        "Ask what they think justifies the increase.",
+        "Explain the process and timing honestly.",
+        "Be realistic about the likelihood.",
+        "If it's not possible now, agree what would need to happen (objectives, skills, responsibilities).",
+        "Agree when you'll get back to them."
+      ],
+      "responses": [
+        {
+          "theySay": "\"I've had an offer elsewhere.\"",
+          "youCould": "Thank them for being open. Don't react on the spot. Take advice before responding."
+        }
+      ],
+      "donts": [
+        "Don't promise an increase you can't approve.",
+        "Don't discuss colleagues' pay.",
+        "Don't dismiss the request or treat them differently for asking."
+      ],
+      "hrTriggers": [
+        "They raise equal pay concerns.",
+        "There's a counter-offer or a risk they'll leave.",
+        "The increase would take them outside the pay range."
+      ],
+      "after": [
+        "Get back to them by the agreed date, even if it's just an update."
+      ],
+      "summary": {
+        "topic": "Pay rise request",
+        "prompt": "Your request, the process explained and what happens next.",
+        "recommended": true
+      }
+    },
+    {
+      "id": "G15",
+      "title": "Announcing change",
+      "category": "everyday",
+      "flagLevel": 2,
+      "length": "20–30 mins",
+      "keywords": [
+        "change",
+        "restructure",
+        "reorganisation",
+        "new process",
+        "relocation",
+        "team change",
+        "announcement"
+      ],
+      "whenToUse": "You need to tell your team or an individual about a change, such as a new process, a team restructure, an office move or new reporting lines.",
+      "before": [
+        "Be clear about what's been decided and what's still open.",
+        "Know the reason for the change and be able to explain it simply.",
+        "Prepare answers to the questions you expect.",
+        "Time it so people hear it from you first, not through rumour.",
+        "If jobs, pay, hours, location or contracts could be affected, contact HR first. A formal consultation may be required."
+      ],
+      "opening": [
+        "\"I want to update you on a change that's coming to [team/process], and what it means for you.\""
+      ],
+      "during": [
+        "Explain what is changing, why, when, and how it affects them.",
+        "Acknowledge how they might feel.",
+        "Invite questions.",
+        "Be honest when you don't know: \"I don't know yet, but I'll find out and come back to you by [date].\"",
+        "Explain the next steps and where to get support."
+      ],
+      "responses": [
+        {
+          "theySay": "\"Is my job at risk?\"",
+          "youCould": "If you don't know, say so honestly. Don't speculate. Find out and get back to them."
+        }
+      ],
+      "donts": [
+        "Don't speculate or share rumours.",
+        "Don't make promises you can't keep.",
+        "Don't announce anything that puts roles at risk without the HR process in place.",
+        "Don't ignore people's feelings."
+      ],
+      "hrTriggers": [
+        "There are any changes to terms and conditions, hours, pay or location.",
+        "Roles are at risk or redundancy is possible.",
+        "A transfer to another employer (TUPE) is involved."
+      ],
+      "after": [
+        "Follow up on open questions by the date you promised.",
+        "Check in with individuals who seemed most affected."
+      ],
+      "summary": {
+        "topic": "Announcing change",
+        "prompt": "The change, the timing and the questions raised.",
+        "recommended": false,
+        "formNote": "A summary is optional for individual conversations."
+      }
+    }
+  ]
+}

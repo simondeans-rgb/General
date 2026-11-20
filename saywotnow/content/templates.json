@@ -1,0 +1,479 @@
+{
+  "contentVersion": "1.0.0",
+  "lastReviewed": "2026-11-16",
+  "header": {
+    "title": "Meeting details",
+    "fields": [
+      { "id": "employeeName", "label": "Employee name", "type": "shortText", "required": true, "placeholder": "e.g. Sam Patel" },
+      { "id": "employeeEmail", "label": "Employee email", "type": "email", "required": true, "placeholder": "name@company.co.uk" },
+      { "id": "managerName", "label": "Your name", "type": "shortText", "required": true, "helper": "Used to sign off the email. SayWotNow doesn't store it, so you'll type it each time." },
+      { "id": "cc", "label": "CC", "type": "email", "helper": "For example, a second manager." },
+      { "id": "meetingDate", "label": "Meeting date", "type": "date", "required": true, "default": "today" }
+    ]
+  },
+  "email": {
+    "greeting": "Hi {firstName},",
+    "signOff": "Best wishes,",
+    "footer": "Sent from SayWotNow. This summary was not stored in the app."
+  },
+  "ratingScales": {
+    "wellbeing": ["Struggling", "Not great", "OK", "Good", "Great"],
+    "recognised": ["Not at all", "A little", "Somewhat", "Quite", "Very"],
+    "settling": ["Finding it hard", "Getting there", "OK", "Settling in well", "Settling in really well"]
+  },
+  "templates": [
+    {
+      "id": "T01",
+      "name": "1:1 Meeting",
+      "purpose": "A regular one-to-one covering wellbeing, progress, priorities, support, development and agreed actions.",
+      "whenToUse": "Weekly, fortnightly or monthly 1:1s.",
+      "length": "30–60 mins",
+      "keywords": ["1:1", "one to one", "one-to-one", "121", "catch up", "regular meeting", "check in", "wellbeing", "priorities"],
+      "listed": true,
+      "pair": { "full": "T01", "quick": "T02" },
+      "subject": "1:1 summary – {employeeName} – {meetingDate}",
+      "intro": "Thanks for our 1:1 today. Here's a summary of what we discussed and agreed. If anything doesn't match your understanding, just reply and let me know.",
+      "allowHrCc": false,
+      "sections": [
+        {
+          "id": "previous", "title": "Actions from last time", "optional": true,
+          "fields": [
+            { "id": "previousActions", "label": "Previous actions and progress", "type": "longText", "helper": "Paste the agreed actions from your last 1:1 email and note progress on each.", "emailLabel": false }
+          ]
+        },
+        {
+          "id": "wellbeing", "title": "Wellbeing", "optional": true,
+          "notice": "Only record what the employee is happy to share. Don't include medical details.",
+          "fields": [
+            { "id": "wellbeingRating", "label": "How are you feeling at the moment?", "type": "rating", "scale": "wellbeing", "helper": "Ask the question; let the employee choose the number." },
+            { "id": "wellbeingComments", "label": "Wellbeing comments", "type": "longText", "helper": "Note only what the employee is happy to have written down. Do not record medical details.", "emailLabel": false }
+          ]
+        },
+        {
+          "id": "wins", "title": "Wins", "optional": true,
+          "fields": [
+            { "id": "wins", "label": "What's gone well since we last met?", "type": "longText", "helper": "Achievements, positive feedback, things to recognise.", "emailLabel": false }
+          ]
+        },
+        {
+          "id": "priorities", "title": "Priorities", "optional": true,
+          "fields": [
+            { "id": "priorities", "label": "Priorities for the next period", "type": "longText", "helper": "The 3–5 most important things to focus on before the next 1:1.", "emailLabel": false }
+          ]
+        },
+        {
+          "id": "blockers", "title": "Blockers and support", "optional": true,
+          "fields": [
+            { "id": "blockers", "label": "What's getting in the way?", "type": "longText", "helper": "Obstacles, workload pressure, dependencies on others." },
+            { "id": "supportNeeded", "label": "What support do you need from me?", "type": "longText", "helper": "Decisions, introductions, resources, removing obstacles." }
+          ]
+        },
+        {
+          "id": "development", "title": "Development", "optional": true,
+          "fields": [
+            { "id": "development", "label": "Learning and development", "type": "longText", "helper": "Skills being developed, training, stretch opportunities, career conversations.", "emailLabel": false }
+          ]
+        },
+        {
+          "id": "feedback", "title": "Feedback", "optional": true,
+          "fields": [
+            { "id": "feedbackFromMe", "label": "Feedback from me", "type": "longText", "helper": "Specific feedback – use Situation, Behaviour, Impact." },
+            { "id": "feedbackForMe", "label": "Feedback for me", "type": "longText", "helper": "Ask: \"Is there anything I could do differently to support you better?\"" }
+          ]
+        },
+        {
+          "id": "aob", "title": "Anything else", "optional": true,
+          "fields": [
+            { "id": "aob", "label": "Any other business", "type": "longText", "helper": "Anything else either person wants to raise.", "emailLabel": false }
+          ]
+        },
+        {
+          "id": "actions", "title": "Agreed actions", "optional": true,
+          "fields": [
+            { "id": "actions", "label": "Actions", "type": "actionList", "helper": "Add up to 15 actions.", "emailLabel": false }
+          ]
+        },
+        {
+          "id": "next", "title": "Next meeting", "optional": true, "emailHeading": false,
+          "fields": [
+            { "id": "nextDate", "label": "Next 1:1 date", "emailLabelText": "Next 1:1", "type": "date", "helper": "Shown at the bottom of the email." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "T02",
+      "name": "Quick Check-in",
+      "purpose": "A short version of the 1:1 for 10–15 minute catch-ups.",
+      "whenToUse": "Short weekly check-ins, or when time is tight.",
+      "length": "10–15 mins",
+      "keywords": ["quick", "check in", "check-in", "catch up", "1:1", "short"],
+      "listed": true,
+      "pair": { "full": "T01", "quick": "T02" },
+      "subject": "Check-in summary – {employeeName} – {meetingDate}",
+      "intro": "Thanks for the quick catch-up today. Here's what we agreed.",
+      "allowHrCc": false,
+      "sections": [
+        {
+          "id": "checkin", "title": "Check-in", "optional": true,
+          "fields": [
+            { "id": "wellbeingRating", "label": "How are things?", "type": "rating", "scale": "wellbeing" },
+            { "id": "wellbeingComments", "label": "Comments", "type": "longText", "emailLabel": false },
+            { "id": "priorities", "label": "Top priorities", "type": "longText", "helper": "Up to 3 priorities." },
+            { "id": "supportNeeded", "label": "Anything you need from me?", "type": "longText" }
+          ]
+        },
+        {
+          "id": "actions", "title": "Agreed actions", "optional": true,
+          "fields": [
+            { "id": "actions", "label": "Actions", "type": "actionList", "emailLabel": false }
+          ]
+        },
+        {
+          "id": "next", "title": "Next meeting", "optional": true, "emailHeading": false,
+          "fields": [
+            { "id": "nextDate", "label": "Next check-in date", "emailLabelText": "Next check-in", "type": "date" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "T03",
+      "name": "Return to Work",
+      "purpose": "Welcome someone back after sickness absence, check they're fit to work and agree support.",
+      "whenToUse": "On the employee's first day back (or as soon as possible) after any sickness absence.",
+      "length": "15–30 mins",
+      "keywords": ["return to work", "rtw", "sick", "sickness", "absence", "illness", "fit note", "back to work", "off sick"],
+      "listed": true,
+      "subject": "Return to work meeting – {employeeName} – {meetingDate}",
+      "intro": "Welcome back. Thanks for meeting with me today. Here's a summary of our return to work conversation.",
+      "allowHrCc": true,
+      "sections": [
+        {
+          "id": "absence", "title": "Absence details",
+          "fields": [
+            { "id": "absenceStart", "label": "First day of absence", "type": "date", "required": true },
+            { "id": "returnDate", "label": "Date returned to work", "type": "date", "required": true, "min": { "field": "absenceStart" }, "helper": "Must be on or after the first day of absence." },
+            { "id": "daysAbsent", "label": "Working days absent", "type": "number", "required": true, "helper": "Whole or half days (e.g. 2.5)." },
+            { "id": "reason", "label": "Reason for absence (general)", "type": "shortText", "required": true, "helper": "Keep it general, e.g. \"Cold / flu\", \"Back pain\". Do not record detailed medical information." },
+            { "id": "fitNote", "label": "Fit note", "type": "singleChoice", "required": true, "options": ["Not needed (7 calendar days or fewer – self-certified)", "Provided", "Awaiting"] }
+          ]
+        },
+        {
+          "id": "fitness", "title": "Fitness and support",
+          "fields": [
+            { "id": "fit", "label": "Is the employee fit to return?", "type": "singleChoice", "required": true, "options": ["Yes, fully fit", "Yes, with adjustments", "Not sure – seek advice"] },
+            { "id": "adjustments", "label": "Adjustments or support agreed", "type": "longText", "requiredIf": { "field": "fit", "equals": "Yes, with adjustments" }, "helper": "E.g. phased hours, lighter duties, temporary change of tasks." },
+            { "id": "workRelated", "label": "Was the absence related to work?", "type": "singleChoice", "required": true, "options": ["No", "Yes", "Not sure"], "helper": "E.g. an injury at work or work-related stress." },
+            { "id": "referral", "label": "Referral offered", "type": "multiChoice", "options": ["Occupational Health", "Employee Assistance Programme", "None needed"] }
+          ]
+        },
+        {
+          "id": "history", "title": "Absence history", "optional": true,
+          "fields": [
+            { "id": "trigger", "label": "Has this absence reached a trigger point in your absence policy?", "emailLabelText": "Absence policy trigger point reached", "type": "singleChoice", "options": ["No", "Yes", "Not sure"], "helper": "Check your company's absence policy." },
+            { "id": "historyNotes", "label": "Absence history discussed", "type": "longText", "helper": "Factual note of any discussion about previous absences." }
+          ]
+        },
+        {
+          "id": "comments", "title": "Employee's comments", "optional": true,
+          "fields": [
+            { "id": "employeeComments", "label": "Employee's comments", "type": "longText", "emailLabel": false }
+          ]
+        },
+        {
+          "id": "actions", "title": "Agreed actions", "optional": true,
+          "fields": [
+            { "id": "actions", "label": "Actions", "type": "actionList", "emailLabel": false },
+            { "id": "followUp", "label": "Follow-up date", "type": "date", "helper": "If a review is needed." }
+          ]
+        }
+      ],
+      "flags": [
+        {
+          "level": 2,
+          "when": { "any": [
+            { "field": "fit", "equals": "Not sure – seek advice" },
+            { "field": "workRelated", "in": ["Yes", "Not sure"] },
+            { "field": "trigger", "equals": "Yes" }
+          ] },
+          "text": "This return to work may need HR advice. Consider contacting HR before agreeing next steps.",
+          "contactHr": true
+        }
+      ]
+    },
+    {
+      "id": "T04",
+      "name": "Probation Review",
+      "purpose": "An interim or final review of a new employee's progress during probation.",
+      "whenToUse": "At interim points (e.g. month 1 and month 3) and at the end of the probation period.",
+      "length": "30–45 mins",
+      "keywords": ["probation", "new starter", "probationary", "review", "confirm", "extend", "extension"],
+      "listed": true,
+      "subject": "Probation review ({reviewType}) – {employeeName} – {meetingDate}",
+      "intro": "Thanks for meeting with me for your probation review. Here's a summary of what we discussed.",
+      "allowHrCc": true,
+      "sections": [
+        {
+          "id": "details", "title": "Review details",
+          "fields": [
+            { "id": "startDate", "label": "Employment start date", "type": "date", "required": true },
+            { "id": "probationEnd", "label": "Probation end date", "type": "date", "required": true, "min": { "field": "startDate" } },
+            { "id": "reviewType", "label": "Review type", "type": "singleChoice", "required": true, "options": ["Interim", "Final"] }
+          ]
+        },
+        {
+          "id": "objectives", "title": "Objectives", "optional": true,
+          "fields": [
+            {
+              "id": "objectives", "label": "Objectives and progress", "type": "repeater", "max": 8, "itemLabel": "Objective", "emailLabel": false,
+              "fields": [
+                { "id": "objective", "label": "Objective", "type": "shortText", "primary": true },
+                { "id": "progress", "label": "Progress", "type": "singleChoice", "options": ["Not met", "Partly met", "Met", "Exceeded"] },
+                { "id": "comments", "label": "Comments", "type": "longText" }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "overall", "title": "Overall performance", "optional": true,
+          "fields": [
+            { "id": "strengths", "label": "Strengths", "type": "longText" },
+            { "id": "develop", "label": "Areas to develop", "type": "longText" },
+            { "id": "concerns", "label": "Conduct, attendance or timekeeping concerns", "type": "longText", "helper": "Factual. Leave blank if none." },
+            { "id": "support", "label": "Support and training provided", "type": "longText" }
+          ]
+        },
+        {
+          "id": "outcome", "title": "Outcome",
+          "showIf": { "field": "reviewType", "equals": "Final" },
+          "fields": [
+            { "id": "outcome", "label": "Outcome", "type": "singleChoice", "requiredIf": { "field": "reviewType", "equals": "Final" }, "options": ["Probation passed", "Probation extended", "Not confirming – contact HR"] },
+            { "id": "newEnd", "label": "New probation end date", "type": "date", "showIf": { "field": "outcome", "equals": "Probation extended" }, "requiredIf": { "field": "outcome", "equals": "Probation extended" }, "min": { "field": "probationEnd" } },
+            { "id": "extensionImprove", "label": "What needs to improve during the extension", "type": "longText", "showIf": { "field": "outcome", "equals": "Probation extended" }, "requiredIf": { "field": "outcome", "equals": "Probation extended" } }
+          ]
+        },
+        {
+          "id": "comments", "title": "Employee's comments", "optional": true,
+          "fields": [
+            { "id": "employeeComments", "label": "Employee's comments", "type": "longText", "emailLabel": false }
+          ]
+        },
+        {
+          "id": "actions", "title": "Agreed actions", "optional": true,
+          "fields": [
+            { "id": "actions", "label": "Actions", "type": "actionList", "emailLabel": false },
+            { "id": "nextReview", "label": "Next review date", "type": "date" }
+          ]
+        }
+      ],
+      "flags": [
+        {
+          "level": 3,
+          "when": { "all": [
+            { "field": "reviewType", "equals": "Final" },
+            { "field": "outcome", "in": ["Probation extended", "Not confirming – contact HR"] }
+          ] },
+          "text": "Contact HR before confirming this outcome with the employee. An extension or a decision not to confirm usually needs a formal letter.",
+          "contactHr": true
+        }
+      ],
+      "sendRules": [
+        {
+          "when": { "all": [
+            { "field": "reviewType", "equals": "Final" },
+            { "field": "outcome", "equals": "Not confirming – contact HR" }
+          ] },
+          "mode": "hrOnly"
+        }
+      ]
+    },
+    {
+      "id": "T05",
+      "name": "Performance Review",
+      "purpose": "A structured mid-year or annual review against objectives, plus objectives and development for the next period.",
+      "whenToUse": "Mid-year and end-of-year reviews, or at the end of a project.",
+      "length": "45–90 mins",
+      "keywords": ["performance review", "appraisal", "annual review", "mid-year", "objectives", "rating", "pdr", "end of year"],
+      "listed": true,
+      "subject": "{reviewType} review – {employeeName} – {meetingDate}",
+      "intro": "Thank you for your review meeting today. Here's a summary of what we discussed and agreed.",
+      "allowHrCc": false,
+      "notices": [
+        { "level": 1, "text": "If your company has its own review form, use that as the official record. This summary can go alongside it." }
+      ],
+      "sections": [
+        {
+          "id": "details", "title": "Review details",
+          "fields": [
+            { "id": "reviewType", "label": "Review type", "type": "singleChoice", "required": true, "options": ["Mid-year", "Annual", "Other"] },
+            { "id": "period", "label": "Review period", "type": "dateRange", "required": true }
+          ]
+        },
+        {
+          "id": "objectives", "title": "Objectives this period", "optional": true,
+          "fields": [
+            {
+              "id": "objectives", "label": "Objectives", "type": "repeater", "max": 10, "itemLabel": "Objective", "emailLabel": false,
+              "fields": [
+                { "id": "objective", "label": "Objective", "type": "shortText", "primary": true },
+                { "id": "rating", "label": "Rating", "type": "singleChoice", "options": ["Not met", "Partly met", "Met", "Exceeded"] },
+                { "id": "evidence", "label": "Evidence / comments", "type": "longText" }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "overall", "title": "Overall", "optional": true,
+          "fields": [
+            { "id": "achievements", "label": "Key achievements", "type": "longText" },
+            { "id": "how", "label": "How they work (values and behaviours)", "type": "longText", "helper": "How the employee has gone about their work, not just what they delivered." },
+            { "id": "developmentAreas", "label": "Development areas", "type": "longText" },
+            { "id": "overallRating", "label": "Overall rating", "type": "singleChoice", "toggle": "Include an overall rating", "options": ["1 Below expectations", "2 Partly meets", "3 Meets", "4 Exceeds", "5 Outstanding"] }
+          ]
+        },
+        {
+          "id": "ahead", "title": "Looking ahead", "optional": true,
+          "fields": [
+            { "id": "aspirations", "label": "Career aspirations", "type": "longText" },
+            { "id": "devPlan", "label": "Development plan", "type": "longText", "helper": "Training, experiences, mentoring." },
+            {
+              "id": "nextObjectives", "label": "Objectives for next period", "type": "repeater", "max": 10, "itemLabel": "Objective",
+              "fields": [
+                { "id": "objective", "label": "Objective", "type": "shortText", "primary": true },
+                { "id": "measure", "label": "How we'll measure it", "type": "shortText" },
+                { "id": "due", "label": "Due date", "type": "date" }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "comments", "title": "Employee's comments", "optional": true,
+          "fields": [
+            { "id": "employeeComments", "label": "Employee's comments", "type": "longText", "emailLabel": false }
+          ]
+        },
+        {
+          "id": "actions", "title": "Agreed actions", "optional": true,
+          "fields": [
+            { "id": "actions", "label": "Actions", "type": "actionList", "emailLabel": false }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "T06",
+      "name": "Stay Interview",
+      "purpose": "Understand what keeps a valued employee engaged, and what might lead them to leave.",
+      "whenToUse": "Once or twice a year with each team member, or when you sense someone may be unsettled.",
+      "length": "30–45 mins",
+      "keywords": ["stay interview", "retention", "engagement", "leaving", "resign", "motivation", "unsettled"],
+      "listed": true,
+      "subject": "Our conversation – {employeeName} – {meetingDate}",
+      "intro": "Thanks for the open conversation today. Here's a note of what you told me and what I'm going to do.",
+      "allowHrCc": false,
+      "notices": [
+        { "level": 0, "text": "Listen more than you talk. Don't get defensive, and don't promise things you can't deliver." }
+      ],
+      "sections": [
+        {
+          "id": "conversation", "title": "The conversation", "optional": true,
+          "fields": [
+            { "id": "enjoy", "label": "What do you enjoy most about your work?", "type": "longText" },
+            { "id": "keeps", "label": "What keeps you working here?", "type": "longText" },
+            { "id": "tempt", "label": "What might tempt you to leave?", "type": "longText" },
+            { "id": "change", "label": "If you could change one thing about your role or the team, what would it be?", "type": "longText" },
+            { "id": "recognisedRating", "label": "How recognised do you feel for your work?", "type": "rating", "scale": "recognised" },
+            { "id": "recognisedComments", "label": "Comments", "type": "longText", "emailLabel": false },
+            { "id": "moreLess", "label": "What could I do more of, or less of, as your manager?", "type": "longText" },
+            { "id": "future", "label": "Where would you like to be in 1–2 years?", "type": "longText" }
+          ]
+        },
+        {
+          "id": "actions", "title": "Agreed actions", "optional": true,
+          "fields": [
+            { "id": "actions", "label": "Actions", "type": "actionList", "emailLabel": false }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "T07",
+      "name": "New Starter Check-in",
+      "purpose": "Make sure a new employee is settling in, has what they need and knows what's expected.",
+      "whenToUse": "End of week 1, end of month 1 and end of month 3 (before the probation review).",
+      "length": "20–30 mins",
+      "keywords": ["new starter", "onboarding", "induction", "welcome", "first week", "new joiner", "settling in"],
+      "listed": true,
+      "subject": "{checkpoint} check-in – {employeeName} – {meetingDate}",
+      "intro": "Thanks for taking the time to check in. Here's a summary of our conversation.",
+      "allowHrCc": false,
+      "sections": [
+        {
+          "id": "checkin", "title": "Check-in",
+          "fields": [
+            { "id": "checkpoint", "label": "Check-in point", "type": "singleChoice", "required": true, "options": ["Week 1", "Month 1", "Month 3"] },
+            { "id": "settlingRating", "label": "How are you settling in?", "type": "rating", "scale": "settling" },
+            { "id": "settlingComments", "label": "Comments", "type": "longText", "emailLabel": false },
+            { "id": "goneWell", "label": "What's gone well?", "type": "longText" },
+            { "id": "confusing", "label": "What's been confusing or difficult?", "type": "longText" }
+          ]
+        },
+        {
+          "id": "setup", "title": "Practical set-up", "optional": true,
+          "fields": [
+            { "id": "setupChecklist", "label": "Set-up checklist", "type": "checklist", "helper": "Tick what's done. Anything unticked appears in the email under \"Still to sort\".", "options": ["Equipment working", "System access", "Building access", "Payroll and bank details submitted", "Mandatory training started", "Met key colleagues"], "emailLabel": false },
+            { "id": "setupNotes", "label": "Notes on set-up", "type": "longText" }
+          ]
+        },
+        {
+          "id": "expectations", "title": "Expectations", "optional": true,
+          "fields": [
+            { "id": "clear", "label": "Is it clear what's expected of you?", "type": "singleChoice", "options": ["Yes", "Mostly", "Not yet"] },
+            { "id": "questions", "label": "Questions raised", "type": "longText" }
+          ]
+        },
+        {
+          "id": "actions", "title": "Agreed actions", "optional": true,
+          "fields": [
+            { "id": "actions", "label": "Actions", "type": "actionList", "emailLabel": false },
+            { "id": "nextDate", "label": "Next check-in date", "emailLabelText": "Next check-in", "type": "date" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "T08",
+      "name": "Conversation Summary",
+      "purpose": "A summary of a difficult or sensitive conversation, opened from a conversation guide.",
+      "whenToUse": "Immediately after a conversation covered by one of the guides.",
+      "length": "10 mins",
+      "keywords": ["summary", "conversation summary", "follow up", "write up", "record"],
+      "listed": false,
+      "subject": "Summary of our conversation – {employeeName} – {meetingDate}",
+      "intro": "Thank you for meeting with me today. As agreed, here is a summary of our conversation about {topicLower}.",
+      "closing": "If you feel anything in this summary is inaccurate, please reply within 5 working days so we can discuss it.",
+      "allowHrCc": true,
+      "sections": [
+        {
+          "id": "summary", "title": "Summary",
+          "fields": [
+            { "id": "topic", "label": "Conversation topic", "type": "shortText", "required": true, "helper": "Filled in from the guide, but you can edit it.", "inEmail": false },
+            { "id": "discussed", "label": "What we discussed", "type": "longText", "required": true },
+            { "id": "theirViews", "label": "Your views / points you raised", "type": "longText", "helper": "The employee's response, in neutral language.", "hideInShort": true },
+            { "id": "agreed", "label": "What we agreed", "type": "longText", "hideInShort": true },
+            { "id": "support", "label": "Support offered", "type": "longText", "hideInShort": true },
+            { "id": "expectations", "label": "Expectations going forward", "type": "longText", "helper": "Clear, specific and measurable where possible.", "hideInShort": true },
+            { "id": "reviewDate", "label": "Review date", "type": "date", "hideInShort": true }
+          ]
+        },
+        {
+          "id": "actions", "title": "Agreed actions", "optional": true, "hideInShort": true,
+          "fields": [
+            { "id": "actions", "label": "Actions", "type": "actionList", "emailLabel": false }
+          ]
+        }
+      ]
+    }
+  ]
+}

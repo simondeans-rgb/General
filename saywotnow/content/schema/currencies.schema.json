@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SayWotNow currencies.json",
+  "type": "object",
+  "required": [
+    "contentVersion",
+    "lastReviewed",
+    "source",
+    "defaults",
+    "countryCurrency",
+    "bundledRates"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "contentVersion": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "lastReviewed": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "name",
+        "url",
+        "endpoint",
+        "attribution"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "url": {
+          "type": "string",
+          "minLength": 1
+        },
+        "endpoint": {
+          "type": "string",
+          "minLength": 1
+        },
+        "attribution": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "defaults": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "items": {
+        "type": "string",
+        "pattern": "^[^|]+\\|[^|]+$"
+      }
+    },
+    "countryCurrency": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[A-Z]{3}$"
+      }
+    },
+    "bundledRates": {
+      "type": "object",
+      "required": [
+        "base",
+        "asOf",
+        "rates"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "base": {
+          "enum": [
+            "USD"
+          ]
+        },
+        "asOf": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "rates": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+}

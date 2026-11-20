@@ -1,0 +1,38 @@
+{
+  "contentVersion": "1.0.0",
+  "lastReviewed": "2026-11-16",
+  "title": "If they react…",
+  "intro": "Common reactions in any difficult conversation, and what you could do.",
+  "reactions": [
+    {
+      "id": "R01",
+      "ifThey": "Become upset or tearful",
+      "youCould": "Pause. Offer water, tissues or a break. \"Take your time.\" Ask whether they'd like to continue or reschedule. Show empathy, but don't drop the message."
+    },
+    {
+      "id": "R02",
+      "ifThey": "Become angry or defensive",
+      "youCould": "Stay calm and don't match their tone. Acknowledge it: \"I can see you're frustrated.\" Restate the purpose of the meeting. If it escalates, pause and reschedule. You never have to tolerate abuse or threats."
+    },
+    {
+      "id": "R03",
+      "ifThey": "Go quiet",
+      "youCould": "Allow the silence. Ask an open question: \"What are you thinking?\" Offer time to reflect and agree when you'll follow up."
+    },
+    {
+      "id": "R04",
+      "ifThey": "Disagree or deny",
+      "youCould": "Listen to their account and ask for specifics. Refer back to the facts. Don't argue. Note the disagreement in the summary."
+    },
+    {
+      "id": "R05",
+      "ifThey": "Raise something new (e.g. a grievance, health or personal issue)",
+      "youCould": "Take it seriously. It's fine to pause the original topic. Agree what happens next and contact HR if needed."
+    },
+    {
+      "id": "R06",
+      "ifThey": "Ask for someone to be with them",
+      "youCould": "For informal conversations there's usually no legal right to be accompanied, but consider it. For formal disciplinary or grievance hearings, there is a statutory right. Contact HR."
+    }
+  ]
+}

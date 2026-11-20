@@ -1,5 +1,7 @@
 # Placemap
 
+> This repo also hosts **[SayWotNow](saywotnow/)**, an offline support app for line managers. See [`saywotnow/README.md`](saywotnow/README.md).
+
 A custom map builder. Pick a home location, plot the places that matter, and see
 **walking, cycling and driving** routes and times to every one of them at once.
 
