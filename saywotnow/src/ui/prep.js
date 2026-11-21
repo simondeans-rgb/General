@@ -5,6 +5,7 @@ import { S } from '../strings.js';
 import { Icon } from './icons.js';
 import { content, navigate, goBack, TopBar, showDialog } from './core.js';
 import { tileHref } from './lists.js';
+import { GateReminder } from './escalation.js';
 
 function targetLabel(card) {
   return card.target.type === 'guide' ? S.prepOpenGuide : S.prepStartMeeting;
@@ -13,7 +14,9 @@ function targetLabel(card) {
 export function PrepBody({ card, headingLevel = 2 }) {
   const { labels } = content().prep;
   const H = `h${headingLevel}`;
+  const guide = card.target.type === 'guide' ? content().guideById[card.target.id] : null;
   return html`<div class="prep-card">
+    <${GateReminder} guide=${guide} linkToGuide=${true} />
     <section class="prep-block">
       <${H} class="prep-label"><${Icon} name="chat" size=${20} /> ${labels.ask}</${H}>
       <ol class="prep-ask">${card.ask.map((q) => html`<li>${q}</li>`)}</ol>

@@ -4,6 +4,7 @@ import { Icon, FLAG_ICON } from './icons.js';
 import { content, navigate, goBack, TopBar, FavStar, FlagChip, toast, showDialog } from './core.js';
 import { prepFor } from '../content.js';
 import { PrepButton } from './prep.js';
+import { EscalationGate, GateReminder } from './escalation.js';
 import { toggleFavourite } from '../prefs.js';
 import { copyText } from '../platform.js';
 import { ContactHrButton, startSummary } from './form.js';
@@ -90,6 +91,7 @@ export function Guide({ id, prefs }) {
       <span>${S.categories[guide.category]}</span><span aria-hidden="true">·</span><span><${Icon} name="calendar" size=${16} /> ${guide.length}</span>
       <${FlagChip} level=${guide.flagLevel} />
     </div>
+    <${EscalationGate} guide=${guide} prefs=${prefs} />
     <${PrepButton} card=${prepFor(c, 'guide', guide.id)} />
 
     <section class="when" aria-labelledby="when-h">
@@ -113,6 +115,7 @@ export function Guide({ id, prefs }) {
         </ul>` : null}
 
       ${tab === 'during' ? html`
+        <${GateReminder} guide=${guide} />
         ${guide.urgentBanner ? html`<div class="urgent-banner" role="alert">
           <${Icon} name="alert" size=${24} />
           <p>${S.urgent}</p>

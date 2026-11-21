@@ -511,6 +511,57 @@ await check('P0.2 privacy: discarded notes can never come back through the "No m
   await ctx.close();
 });
 
+await check('P0.3 HR-first gate: Level 3 guides warn before any script, from every way in', async () => {
+  const { ctx, page, log } = await newApp();
+  for (const id of ['G03', 'G13']) {
+    await page.goto(BASE + `#/guide/${id}`);
+    const gate = page.locator('.gate');
+    await gate.waitFor();
+    // The gate comes before the tabs, scripts and checklist, and is announced as a warning.
+    const order = await page.evaluate(() => {
+      const els = [...document.querySelectorAll('.gate, [role=tablist], .checklist')];
+      return els.map((e) => e.className.split(' ')[0]);
+    });
+    assert.equal(order[0], 'gate', id);
+    assert.match(await gate.locator('h2').textContent(), /^Warning: /);
+    // No STOP instruction can be ticked off.
+    const ticks = await page.locator('.checklist li').allInnerTexts();
+    assert.ok(!ticks.some((t) => /^STOP/.test(t.trim())), id);
+    // Answering "No" to everything never removes the warning or says it's safe.
+    for (const r of await gate.getByRole('radio', { name: 'No' }).all()) await r.check();
+    assert.equal(await page.locator('.gate').count(), 1);
+    assert.doesNotMatch(await gate.innerText(), /safe to (go ahead|proceed)/i);
+    await gate.getByText(/Even (if none of these apply|so)/).waitFor();
+    // "Yes or not sure" shows the stop instruction and holding words.
+    await gate.getByRole('radio', { name: 'Yes or not sure' }).first().check();
+    await gate.locator('.gate-holding li').first().waitFor();
+    // No HR contact set: no dead link, a clear instruction instead.
+    await gate.getByText('Contact your HR team or a qualified adviser.').waitFor();
+    // The During tab repeats the warning before the scripts.
+    await page.getByRole('tab', { name: 'During' }).click();
+    const first = await page.locator('#panel-during > *').first().getAttribute('class');
+    assert.equal(first, 'gate-mini', `${id}: reminder before scripts`);
+    assert.equal(await page.locator('.draft-label').count(), 1, 'draft wording is labelled');
+  }
+  // From search, a prep card and a favourite.
+  await page.goto(BASE + '#/search');
+  await page.fill('input[type=search]', 'conduct'); // "bullying" -> G03 is Phase 1 (P1.1 synonym search)
+  await page.locator('.card', { hasText: 'Behaviour and conduct' }).first().click();
+  await page.locator('.gate').waitFor();
+  await page.goto(BASE + '#/prep/P-G03');
+  await page.locator('.gate-mini').waitFor();
+  await page.goto(BASE + '#/guide/G03');
+  await page.getByRole('button', { name: '1-minute prep' }).click();
+  await dialog(page).locator('.gate-mini').waitFor();
+  await page.keyboard.press('Escape');
+  // With an HR contact set, the gate offers it.
+  await page.evaluate(() => { const p = JSON.parse(localStorage.getItem('saywotnow.prefs.v1')); p.hrContactEmail = 'hr@example.co.uk'; localStorage.setItem('saywotnow.prefs.v1', JSON.stringify(p)); });
+  await page.reload();
+  await page.locator('.gate').getByRole('button', { name: /Email HR/ }).waitFor();
+  assert.deepEqual(log.errors, []);
+  await ctx.close();
+});
+
 await check('Time zone converter: defaults, set a time, day offsets, saved zones, planner', async () => {
   const { ctx, page, log } = await newApp();
   await page.goto(BASE + '#/tool/timezones');

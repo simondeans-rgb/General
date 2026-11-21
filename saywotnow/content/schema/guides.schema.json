@@ -205,6 +205,72 @@
                 "type": "boolean"
               }
             }
+          },
+          "escalation": {
+            "description": "HR-first gate for Level 3 guides (P0.3). Shown above all scripts and checklists; never hidden by the user's answers.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "reviewStatus",
+              "headline",
+              "stop",
+              "triageIntro",
+              "triage",
+              "ifYes",
+              "ifNo",
+              "holdingIntro",
+              "holding"
+            ],
+            "properties": {
+              "reviewStatus": {
+                "enum": [
+                  "draft",
+                  "in-review",
+                  "approved"
+                ]
+              },
+              "headline": {
+                "type": "string",
+                "minLength": 1
+              },
+              "stop": {
+                "type": "string",
+                "minLength": 1
+              },
+              "triageIntro": {
+                "type": "string",
+                "minLength": 1
+              },
+              "triage": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 4,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "ifYes": {
+                "type": "string",
+                "minLength": 1
+              },
+              "ifNo": {
+                "type": "string",
+                "minLength": 1
+              },
+              "holdingIntro": {
+                "type": "string",
+                "minLength": 1
+              },
+              "holding": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
           }
         }
       }

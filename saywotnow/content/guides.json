@@ -1,6 +1,6 @@
 {
-  "contentVersion": "1.1.0",
-  "lastReviewed": "2026-11-20",
+  "contentVersion": "1.2.0",
+  "lastReviewed": "2026-11-21",
   "guides": [
     {
       "id": "G01",
@@ -190,8 +190,26 @@
         "swearing"
       ],
       "whenToUse": "An employee has behaved in a way that falls below expected standards, for example being rude to colleagues or customers, using inappropriate language or breaking a workplace rule.",
+      "escalation": {
+        "reviewStatus": "draft",
+        "headline": "Contact HR first if this could be serious",
+        "stop": "STOP if this could be serious (gross) misconduct, such as harassment, bullying, discrimination, violence, theft, fraud, a data breach or being under the influence at work. Contact HR before speaking to the employee.",
+        "triageIntro": "Answer for yourself. Your answers are not saved and are not a clearance to go ahead.",
+        "triage": [
+          "Could this involve harassment, bullying or discrimination?",
+          "Could this involve violence, theft, fraud, a data breach, or alcohol or drugs at work?",
+          "Could a formal disciplinary process follow, or has the employee raised a grievance?"
+        ],
+        "ifYes": "Stop here and speak to HR before you talk to the employee about it. Don't investigate, reach a view or promise confidentiality.",
+        "ifNo": "Even if none of these apply, speak to HR first if anything could become formal. The guide below is for minor, informal issues.",
+        "holdingIntro": "If it's raised with you before you've spoken to HR, you could say:",
+        "holding": [
+          "Thank you for telling me. I'm taking this seriously, and I want to make sure it's handled properly, so I'm going to get advice before we go any further.",
+          "I can't promise to keep this completely confidential, but I'll only share it with the people who need to know to deal with it.",
+          "I'll come back to you by [date]. If anything changes before then, or you feel unsafe, tell me straight away."
+        ]
+      },
       "before": [
-        "STOP if this could be serious (gross) misconduct, such as harassment, bullying, discrimination, violence, theft, fraud, a data breach or being under the influence at work. Contact HR before speaking to the employee.",
         "For minor issues, establish exactly what happened: date, place, what was said or done, and who saw it.",
         "Separate facts from hearsay and opinion.",
         "Check the relevant policy (code of conduct, dignity at work).",
@@ -937,6 +955,24 @@
         "statutory request"
       ],
       "whenToUse": "An employee has made, or wants to make, a request to change their hours, times or place of work.",
+      "escalation": {
+        "reviewStatus": "draft",
+        "headline": "Contact HR before you respond",
+        "stop": "Flexible working requests have legal time limits and a fixed list of reasons for refusal. Speak to HR and check your policy before the meeting, and always before you respond in writing.",
+        "triageIntro": "Answer for yourself. Your answers are not saved and are not a clearance to go ahead.",
+        "triage": [
+          "Is this a formal (statutory) request, or could it become one?",
+          "Are you thinking of refusing it, or only agreeing to part of it?",
+          "Could it be linked to a disability, or to a return from maternity, adoption or shared parental leave?"
+        ],
+        "ifYes": "Speak to HR before you meet or reply. Don't refuse or agree anything in the meeting, and don't put a decision in writing until HR has advised.",
+        "ifNo": "Even so, check with HR before you respond in writing. Requests have legal time limits.",
+        "holdingIntro": "If you need to respond before you have spoken to HR, you could say:",
+        "holding": [
+          "Thanks for your request. I want to give it proper consideration, so I'm going to take advice and I'll come back to you by [date].",
+          "I can't give you a decision today, but I'll make sure it's looked at properly and within the time limits."
+        ]
+      },
       "before": [
         "Check whether it's a formal (statutory) request. In the UK, employees can make a request from their first day of employment, up to two requests in any 12-month period.",
         "The employer must consult the employee before refusing, and must make a decision (including any appeal) within two months unless an extension is agreed.",

@@ -116,6 +116,12 @@ if (content.templates) {
 if (content.guides) {
   const f = 'content/guides.json';
   unique(f, content.guides.guides.map((g) => g.id), 'guide id');
+  for (const g of content.guides.guides) {
+    // P0.3: every "Contact HR first" guide needs the HR-first gate, and nothing else may be ticked off as a STOP.
+    if (g.flagLevel === 3 && !g.escalation) fail(f, g.id, 'Level 3 ("Contact HR first") guides need an escalation gate');
+    if (g.escalation && g.flagLevel !== 3) fail(f, g.id, 'only Level 3 guides have an escalation gate');
+    g.before.forEach((t, i) => { if (/^STOP\b/.test(t)) fail(f, `${g.id}.before[${i}]`, 'a STOP instruction must not be a tickable checklist item; put it in the escalation gate'); });
+  }
 }
 if (content.timezones) {
   const f = 'content/timezones.json';

@@ -47,6 +47,7 @@ const FILES = [
   'src/ui/lists.js',
   'src/ui/form.js',
   'src/ui/prep.js',
+  'src/ui/escalation.js',
   'src/ui/preview.js',
   'src/ui/guide.js',
   'src/ui/tools.js',

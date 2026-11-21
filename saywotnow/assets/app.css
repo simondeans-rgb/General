@@ -574,3 +574,26 @@ button { cursor: pointer; }
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
 @media print { .tabbar, .sticky-cta, .topbar .icon-btn { display: none; } }
+
+/* ---------------- HR-first gate (P0.3) ---------------- */
+.gate { border: 2px solid var(--flag3); border-left-width: 8px; background: var(--flag3-bg); color: var(--ink); border-radius: var(--radius); padding: 14px 16px; margin: 0 0 16px; }
+.gate-head { display: flex; gap: 10px; align-items: center; color: var(--flag3-ink); }
+.gate-head h2 { margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--flag3-ink); }
+.gate-stop { font-weight: 700; margin: 10px 0; }
+.gate-contact { margin: 0 0 8px; }
+.gate-contact p { margin: 0 0 4px; }
+.gate-triage { border: 0; margin: 12px 0 0; padding: 12px 0 0; border-top: 1px solid color-mix(in srgb, var(--flag3) 35%, transparent); }
+.gate-triage legend { font-weight: 800; padding: 0; }
+.gate-note { font-size: .9rem; color: var(--ink-2); margin: 4px 0 8px; }
+.gate-q { margin: 0 0 10px; }
+.gate-q > p { margin: 0 0 6px; font-weight: 600; }
+.gate-q .segmented { background: var(--surface); }
+.gate-result { background: var(--surface); border-radius: var(--radius-sm); padding: 10px 14px; margin-top: 8px; }
+.gate-result p { margin: 0 0 6px; }
+.gate-yes { border: 2px solid var(--flag3); }
+.gate-holding { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+.gate-holding li::before { content: '\201C'; } .gate-holding li::after { content: '\201D'; }
+.gate-mini { display: flex; gap: 10px; align-items: flex-start; border-left: 5px solid var(--flag3); background: var(--flag3-bg); color: var(--ink); padding: 10px 12px; border-radius: var(--radius-sm); margin: 0 0 12px; }
+.gate-mini > svg { color: var(--flag3-ink); flex: none; margin-top: 2px; }
+.gate-mini p { margin: 0; }
+.draft-label { display: flex; align-items: center; gap: 6px; font-size: .8rem; color: var(--ink-2); margin: 10px 0 0; }
