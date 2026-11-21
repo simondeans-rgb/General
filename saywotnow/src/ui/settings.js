@@ -7,7 +7,7 @@ import { setPref } from '../prefs.js';
 import { isValidEmail } from '../lib/engine.js';
 import { openMail } from '../platform.js';
 
-export const APP_VERSION = '1.4.0';
+export const APP_VERSION = '1.5.0';
 export const APP_BUILD = '1';
 
 function Row({ children, href, onClick, icon }) {

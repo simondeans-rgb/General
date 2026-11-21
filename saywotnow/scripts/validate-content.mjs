@@ -204,6 +204,52 @@ if (content.home && content.templates && content.guides && content.tools) {
   }
 }
 
+/* ---------- Content review register (P0.6) ---------- */
+
+{
+  const f = 'review/register.json';
+  let reg = null;
+  try { reg = JSON.parse(readFileSync(join(root, f), 'utf8')); } catch (e) { fail(f, '', `missing or not valid JSON (${e.message})`); }
+  if (reg) {
+    const expected = [
+      ...(content.guides?.guides || []).map((g) => g.id),
+      ...(content.templates?.templates || []).map((t) => t.id),
+      ...(content.prep?.cards || []).map((c) => c.id),
+      ...(content.reactions?.reactions || []).map((r) => r.id),
+      ...(content.tools?.tools || []).filter((t) => t.ukOnly).map((t) => `tool:${t.id}`),
+      'page:disclaimer', 'page:privacy',
+    ];
+    const ids = reg.items.map((i) => i.id);
+    unique(f, ids, 'register entry');
+    for (const id of expected) if (!ids.includes(id)) fail(f, '', `no review entry for ${id}`);
+    for (const id of ids) if (!expected.includes(id)) fail(f, id, "isn't a content item any more; remove it or update the id");
+    const need = ['id', 'kind', 'title', 'owner', 'jurisdiction', 'riskTier', 'source', 'reviewer', 'reviewedOn', 'nextReviewOn', 'status', 'issues', 'changeLog'];
+    for (const i of reg.items) {
+      for (const k of need) if (!(k in i)) fail(f, i.id, `missing "${k}"`);
+      if (!reg.statusValues.includes(i.status)) fail(f, i.id, `unknown status "${i.status}"`);
+      if (!reg.riskTiers.includes(i.riskTier)) fail(f, i.id, `unknown risk tier "${i.riskTier}"`);
+      if (!i.owner || !String(i.owner).trim()) fail(f, i.id, 'needs an owner');
+      if (i.status === 'approved') {
+        if (!i.reviewer || !String(i.reviewer).trim()) fail(f, i.id, 'can only be approved with a named reviewer');
+        if (!isDate(i.reviewedOn) || !isDate(i.nextReviewOn)) fail(f, i.id, 'approved items need reviewedOn and nextReviewOn dates');
+      } else if (i.reviewer || i.reviewedOn) {
+        fail(f, i.id, `has a reviewer or review date but status is "${i.status}"`);
+      }
+    }
+    // A content file can only be "approved" if every high-risk item in it is approved.
+    for (const [name, kind] of [['guides', 'guide'], ['templates', 'template'], ['prep', 'prep'], ['reactions', 'reaction']]) {
+      if (content[name]?.review?.reviewStatus !== 'approved') continue;
+      const open = reg.items.filter((i) => i.kind === kind && i.status !== 'approved').map((i) => i.id);
+      if (open.length) fail(`content/${name}.json`, '.review', `is "approved" but these items aren't: ${open.join(', ')}`);
+    }
+    // The HR-first gates are draft until the register says otherwise.
+    for (const g of content.guides?.guides || []) {
+      const e = reg.items.find((i) => i.id === g.id);
+      if (g.escalation?.reviewStatus === 'approved' && e?.status !== 'approved') fail('content/guides.json', g.id, 'escalation is "approved" but the guide is not approved in the review register');
+    }
+  }
+}
+
 /* ---------- Offline file list ---------- */
 
 function walk(dir) {

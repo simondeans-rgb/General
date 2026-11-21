@@ -444,7 +444,7 @@
       "before": [
         "If you're starting the conversation, note the changes you've seen (behaviour and work, not a diagnosis).",
         "Find a private, comfortable space and allow plenty of time, with no hard stop.",
-        "Know the support available: EAP, OH, mental health first aiders, their GP, and crisis lines (e.g. Samaritans 116 123)."
+        "Know the support available: your Employee Assistance Programme (EAP), Occupational Health (OH), mental health first aiders, their GP, and crisis lines (e.g. Samaritans 116 123)."
       ],
       "opening": [
         "\"I've noticed you haven't seemed yourself lately. How are you doing?\"",
@@ -452,8 +452,8 @@
       ],
       "sayIt": [
         {
-          "when": "Checking in",
-          "line": "You don't seem quite yourself lately. How are things, really?"
+          "when": "Leaving the door open",
+          "line": "There's no pressure to talk now. If you'd like to, now or another time, I'm here."
         },
         {
           "when": "When they open up",
@@ -549,7 +549,7 @@
         "Ask how much time they think they need and explain what leave is available.",
         "Ask whether and how they'd like the team told.",
         "Agree how and how often they'd like to be contacted while they're off.",
-        "On their return: ask how they're doing, and offer a phased return or flexibility. Remind them about the EAP."
+        "On their return: ask how they're doing, and offer a phased return or flexibility. Remind them about the Employee Assistance Programme (EAP), if you have one."
       ],
       "responses": [
         {
@@ -620,7 +620,7 @@
         "Ask which symptoms affect their work, only as much as they want to share.",
         "Ask what adjustments would help.",
         "Agree what you can put in place and a date to review.",
-        "Point them to support (EAP, GP, OH, any internal network)."
+        "Point them to support: your Employee Assistance Programme (EAP), their GP, Occupational Health (OH) or any internal network."
       ],
       "responses": [
         {
@@ -743,7 +743,7 @@
         "Make sure it's a genuine, consistent issue, not a one-off or a single complaint.",
         "Consider possible causes: a medical condition, medication, mental health, money worries, home circumstances or cultural factors.",
         "Choose a completely private setting, ideally towards the end of the day.",
-        "Have support information ready (EAP)."
+        "Have support information ready, such as your Employee Assistance Programme (EAP)."
       ],
       "opening": [
         "\"There's something a bit sensitive I need to talk to you about. I'm going to be direct, because I think that's kinder than not saying anything. There have been times recently when there's been a noticeable body odour.\""

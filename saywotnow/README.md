@@ -14,8 +14,9 @@ Cream; Nunito).
 | Meetings | 8 templates (T01–T08) rendered by one form engine from `content/templates.json` |
 | Home | "I need to…" tiles, search, favourites, and **1-minute prep**: a card for each meeting type and guide with three questions to ask, one thing to avoid and one to remember (`content/prep.json`). It opens from Home as its own screen, or as a sheet from a guide or template, so nothing typed into a form is lost |
 | Conversations | 15 guides (G01–G15) rendered by one guide screen from `content/guides.json`, plus the shared "If they react…" library. Each guide's During tab has **Say it like this**: copy-ready lines (`sayIt`), each with Copy and a large-text view for reading straight off the screen |
-| Toolkit | Time zone converter (ported from the Worldly Explorer world clock), currency converter (live rates), holiday, notice period, Bradford Factor and SBI feedback builder. **Interview pack generator** (ported from the aHRcade ACTED tool): build a pack in 4 steps (role and panel, competencies, primary and backup questions, review), export it to Word or PDF, explore the 350-question library, and run the interview with notes and 1–5 ratings. |
-| Settings | HR contact, default 1:1 format, email footer, Bradford bands, appearance, About / Disclaimer / Privacy / Content information |
+| Toolkit | Time zone converter (ported from the Worldly Explorer world clock), currency converter (live rates), holiday and notice period calculators (UK rules), and SBI feedback builder. The Interview Pack Builder and Bradford Factor were removed in v1.5 (owner decision). |
+| Settings | HR contact, default 1:1 format, email footer, appearance, About / Disclaimer / Privacy / Content information |
+| Safety | **HR-first gate** on "Contact HR first" guides (G03, G13): a warning panel above all scripts, with triage questions and holding words that never certify a situation as safe. "UK guidance" labels on guides and UK calculators. |
 
 ## Run it
 
@@ -38,7 +39,10 @@ After the first visit it works in airplane mode.
 npm run validate   # content files against content/schema/*.json + cross-references + offline file list
 npm test           # unit tests: template engine, email builder, search, all calculators (node --test)
 npm run e2e        # browser acceptance checks in Chromium (needs Playwright)
+npm run register   # writes review/REGISTER.md from review/register.json
 ```
+
+Baseline for v1.5 Phase 0 (21 Nov 2026, before changes): validator OK, 92 unit tests, 28 browser checks.
 
 `npm run e2e -- --shots <dir>` also saves screenshots of the key screens in light and dark.
 
@@ -61,13 +65,29 @@ scripts/              content validator, e2e checks, icon renderer
 | # | Requirement | How it's met here |
 |---|---|---|
 | P1 | Form data in memory only | Held in a JavaScript object. Cleared on send, discard, leaving the form, reload or close. |
-| P2 | No state restoration | Nothing typed into a template, guide, tool or interview is written to `localStorage`, `sessionStorage`, IndexedDB, cookies or the URL. Inputs use `autocomplete="off"`. The e2e suite checks storage and URL after typing. **Agreed exception:** interview packs the user chooses to save (role, function, level, description, interviewer names and chosen questions). Candidate names, notes and ratings are never stored. |
+| P2 | No state restoration | Nothing typed into a template, guide or tool is written to `localStorage`, `sessionStorage`, IndexedDB, cookies or the URL. Inputs use `autocomplete="off"`. The e2e suite checks storage and URL after typing. |
 | P3 | Privacy screen | A branded cover is shown on `visibilitychange`/`pagehide` (and `blur` on touch devices). **Best effort:** browsers don't guarantee the cover is painted before the OS takes its app-switcher snapshot. |
 | P4 | No network | **One agreed exception: the currency converter's exchange rates** (see below). Otherwise the Content Security Policy only allows the app's own origin, and once installed the service worker serves everything from cache. The first visit must download the app. |
-| P5 | No third-party SDKs | None. The only third-party code is the vendored Preact/htm UI library, the docx library for Word export (loaded only when exporting) and the Nunito font, all served locally. |
+| P5 | No third-party SDKs | None. The only third-party code is the vendored Preact/htm UI library and the Nunito font, both served locally. |
 | P6 | Clipboard expiry | Copy fallback asks the browser to clear the clipboard after 2 minutes. **Best effort:** this only works while the app is open and in front. Browsers can't mark clipboard content as sensitive. |
 | P7 | No keyboard learning | `spellcheck="false"` (which also stops browsers sending text to cloud spellcheckers), `autocorrect="off"`. Web pages can't switch off the keyboard's own learning. |
-| P8 | Backups | Only the preferences allow-list is ever stored (including saved interview packs, which hold no candidate details). |
+| P8 | Backups | Only the preferences allow-list is ever stored (see the storage inventory below). |
+
+### Local storage inventory (P0, v1.5)
+
+Everything SayWotNow keeps on the device is one `localStorage` entry, `saywotnow.prefs.v1`, plus the service worker's offline cache of the app's own files (`saywotnow-<version>`).
+
+| Key in `saywotnow.prefs.v1` | What it holds |
+|---|---|
+| `onboardingComplete`, `disclaimerAcceptedVersion` | Whether the introduction was seen and which disclaimer version was accepted |
+| `favourites` | IDs of favourite guides, templates and tools |
+| `hrContactEmail`, `hrContactPhone` | The HR contact the manager enters |
+| `defaultOneToOneMode`, `emailFooterEnabled`, `theme` | Preferences |
+| `savedTimeZones`, `savedCurrencyPlaces`, `currencyRates` | Chosen places and the last downloaded exchange rates (numbers only) |
+| `holidayNation` | England and Wales, Scotland or Northern Ireland |
+| `contentVersionSeen` | Content version shown in "what's new" |
+
+Never stored: anything typed into a form, guide checklist or tool, search terms, gate answers, the "include wellbeing" choice. Keys from retired features (`interviewPacks`, `bradfordBands`) are deleted on first launch of v1.5.
 
 ### Currency converter: the one network request
 
@@ -130,16 +150,12 @@ deliberate exception to P4 and acceptance test AC-05. It's kept as small as poss
   `content/prep.json`. They're drawn from each guide's own advice, and words in
   [square brackets] are for the manager to fill in.
 - A checklist with nothing ticked counts as empty and is left out of the email.
-- **Interview pack generator.** The 35 competencies, 350 questions, indicators, rating
-  scale and guidance are copied word for word from the client's aHRcade tool
-  (`content/interview.json`), keeping the ACTED name. Differences from the original,
-  to fit SayWotNow's privacy rules: no accounts or cloud sync (packs are saved on the
-  device only when you tap Save); interview mode keeps candidate details, notes and
-  ratings in memory only (leaving asks first, and "Finish and clear" wipes them), so an
-  interview can't be resumed after closing the app; the emailed record contains the
-  notes as text rather than asking you to attach a PDF. Packs and records are branded
-  SayWotNow. As in aHRcade, every competency starts on a new page in the Word pack,
-  the printed pack and the printed interview record. Word files are built on the device by the vendored docx library.
+- **Wellbeing and health in emails (v1.5).** Fields marked `sensitive` in
+  `content/templates.json` (T01/T02 wellbeing rating and comments, T03 reason for
+  absence and fit note) are left out of the email, copy and share unless the manager
+  switches on "Include wellbeing and health details" for that email.
+- **HR-first gate (v1.5).** Its wording (`escalation` in G03 and G13) is new, drafted
+  from each guide's own advice and marked as draft until reviewed.
 - **Currency converter.** It uses the same places as the time zone converter. Each
   place's currency comes from its country, via `countryCurrency` in
   `content/currencies.json`. The defaults are the same seven locations: USD, GBP,
@@ -158,5 +174,7 @@ deliberate exception to P4 and acceptance test AC-05. It's kept as small as poss
 ## Still needed from the client
 
 1. Support email (spec Q5): set `supportEmail` in `content/pages.json`.
-2. Content review by an HR professional or employment lawyer (spec Q4),
-   including the v1.3 "Say it like this" lines and 1-minute prep cards.
+2. Content review by an HR professional or employment lawyer (spec Q4). The
+   register in `review/` lists every item, its risk and the issues found; the
+   release gate is a named reviewer approving the high-risk items.
+3. An owner for the review register (every entry is "Unassigned" for now).
