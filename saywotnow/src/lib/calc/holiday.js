@@ -3,7 +3,13 @@ import { addYears, addDays, daysInclusive, diffDays, maxISO, minISO, compareISO,
 
 export const STATUTORY_WEEKS = 5.6;
 export const STATUTORY_CAP = 28;
-export const BANK_HOLIDAYS = 8; // England and Wales
+// Usual number of bank and public holidays a year in each UK nation.
+export const NATIONS = {
+  ew: { label: 'England and Wales', short: 'England & Wales', bankHolidays: 8 },
+  sc: { label: 'Scotland', short: 'Scotland', bankHolidays: 9 },
+  ni: { label: 'Northern Ireland', short: 'N. Ireland', bankHolidays: 10 },
+};
+export const BANK_HOLIDAYS = NATIONS.ew.bankHolidays;
 
 export function roundUpHalf(x) {
   return Math.ceil(x * 2 - 1e-9) / 2;
@@ -16,7 +22,8 @@ function fmt(n) {
 /**
  * inputs: {
  *   entitlement, includesBankHolidays, fullTimeDays, employeeDays,
- *   yearStart (ISO, needed for part-year), startDate?, leaveDate?
+ *   yearStart (ISO, needed for part-year), startDate?, leaveDate?,
+ *   nation? ('ew' | 'sc' | 'ni', default 'ew')
  * }
  */
 export function calculateHoliday(inputs) {
@@ -29,6 +36,8 @@ export function calculateHoliday(inputs) {
   if (!(empDays >= 0.5 && empDays <= 7) || Math.round(empDays * 2) !== empDays * 2) errors.employeeDays = 'Enter between 0.5 and 7 days, in half days.';
   if (empDays > ftDays && !errors.employeeDays && !errors.fullTimeDays) errors.employeeDays = "This can't be more than the full-time days.";
 
+  const nation = NATIONS[inputs.nation] ? inputs.nation : 'ew';
+  const { label: nationLabel, bankHolidays } = NATIONS[nation];
   const partYear = !!(inputs.startDate || inputs.leaveDate);
   let fraction = 1;
   let yearEnd = null;
@@ -62,7 +71,7 @@ export function calculateHoliday(inputs) {
   const statutoryFull = Math.min(STATUTORY_WEEKS * empDays, STATUTORY_CAP);
   const statutory = statutoryFull * fraction;
   // If the entitlement excludes bank holidays, they're given on top, so count them for the statutory check.
-  const bankOnTop = inputs.includesBankHolidays ? 0 : BANK_HOLIDAYS * ratio * fraction;
+  const bankOnTop = inputs.includesBankHolidays ? 0 : bankHolidays * ratio * fraction;
   const totalForCheck = exact + bankOnTop;
   const belowStatutory = totalForCheck + 1e-9 < statutory;
 
@@ -73,7 +82,7 @@ export function calculateHoliday(inputs) {
   if (partYear) steps.push(`They're employed for ${employedDays} of the ${yearDays} days in the holiday year (${formatShort(employedFrom)} to ${formatShort(employedTo)}), so ${fmt(entitlement * ratio)} × ${employedDays} ÷ ${yearDays} = ${fmt(exact)} days.`);
   steps.push(`Rounded up to the nearest half day: ${fmt(rounded)} days.`);
   steps.push(`Statutory minimum: 5.6 × ${fmt(empDays)} days = ${fmt(STATUTORY_WEEKS * empDays)}${STATUTORY_WEEKS * empDays > STATUTORY_CAP ? ', capped at 28' : ''}${partYear ? `, pro-rated to ${fmt(statutory)}` : ''} days (including bank holidays).`);
-  if (!inputs.includesBankHolidays) steps.push(`For the statutory check, ${fmt(bankOnTop)} days of bank holidays are added on top (8 bank holidays in England and Wales, pro-rated).`);
+  if (!inputs.includesBankHolidays) steps.push(`For the statutory check, ${fmt(bankOnTop)} days of bank holidays are added on top (${bankHolidays} bank holidays in ${nationLabel}, pro-rated).`);
 
   return {
     ok: true,
@@ -82,6 +91,8 @@ export function calculateHoliday(inputs) {
     statutory: Math.round(statutory * 100) / 100,
     belowStatutory,
     bankHolidaysOnTop: Math.round(bankOnTop * 100) / 100,
+    nation,
+    bankHolidays,
     partYear,
     fraction,
     steps,

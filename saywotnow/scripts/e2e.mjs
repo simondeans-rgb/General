@@ -356,6 +356,94 @@ await check('Tools: holiday, notice, Bradford, SBI work; inputs clear on leaving
   await ctx.close();
 });
 
+await check('1-minute prep: Home tile, list, card, start the meeting; prep sheets on guides and templates', async () => {
+  const { ctx, page, log } = await newApp();
+  await page.locator('.tile', { hasText: '1-minute prep' }).click();
+  await page.locator('#main h1', { hasText: '1-minute prep' }).waitFor();
+  assert.equal(await page.locator('.card-list .card').count(), 21);
+  await page.locator('.card', { hasText: 'Return to work' }).click();
+  assert.equal(await page.locator('.prep-ask li').count(), 3);
+  await page.getByText("Don't ask for more medical detail than you need.").waitFor();
+  await shot(page, '24-prep-card');
+  await page.getByRole('link', { name: 'Start the meeting' }).click();
+  await page.waitForURL(/#\/template\/T03$/);
+  // From the template: a sheet over the form, so nothing typed is lost.
+  await page.fill('#f-employeeName', 'Sam Patel');
+  await page.getByRole('button', { name: '1-minute prep' }).click();
+  await dialog(page).getByText('How are you feeling now?').waitFor();
+  await dialog(page).getByRole('button', { name: 'Done' }).click();
+  assert.equal(await page.inputValue('#f-employeeName'), 'Sam Patel');
+  // From a guide (leaving the filled-in form asks first).
+  await page.goto(BASE + '#/guide/G06');
+  await dialog(page).getByRole('button', { name: 'Discard' }).click();
+  await page.locator('#main h1', { hasText: 'Mental health' }).waitFor();
+  await page.getByRole('button', { name: '1-minute prep' }).click();
+  await dialog(page).getByText('If there\'s a risk to life, call 999.', { exact: false }).waitFor();
+  await page.keyboard.press('Escape');
+  // The quick 1:1 uses the 1:1 card.
+  await dialog(page).waitFor({ state: 'detached' });
+  await page.goto(BASE + '#/template/T02');
+  await page.locator('#main h1', { hasText: 'Quick Check-in' }).waitFor();
+  await page.getByRole('button', { name: '1-minute prep' }).click();
+  await dialog(page).getByText("Check the actions you agreed last time.").waitFor();
+  await page.keyboard.press('Escape');
+  assert.deepEqual(log.errors, []);
+  await ctx.close();
+});
+
+await check('Say it like this: lines on each guide, large view and copy', async () => {
+  const { ctx, page } = await newApp();
+  await page.goto(BASE + '#/guide/G12');
+  await page.getByRole('tab', { name: 'During' }).click();
+  await page.getByRole('heading', { name: 'Say it like this' }).waitFor();
+  const line = "I know that's disappointing, and I appreciate you asking.";
+  await page.getByRole('button', { name: `Show in large text: ${line}` }).click();
+  const big = dialog(page).locator('.say-large');
+  await big.waitFor();
+  assert.equal(await big.textContent(), line);
+  const size = await big.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+  assert.ok(size >= 24, `large text is ${size}px`);
+  await shot(page, '25-say-large');
+  await dialog(page).getByRole('button', { name: 'Done' }).click();
+  await page.getByRole('button', { name: `Copy this line: ${line}` }).click();
+  assert.equal(await page.evaluate(() => navigator.clipboard.readText()), line);
+  for (const id of ['G01', 'G07', 'G14']) {
+    await page.goto(BASE + `#/guide/${id}`);
+    await page.getByRole('tab', { name: 'During' }).click();
+    assert.ok(await page.locator('.quote-card').count() >= 4, id);
+  }
+  await ctx.close();
+});
+
+await check('Holiday: bank holidays follow the UK nation, which is remembered', async () => {
+  const { ctx, page } = await newApp();
+  await page.goto(BASE + '#/tool/holiday');
+  await page.fill('#h-ent', '19');
+  await page.getByRole('switch', { name: 'Entitlement includes bank holidays' }).click();
+  await page.fill('#h-emp', '5');
+  await page.getByRole('button', { name: 'Calculate' }).click();
+  await page.getByText('below the statutory minimum').waitFor();
+  await page.getByRole('radio', { name: 'Scotland' }).check();
+  assert.equal(await page.locator('.result').count(), 0);
+  await page.getByRole('button', { name: 'Calculate' }).click();
+  await page.getByText('Meets the statutory minimum').waitFor();
+  await page.getByText('9 a year in Scotland').waitFor();
+  await page.getByText('9 bank holidays in Scotland').waitFor();
+  await page.reload();
+  await page.locator('#main h1').waitFor();
+  assert.equal(await page.getByRole('radio', { name: 'Scotland' }).isChecked(), true);
+  await page.getByRole('radio', { name: 'N. Ireland' }).check();
+  await page.getByRole('switch', { name: 'Entitlement includes bank holidays' }).click();
+  await page.fill('#h-emp', '5');
+  await page.fill('#h-ent', '19');
+  await page.getByRole('button', { name: 'Calculate' }).click();
+  await page.getByText('10 bank holidays in Northern Ireland').waitFor();
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('saywotnow.prefs.v1')));
+  assert.equal(stored.holidayNation, 'ni');
+  assert.ok(!JSON.stringify(stored).includes('19'), 'entitlement must not be stored');
+  await ctx.close();
+});
+
 await check('Time zone converter: defaults, set a time, day offsets, saved zones, planner', async () => {
   const { ctx, page, log } = await newApp();
   await page.goto(BASE + '#/tool/timezones');
@@ -495,7 +583,7 @@ await check('AC-18: dark mode renders (screenshots)', async () => {
 
 await check('Accessibility basics: every input has a label; buttons have names', async () => {
   const { ctx, page } = await newApp();
-  for (const path of ['#/template/T01', '#/template/T03', '#/template/T05', '#/tool/holiday', '#/tool/notice', '#/settings', '#/guide/G01']) {
+  for (const path of ['#/template/T01', '#/template/T03', '#/template/T05', '#/tool/holiday', '#/tool/notice', '#/settings', '#/guide/G01', '#/prep', '#/prep/P-G01']) {
     await page.goto(BASE + path);
     await page.locator('#main h1').first().waitFor();
     const missing = await page.evaluate(() => {
@@ -513,7 +601,7 @@ await check('Accessibility basics: every input has a label; buttons have names',
 
 await check('No console errors during a full session', async () => {
   const { ctx, page, log } = await newApp();
-  for (const path of ['#/', '#/meetings', '#/conversations', '#/toolkit', '#/search', '#/template/T06', '#/template/T07', '#/guide/G07', '#/tool/timezones', '#/tool/interview', '#/page/about', '#/page/content', '#/onboarding/replay']) {
+  for (const path of ['#/', '#/meetings', '#/conversations', '#/toolkit', '#/search', '#/template/T06', '#/template/T07', '#/guide/G07', '#/tool/timezones', '#/tool/interview', '#/page/about', '#/page/content', '#/prep', '#/prep/P-1to1', '#/onboarding/replay']) {
     await page.goto(BASE + path);
     await page.waitForTimeout(80);
   }

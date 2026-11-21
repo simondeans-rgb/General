@@ -6,6 +6,8 @@ import {
   content, navigate, goBack, TopBar, FavStar, showDialog, useStore, formStore, openForm, updateForm,
   replaceForm, clearForm, toast,
 } from './core.js';
+import { prepFor } from '../content.js';
+import { PrepButton } from './prep.js';
 import {
   validateForm, activeFlags, isSectionVisible, isSectionIncluded, isFieldVisible, isFieldToggledOn,
   switchTemplate, isDirty, createFormState,
@@ -143,6 +145,7 @@ export function TemplateForm({ id, prefs }) {
           <input type="radio" name="mode" checked=${pair[k] === id} onChange=${() => navigate(`/template/${pair[k]}`, { replace: true })} /><span>${label}</span></label>`)}
       </div>` : null}
 
+      ${ctx.guideId ? null : html`<${PrepButton} card=${prepFor(c, 'template', template.id)} />`}
       ${flags.map((f) => html`<${Notice} level=${f.level} action=${f.contactHr ? html`<${ContactHrButton} title=${template.name} prefs=${prefs} />` : null}>${f.text}</${Notice}>`)}
       ${(template.notices || []).map((n) => html`<${Notice} level=${n.level}>${n.text}</${Notice}>`)}
       ${ctx.formNote ? html`<${Notice} level=${1}>${ctx.formNote}</${Notice}>` : null}

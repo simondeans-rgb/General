@@ -1,11 +1,12 @@
 {
-  "contentVersion": "1.0.0",
-  "lastReviewed": "2026-11-16",
+  "contentVersion": "1.1.0",
+  "lastReviewed": "2026-11-20",
   "sectionTitle": "I need to…",
   "favouritesTitle": "Favourites",
   "favouritesHint": "Tap the star on any guide or template to pin it here.",
   "tiles": [
     { "id": "run-1to1", "label": "Run a 1:1", "icon": "chat", "target": { "type": "oneToOne" } },
+    { "id": "prep", "label": "1-minute prep", "icon": "hourglass", "target": { "type": "screen", "id": "prep" } },
     { "id": "tough", "label": "Prepare for a tough conversation", "icon": "bolt", "target": { "type": "screen", "id": "conversations" } },
     { "id": "rtw", "label": "Return to work", "icon": "door", "target": { "type": "template", "id": "T03" } },
     { "id": "probation", "label": "Probation review", "icon": "clipboard", "target": { "type": "template", "id": "T04" } },

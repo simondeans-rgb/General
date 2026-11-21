@@ -10,6 +10,7 @@ import { Preview } from './ui/preview.js';
 import { Guide } from './ui/guide.js';
 import { Tool } from './ui/tools.js';
 import { Settings, StaticPage, Onboarding } from './ui/settings.js';
+import { PrepList, PrepCard } from './ui/prep.js';
 
 const TABS = [
   ['home', '/', 'home', S.tabs.home],
@@ -20,7 +21,7 @@ const TABS = [
 
 function tabFor(parts) {
   const p = parts[0];
-  if (!p || p === 'search' || p === 'settings' || p === 'page') return 'home';
+  if (!p || p === 'search' || p === 'settings' || p === 'page' || p === 'prep') return 'home';
   if (p === 'template') return parts[1] === 'T08' ? 'conversations' : 'meetings';
   if (p === 'guide' || p === 'reactions' || p === 'conversations') return 'conversations';
   if (p === 'tool' || p === 'toolkit') return 'toolkit';
@@ -53,6 +54,7 @@ function Screen({ route, prefs }) {
     case 'reactions': return html`<${Reactions} />`;
     case 'toolkit': return html`<${Toolkit} prefs=${prefs} />`;
     case 'tool': return html`<${Tool} key=${b} id=${b} prefs=${prefs} />`;
+    case 'prep': return b ? html`<${PrepCard} key=${b} id=${b} prefs=${prefs} />` : html`<${PrepList} prefs=${prefs} />`;
     case 'settings': return html`<${Settings} prefs=${prefs} />`;
     case 'page': return html`<${StaticPage} id=${b} />`;
     default: return html`<${Home} prefs=${prefs} />`;

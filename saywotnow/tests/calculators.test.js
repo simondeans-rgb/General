@@ -36,6 +36,21 @@ test('holiday 6: leaver, April holiday year', () => {
   const r = H({ yearStart: '2026-04-01', leaveDate: '2026-09-30' });
   assert.equal(r.exact, 14.04); assert.equal(r.rounded, 14.5);
 });
+test('holiday 8: bank holidays on top depend on the UK nation', () => {
+  const base = { entitlement: 25, includesBankHolidays: false, yearStart: '2026-01-01', startDate: '2026-07-01' };
+  assert.equal(H({ ...base }).bankHolidaysOnTop, 4.03); // default: England and Wales, 8
+  assert.equal(H({ ...base, nation: 'sc' }).bankHolidaysOnTop, 4.54); // Scotland, 9
+  assert.equal(H({ ...base, nation: 'ni' }).bankHolidaysOnTop, 5.04); // Northern Ireland, 10
+  assert.equal(H({ ...base, nation: 'xx' }).nation, 'ew'); // unknown falls back
+});
+test('holiday 9: the nation can decide the statutory check', () => {
+  const base = { entitlement: 19, includesBankHolidays: false };
+  assert.equal(H({ ...base, nation: 'ew' }).belowStatutory, true); // 19 + 8 = 27 < 28
+  assert.equal(H({ ...base, nation: 'sc' }).belowStatutory, false); // 19 + 9 = 28
+  assert.equal(H({ ...base, nation: 'ni' }).belowStatutory, false); // 19 + 10 = 29
+  assert.match(H({ ...base, nation: 'sc' }).steps.join(' '), /9 bank holidays in Scotland/);
+  assert.equal(H({ ...base, includesBankHolidays: true, entitlement: 28, nation: 'ni' }).bankHolidaysOnTop, 0);
+});
 test('holiday 7: invalid inputs', () => {
   assert.ok(H({ employeeDays: 8 }).errors.employeeDays);
   assert.ok(H({ employeeDays: 2.3 }).errors.employeeDays);

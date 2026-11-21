@@ -41,6 +41,7 @@ const P = {
   lock: 'M6 11h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1zM8 11V8a4 4 0 0 1 8 0v3M12 15v2',
   quote: 'M10 8H6.5A1.5 1.5 0 0 0 5 9.5V13h4v4H5M19 8h-3.5A1.5 1.5 0 0 0 14 9.5V13h4v4h-4',
   external: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
+  expand: 'M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7',
 };
 
 export const FLAG_ICON = { 1: 'info', 2: 'warning', 3: 'alert' };

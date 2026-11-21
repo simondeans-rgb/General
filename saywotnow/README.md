@@ -12,7 +12,8 @@ Cream; Nunito).
 | | |
 |---|---|
 | Meetings | 8 templates (T01–T08) rendered by one form engine from `content/templates.json` |
-| Conversations | 15 guides (G01–G15) rendered by one guide screen from `content/guides.json`, plus the shared "If they react…" library |
+| Home | "I need to…" tiles, search, favourites, and **1-minute prep**: a card for each meeting type and guide with three questions to ask, one thing to avoid and one to remember (`content/prep.json`). It opens from Home as its own screen, or as a sheet from a guide or template, so nothing typed into a form is lost |
+| Conversations | 15 guides (G01–G15) rendered by one guide screen from `content/guides.json`, plus the shared "If they react…" library. Each guide's During tab has **Say it like this**: copy-ready lines (`sayIt`), each with Copy and a large-text view for reading straight off the screen |
 | Toolkit | Time zone converter (ported from the Worldly Explorer world clock), currency converter (live rates), holiday, notice period, Bradford Factor and SBI feedback builder. The interview pack generator is a placeholder until its existing code and question library are supplied (spec Q3). |
 | Settings | HR contact, default 1:1 format, email footer, Bradford bands, appearance, About / Disclaimer / Privacy / Content information |
 
@@ -120,7 +121,14 @@ deliberate exception to P4 and acceptance test AC-05. It's kept as small as poss
 - T04 "Not confirming" sends to HR only, with a short covering line asking for
   advice. "Send to employee instead" is behind a confirmation.
 - For the holiday statutory check, when the entitlement excludes bank holidays,
-  8 bank holidays (England and Wales), pro-rated, are added before comparing.
+  the usual number of bank holidays for the nation chosen in the calculator is
+  added, pro-rated, before comparing: 8 in England and Wales, 9 in Scotland,
+  10 in Northern Ireland. The chosen nation is remembered (`holidayNation`, a
+  non-personal preference); the figures entered are not.
+- **New content written for v1.3** (needs the same HR review as the rest, see
+  "Still needed"): the "Say it like this" lines in each guide and every card in
+  `content/prep.json`. They're drawn from each guide's own advice, and words in
+  [square brackets] are for the manager to fill in.
 - A checklist with nothing ticked counts as empty and is left out of the email.
 - **Currency converter.** It uses the same places as the time zone converter. Each
   place's currency comes from its country, via `countryCurrency` in
@@ -141,4 +149,5 @@ deliberate exception to P4 and acceptance test AC-05. It's kept as small as poss
 
 1. Interview pack generator source and question library (spec Q3).
 2. Support email (spec Q5): set `supportEmail` in `content/pages.json`.
-3. Content review by an HR professional or employment lawyer (spec Q4).
+3. Content review by an HR professional or employment lawyer (spec Q4),
+   including the v1.3 "Say it like this" lines and 1-minute prep cards.

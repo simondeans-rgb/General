@@ -14,6 +14,7 @@ export const DEFAULTS = Object.freeze({
   emailFooterEnabled: true,
   bradfordBands: [],
   savedTimeZones: [],
+  holidayNation: 'ew',
   savedCurrencyPlaces: [],
   currencyRates: null,
   contentVersionSeen: '',
@@ -44,6 +45,8 @@ function sanitise(key, value) {
         : d;
     case 'defaultOneToOneMode':
       return value === 'quick' ? 'quick' : 'full';
+    case 'holidayNation':
+      return ['ew', 'sc', 'ni'].includes(value) ? value : 'ew';
     case 'theme':
       return ['system', 'light', 'dark'].includes(value) ? value : 'system';
     default:

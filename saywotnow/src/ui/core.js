@@ -181,7 +181,6 @@ function Dialog({ d }) {
     const first = el.querySelector('[data-autofocus]') || el.querySelector('button, [href], input, select, textarea');
     first && first.focus();
     const onKey = (e) => {
-      if (e.key === 'Escape' && opts.dismissable !== false) { e.preventDefault(); d.resolve(null); }
       if (e.key === 'Tab') {
         const items = [...el.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter((x) => !x.disabled);
         if (!items.length) return;
@@ -206,6 +205,15 @@ function Dialog({ d }) {
     </div>
   </div>`;
 }
+
+// Escape closes the topmost dialog, wherever focus is (focus may not have moved into it yet).
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const top = dialogStore.get().at(-1);
+  if (!top || top.opts.dismissable === false) return;
+  e.preventDefault();
+  top.resolve(null);
+});
 
 export function DialogHost() {
   const list = useStore(dialogStore);
