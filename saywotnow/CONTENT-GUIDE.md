@@ -9,6 +9,7 @@ touching any code.
 | `home.json` | The "I need to…" tiles and favourites wording |
 | `templates.json` | Meeting templates: sections, fields, email subject and opening, HR banners |
 | `guides.json` | Conversation guides: Before / During / After, HR triggers, summary prompts |
+| `interview.json` | The ACTED interview library: dimensions (with "what good looks like" and watch-outs), 35 competencies and their questions, rating scale and interviewer guidance |
 | `prep.json` | 1-minute prep cards: three questions to ask, one thing to avoid, one to remember |
 | `reactions.json` | The shared "If they react…" library |
 | `tools.json` | Toolkit names, "How this works" text, notes and SBI examples |
@@ -47,6 +48,12 @@ its button goes: `{ "type": "guide", "id": "G05" }`,
 `{ "type": "template", "id": "T03" }`, or `{ "type": "oneToOne" }` for the
 regular 1:1 (shared by the full and quick versions). Every guide needs a card;
 the check will tell you if one is missing.
+
+**Change an interview question.** Find the competency in `interview.json` by its
+`id` (e.g. `"resilience"`) and edit a question's `text`. Keep each question's `id`
+the same: saved packs refer to questions by id. A pack that points at a question
+that no longer exists drops that competency until it's edited again. `level` must be
+one of `Essential`, `Intermediate` or `Advanced`.
 
 **Change an HR flag level.** Set `flagLevel` to `1` (Good to know), `2` (Consider
 HR advice) or `3` (Contact HR first).

@@ -1,6 +1,6 @@
 {
-  "contentVersion": "1.0.0",
-  "lastReviewed": "2026-11-16",
+  "contentVersion": "1.1.0",
+  "lastReviewed": "2026-11-21",
   "tools": [
     {
       "id": "timezones",
@@ -48,7 +48,7 @@
     {
       "id": "interview",
       "title": "Interview pack generator",
-      "summary": "Build a structured interview pack with questions, probes and scoring.",
+      "summary": "Build a structured, competency-based interview pack, export it to Word, and run the interview.",
       "icon": "doc",
       "keywords": [
         "interview",
@@ -57,10 +57,12 @@
         "questions",
         "competency",
         "candidate",
-        "pack"
+        "pack",
+        "ACTED",
+        "behavioural",
+        "STAR"
       ],
-      "status": "pending",
-      "pendingNote": "This tool is being ported from the existing interview pack generator and will arrive in a later build."
+      "status": "ready"
     },
     {
       "id": "holiday",

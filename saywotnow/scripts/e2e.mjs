@@ -444,6 +444,136 @@ await check('Holiday: bank holidays follow the UK nation, which is remembered', 
   await ctx.close();
 });
 
+await check('Interview packs: build, save, Word export, reopen; nothing about candidates is stored', async () => {
+  const { ctx, page, log } = await newApp();
+  await page.goto(BASE + '#/tool/interview');
+  await page.getByText('No interview packs yet').waitFor();
+  await page.getByRole('link', { name: 'Create an interview pack' }).click();
+  // Step 1: role is required.
+  await page.getByRole('button', { name: 'Continue', exact: true }).click({ force: true });
+  await page.locator('#iv-role').waitFor();
+  assert.equal(await page.locator('.iv-step-title').textContent(), 'Role & interview panel');
+  await page.fill('#iv-role', 'Head of Product');
+  await page.fill('#iv-func', 'Product');
+  await page.getByLabel('Interviewer 1 name').fill('Jo Smith');
+  await page.getByRole('button', { name: 'Add interviewer' }).click();
+  await page.getByLabel('Interviewer 2 name').fill('Sam Lee');
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  // Step 2: competencies and coverage.
+  await page.getByText('0 of 5 ACTED dimensions represented').waitFor();
+  for (const n of ['Self-Awareness', 'Resilience', 'Navigates Conflict']) await page.getByRole('button', { name: new RegExp(`^${n}`) }).click();
+  await page.getByText('2 of 5 ACTED dimensions represented').waitFor();
+  await page.fill('#iv-search', 'setbacks');
+  assert.equal(await page.locator('.iv-comp').count(), 1);
+  await page.fill('#iv-search', '');
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  // Step 3: same question can't be primary and backup; completing one moves to the next.
+  const rows = page.locator('.iv-qrow');
+  await rows.nth(0).getByRole('button', { name: /^Primary/ }).click();
+  assert.equal(await rows.nth(0).getByRole('button', { name: /^Backup/ }).isDisabled(), true);
+  await page.getByRole('button', { name: 'Continue', exact: true }).click({ force: true }); // blocked
+  await page.getByText('1 of 3', { exact: true }).waitFor();
+  for (let k = 0; k < 3; k++) {
+    await page.getByText(`${k + 1} of 3`, { exact: true }).waitFor();
+    if (k > 0) await rows.nth(0).getByRole('button', { name: /^Primary/ }).click(); // the first one is already chosen
+    await rows.nth(5).getByRole('button', { name: /^Backup/ }).click();
+    await page.waitForTimeout(400);
+  }
+  await page.getByText('3 of 3 complete').waitFor();
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  // Step 4: summary, who asks what, save, export.
+  await page.locator('.iv-who li', { hasText: 'Resilience' }).getByText('Sam Lee').waitFor();
+  await page.getByRole('button', { name: 'Save pack' }).click();
+  await page.getByText('Pack saved on this device.').waitFor();
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Download Word pack' }).click()]);
+  assert.equal(dl.suggestedFilename(), 'SayWotNow Interview Pack - Head of Product.docx');
+  const file = await dl.path();
+  const { readFileSync } = await import('node:fs');
+  const bytes = readFileSync(file);
+  assert.equal(bytes.subarray(0, 2).toString(), 'PK');
+  assert.ok(bytes.length > 8000);
+  await page.getByRole('button', { name: 'Customise for a candidate' }).click();
+  await page.fill('#iv-cand', 'Alex Doe');
+  const [dl2] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Download customised Word pack' }).click()]);
+  assert.ok(dl2.suggestedFilename().endsWith('.docx'));
+  await page.getByText('Candidate details were not saved.').waitFor();
+  await shot(page, '31-interview-pack');
+  // Saved on the device without candidate details; survives a restart.
+  const stored = await page.evaluate(() => localStorage.getItem('saywotnow.prefs.v1'));
+  assert.ok(stored.includes('Head of Product') && stored.includes('Sam Lee'));
+  assert.ok(!stored.includes('Alex'), 'candidate name must not be stored');
+  await page.goto(BASE + '#/tool/interview');
+  await page.reload();
+  await page.locator('.iv-pack', { hasText: 'Head of Product' }).waitFor();
+  await page.getByRole('button', { name: 'Duplicate Head of Product' }).click();
+  await page.locator('.iv-pack', { hasText: 'Head of Product — Copy' }).waitFor();
+  await page.getByRole('button', { name: 'Delete Head of Product — Copy' }).click();
+  await dialog(page).getByRole('button', { name: 'Delete' }).click();
+  assert.equal(await page.locator('.iv-pack').count(), 1);
+  assert.deepEqual(log.errors, []);
+  assert.deepEqual(log.external, []);
+  await ctx.close();
+});
+
+await check('Interview mode: notes and ratings in memory only; leaving asks; record by email; finish clears', async () => {
+  const pack = { id: 'pack-e2e-1', role: 'Data Analyst', func: 'Data', seniority: '', description: '', panel: ['Jo Smith', 'Sam Lee'],
+    competencies: [{ id: 'resilience', primary: 'resilience-1', backup: 'resilience-2' }, { id: 'self-awareness', primary: 'self-awareness-1', backup: 'self-awareness-3' }],
+    createdAt: '2026-11-21T10:00:00Z', updatedAt: '2026-11-21T10:00:00Z' };
+  const { ctx, page, log } = await newApp({ prefs: { interviewPacks: [pack] } });
+  await page.goto(BASE + '#/tool/interview');
+  await page.getByRole('link', { name: 'Start interview' }).click();
+  assert.equal(await page.locator('.tabbar').count(), 0, 'no tab bar during an interview');
+  await page.fill('#iv-cname', 'Alex Doe');
+  await page.getByRole('button', { name: 'Start interview' }).click();
+  await page.getByText('Assigned to').waitFor();
+  await page.fill('#iv-notes', 'Talked through a failed launch and what changed.');
+  await page.getByRole('radio', { name: '4: Above Requirement' }).check();
+  await page.getByText('4 — Above Requirement').waitFor();
+  await page.getByRole('button', { name: 'Need another angle?' }).click();
+  await page.getByLabel('Backup used').check();
+  await shot(page, '32-interview-ask');
+  // Nothing typed is stored or in the URL.
+  const stored = await page.evaluate(() => JSON.stringify({ ...localStorage }) + JSON.stringify({ ...sessionStorage }) + location.href);
+  assert.ok(!stored.includes('Alex') && !stored.includes('failed launch'));
+  // Leaving asks first.
+  await page.goBack();
+  await dialog(page).getByText('Leave this interview?').waitFor();
+  await dialog(page).getByRole('button', { name: 'Keep editing' }).click();
+  assert.equal(await page.inputValue('#iv-notes'), 'Talked through a failed launch and what changed.');
+  await page.getByRole('button', { name: 'Next', exact: true }).click();
+  assert.equal(await page.inputValue('#iv-notes'), '');
+  await page.getByRole('button', { name: 'Review interview' }).click();
+  await page.getByText('1 rating is missing').waitFor();
+  await page.getByRole('button', { name: 'Finish without them' }).click();
+  await page.getByRole('heading', { name: 'Alex Doe' }).waitFor();
+  await page.getByRole('button', { name: 'Email the record' }).click();
+  const mail = decodeURIComponent(log.mailto.at(-1));
+  assert.match(mail, /subject=Interview record – Alex Doe – Data Analyst/);
+  assert.match(mail, /Talked through a failed launch/);
+  assert.match(mail, /Rating: 4 — Above Requirement/);
+  assert.match(mail, /Backup question used/);
+  assert.match(mail, /Self-Awareness\r?\nAssigned interviewer: Sam Lee[\s\S]*Rating: Not rated/);
+  await page.getByRole('button', { name: 'Finish and clear' }).click();
+  await dialog(page).getByRole('button', { name: 'Clear the interview' }).click();
+  await page.locator('.iv-home').waitFor();
+  await page.getByRole('link', { name: 'Start interview' }).click();
+  assert.equal(await page.inputValue('#iv-cname'), '', 'a new interview starts empty');
+  assert.deepEqual(log.errors, []);
+  await ctx.close();
+});
+
+await check('ACTED library: dimensions, competencies and questions', async () => {
+  const { ctx, page } = await newApp();
+  await page.goto(BASE + '#/interview/library');
+  assert.equal(await page.getByRole('tab').count(), 5);
+  await page.getByRole('tab', { name: /Deliver/ }).click();
+  assert.equal(await page.locator('.card-list .card').count(), 7);
+  await page.goto(BASE + '#/interview/library/resilience');
+  assert.equal(await page.locator('.iv-qlist li').count(), 10);
+  await page.getByText('What good looks like').waitFor();
+  await ctx.close();
+});
+
 await check('Time zone converter: defaults, set a time, day offsets, saved zones, planner', async () => {
   const { ctx, page, log } = await newApp();
   await page.goto(BASE + '#/tool/timezones');
@@ -583,7 +713,7 @@ await check('AC-18: dark mode renders (screenshots)', async () => {
 
 await check('Accessibility basics: every input has a label; buttons have names', async () => {
   const { ctx, page } = await newApp();
-  for (const path of ['#/template/T01', '#/template/T03', '#/template/T05', '#/tool/holiday', '#/tool/notice', '#/settings', '#/guide/G01', '#/prep', '#/prep/P-G01']) {
+  for (const path of ['#/template/T01', '#/template/T03', '#/template/T05', '#/tool/holiday', '#/tool/notice', '#/settings', '#/guide/G01', '#/prep', '#/prep/P-G01', '#/tool/interview', '#/interview/new']) {
     await page.goto(BASE + path);
     await page.locator('#main h1').first().waitFor();
     const missing = await page.evaluate(() => {
@@ -601,7 +731,7 @@ await check('Accessibility basics: every input has a label; buttons have names',
 
 await check('No console errors during a full session', async () => {
   const { ctx, page, log } = await newApp();
-  for (const path of ['#/', '#/meetings', '#/conversations', '#/toolkit', '#/search', '#/template/T06', '#/template/T07', '#/guide/G07', '#/tool/timezones', '#/tool/interview', '#/page/about', '#/page/content', '#/prep', '#/prep/P-1to1', '#/onboarding/replay']) {
+  for (const path of ['#/', '#/meetings', '#/conversations', '#/toolkit', '#/search', '#/template/T06', '#/template/T07', '#/guide/G07', '#/tool/timezones', '#/tool/interview', '#/page/about', '#/page/content', '#/prep', '#/prep/P-1to1', '#/interview/library', '#/interview/library/resilience', '#/interview/new', '#/onboarding/replay']) {
     await page.goto(BASE + path);
     await page.waitForTimeout(80);
   }

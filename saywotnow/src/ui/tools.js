@@ -13,6 +13,7 @@ import { formatWithDay, todayISO } from '../lib/dates.js';
 import { copySensitive } from '../platform.js';
 import { TimeZones } from './timezones.js';
 import { Currency } from './currency.js';
+import { InterviewTool } from './interview.js';
 
 const PRIVATE = { autocomplete: 'off', autocorrect: 'off', spellcheck: false };
 
@@ -205,7 +206,7 @@ function CurrencyTool({ tool, prefs }) {
   return html`<${ToolShell} tool=${tool} prefs=${prefs}><${Currency} tool=${tool} prefs=${prefs} /></${ToolShell}>`;
 }
 
-const TOOLS = { holiday: Holiday, notice: Notice_, bradford: Bradford, sbi: Sbi, timezones: TimeZoneTool, currency: CurrencyTool };
+const TOOLS = { holiday: Holiday, notice: Notice_, bradford: Bradford, sbi: Sbi, timezones: TimeZoneTool, currency: CurrencyTool, interview: InterviewTool };
 
 export function Tool({ id, prefs }) {
   const tool = content().toolById[id];

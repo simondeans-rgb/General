@@ -1,6 +1,9 @@
 // Non-personal preferences (spec Section 3.1). This is the ONLY thing SayWotNow
 // writes to device storage. Keys outside this allow-list are never saved, and
 // nothing typed into a template, guide checklist, tool or search box comes here.
+// The one exception is interview packs the user explicitly saves (no candidate details).
+
+import { sanitisePack, MAX_PACKS } from './lib/interview.js';
 
 const STORAGE_KEY = 'saywotnow.prefs.v1';
 
@@ -15,6 +18,7 @@ export const DEFAULTS = Object.freeze({
   bradfordBands: [],
   savedTimeZones: [],
   holidayNation: 'ew',
+  interviewPacks: [],
   savedCurrencyPlaces: [],
   currencyRates: null,
   contentVersionSeen: '',
@@ -45,6 +49,9 @@ function sanitise(key, value) {
         : d;
     case 'defaultOneToOneMode':
       return value === 'quick' ? 'quick' : 'full';
+    case 'interviewPacks':
+      // Reusable packs: role, interviewer names and chosen questions. Never candidate details.
+      return Array.isArray(value) ? value.map(sanitisePack).filter(Boolean).slice(0, MAX_PACKS) : d;
     case 'holidayNation':
       return ['ew', 'sc', 'ni'].includes(value) ? value : 'ew';
     case 'theme':

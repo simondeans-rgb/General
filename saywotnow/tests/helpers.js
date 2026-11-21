@@ -6,7 +6,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 export function loadContentSync() {
   const read = (n) => JSON.parse(readFileSync(join(root, 'content', `${n}.json`), 'utf8'));
-  const c = { home: read('home'), templates: read('templates'), guides: read('guides'), reactions: read('reactions'), tools: read('tools'), pages: read('pages'), prep: read('prep') };
+  const c = { home: read('home'), templates: read('templates'), guides: read('guides'), reactions: read('reactions'), tools: read('tools'), pages: read('pages'), prep: read('prep'), interview: read('interview') };
   return {
     ...c,
     header: c.templates.header,

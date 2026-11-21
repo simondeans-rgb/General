@@ -51,16 +51,27 @@ function formIdFor(parts) {
   return parts[0] === 'template' ? parts[1] : null;
 }
 
-async function confirmLeave() {
+async function confirmLeave(title = S.leaveTitle, body = S.leaveBody) {
   const choice = await showDialog({
-    title: S.leaveTitle,
-    body: S.leaveBody,
+    title,
+    body,
     actions: [
       { label: S.keepEditing, value: 'keep', primary: true },
       { label: S.discard, value: 'discard', danger: true },
     ],
   });
   return choice === 'discard';
+}
+
+/**
+ * Other screens that hold unsaved, in-memory work (the interview pack builder and
+ * interview mode) register a guard: { owns(parts), dirty(), clear(), title, body }.
+ * Leaving a screen it owns asks first if there's unsaved work, then clears it.
+ */
+const leaveGuards = [];
+export function registerLeaveGuard(guard) { leaveGuards.push(guard); }
+function guardLeaving(fromParts, toParts) {
+  return leaveGuards.find((g) => g.owns(fromParts) && !g.owns(toParts)) || null;
 }
 
 function leavingDirtyForm(fromParts, toParts) {
@@ -83,6 +94,11 @@ export async function navigate(to, { replace = false, skipGuard = false } = {}) 
   } else if (formIdFor(from.parts) && !formIdFor(toParsed.parts)) {
     // Leaving an empty form: drop it so the next visit starts fresh.
     if (!skipGuard) clearForm();
+  }
+  const guard = guardLeaving(from.parts, toParsed.parts);
+  if (guard && !skipGuard) {
+    if (guard.dirty() && !(await confirmLeave(guard.title, guard.body))) return false;
+    guard.clear();
   }
   if (target !== location.hash) {
     suppressNext = true;
@@ -119,6 +135,21 @@ window.addEventListener('hashchange', async () => {
     return;
   }
   if (formIdFor(from.parts) && !formIdFor(to.parts)) clearForm();
+  const guard = guardLeaving(from.parts, to.parts);
+  if (guard) {
+    if (guard.dirty()) {
+      const wanted = location.hash;
+      suppressNext = true;
+      history.pushState(null, '', lastHash);
+      routeStore.set(parseHash(lastHash));
+      if (await confirmLeave(guard.title, guard.body)) {
+        guard.clear();
+        navigate(wanted, { replace: true, skipGuard: true });
+      }
+      return;
+    }
+    guard.clear();
+  }
   lastHash = location.hash || '#/';
   routeStore.set(to);
 });
