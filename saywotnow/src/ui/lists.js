@@ -185,7 +185,7 @@ export function Toolkit({ prefs }) {
       ${c.tools.tools.map((t) => html`<li class="card has-star tool-card">
         <span class="tool-icon"><${Icon} name=${t.icon} /></span>
         <a class="card-link-cover" href=${'#/tool/' + t.id} onClick=${(e) => go(e, '/tool/' + t.id)}>
-          <span class="card-title">${t.title}${t.status === 'pending' ? html` <span class="badge">Coming soon</span>` : null}</span>
+          <span class="card-title">${t.title}</span>
         </a>
         <span class="card-sub">${t.summary}</span>
         <${FavStar} id=${t.id} favs=${prefs.favourites} onToggle=${toggleFavourite} title=${t.title} />

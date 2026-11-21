@@ -327,8 +327,8 @@ await check('AC-15: favourites persist after restart and appear on Home', async 
   await ctx.close();
 });
 
-await check('Tools: holiday, notice, Bradford, SBI work; inputs clear on leaving', async () => {
-  const { ctx, page } = await newApp({ prefs: { bradfordBands: [{ from: '0', to: '49', label: 'No action' }, { from: '50', to: '', label: 'Review' }] } });
+await check('Tools: holiday, notice, SBI work; inputs clear on leaving', async () => {
+  const { ctx, page } = await newApp();
   await page.goto(BASE + '#/tool/holiday');
   await page.fill('#h-emp', '3');
   await page.getByRole('button', { name: 'Calculate' }).click();
@@ -339,13 +339,6 @@ await check('Tools: holiday, notice, Bradford, SBI work; inputs clear on leaving
   await page.fill('#n-nd', '2026-11-16');
   await page.getByRole('button', { name: 'Calculate' }).click();
   await page.getByText('Monday 28 December 2026').waitFor();
-  await page.goto(BASE + '#/tool/bradford');
-  await page.fill('#sp-0', '1');
-  await page.getByRole('button', { name: 'Add a spell' }).click();
-  await page.fill('#sp-1', '2');
-  await page.getByText('Band: 0–49: No action').waitFor();
-  await page.locator('.big-number', { hasText: '12' }).waitFor();
-  await shot(page, '18-bradford');
   await page.goto(BASE + '#/tool/sbi');
   await page.fill('#sbi-situation', 'the team meeting');
   await page.fill('#sbi-behaviour', 'you interrupted Priya');
@@ -444,143 +437,77 @@ await check('Holiday: bank holidays follow the UK nation, which is remembered', 
   await ctx.close();
 });
 
-await check('Interview packs: build, save, Word export, reopen; nothing about candidates is stored', async () => {
-  const { ctx, page, log } = await newApp();
-  await page.goto(BASE + '#/tool/interview');
-  await page.getByText('No interview packs yet').waitFor();
-  await page.getByRole('link', { name: 'Create an interview pack' }).click();
-  // Step 1: role is required.
-  await page.getByRole('button', { name: 'Continue', exact: true }).click({ force: true });
-  await page.locator('#iv-role').waitFor();
-  assert.equal(await page.locator('.iv-step-title').textContent(), 'Role & interview panel');
-  await page.fill('#iv-role', 'Head of Product');
-  await page.fill('#iv-func', 'Product');
-  await page.getByLabel('Interviewer 1 name').fill('Jo Smith');
-  await page.getByRole('button', { name: 'Add interviewer' }).click();
-  await page.getByLabel('Interviewer 2 name').fill('Sam Lee');
-  await page.getByRole('button', { name: 'Continue', exact: true }).click();
-  // Step 2: competencies and coverage.
-  await page.getByText('0 of 5 ACTED dimensions represented').waitFor();
-  for (const n of ['Self-Awareness', 'Resilience', 'Navigates Conflict']) await page.getByRole('button', { name: new RegExp(`^${n}`) }).click();
-  await page.getByText('2 of 5 ACTED dimensions represented').waitFor();
-  await page.fill('#iv-search', 'setbacks');
-  assert.equal(await page.locator('.iv-comp').count(), 1);
-  await page.fill('#iv-search', '');
-  await page.getByRole('button', { name: 'Continue', exact: true }).click();
-  // Step 3: same question can't be primary and backup; completing one moves to the next.
-  const rows = page.locator('.iv-qrow');
-  await rows.nth(0).getByRole('button', { name: /^Primary/ }).click();
-  assert.equal(await rows.nth(0).getByRole('button', { name: /^Backup/ }).isDisabled(), true);
-  await page.getByRole('button', { name: 'Continue', exact: true }).click({ force: true }); // blocked
-  await page.getByText('1 of 3', { exact: true }).waitFor();
-  for (let k = 0; k < 3; k++) {
-    await page.getByText(`${k + 1} of 3`, { exact: true }).waitFor();
-    if (k > 0) await rows.nth(0).getByRole('button', { name: /^Primary/ }).click(); // the first one is already chosen
-    await rows.nth(5).getByRole('button', { name: /^Backup/ }).click();
-    await page.waitForTimeout(400);
+await check('P0.1 removed: Interview Pack Builder and Bradford Factor are gone everywhere; old saved data is deleted', async () => {
+  const old = { interviewPacks: [{ id: 'pack-old-1', role: 'Head of Product', panel: ['Jo Smith'], competencies: [{ id: 'resilience', primary: 'resilience-1', backup: 'resilience-2' }] }],
+    bradfordBands: [{ from: '0', to: '49', label: 'No action' }], favourites: ['bradford', 'interview', 'G02'] };
+  const { ctx, page, log } = await newApp({ prefs: old });
+  // Old data is removed from the device on first launch, silently.
+  const stored = JSON.parse(await page.evaluate(() => localStorage.getItem('saywotnow.prefs.v1')));
+  assert.equal('interviewPacks' in stored, false);
+  assert.equal('bradfordBands' in stored, false);
+  assert.equal(await dialog(page).count(), 0, 'no notice is shown');
+  // Not on Home (tiles or favourites) or in the Toolkit.
+  const home = await page.locator('#main').innerText();
+  assert.doesNotMatch(home, /Bradford|Interview pack/i);
+  await page.goto(BASE + '#/toolkit');
+  const kit = await page.locator('#main').innerText();
+  assert.doesNotMatch(kit, /Bradford|Interview pack/i);
+  assert.equal(await page.locator('.card-list .card').count(), 5);
+  // Not in search.
+  await page.goto(BASE + '#/search');
+  for (const q of ['bradford', 'interview pack', 'ACTED', 'competency']) {
+    await page.fill('input[type=search]', q);
+    await page.waitForTimeout(150);
+    assert.doesNotMatch(await page.locator('#main').innerText(), /Bradford|Interview pack generator/i, q);
   }
-  await page.getByText('3 of 3 complete').waitFor();
-  await page.getByRole('button', { name: 'Continue', exact: true }).click();
-  // Step 4: summary, who asks what, save, export.
-  await page.locator('.iv-who li', { hasText: 'Resilience' }).getByText('Sam Lee').waitFor();
-  await page.getByRole('button', { name: 'Save pack' }).click();
-  await page.getByText('Pack saved on this device.').waitFor();
-  const [dl] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Download Word pack' }).click()]);
-  assert.equal(dl.suggestedFilename(), 'SayWotNow Interview Pack - Head of Product.docx');
-  const file = await dl.path();
-  const { readFileSync } = await import('node:fs');
-  const bytes = readFileSync(file);
-  assert.equal(bytes.subarray(0, 2).toString(), 'PK');
-  assert.ok(bytes.length > 8000);
-  await page.getByRole('button', { name: 'Customise for a candidate' }).click();
-  await page.fill('#iv-cand', 'Alex Doe');
-  const [dl2] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Download customised Word pack' }).click()]);
-  assert.ok(dl2.suggestedFilename().endsWith('.docx'));
-  await page.getByText('Candidate details were not saved.').waitFor();
-  await shot(page, '31-interview-pack');
-  // Printed pack: how-to-use, each competency and the evaluation start on a new page.
-  await page.emulateMedia({ media: 'print' });
-  const pb = await page.$$eval('.print-doc .pd-comp, .print-doc .pd-newpage', (els) => els.map((e) => getComputedStyle(e).breakBefore));
-  assert.deepEqual(pb, ['page', 'page', 'page', 'page', 'page']);
-  await page.emulateMedia({ media: 'screen' });
-  // Saved on the device without candidate details; survives a restart.
-  const stored = await page.evaluate(() => localStorage.getItem('saywotnow.prefs.v1'));
-  assert.ok(stored.includes('Head of Product') && stored.includes('Sam Lee'));
-  assert.ok(!stored.includes('Alex'), 'candidate name must not be stored');
-  await page.goto(BASE + '#/tool/interview');
-  await page.reload();
-  await page.locator('.iv-pack', { hasText: 'Head of Product' }).waitFor();
-  await page.getByRole('button', { name: 'Duplicate Head of Product' }).click();
-  await page.locator('.iv-pack', { hasText: 'Head of Product — Copy' }).waitFor();
-  await page.getByRole('button', { name: 'Delete Head of Product — Copy' }).click();
-  await dialog(page).getByRole('button', { name: 'Delete' }).click();
-  assert.equal(await page.locator('.iv-pack').count(), 1);
+  // Not in Settings.
+  await page.goto(BASE + '#/settings');
+  assert.doesNotMatch(await page.locator('#main').innerText(), /Bradford/i);
+  // Old deep links don't open them.
+  for (const path of ['#/tool/bradford', '#/tool/interview', '#/interview/new', '#/interview/library', '#/interview/run/pack-old-1']) {
+    await page.goto(BASE + path);
+    await page.waitForTimeout(150);
+    assert.doesNotMatch(await page.locator('#main').innerText(), /Bradford Factor|Interview pack generator|ACTED/i, path);
+  }
+  // Not in the offline cache.
+  const cached = await page.evaluate(async () => { const keys = await caches.keys(); const out = []; for (const k of keys) { const c = await caches.open(k); out.push(...(await c.keys()).map((r) => r.url)); } return out; });
+  assert.ok(!cached.some((u) => /bradford|interview|docx/i.test(u)), 'nothing retired is cached');
   assert.deepEqual(log.errors, []);
-  assert.deepEqual(log.external, []);
   await ctx.close();
 });
 
-await check('Interview mode: notes and ratings in memory only; leaving asks; record by email; finish clears', async () => {
-  const pack = { id: 'pack-e2e-1', role: 'Data Analyst', func: 'Data', seniority: '', description: '', panel: ['Jo Smith', 'Sam Lee'],
-    competencies: [{ id: 'resilience', primary: 'resilience-1', backup: 'resilience-2' }, { id: 'self-awareness', primary: 'self-awareness-1', backup: 'self-awareness-3' }],
-    createdAt: '2026-11-21T10:00:00Z', updatedAt: '2026-11-21T10:00:00Z' };
-  const { ctx, page, log } = await newApp({ prefs: { interviewPacks: [pack] } });
-  await page.goto(BASE + '#/tool/interview');
-  await page.getByRole('link', { name: 'Start interview' }).click();
-  assert.equal(await page.locator('.tabbar').count(), 0, 'no tab bar during an interview');
-  await page.fill('#iv-cname', 'Alex Doe');
-  await page.getByRole('button', { name: 'Start interview' }).click();
-  await page.getByText('Assigned to').waitFor();
-  await page.fill('#iv-notes', 'Talked through a failed launch and what changed.');
-  await page.getByRole('radio', { name: '4: Above Requirement' }).check();
-  await page.getByText('4 — Above Requirement').waitFor();
-  await page.getByRole('button', { name: 'Need another angle?' }).click();
-  await page.getByLabel('Backup used').check();
-  await shot(page, '32-interview-ask');
-  // Nothing typed is stored or in the URL.
-  const stored = await page.evaluate(() => JSON.stringify({ ...localStorage }) + JSON.stringify({ ...sessionStorage }) + location.href);
-  assert.ok(!stored.includes('Alex') && !stored.includes('failed launch'));
-  // Leaving asks first.
+await check('P0.2 privacy: discarded notes can never come back through the "No mail app?" sheet', async () => {
+  const { ctx, page, log } = await newApp();
+  const SECRET = 'SECRET NOTE about health';
+  const fillAndPreview = async () => {
+    await page.evaluate(() => { location.hash = '#/template/T02'; });
+    await page.locator('#f-employeeName').waitFor();
+    await fillHeader(page);
+    await page.locator('textarea').first().fill(SECRET);
+    await page.getByRole('button', { name: /Preview/ }).click({ force: true });
+    await page.waitForURL(/preview$/);
+  };
+  // 1. The panel's report: sheet open, back, back, Discard. The sheet must be gone and nothing copyable.
+  await fillAndPreview();
+  await page.getByRole('button', { name: 'No mail app?' }).click();
+  await dialog(page).getByRole('button', { name: 'Copy' }).waitFor();
   await page.goBack();
-  await dialog(page).getByText('Leave this interview?').waitFor();
-  await dialog(page).getByRole('button', { name: 'Keep editing' }).click();
-  assert.equal(await page.inputValue('#iv-notes'), 'Talked through a failed launch and what changed.');
-  await page.getByRole('button', { name: 'Next', exact: true }).click();
-  assert.equal(await page.inputValue('#iv-notes'), '');
-  await page.getByRole('button', { name: 'Review interview' }).click();
-  await page.getByText('1 rating is missing').waitFor();
-  await page.getByRole('button', { name: 'Finish without them' }).click();
-  await page.getByRole('heading', { name: 'Alex Doe' }).waitFor();
-  await page.getByRole('button', { name: 'Email the record' }).click();
-  const mail = decodeURIComponent(log.mailto.at(-1));
-  assert.match(mail, /subject=Interview record – Alex Doe – Data Analyst/);
-  assert.match(mail, /Talked through a failed launch/);
-  assert.match(mail, /Rating: 4 — Above Requirement/);
-  assert.match(mail, /Backup question used/);
-  assert.match(mail, /Self-Awareness\r?\nAssigned interviewer: Sam Lee[\s\S]*Rating: Not rated/);
-  // Printed record: each competency starts on a new page.
-  await page.emulateMedia({ media: 'print' });
-  const breaks = await page.$$eval('.print-doc .pd-rec', (els) => els.map((e) => getComputedStyle(e).breakBefore));
-  assert.deepEqual(breaks, ['page', 'page']);
-  await page.emulateMedia({ media: 'screen' });
-  await page.getByRole('button', { name: 'Finish and clear' }).click();
-  await dialog(page).getByRole('button', { name: 'Clear the interview' }).click();
-  await page.locator('.iv-home').waitFor();
-  await page.getByRole('link', { name: 'Start interview' }).click();
-  assert.equal(await page.inputValue('#iv-cname'), '', 'a new interview starts empty');
+  await page.waitForURL(/T02$/);
+  assert.equal(await dialog(page).count(), 0, 'the sheet closes when you leave the preview');
+  await page.goBack();
+  await dialog(page).getByText('Leave this form?').waitFor();
+  await dialog(page).getByRole('button', { name: 'Discard' }).click();
+  await page.waitForTimeout(300);
+  assert.equal(await dialog(page).count(), 0, 'no pop-up survives the discard');
+  assert.doesNotMatch(await page.locator('body').innerText(), new RegExp(SECRET));
+  // 2. Coming straight back to the preview (deep link) or reopening the form shows nothing.
+  await page.evaluate(() => { location.hash = '#/template/T02/preview'; });
+  await page.waitForURL(/T02$/);
+  assert.equal(await page.inputValue('#f-employeeName'), '');
+  assert.doesNotMatch(await page.locator('body').innerText(), new RegExp(SECRET));
+  // 3. The clipboard never received the note in any of this.
+  assert.ok(!(await page.evaluate(() => navigator.clipboard.readText().catch(() => ''))).includes(SECRET));
   assert.deepEqual(log.errors, []);
-  await ctx.close();
-});
-
-await check('ACTED library: dimensions, competencies and questions', async () => {
-  const { ctx, page } = await newApp();
-  await page.goto(BASE + '#/interview/library');
-  assert.equal(await page.getByRole('tab').count(), 5);
-  await page.getByRole('tab', { name: /Deliver/ }).click();
-  assert.equal(await page.locator('.card-list .card').count(), 7);
-  await page.goto(BASE + '#/interview/library/resilience');
-  assert.equal(await page.locator('.iv-qlist li').count(), 10);
-  await page.getByText('What good looks like').waitFor();
   await ctx.close();
 });
 
@@ -723,7 +650,7 @@ await check('AC-18: dark mode renders (screenshots)', async () => {
 
 await check('Accessibility basics: every input has a label; buttons have names', async () => {
   const { ctx, page } = await newApp();
-  for (const path of ['#/template/T01', '#/template/T03', '#/template/T05', '#/tool/holiday', '#/tool/notice', '#/settings', '#/guide/G01', '#/prep', '#/prep/P-G01', '#/tool/interview', '#/interview/new']) {
+  for (const path of ['#/template/T01', '#/template/T03', '#/template/T05', '#/tool/holiday', '#/tool/notice', '#/settings', '#/guide/G01', '#/prep', '#/prep/P-G01']) {
     await page.goto(BASE + path);
     await page.locator('#main h1').first().waitFor();
     const missing = await page.evaluate(() => {
@@ -741,7 +668,7 @@ await check('Accessibility basics: every input has a label; buttons have names',
 
 await check('No console errors during a full session', async () => {
   const { ctx, page, log } = await newApp();
-  for (const path of ['#/', '#/meetings', '#/conversations', '#/toolkit', '#/search', '#/template/T06', '#/template/T07', '#/guide/G07', '#/tool/timezones', '#/tool/interview', '#/page/about', '#/page/content', '#/prep', '#/prep/P-1to1', '#/interview/library', '#/interview/library/resilience', '#/interview/new', '#/onboarding/replay']) {
+  for (const path of ['#/', '#/meetings', '#/conversations', '#/toolkit', '#/search', '#/template/T06', '#/template/T07', '#/guide/G07', '#/tool/timezones', '#/page/about', '#/page/content', '#/prep', '#/prep/P-1to1', '#/onboarding/replay']) {
     await page.goto(BASE + path);
     await page.waitForTimeout(80);
   }

@@ -43,6 +43,7 @@ export function parseHash(hash = location.hash) {
 }
 
 export const routeStore = createStore(parseHash());
+routeStore.subscribe((r) => closeSensitiveDialogs(r.path));
 let lastHash = location.hash || '#/';
 let suppressNext = false;
 
@@ -51,27 +52,16 @@ function formIdFor(parts) {
   return parts[0] === 'template' ? parts[1] : null;
 }
 
-async function confirmLeave(title = S.leaveTitle, body = S.leaveBody) {
+async function confirmLeave() {
   const choice = await showDialog({
-    title,
-    body,
+    title: S.leaveTitle,
+    body: S.leaveBody,
     actions: [
       { label: S.keepEditing, value: 'keep', primary: true },
       { label: S.discard, value: 'discard', danger: true },
     ],
   });
   return choice === 'discard';
-}
-
-/**
- * Other screens that hold unsaved, in-memory work (the interview pack builder and
- * interview mode) register a guard: { owns(parts), dirty(), clear(), title, body }.
- * Leaving a screen it owns asks first if there's unsaved work, then clears it.
- */
-const leaveGuards = [];
-export function registerLeaveGuard(guard) { leaveGuards.push(guard); }
-function guardLeaving(fromParts, toParts) {
-  return leaveGuards.find((g) => g.owns(fromParts) && !g.owns(toParts)) || null;
 }
 
 function leavingDirtyForm(fromParts, toParts) {
@@ -94,11 +84,6 @@ export async function navigate(to, { replace = false, skipGuard = false } = {}) 
   } else if (formIdFor(from.parts) && !formIdFor(toParsed.parts)) {
     // Leaving an empty form: drop it so the next visit starts fresh.
     if (!skipGuard) clearForm();
-  }
-  const guard = guardLeaving(from.parts, toParsed.parts);
-  if (guard && !skipGuard) {
-    if (guard.dirty() && !(await confirmLeave(guard.title, guard.body))) return false;
-    guard.clear();
   }
   if (target !== location.hash) {
     suppressNext = true;
@@ -135,21 +120,6 @@ window.addEventListener('hashchange', async () => {
     return;
   }
   if (formIdFor(from.parts) && !formIdFor(to.parts)) clearForm();
-  const guard = guardLeaving(from.parts, to.parts);
-  if (guard) {
-    if (guard.dirty()) {
-      const wanted = location.hash;
-      suppressNext = true;
-      history.pushState(null, '', lastHash);
-      routeStore.set(parseHash(lastHash));
-      if (await confirmLeave(guard.title, guard.body)) {
-        guard.clear();
-        navigate(wanted, { replace: true, skipGuard: true });
-      }
-      return;
-    }
-    guard.clear();
-  }
   lastHash = location.hash || '#/';
   routeStore.set(to);
 });
@@ -177,6 +147,8 @@ export function replaceForm(form) { formStore.set(form); }
 
 export function clearForm() {
   formStore.set(null);
+  // P0.2: no pop-up that holds summary text may outlive the form it came from.
+  closeSensitiveDialogs();
 }
 
 /* ------------------------------------------------------------------ */
@@ -190,11 +162,21 @@ let dialogSeq = 0;
  * Opens a modal dialog. Resolves with the chosen action's value, or null if dismissed.
  * opts: { title, body, actions: [{label, value, primary, danger}], content, sheet, dismissable }
  */
+/**
+ * Dialogs opened with { sensitive: true } hold (or can act on) the text of a form.
+ * They're closed when the form is cleared or the screen changes, so a stale
+ * pop-up can never copy, share or send discarded notes.
+ */
+export function closeSensitiveDialogs(keepPath = null) {
+  for (const d of dialogStore.get()) if (d.opts.sensitive && d.path !== keepPath) d.resolve(null);
+}
+
 export function showDialog(opts) {
   return new Promise((resolve) => {
     const id = ++dialogSeq;
     const opener = document.activeElement;
-    dialogStore.set((list) => [...list, { id, opts, resolve: (v) => {
+    const path = routeStore.get().path;
+    dialogStore.set((list) => [...list, { id, opts, path, resolve: (v) => {
       dialogStore.set((l) => l.filter((d) => d.id !== id));
       resolve(v);
       if (opener && opener.focus && document.contains(opener)) setTimeout(() => opener.focus(), 0);

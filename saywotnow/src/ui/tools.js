@@ -7,13 +7,11 @@ import { Notice } from './form.js';
 import { toggleFavourite, setPref } from '../prefs.js';
 import { calculateHoliday, NATIONS } from '../lib/calc/holiday.js';
 import { calculateNotice } from '../lib/calc/notice.js';
-import { bradford, bandFor } from '../lib/calc/bradford.js';
 import { buildSbi } from '../lib/calc/sbi.js';
 import { formatWithDay, todayISO } from '../lib/dates.js';
 import { copySensitive } from '../platform.js';
 import { TimeZones } from './timezones.js';
 import { Currency } from './currency.js';
-import { InterviewTool } from './interview.js';
 
 const PRIVATE = { autocomplete: 'off', autocorrect: 'off', spellcheck: false };
 
@@ -132,36 +130,6 @@ function Notice_({ tool, prefs }) {
   </${ToolShell}>`;
 }
 
-/* ---------------- Bradford ---------------- */
-
-function Bradford({ tool, prefs }) {
-  const [spells, setSpells] = useState(['']);
-  const r = bradford(spells);
-  const band = bandFor(r.score, prefs.bradfordBands);
-  const hasBands = prefs.bradfordBands && prefs.bradfordBands.length > 0;
-  return html`<${ToolShell} tool=${tool} prefs=${prefs}>
-    <fieldset class="field form">
-      <legend class="field-label">Absence spells in the last 52 weeks</legend>
-      <p class="field-help">Enter the number of days for each separate spell. No names or dates needed.</p>
-      <ol class="spells" role="list">
-        ${spells.map((s, i) => html`<li class="spell-row" key=${i}>
-          <label class="sub-label" for=${`sp-${i}`}>Spell ${i + 1}</label>
-          <div class="with-suffix"><input id=${`sp-${i}`} class="input input-short" type="number" inputmode="decimal" min="0.5" step="0.5" value=${s} ...${PRIVATE}
-            onInput=${(e) => setSpells(spells.map((x, j) => (j === i ? e.target.value : x)))} /><span class="suffix">days</span></div>
-          ${spells.length > 1 ? html`<button type="button" class="icon-btn" aria-label=${`Remove spell ${i + 1}`} onClick=${() => setSpells(spells.filter((_, j) => j !== i))}><${Icon} name="trash" size=${20} /></button>` : null}
-        </li>`)}
-      </ol>
-      ${spells.length < 52 ? html`<button type="button" class="btn btn-ghost add-btn" onClick=${() => { setSpells([...spells, '']); setTimeout(() => { const el = document.getElementById(`sp-${spells.length}`); el && el.focus(); }, 30); }}><${Icon} name="plus" size=${20} /> Add a spell</button>` : null}
-    </fieldset>
-    <${ResultCard} title="Bradford Factor score">
-      <p class="big-number">${r.score}</p>
-      <p class="muted">${r.spells} spell${r.spells === 1 ? '' : 's'} (S) and ${r.days} day${r.days === 1 ? '' : 's'} (D): ${r.spells}² × ${r.days} = ${r.score}</p>
-      ${hasBands ? (band ? html`<p class="band">Band: <strong>${band.from}–${band.to === '' ? '+' : band.to}: ${band.label}</strong></p>` : html`<p class="band">This score isn't in any of your bands.</p>`)
-        : html`<p class="band">${tool.noBands} <a class="link" href="#/settings" onClick=${(e) => { e.preventDefault(); navigate('/settings'); }}>Add bands in Settings</a></p>`}
-    </${ResultCard}>
-  </${ToolShell}>`;
-}
-
 /* ---------------- SBI ---------------- */
 
 function Sbi({ tool, prefs }) {
@@ -192,12 +160,6 @@ function Sbi({ tool, prefs }) {
   </${ToolShell}>`;
 }
 
-function Pending({ tool, prefs }) {
-  return html`<${ToolShell} tool=${tool} prefs=${prefs}>
-    <div class="empty-state"><${Icon} name=${tool.icon} size=${48} /><p>${tool.pendingNote}</p></div>
-  </${ToolShell}>`;
-}
-
 function TimeZoneTool({ tool, prefs }) {
   return html`<${ToolShell} tool=${tool} prefs=${prefs}><${TimeZones} tool=${tool} prefs=${prefs} /></${ToolShell}>`;
 }
@@ -206,12 +168,13 @@ function CurrencyTool({ tool, prefs }) {
   return html`<${ToolShell} tool=${tool} prefs=${prefs}><${Currency} tool=${tool} prefs=${prefs} /></${ToolShell}>`;
 }
 
-const TOOLS = { holiday: Holiday, notice: Notice_, bradford: Bradford, sbi: Sbi, timezones: TimeZoneTool, currency: CurrencyTool, interview: InterviewTool };
+const TOOLS = { holiday: Holiday, notice: Notice_, sbi: Sbi, timezones: TimeZoneTool, currency: CurrencyTool };
 
 export function Tool({ id, prefs }) {
   const tool = content().toolById[id];
   if (!tool) return html`<div class="screen"><${TopBar} title="Not found" back=${() => navigate('/toolkit')} /><p class="empty">That tool doesn't exist.</p></div>`;
-  const C = tool.status === 'pending' ? Pending : TOOLS[id];
+  const C = TOOLS[id];
+  if (!C) return html`<div class="screen"><${TopBar} title="Not found" back=${() => navigate('/toolkit')} /><p class="empty">That tool doesn't exist.</p></div>`;
   // Keyed by id so inputs reset whenever you open a tool.
-  return C ? html`<${C} key=${id} tool=${tool} prefs=${prefs} />` : html`<${Pending} tool=${tool} prefs=${prefs} />`;
+  return html`<${C} key=${id} tool=${tool} prefs=${prefs} />`;
 }

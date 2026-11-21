@@ -5,7 +5,6 @@ import { content, navigate, goBack, TopBar, toast } from './core.js';
 import { Switch } from './fields.js';
 import { setPref } from '../prefs.js';
 import { isValidEmail } from '../lib/engine.js';
-import { validateBands } from '../lib/calc/bradford.js';
 import { formatLong } from '../lib/dates.js';
 import { openMail } from '../platform.js';
 
@@ -54,32 +53,6 @@ function HrContact({ prefs }) {
   </div>`;
 }
 
-function Bands({ prefs }) {
-  const [bands, setBands] = useState(prefs.bradfordBands.length ? prefs.bradfordBands : []);
-  const [error, setError] = useState(null);
-  const update = (next) => { setBands(next); setError(null); };
-  const save = () => {
-    const msg = validateBands(bands);
-    if (msg) { setError(msg); return; }
-    setPref('bradfordBands', bands);
-    toast(bands.length ? 'Bands saved.' : 'Bands removed.');
-  };
-  return html`<div class="settings-group">
-    <p class="field-help">Use the trigger points from your company's absence policy. Leave "to" empty for "and above".</p>
-    ${bands.length ? html`<ol class="bands" role="list">${bands.map((b, i) => html`<li class="band-row" key=${i}>
-      <div><label class="sub-label" for=${`b-from-${i}`}>From</label><input id=${`b-from-${i}`} class="input" type="number" inputmode="numeric" min="0" value=${b.from} onInput=${(e) => update(bands.map((x, j) => (j === i ? { ...x, from: e.target.value } : x)))} /></div>
-      <div><label class="sub-label" for=${`b-to-${i}`}>To</label><input id=${`b-to-${i}`} class="input" type="number" inputmode="numeric" min="0" value=${b.to} onInput=${(e) => update(bands.map((x, j) => (j === i ? { ...x, to: e.target.value } : x)))} /></div>
-      <div class="grow"><label class="sub-label" for=${`b-l-${i}`}>Label</label><input id=${`b-l-${i}`} class="input" type="text" maxlength="60" value=${b.label} placeholder="e.g. No action" onInput=${(e) => update(bands.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))} /></div>
-      <button type="button" class="icon-btn" aria-label=${`Remove band ${i + 1}`} onClick=${() => update(bands.filter((_, j) => j !== i))}><${Icon} name="trash" size=${20} /></button>
-    </li>`)}</ol>` : null}
-    ${error ? html`<p class="field-error" role="alert">${error}</p>` : null}
-    <div class="btn-row">
-      ${bands.length < 5 ? html`<button type="button" class="btn btn-ghost" onClick=${() => update([...bands, { from: bands.length ? String(Number(bands[bands.length - 1].to || 0) + 1) : '0', to: '', label: '' }])}><${Icon} name="plus" size=${18} /> Add band</button>` : null}
-      <button type="button" class="btn btn-secondary" onClick=${save}>Save bands</button>
-    </div>
-  </div>`;
-}
-
 export function Settings({ prefs }) {
   const c = content();
   const support = c.pages.supportEmail;
@@ -103,9 +76,6 @@ export function Settings({ prefs }) {
         </div>
       </fieldset>
     </div>
-
-    <h2 class="section-title">Bradford Factor bands</h2>
-    <${Bands} prefs=${prefs} />
 
     <h2 class="section-title">About</h2>
     <nav class="settings-group list" aria-label="About SayWotNow">

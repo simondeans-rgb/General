@@ -1,9 +1,6 @@
 // Non-personal preferences (spec Section 3.1). This is the ONLY thing SayWotNow
 // writes to device storage. Keys outside this allow-list are never saved, and
 // nothing typed into a template, guide checklist, tool or search box comes here.
-// The one exception is interview packs the user explicitly saves (no candidate details).
-
-import { sanitisePack, MAX_PACKS } from './lib/interview.js';
 
 const STORAGE_KEY = 'saywotnow.prefs.v1';
 
@@ -15,10 +12,8 @@ export const DEFAULTS = Object.freeze({
   hrContactPhone: '',
   defaultOneToOneMode: 'full',
   emailFooterEnabled: true,
-  bradfordBands: [],
   savedTimeZones: [],
   holidayNation: 'ew',
-  interviewPacks: [],
   savedCurrencyPlaces: [],
   currencyRates: null,
   contentVersionSeen: '',
@@ -43,15 +38,8 @@ function sanitise(key, value) {
     }
     case 'savedTimeZones':
       return Array.isArray(value) ? value.filter((v) => typeof v === 'string' && v.length < 64).slice(0, 6) : d;
-    case 'bradfordBands':
-      return Array.isArray(value)
-        ? value.slice(0, 5).map((b) => ({ from: String(b.from ?? ''), to: String(b.to ?? ''), label: String(b.label ?? '').slice(0, 60) }))
-        : d;
     case 'defaultOneToOneMode':
       return value === 'quick' ? 'quick' : 'full';
-    case 'interviewPacks':
-      // Reusable packs: role, interviewer names and chosen questions. Never candidate details.
-      return Array.isArray(value) ? value.map(sanitisePack).filter(Boolean).slice(0, MAX_PACKS) : d;
     case 'holidayNation':
       return ['ew', 'sc', 'ni'].includes(value) ? value : 'ew';
     case 'theme':
@@ -80,6 +68,11 @@ export function loadPrefs() {
   const out = { ...DEFAULTS };
   for (const k of Object.keys(stored)) if (ALLOWED.has(k)) out[k] = sanitise(k, stored[k]);
   cache = out;
+  // Anything stored under a key that's no longer allowed (e.g. interviewPacks and
+  // bradfordBands from retired tools in v1.4) is deleted from the device straight away.
+  if (Object.keys(stored).some((k) => !ALLOWED.has(k))) {
+    try { storage()?.setItem(STORAGE_KEY, JSON.stringify(out)); } catch { /* storage unavailable */ }
+  }
   return cache;
 }
 

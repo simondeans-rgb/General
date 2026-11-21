@@ -56,13 +56,8 @@
           },
           "status": {
             "enum": [
-              "ready",
-              "pending"
+              "ready"
             ]
-          },
-          "pendingNote": {
-            "type": "string",
-            "minLength": 1
           },
           "howItWorks": {
             "type": "string",
@@ -81,10 +76,6 @@
           },
           "noteFirst": {
             "type": "boolean"
-          },
-          "noBands": {
-            "type": "string",
-            "minLength": 1
           },
           "placeholders": {
             "type": "object",

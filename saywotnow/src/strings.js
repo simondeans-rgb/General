@@ -46,6 +46,7 @@ export const S = {
   share: 'Share…',
   copy: 'Copy to clipboard',
   copied: 'Copied. SayWotNow will clear it from your clipboard in 2 minutes if the app is still open.',
+  summaryGone: 'That summary was cleared, so there is nothing to send.',
   copyFailed: "Couldn't copy. Select the text and copy it instead.",
   didSend: 'Did your email send?',
   didSendBody: 'SayWotNow can’t see your mail app, so please tell us.',

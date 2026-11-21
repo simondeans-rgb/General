@@ -1,5 +1,5 @@
 {
-  "contentVersion": "1.1.0",
+  "contentVersion": "1.2.0",
   "lastReviewed": "2026-11-21",
   "tools": [
     {
@@ -46,25 +46,6 @@
       "note": "Rates are indicative mid-market rates. Your bank, card or payroll provider will use its own rate and fees, so check with Finance before agreeing any pay or expenses."
     },
     {
-      "id": "interview",
-      "title": "Interview pack generator",
-      "summary": "Build a structured, competency-based interview pack, export it to Word, and run the interview.",
-      "icon": "doc",
-      "keywords": [
-        "interview",
-        "recruitment",
-        "hiring",
-        "questions",
-        "competency",
-        "candidate",
-        "pack",
-        "ACTED",
-        "behavioural",
-        "STAR"
-      ],
-      "status": "ready"
-    },
-    {
       "id": "holiday",
       "title": "Holiday calculator",
       "summary": "Work out pro rata holiday for part-time and part-year employees.",
@@ -100,27 +81,6 @@
       "status": "ready",
       "howItWorks": "Statutory minimum notice from the employer is 1 week after 1 month's service, then 1 week for each complete year of service from 2 years, up to 12 weeks. From the employee it's 1 week after 1 month's service. When the employer gives notice, the longer of statutory and contractual notice applies. Notice starts the day after it's given.",
       "note": "Check the employment contract, and contact HR for anything involving dismissal."
-    },
-    {
-      "id": "bradford",
-      "title": "Bradford Factor",
-      "summary": "Score short-term absence over a rolling 52 weeks.",
-      "icon": "chart",
-      "keywords": [
-        "bradford",
-        "bradford factor",
-        "absence",
-        "sickness",
-        "sick",
-        "attendance",
-        "score"
-      ],
-      "status": "ready",
-      "howItWorks": "B = S² × D, where S is the number of separate absence spells and D is the total number of days absent, in a rolling 52-week period. Frequent short absences score higher than one long absence.",
-      "noteLevel": 2,
-      "noteFirst": true,
-      "note": "Don't use this score on its own. Exclude disability-related and pregnancy-related absences, and take advice from HR before taking action.",
-      "noBands": "Your company's absence policy sets the trigger points."
     },
     {
       "id": "sbi",

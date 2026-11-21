@@ -18,17 +18,26 @@ async function askClearNow() {
   if (yes) finish('Form cleared.');
 }
 
-export async function showFallbacks(email) {
+/**
+ * "No mail app?" sheet. It never holds a copy of the summary: each action asks
+ * getEmail() for the current one, which returns null once the form has been
+ * discarded, so a stale sheet or callback can't recover the notes (P0.2).
+ */
+export async function showFallbacks(getEmail) {
   const choice = await showDialog({
     title: S.noMail,
     body: 'Send the summary another way. Nothing is kept by SayWotNow.',
     sheet: true,
+    sensitive: true,
     actions: [
       ...(canShare() ? [{ label: S.share, value: 'share', primary: true }] : []),
       { label: S.copy, value: 'copy', primary: !canShare() },
       { label: S.cancel, value: null },
     ],
   });
+  if (!choice) return;
+  const email = getEmail();
+  if (!email) { toast(S.summaryGone); return; }
   if (choice === 'share') {
     try { await shareEmail(email); } catch (e) { if (e && e.name === 'AbortError') return; toast("Couldn't open the share sheet."); return; }
     await askClearNow();
@@ -43,7 +52,13 @@ export function Preview({ id, prefs }) {
   const form = useStore(formStore);
   const [alsoHr, setAlsoHr] = useState(false);
   const waiting = useRef(false);
-  const emailRef = useRef(null);
+  const optsRef = useRef({ alsoHr: false, prefs });
+  // The summary as it stands now, or null if the form has gone (sent, discarded or reloaded).
+  const currentEmail = () => {
+    const f = formStore.get();
+    if (!f || f.template.id !== id) return null;
+    return buildEmail(content(), f.template, f.state, optsRef.current);
+  };
 
   const template = c.templateById[id];
   const valid = form && form.template.id === id && validateForm(template, c.header, form.state).length === 0;
@@ -69,11 +84,12 @@ export function Preview({ id, prefs }) {
           { label: S.noBack, value: 'back' },
         ],
         dismissable: false,
+        sensitive: true,
         content: (resolve) => html`<p class="dialog-extra"><button type="button" class="link-btn" onClick=${() => resolve('fallback')}>Mail didn't open?</button></p>`,
       });
       if (choice === 'sent') finish(S.sentToast);
       else if (choice === 'draft') finish(S.draftToast);
-      else if (choice === 'fallback' && emailRef.current) showFallbacks(emailRef.current);
+      else if (choice === 'fallback') showFallbacks(currentEmail);
     };
     const onVis = () => { if (document.visibilityState === 'visible') setTimeout(ask, 400); };
     const onFocus = () => setTimeout(ask, 400);
@@ -93,8 +109,8 @@ export function Preview({ id, prefs }) {
   const { state } = form;
   const mode = sendMode(template, state);
   const hasHr = !!prefs.hrContactEmail;
-  const email = buildEmail(c, template, state, { prefs, alsoHr });
-  emailRef.current = email;
+  optsRef.current = { prefs, alsoHr };
+  const email = buildEmail(c, template, state, optsRef.current);
 
   const send = (e) => {
     openMail(e);
@@ -130,7 +146,7 @@ export function Preview({ id, prefs }) {
       </button>
       <div class="cta-secondary">
         <button type="button" class="btn btn-secondary" onClick=${() => navigate(`/template/${id}`)}>${S.edit}</button>
-        <button type="button" class="btn btn-ghost" onClick=${() => showFallbacks(email)}><${Icon} name="share" size=${18} /> ${S.noMail}</button>
+        <button type="button" class="btn btn-ghost" onClick=${() => showFallbacks(currentEmail)}><${Icon} name="share" size=${18} /> ${S.noMail}</button>
       </div>
       ${email.mode === 'hrOnly' ? html`<button type="button" class="link-btn center" onClick=${sendToEmployee}>${S.sendToEmployee}</button>` : null}
     </div>

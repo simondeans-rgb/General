@@ -339,8 +339,7 @@
         "absence",
         "off sick",
         "frequent absence",
-        "trigger",
-        "Bradford"
+        "trigger"
       ],
       "whenToUse": "An employee has had several short absences and they're starting to affect the team or have reached a trigger point in your absence policy.",
       "before": [

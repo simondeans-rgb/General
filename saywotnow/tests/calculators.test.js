@@ -3,7 +3,6 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateHoliday, roundUpHalf } from '../src/lib/calc/holiday.js';
 import { calculateNotice, statutoryWeeks, noticeEnd } from '../src/lib/calc/notice.js';
-import { bradford, bandFor, validateBands } from '../src/lib/calc/bradford.js';
 import { buildSbi } from '../src/lib/calc/sbi.js';
 import { completedMonths, addMonths } from '../src/lib/dates.js';
 
@@ -103,26 +102,6 @@ test('notice 8: month-end clamping and validation', () => {
   assert.equal(completedMonths('2026-01-31', '2026-02-28'), 1);
   assert.ok(N({ noticeDate: '2019-01-01' }).errors.noticeDate);
   assert.ok(N({ contractAmount: 1.5 }).errors.contractAmount);
-});
-
-test('bradford 1–6', () => {
-  assert.deepEqual(bradford([]), { spells: 0, days: 0, score: 0 });
-  assert.equal(bradford(['1']).score, 1);
-  assert.equal(bradford([1, 1, 1]).score, 27);
-  assert.equal(bradford([10]).score, 10);
-  assert.equal(bradford([2, 3, 1, 4]).score, 160);
-  assert.equal(bradford([0.5, 0.5]).score, 4);
-  assert.equal(bradford(['', '2', 'x', '3']).score, 20);
-});
-test('bradford bands', () => {
-  const bands = [{ from: '0', to: '49', label: 'No action' }, { from: '50', to: '199', label: 'Informal review' }, { from: '200', to: '', label: 'Formal review' }];
-  assert.equal(bandFor(27, bands).label, 'No action');
-  assert.equal(bandFor(160, bands).label, 'Informal review');
-  assert.equal(bandFor(5000, bands).label, 'Formal review');
-  assert.equal(bandFor(10, []), null);
-  assert.equal(validateBands(bands), null);
-  assert.match(validateBands([{ from: '10', to: '5', label: 'x' }]), /Band 1/);
-  assert.match(validateBands([{ from: '0', to: '5', label: ' ' }]), /label/);
 });
 
 test('sbi feedback', () => {

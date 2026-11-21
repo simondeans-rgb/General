@@ -1,7 +1,7 @@
 // Loads the bundled content files. They're served from the app's own origin and
 // cached by the service worker, so this works offline.
 
-export const CONTENT_FILES = ['home', 'templates', 'guides', 'reactions', 'tools', 'pages', 'timezones', 'currencies', 'prep', 'interview'];
+export const CONTENT_FILES = ['home', 'templates', 'guides', 'reactions', 'tools', 'pages', 'timezones', 'currencies', 'prep'];
 
 export async function loadContent(base = './content/') {
   const entries = await Promise.all(

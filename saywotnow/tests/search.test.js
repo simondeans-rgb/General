@@ -24,7 +24,8 @@ test('case-insensitive, partial words, ignores apostrophes and hyphens', () => {
 });
 test('tools are searchable; T08 is not listed', () => {
   assert.ok(idsOf(search(index, 'holiday'), 'tool').includes('holiday'));
-  assert.ok(idsOf(search(index, 'bradford'), 'tool').includes('bradford'));
+  assert.equal(idsOf(search(index, 'bradford'), 'tool').length, 0, 'Bradford Factor was removed');
+  assert.equal(idsOf(search(index, 'interview pack'), 'tool').length, 0, 'Interview Pack Builder was removed');
   assert.ok(!index.some((x) => x.id === 'T08'));
 });
 test('no results and empty query', () => {
