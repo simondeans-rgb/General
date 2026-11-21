@@ -134,24 +134,26 @@ function Notice_({ tool, prefs }) {
 /* ---------------- SBI ---------------- */
 
 function Sbi({ tool, prefs }) {
-  const [v, setV] = useState({ type: 'Developmental', situation: '', behaviour: '', impact: '' });
+  const [v, setV] = useState({ type: 'Developmental', situation: '', behaviour: '', impact: '', request: '' });
   const out = buildSbi(v, tool.nextLine);
   const set = (k) => (e) => setV({ ...v, [k]: e.target.value });
-  const area = (k, label, help) => html`<div class="field">
-    <label class="field-label" for=${'sbi-' + k}>${label}</label><p class="field-help">${help}</p>
-    <textarea id=${'sbi-' + k} class="input textarea short" rows="2" maxlength="500" placeholder=${tool.placeholders[k]} value=${v[k]} onInput=${set(k)} ...${PRIVATE}></textarea></div>`;
+  const area = (k, label, help, optional) => html`<div class="field">
+    <label class="field-label" for=${'sbi-' + k}>${label}${optional ? html`<span class="opt"> (optional)</span>` : null}</label><p class="field-help" id=${'sbi-' + k + '-h'}>${help}</p>
+    <textarea id=${'sbi-' + k} class="input textarea short" rows="2" maxlength="500" placeholder=${tool.placeholders[k]} value=${v[k]} onInput=${set(k)} aria-describedby=${'sbi-' + k + '-h'} ...${PRIVATE}></textarea></div>`;
   return html`<${ToolShell} tool=${tool} prefs=${prefs}>
     <form class="form tool-form" onSubmit=${(e) => e.preventDefault()}>
       <${Segmented} name="type" label="Type of feedback" options=${[['Positive', 'Positive'], ['Developmental', 'Developmental']]} value=${v.type} onChange=${(x) => setV({ ...v, type: x })} />
       ${area('situation', 'Situation', 'When and where?')}
       ${area('behaviour', 'Behaviour', 'What did they say or do? Stick to what you saw or heard.')}
       ${area('impact', 'Impact', 'What was the effect on you, the team or the work?')}
+      ${area('request', 'Request or next time', 'What would you like them to do, or keep doing? Write it as you would say it.', true)}
     </form>
     <${ResultCard} title="Your feedback">
-      ${out ? html`<blockquote class="sbi-out"><p>${out.statement}</p><p class="next-line">${out.next}</p></blockquote>
+      ${out ? html`<blockquote class="sbi-out"><p>${out.statement}${out.request ? ` ${out.request}` : ''}</p><p class="next-line">${out.next}</p></blockquote>
         <button type="button" class="btn btn-secondary" onClick=${async () => { try { await copySensitive(out.text); toast(S.copied, 6000); } catch { toast(S.copyFailed); } }}><${Icon} name="copy" size=${18} /> Copy</button>`
         : html`<p class="muted">Fill in all three boxes to build your feedback.</p>`}
     </${ResultCard}>
+    <p class="footer-link"><a class="link" href="#/guide/G11" onClick=${(e) => { e.preventDefault(); navigate('/guide/G11'); }}>${S.sbiGuide}</a></p>
     <${Disclosure} summary="See examples">
       <ul class="examples" role="list">${tool.examples.map((x) => {
         const b = buildSbi(x, tool.nextLine);

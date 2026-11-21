@@ -641,3 +641,8 @@ a.pill { display: inline-flex; align-items: center; text-decoration: none; }
 .row-split.owner-row { grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); }
 .owner .segmented { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .owner .segmented .choice { padding: 6px 4px; white-space: nowrap; }
+
+/* ---------------- Script personaliser (P2.1) ---------------- */
+.personaliser { margin: 0 0 12px; }
+.ph { background: var(--edge-bg); color: var(--edge-ink); border-radius: 4px; padding: 0 3px; }
+.ph-filled { background: var(--tip-bg); color: var(--tip-ink); border-radius: 4px; padding: 0 3px; }

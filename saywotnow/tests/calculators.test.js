@@ -107,8 +107,31 @@ test('notice 8: month-end clamping and validation', () => {
 test('sbi feedback', () => {
   const next = { Developmental: 'How did you see it?', Positive: 'Thank you – please keep doing that.' };
   const r = buildSbi({ type: 'Developmental', situation: "Tuesday's client call", behaviour: 'You joined late.', impact: 'We ran out of time' }, next);
-  assert.equal(r.statement, "In tuesday's client call, I noticed you joined late. The impact was we ran out of time.");
+  assert.equal(r.statement, "In Tuesday's client call, I noticed you joined late. The impact was that we ran out of time.");
   assert.equal(r.text, `${r.statement} How did you see it?`);
   assert.equal(buildSbi({ type: 'Positive', situation: 'the QBR', behaviour: 'I saw your slides', impact: 'clear' }, next).next, 'Thank you – please keep doing that.');
   assert.equal(buildSbi({ type: 'Positive', situation: '', behaviour: 'x', impact: 'y' }, next), null);
+});
+test('P2.2 sbi: no doubled prepositions; leading time words are used as written', () => {
+  const b = (situation) => buildSbi({ type: 'Developmental', situation, behaviour: 'you interrupted Priya', impact: 'she stopped contributing' }, {}).statement;
+  assert.equal(b("in this morning's update"), "In this morning's update, I noticed you interrupted Priya. The impact was that she stopped contributing.");
+  assert.equal(b('In the team meeting'), 'In the team meeting, I noticed you interrupted Priya. The impact was that she stopped contributing.');
+  assert.equal(b('during the call'), 'During the call, I noticed you interrupted Priya. The impact was that she stopped contributing.');
+  assert.equal(b('yesterday'), 'Yesterday, I noticed you interrupted Priya. The impact was that she stopped contributing.');
+  assert.equal(b('the weekly stand-up'), 'In the weekly stand-up, I noticed you interrupted Priya. The impact was that she stopped contributing.');
+});
+test('P2.2 sbi: names and days keep capitals; "I" stays upper case; noun-phrase impacts read naturally', () => {
+  const r = buildSbi({ type: 'Positive', situation: 'Monday', behaviour: 'Priya and I saw you coach the new starter', impact: 'a much smoother first week for her' }, {});
+  assert.equal(r.statement, 'On Monday, I noticed Priya and I saw you coach the new starter. The impact was a much smoother first week for her.');
+  const s = buildSbi({ type: 'Positive', situation: 'the QBR', behaviour: 'your slides were clear', impact: 'The client signed off the plan' }, {});
+  assert.equal(s.statement, 'In the QBR, I noticed your slides were clear. The impact was that the client signed off the plan.');
+});
+test('P2.2 sbi: punctuation, whitespace and the optional request', () => {
+  const r = buildSbi({ type: 'Developmental', situation: '  the last three weekly reports.  ', behaviour: 'the figures arrived after noon..', impact: 'I had to delay the summary!', request: 'could you send them by Friday noon' }, { Developmental: 'How did you see it?' });
+  assert.equal(r.statement, 'In the last three weekly reports, I noticed the figures arrived after noon. The impact was that I had to delay the summary.');
+  assert.equal(r.request, 'Could you send them by Friday noon?');
+  const q = buildSbi({ type: 'Developmental', situation: 'the call', behaviour: 'you joined late', impact: 'we ran over', request: 'Could you let us know next time?' }, {});
+  assert.equal(q.request, 'Could you let us know next time?');
+  assert.equal(q.text, 'In the call, I noticed you joined late. The impact was that we ran over. Could you let us know next time?');
+  assert.equal(buildSbi({ type: 'Positive', situation: 'the call', behaviour: 'x', impact: 'y', request: '   ' }, {}).request, '');
 });

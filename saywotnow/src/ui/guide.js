@@ -1,12 +1,13 @@
 import { html, useState, useEffect, useRef } from '../vendor/preact-htm.js';
 import { S } from '../strings.js';
 import { Icon, FLAG_ICON } from './icons.js';
-import { content, navigate, goBack, TopBar, FavStar, FlagChip, toast, showDialog } from './core.js';
+import { content, navigate, goBack, TopBar, FavStar, FlagChip, toast, showDialog, Disclosure } from './core.js';
 import { prepFor } from '../content.js';
 import { PrepButton } from './prep.js';
 import { EscalationGate, GateReminder } from './escalation.js';
 import { ReactChips } from './reactchips.js';
 import { Linked, Related } from './linked.js';
+import { findPlaceholders, fillText, fillParts, placeholderLabel } from '../lib/placeholders.js';
 import { toggleFavourite } from '../prefs.js';
 import { copyText } from '../platform.js';
 import { ContactHrButton, startSummary } from './form.js';
@@ -26,10 +27,12 @@ function showLarge(lead, text) {
   });
 }
 
-export function QuoteCard({ lead, text }) {
+export function QuoteCard({ lead, text: raw, fills = {} }) {
+  // P2.1: the copied and large-text versions use the filled-in words; [blanks] stay visible until filled.
+  const text = fillText(raw, fills);
   return html`<li class="quote-card">
     ${lead ? html`<p class="quote-lead">${lead}:</p>` : null}
-    <blockquote><p>${text}</p></blockquote>
+    <blockquote><p>${fillParts(raw, fills).map((p) => (p.text !== undefined ? p.text : html`<span class=${p.filled ? 'ph-filled' : 'ph'}>${p.value}</span>`))}</p></blockquote>
     <div class="quote-actions">
       <button type="button" class="icon-btn small" aria-label=${`${S.showLarge}: ${text}`} onClick=${() => showLarge(lead, text)}>
         <${Icon} name="expand" size=${20} />
@@ -42,11 +45,26 @@ export function QuoteCard({ lead, text }) {
   </li>`;
 }
 
-function OpeningLine({ line }) {
+function OpeningLine({ line, fills }) {
   // Lines can be "Context: "quote"" or a plain quote.
   const m = /^(.*?):\s*"(.*)"$/.exec(line);
   const { text } = m ? { text: m[2] } : stripQuotes(line);
-  return html`<${QuoteCard} lead=${m ? m[1] : null} text=${text} />`;
+  return html`<${QuoteCard} lead=${m ? m[1] : null} text=${text} fills=${fills} />`;
+}
+
+/** P2.1: optional boxes for the [blanks] in this guide's scripts. Held in memory only. */
+function Personaliser({ names, fills, setFills }) {
+  if (!names.length) return null;
+  const filled = names.filter((n) => (fills[n] || '').trim()).length;
+  return html`<${Disclosure} summary=${`${S.fillBlanks}${filled ? ` (${filled} of ${names.length})` : ''}`} class="personaliser">
+    <p class="field-help">${S.fillBlanksHelp}</p>
+    ${names.map((n) => html`<div class="field" key=${n}>
+      <label class="field-label" for=${`ph-${n.replace(/\W+/g, '-')}`}>${placeholderLabel(n)}</label>
+      <input id=${`ph-${n.replace(/\W+/g, '-')}`} class="input" type="text" maxlength="80" value=${fills[n] || ''} autocomplete="off" autocorrect="off" spellcheck=${false}
+        onInput=${(e) => setFills({ ...fills, [n]: e.target.value })} />
+    </div>`)}
+    ${filled ? html`<button type="button" class="btn btn-ghost btn-small" onClick=${() => setFills({})}>${S.clearBlanks}</button>` : null}
+  </${Disclosure}>`;
 }
 
 function HrPanel({ guide, prefs }) {
@@ -67,6 +85,8 @@ export function Guide({ id, prefs }) {
   const [tab, setTab] = useState('before');
   // Checklist ticks are held for this visit only (never stored).
   const [ticks, setTicks] = useState({});
+  // P2.1: script blanks, for this visit only (never stored).
+  const [fills, setFills] = useState({});
   const [openResp, setOpenResp] = useState(null);
   const tabRefs = useRef({});
   useEffect(() => { setTab('before'); setTicks({}); }, [id]);
@@ -126,10 +146,11 @@ export function Guide({ id, prefs }) {
           <a class="btn btn-danger btn-small" href="tel:999"><${Icon} name="phone" size=${18} /> ${S.call999}</a>
         </div>` : null}
         <h2 class="mini-title">${S.opening}</h2>
-        <ul class="quotes" role="list">${guide.opening.map((l) => html`<${OpeningLine} line=${l} />`)}</ul>
+        <${Personaliser} names=${findPlaceholders([...guide.opening, ...(guide.sayIt || []).map((x) => x.line)])} fills=${fills} setFills=${setFills} />
+        <ul class="quotes" role="list">${guide.opening.map((l) => html`<${OpeningLine} line=${l} fills=${fills} />`)}</ul>
         ${guide.sayIt ? html`<h2 class="mini-title">${S.sayIt}</h2>
           <p class="muted say-note">${S.sayItNote}</p>
-          <ul class="quotes" role="list">${guide.sayIt.map((x) => html`<${QuoteCard} lead=${x.when} text=${x.line} />`)}</ul>` : null}
+          <ul class="quotes" role="list">${guide.sayIt.map((x) => html`<${QuoteCard} lead=${x.when} text=${x.line} fills=${fills} />`)}</ul>` : null}
         <h2 class="mini-title">${S.keyQuestions}</h2>
         <ul class="bullets">${guide.during.map((l) => html`<li><${Linked} text=${l} /></li>`)}</ul>
         <h2 class="mini-title">${S.likelyResponses}</h2>

@@ -109,7 +109,8 @@
       "placeholders": {
         "situation": "e.g. Tuesday's client call",
         "behaviour": "e.g. you joined ten minutes late without letting us know",
-        "impact": "e.g. we had to restart the agenda and ran out of time"
+        "impact": "e.g. we had to restart the agenda and ran out of time",
+        "request": "e.g. could you let us know if you're running late?"
       },
       "nextLine": {
         "Developmental": "How did you see it?",

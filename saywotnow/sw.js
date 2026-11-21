@@ -53,6 +53,7 @@ const FILES = [
   'src/ui/quickhelp.js',
   'src/ui/reactchips.js',
   'src/ui/linked.js',
+  'src/lib/placeholders.js',
   'src/ui/preview.js',
   'src/ui/guide.js',
   'src/ui/tools.js',
