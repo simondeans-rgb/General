@@ -39,6 +39,7 @@ export function Home({ prefs }) {
     <header class="home-head">
       <div>
         <h1 class="home-title"><${Logo} size=${30} /></h1>
+        <p class="descriptor">${c.pages.descriptor}</p>
         <p class="greeting">${greeting()}</p>
       </div>
       <a href="#/settings" class="icon-btn" aria-label=${S.settings} onClick=${(e) => go(e, '/settings')}><${Icon} name="gear" /></a>
@@ -78,6 +79,7 @@ export function Home({ prefs }) {
       </ul>` : html`<p class="hint"><${Icon} name="star" size=${18} /> ${c.home.favouritesHint}</p>`}
     </section>
 
+    <p class="privacy-line home-privacy"><${Icon} name="lock" size=${16} /> ${c.pages.privacyLine}</p>
     <p class="footer-link"><a href="#/page/disclaimer" onClick=${(e) => go(e, '/page/disclaimer')}>${S.disclaimerLink}</a></p>
   </div>`;
 }

@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.8.0: Phase 3 (content breadth and trust)
+
+- **Six new guides (P3.1), shown as drafts:** Grievance raised, Harassment or
+  bullying complaint, Suspected impairment at work, and Redundancy or restructure
+  (each with an HR-first gate, giving a safe first response and HR referral only);
+  Poor team morale; Managing a former peer. With prep cards, Quick Help situations,
+  search phrases and review-register entries. Labelled "New draft" throughout.
+- **Trust layer (P3.2):** the descriptor "Practical people-management guidance for
+  managers" in onboarding, Home, About, the install details and the email footer;
+  a privacy line on Home; a truthful review-status line on every guide (it names a
+  reviewer only when content is approved); `docs/BRAND-VOICE.md`.
+- **International scope (P3.4):** About and the reactions and "Say it like this"
+  notes say what's general communication advice and what's UK-only.
+- **Deferred (owner decisions):** organisation configuration (design noted in the
+  README) and the commercial pilot.
+- Service worker cache `saywotnow-1.8.0-1`.
+
 ## 1.7.0: Phase 2 (better conversations without AI)
 
 - **Script personaliser (P2.1):** "Fill in the blanks" on each guide's During tab

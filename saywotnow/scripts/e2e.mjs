@@ -858,6 +858,23 @@ await check('P3.1 new draft guides are labelled as drafts and reachable from lis
   await ctx.close();
 });
 
+await check('P3.2/P3.4 trust layer: descriptor, privacy line, honest review stamps, UK scope wording', async () => {
+  const { ctx, page } = await newApp();
+  await page.getByText('Practical people-management guidance for managers').first().waitFor();
+  await page.getByText(/Private by design: nothing you type is saved/).waitFor();
+  for (const id of ['G02', 'G16']) {
+    await page.goto(BASE + `#/guide/${id}`);
+    const stamp = await page.locator('.review-stamp').innerText();
+    assert.match(stamp, /not yet independently reviewed/i);
+    assert.doesNotMatch(stamp, /Reviewed by/);
+  }
+  await page.goto(BASE + '#/page/about');
+  await page.getByText(/anything about law, policy or process is UK only/).waitFor();
+  const manifest = await (await page.request.get(BASE + 'manifest.webmanifest')).json();
+  assert.match(manifest.description, /^Practical people-management guidance for managers/);
+  await ctx.close();
+});
+
 await check('Time zone converter: defaults, set a time, day offsets, saved zones, planner', async () => {
   const { ctx, page, log } = await newApp();
   await page.goto(BASE + '#/tool/timezones');

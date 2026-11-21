@@ -15,7 +15,7 @@
   "email": {
     "greeting": "Hi {firstName},",
     "signOff": "Best wishes,",
-    "footer": "Sent from SayWotNow. This summary was not stored in the app."
+    "footer": "Sent from SayWotNow – practical people-management guidance for managers. This summary was not stored in the app."
   },
   "ratingScales": {
     "wellbeing": ["Struggling", "Not great", "OK", "Good", "Great"],

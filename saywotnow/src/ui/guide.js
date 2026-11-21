@@ -67,6 +67,14 @@ function Personaliser({ names, fills, setFills }) {
   </${Disclosure}>`;
 }
 
+/** P3.2: a truthful review stamp. Names a reviewer only when the content is actually approved. */
+function ReviewStamp({ guide }) {
+  const r = content().guides.review;
+  const approved = r.reviewStatus === 'approved' && r.reviewedBy && !guide.draft;
+  return html`<p class="review-stamp"><${Icon} name=${approved ? 'check' : 'info'} size=${16} />
+    ${approved ? `Reviewed by ${r.reviewedBy} on ${r.reviewedOn}. Next review due ${r.nextReviewOn}.` : guide.draft ? S.stampNew : S.stampDraft}</p>`;
+}
+
 function HrPanel({ guide, prefs }) {
   return html`<aside class=${`hr-panel flag-${guide.flagLevel}`} aria-labelledby="hr-h">
     <div class="hr-panel-head">
@@ -178,5 +186,6 @@ export function Guide({ id, prefs }) {
 
     <${HrPanel} guide=${guide} prefs=${prefs} />
     <${Related} guide=${guide} />
+    <${ReviewStamp} guide=${guide} />
   </div>`;
 }

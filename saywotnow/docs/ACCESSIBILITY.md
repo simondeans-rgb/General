@@ -6,7 +6,7 @@ Plan item P2.5. Carried out 21 November 2026 on the v1.7 build.
 
 | Check | Tool / method | Coverage | Result |
 |---|---|---|---|
-| WCAG 2.0/2.1/2.2 A and AA rules | axe-core 4.10.2 in Chromium (Playwright) | 31 screens × light and dark × 375px and 1440px (124 runs) | **0 violations** after fixes |
+| WCAG 2.0/2.1/2.2 A and AA rules | axe-core 4.10.2 in Chromium (Playwright) | 38 screens (incl. the v1.8 guides) × light and dark × 375px and 1440px (152 runs) | **0 violations** after fixes |
 | Best-practice rules | axe-core `best-practice` tag | 21 screens at 375px | 0 violations after fixes |
 | Colour contrast | axe-core `color-contrast` (text and UI) | as above, both themes | Pass |
 | Touch target size (2.5.8, AA) | axe-core `target-size` + `npm run e2e` check | all main screens | Pass (24px minimum; most controls are 44px) |

@@ -13,7 +13,9 @@
     "disclaimer",
     "privacy",
     "about",
-    "contentInfo"
+    "contentInfo",
+    "descriptor",
+    "privacyLine"
   ],
   "additionalProperties": false,
   "properties": {
@@ -192,6 +194,14 @@
         }
       },
       "additionalProperties": false
+    },
+    "descriptor": {
+      "type": "string",
+      "minLength": 1
+    },
+    "privacyLine": {
+      "type": "string",
+      "minLength": 1
     }
   }
 }

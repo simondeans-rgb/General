@@ -1,9 +1,11 @@
 {
-  "contentVersion": "1.2.0",
+  "contentVersion": "1.3.0",
   "lastEdited": "2026-11-21",
   "review": { "jurisdiction": "UK", "reviewStatus": "draft", "reviewedBy": null, "reviewedOn": null, "nextReviewOn": null },
   "appName": "SayWotNow",
   "tagline": "Lost for words? We've got you.",
+  "descriptor": "Practical people-management guidance for managers",
+  "privacyLine": "Private by design: nothing you type is saved, and nothing is sent anywhere unless you choose to email, copy or share it.",
   "supportEmail": "",
   "onboarding": [
     {
@@ -40,13 +42,13 @@
   "about": {
     "title": "About SayWotNow",
     "text": [
-      "SayWotNow is the support every line manager wishes they had.",
+      "SayWotNow: Practical people-management guidance for managers. The support every line manager wishes they had.",
       "Run better 1:1s – fill in a structured template and email the summary in seconds.",
-      "Prepare for tough conversations – step-by-step guides for 15 situations, from lateness to mental health to pay rise requests.",
+      "Prepare for tough conversations – step-by-step guides for 21 situations, from lateness to mental health to pay rise requests. Six of them are new drafts, clearly labelled until they've been reviewed.",
       "Know when to call HR – every guide flags when to get advice.",
       "Handy tools – time zones, currency, holiday and notice calculators, and a feedback builder.",
-      "Private by design: SayWotNow never stores what you type. Your notes leave the app only through your own email.",
-      "Guidance is based on UK employment practice and isn't legal advice."
+      "Private by design: SayWotNow never stores what you type. Your notes leave the app only when you choose to email, copy or share them.",
+      "SayWotNow is for UK workplaces. Its communication tips (opening words, \"Say it like this\" and reactions) can help anywhere, but anything about law, policy or process is UK only and isn't legal advice. Outside the UK, check local law and your own HR team."
     ]
   },
   "contentInfo": {

@@ -40,7 +40,7 @@ test('T01 email matches the spec example (8.2)', () => {
     'AGREED ACTIONS\n\n1. Share draft Q1 plan – Owner: Employee – Due: 23 Nov 2026\n2. Approve recruitment advert – Owner: Manager – Due: 20 Nov 2026',
     'Next 1:1: 30 Nov 2026',
     'Best wishes,\nJo Smith',
-    '—\nSent from SayWotNow. This summary was not stored in the app.',
+    '—\nSent from SayWotNow – practical people-management guidance for managers. This summary was not stored in the app.',
   ].join('\n\n'));
 });
 

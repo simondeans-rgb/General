@@ -7,7 +7,7 @@ import { setPref } from '../prefs.js';
 import { isValidEmail } from '../lib/engine.js';
 import { openMail } from '../platform.js';
 
-export const APP_VERSION = '1.7.0';
+export const APP_VERSION = '1.8.0';
 export const APP_BUILD = '1';
 
 function Row({ children, href, onClick, icon }) {
@@ -159,7 +159,7 @@ export function Onboarding({ onDone, replay }) {
       ${!isDisclaimer ? html`<button type="button" class="link-btn" onClick=${() => setI(pages.length)}>${S.skip}</button>` : replay ? html`<button type="button" class="link-btn" onClick=${() => onDone(false)}>Close</button>` : html`<span></span>`}
     </div>
     ${!isDisclaimer ? html`<div class="ob-page" key=${i} aria-live="polite">
-      ${i === 0 ? html`<div class="ob-logo"><${Logo} size=${44} tagline /></div>` : null}
+      ${i === 0 ? html`<div class="ob-logo"><${Logo} size=${44} tagline /><p class="descriptor">${content().pages.descriptor}</p></div>` : null}
       <${Art} kind=${page.art} />
       <h1>${page.heading}</h1>
       <p>${page.text}</p>

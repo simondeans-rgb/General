@@ -13,7 +13,7 @@ Cream; Nunito).
 |---|---|
 | Meetings | 8 templates (T01–T08) rendered by one form engine from `content/templates.json` |
 | Home | "I need to…" tiles, search, favourites, and **1-minute prep**: a card for each meeting type and guide with three questions to ask, one thing to avoid and one to remember (`content/prep.json`). It opens from Home as its own screen, or as a sheet from a guide or template, so nothing typed into a form is lost |
-| Conversations | 15 guides (G01–G15) rendered by one guide screen from `content/guides.json`, plus the shared "If they react…" library. Each guide's During tab has **Say it like this**: copy-ready lines (`sayIt`), each with Copy and a large-text view for reading straight off the screen |
+| Conversations | 21 guides (G01–G21; G16–G21 are new drafts, labelled until reviewed) rendered by one guide screen from `content/guides.json`, plus the shared "If they react…" library. Each guide's During tab has **Say it like this**: copy-ready lines (`sayIt`), each with Copy and a large-text view for reading straight off the screen |
 | Toolkit | Time zone converter (ported from the Worldly Explorer world clock), currency converter (live rates), holiday and notice period calculators (UK rules), and SBI feedback builder. The Interview Pack Builder and Bradford Factor were removed in v1.5 (owner decision). |
 | Settings | HR contact, default 1:1 format, email footer, appearance, About / Disclaimer / Privacy / Content information |
 | Quick Help | Home's main button, "I need help with a conversation": two plain-language choices lead to a compact card (what it's for, opening words, three prompts, one thing to avoid, next step, HR flag, reaction help, full guidance), built only from the guide and its prep card. A serious concern routes to HR-first or urgent help (`content/quickhelp.json`). |
@@ -42,6 +42,7 @@ npm run validate   # content files against content/schema/*.json + cross-referen
 npm test           # unit tests: template engine, email builder, search, all calculators (node --test)
 npm run e2e        # browser acceptance checks in Chromium (needs Playwright)
 npm run register   # writes review/REGISTER.md from review/register.json
+# Brand voice: docs/BRAND-VOICE.md
 # Accessibility: see docs/ACCESSIBILITY.md for the axe audit and the checks e2e runs.
 ```
 
@@ -173,6 +174,20 @@ deliberate exception to P4 and acceptance test AC-05. It's kept as small as poss
   You can compare up to 6 zones, searched by city or country from
   `content/timezones.json`, or by any time zone name the device knows. The list is
   saved as `savedTimeZones`. The "from" zone and the time you set are not saved.
+
+## Deferred by the product owner
+
+- **Organisation configuration (P3.3)**, until a buyer asks. Suggested design: an
+  optional `config/organisation.json`, read at start-up and cached offline like the
+  content, with `name`, `logo` (a file in the app, not a remote URL), `hrContact`
+  (email/phone, validated like Settings) and `policyLinks` (https only, shown as
+  "Your organisation's policy" links on matching guides). The app must work without
+  it, the user's own Settings must override it, and nothing is ever sent to the
+  organisation. Deploy-time only: no accounts or remote configuration.
+- **Commercial pilot (P3.5):** to be organised by the owner. No analytics or
+  tracking have been added; measurement should be consented and moderated.
+- **Tone variants for scripts (P2.1):** "gentler / direct / neutral" versions only
+  once they're written and reviewed.
 
 ## Still needed from the client
 
