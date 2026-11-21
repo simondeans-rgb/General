@@ -90,6 +90,16 @@ export function TemplateForm({ id, prefs }) {
   const onInclude = (sid, v) => updateForm((s) => ({ ...s, included: { ...s.included, [sid]: v } }));
   const onToggle = (fid, v) => updateForm((s) => ({ ...s, toggles: { ...s.toggles, [fid]: v } }));
 
+  // P1.5: say what's still needed before Preview & send works, and let each item take you there.
+  const labels = Object.fromEntries([...c.header.fields, ...template.sections.flatMap((s) => s.fields)].map((f) => [f.id, f.label]));
+  const labelFor = (fid) => labels[fid] || fid;
+  const focusField = (fid) => {
+    const wrap = document.querySelector(`[data-field="${fid}"]`);
+    const el = document.getElementById(`f-${fid}`) || (wrap && wrap.querySelector('input, textarea, button'));
+    if (wrap) wrap.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    if (el) el.focus({ preventScroll: true });
+  };
+
   const preview = () => {
     if (errorsList.length) {
       setShowErrors(true);
@@ -166,7 +176,13 @@ export function TemplateForm({ id, prefs }) {
       <div class="sticky-cta">
         <div ref=${liveRef} class="sr-only" aria-live="assertive"></div>
         ${showErrors && errorsList.length ? html`<p class="cta-errors">${S.fixErrors(errorsList.length)}</p>` : null}
-        <button type="submit" class=${`btn btn-primary btn-block ${errorsList.length ? 'is-disabled' : ''}`} aria-disabled=${errorsList.length ? 'true' : undefined}>
+        ${errorsList.length ? html`<div class="cta-needs" id="cta-needs">
+          <span>${S.toPreview}</span>
+          ${errorsList.slice(0, 4).map((er) => html`<button type="button" class="link-btn" onClick=${() => focusField(er.fieldId)}>${labelFor(er.fieldId)}</button>`)}
+          ${errorsList.length > 4 ? html`<span>${S.andMore(errorsList.length - 4)}</span>` : null}
+        </div>` : null}
+        <button type="submit" class=${`btn btn-primary btn-block ${errorsList.length ? 'is-disabled' : ''}`} aria-disabled=${errorsList.length ? 'true' : undefined}
+          aria-describedby=${errorsList.length ? 'cta-needs' : undefined}>
           ${S.previewSend}
         </button>
       </div>

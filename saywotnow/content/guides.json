@@ -1,7 +1,13 @@
 {
   "contentVersion": "1.2.0",
   "lastEdited": "2026-11-21",
-  "review": { "jurisdiction": "UK", "reviewStatus": "draft", "reviewedBy": null, "reviewedOn": null, "nextReviewOn": null },
+  "review": {
+    "jurisdiction": "UK",
+    "reviewStatus": "draft",
+    "reviewedBy": null,
+    "reviewedOn": null,
+    "nextReviewOn": null
+  },
   "guides": [
     {
       "id": "G01",
@@ -92,7 +98,17 @@
         "topic": "Underperformance",
         "prompt": "The standard expected, the examples I shared and their impact.",
         "recommended": true
-      }
+      },
+      "related": [
+        {
+          "type": "guide",
+          "id": "G11"
+        },
+        {
+          "type": "template",
+          "id": "T05"
+        }
+      ]
     },
     {
       "id": "G02",
@@ -172,7 +188,13 @@
         "topic": "Lateness and timekeeping",
         "prompt": "The dates discussed, the expected start/finish times and any reasons given.",
         "recommended": true
-      }
+      },
+      "related": [
+        {
+          "type": "guide",
+          "id": "G13"
+        }
+      ]
     },
     {
       "id": "G03",
@@ -270,7 +292,13 @@
         "topic": "Behaviour and conduct",
         "prompt": "What happened, your account, and the standard expected.",
         "recommended": true
-      }
+      },
+      "related": [
+        {
+          "type": "guide",
+          "id": "G04"
+        }
+      ]
     },
     {
       "id": "G04",
@@ -344,7 +372,13 @@
         "prompt": "The impact on work, your perspective and what we agreed about working together.",
         "recommended": true,
         "formNote": "Send one summary per person."
-      }
+      },
+      "related": [
+        {
+          "type": "guide",
+          "id": "G03"
+        }
+      ]
     },
     {
       "id": "G05",
@@ -421,7 +455,17 @@
         "topic": "Frequent short-term sickness absence",
         "prompt": "The absence dates discussed, the support offered and the policy explained. No medical details.",
         "recommended": true
-      }
+      },
+      "related": [
+        {
+          "type": "template",
+          "id": "T03"
+        },
+        {
+          "type": "guide",
+          "id": "G06"
+        }
+      ]
     },
     {
       "id": "G06",
@@ -504,7 +548,13 @@
         "topic": "Mental health disclosure or concern",
         "prompt": "The support and actions agreed. No health details.",
         "recommended": true
-      }
+      },
+      "related": [
+        {
+          "type": "guide",
+          "id": "G05"
+        }
+      ]
     },
     {
       "id": "G07",
@@ -578,7 +628,13 @@
         "prompt": "The leave and contact arrangements agreed.",
         "recommended": false,
         "short": true
-      }
+      },
+      "related": [
+        {
+          "type": "guide",
+          "id": "G06"
+        }
+      ]
     },
     {
       "id": "G08",
@@ -869,7 +925,17 @@
         "topic": "Giving feedback",
         "prompt": "The situation, behaviour and impact, and what we agreed.",
         "recommended": false
-      }
+      },
+      "related": [
+        {
+          "type": "tool",
+          "id": "sbi"
+        },
+        {
+          "type": "guide",
+          "id": "G01"
+        }
+      ]
     },
     {
       "id": "G12",
@@ -937,7 +1003,13 @@
         "topic": "Saying no to a request",
         "prompt": "The request, the reason for the decision and any alternatives offered.",
         "recommended": false
-      }
+      },
+      "related": [
+        {
+          "type": "guide",
+          "id": "G13"
+        }
+      ]
     },
     {
       "id": "G13",
@@ -1031,7 +1103,13 @@
         "prompt": "What was requested, how it might work, alternatives discussed and the timescale for a decision.",
         "recommended": true,
         "formNote": "This is a meeting summary, not your formal decision."
-      }
+      },
+      "related": [
+        {
+          "type": "guide",
+          "id": "G12"
+        }
+      ]
     },
     {
       "id": "G14",
@@ -1102,7 +1180,13 @@
         "topic": "Pay rise request",
         "prompt": "Your request, the process explained and what happens next.",
         "recommended": true
-      }
+      },
+      "related": [
+        {
+          "type": "guide",
+          "id": "G12"
+        }
+      ]
     },
     {
       "id": "G15",
@@ -1177,7 +1261,13 @@
         "prompt": "The change, the timing and the questions raised.",
         "recommended": false,
         "formNote": "A summary is optional for individual conversations."
-      }
+      },
+      "related": [
+        {
+          "type": "template",
+          "id": "T01"
+        }
+      ]
     }
   ]
 }

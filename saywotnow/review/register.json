@@ -951,6 +951,40 @@
         "Check against the actual data handling: preferences and exchange rates only on the device; the currency rates request; nothing typed is stored."
       ],
       "changeLog": []
+    },
+    {
+      "id": "search:phrases",
+      "kind": "search",
+      "title": "Search phrases and risky-term messages (content/search.json)",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "Written for SayWotNow v1.5 (P1.1) from the guides' keywords and the panels' example queries",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New: decides which content appears for everyday phrases. Check that risky terms (harassment, self-harm, dismissal…) always lead to HR-first or urgent help, and that the two safety messages are right."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "quickhelp:wording",
+      "kind": "quickhelp",
+      "title": "Quick Help questions and situation labels (content/quickhelp.json)",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "Written for SayWotNow v1.5 (P1.2); the card itself reuses each guide's and prep card's reviewed text",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New: plain-language situation labels and the 'Is any of this involved?' options decide whether the HR-first or urgent route is shown. Check none of them can lead a serious case past the HR-first gate."
+      ],
+      "changeLog": []
     }
   ]
 }

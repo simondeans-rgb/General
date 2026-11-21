@@ -59,7 +59,7 @@ function check(schema, value, path, file, defs) {
 
 /* ---------- Load and schema-check ---------- */
 
-const NAMES = ['home', 'templates', 'guides', 'reactions', 'tools', 'pages', 'timezones', 'currencies', 'prep'];
+const NAMES = ['home', 'templates', 'guides', 'reactions', 'tools', 'pages', 'timezones', 'currencies', 'prep', 'search', 'quickhelp'];
 const content = {};
 for (const name of NAMES) {
   const file = `content/${name}.json`;
@@ -204,6 +204,57 @@ if (content.home && content.templates && content.guides && content.tools) {
   }
 }
 
+/* ---------- Cross-links (P1.3) ---------- */
+
+if (content.guides && content.templates && content.tools) {
+  const f = 'content/guides.json';
+  const has = { guide: (id) => content.guides.guides.some((g) => g.id === id), template: (id) => content.templates.templates.some((t) => t.id === id), tool: (id) => content.tools.tools.some((t) => t.id === id) };
+  const REF = /\((G\d{2}|T\d{2})\)/g;
+  for (const g of content.guides.guides) {
+    for (const r of g.related || []) {
+      if (!has[r.type](r.id)) fail(f, `${g.id}.related`, `unknown ${r.type} "${r.id}"`);
+      if (r.type === 'guide' && r.id === g.id) fail(f, `${g.id}.related`, 'links to itself');
+    }
+    const text = JSON.stringify([g.before, g.during, g.responses, g.donts, g.after, g.hrTriggers]);
+    for (const m of text.matchAll(REF)) {
+      const id = m[1];
+      if (!(id.startsWith('G') ? has.guide(id) : has.template(id))) fail(f, g.id, `refers to "${id}", which doesn't exist`);
+    }
+  }
+}
+
+/* ---------- Search phrases (P1.1) ---------- */
+
+if (content.search) {
+  const f = 'content/search.json';
+  const known = new Set([
+    ...(content.guides?.guides || []).map((x) => x.id), ...(content.templates?.templates || []).map((x) => x.id),
+    ...(content.prep?.cards || []).map((x) => x.id), ...(content.reactions?.reactions || []).map((x) => x.id),
+    ...(content.tools?.tools || []).map((x) => x.id),
+  ]);
+  [...content.search.synonyms, ...content.search.risky].forEach((g, i) => {
+    for (const t of g.targets) if (!known.has(t)) fail(f, `[${i}]`, `points at unknown content "${t}"`);
+  });
+  // Risky terms must lead to content that warns: an HR-first gate or the urgent banner.
+  for (const g of content.search.risky) for (const t of g.targets) {
+    const guide = content.guides?.guides.find((x) => x.id === t);
+    if (g.level === 'hr' && !guide?.escalation) fail(f, '.risky', `"${t}" has no HR-first gate`);
+    if (g.level === 'urgent' && !guide?.urgentBanner) fail(f, '.risky', `"${t}" has no urgent banner`);
+  }
+}
+
+/* ---------- Quick Help (P1.2) ---------- */
+
+if (content.quickhelp && content.guides && content.prep) {
+  const f = 'content/quickhelp.json';
+  for (const s of content.quickhelp.situations) {
+    if (!content.guides.guides.some((g) => g.id === s.guide)) fail(f, s.label, `unknown guide "${s.guide}"`);
+    if (!content.prep.cards.some((c) => c.target.type === 'guide' && c.target.id === s.guide)) fail(f, s.label, `"${s.guide}" has no 1-minute prep card to build the quick card from`);
+  }
+  for (const g of content.guides.guides) if (!content.quickhelp.situations.some((s) => s.guide === g.id)) fail(f, '', `no situation leads to ${g.id}`);
+  if (!content.quickhelp.serious.some((s) => s.level === 'urgent')) fail(f, '.serious', 'needs an urgent option');
+}
+
 /* ---------- Content review register (P0.6) ---------- */
 
 {
@@ -217,7 +268,7 @@ if (content.home && content.templates && content.guides && content.tools) {
       ...(content.prep?.cards || []).map((c) => c.id),
       ...(content.reactions?.reactions || []).map((r) => r.id),
       ...(content.tools?.tools || []).filter((t) => t.ukOnly).map((t) => `tool:${t.id}`),
-      'page:disclaimer', 'page:privacy',
+      'page:disclaimer', 'page:privacy', 'search:phrases', 'quickhelp:wording',
     ];
     const ids = reg.items.map((i) => i.id);
     unique(f, ids, 'register entry');

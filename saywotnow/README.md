@@ -16,6 +16,8 @@ Cream; Nunito).
 | Conversations | 15 guides (G01–G15) rendered by one guide screen from `content/guides.json`, plus the shared "If they react…" library. Each guide's During tab has **Say it like this**: copy-ready lines (`sayIt`), each with Copy and a large-text view for reading straight off the screen |
 | Toolkit | Time zone converter (ported from the Worldly Explorer world clock), currency converter (live rates), holiday and notice period calculators (UK rules), and SBI feedback builder. The Interview Pack Builder and Bradford Factor were removed in v1.5 (owner decision). |
 | Settings | HR contact, default 1:1 format, email footer, appearance, About / Disclaimer / Privacy / Content information |
+| Quick Help | Home's main button, "I need help with a conversation": two plain-language choices lead to a compact card (what it's for, opening words, three prompts, one thing to avoid, next step, HR flag, reaction help, full guidance), built only from the guide and its prep card. A serious concern routes to HR-first or urgent help (`content/quickhelp.json`). |
+| Search | Local full-text search over guides, templates, prep cards, reactions and tools, with a curated phrase list ("always late", "crying", "bullying") and safety messages for risky terms (`content/search.json`). Nothing is sent or stored. |
 | Safety | **HR-first gate** on "Contact HR first" guides (G03, G13): a warning panel above all scripts, with triage questions and holding words that never certify a situation as safe. "UK guidance" labels on guides and UK calculators. |
 
 ## Run it

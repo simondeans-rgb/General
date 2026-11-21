@@ -10,7 +10,7 @@ export const DEFAULTS = Object.freeze({
   favourites: [],
   hrContactEmail: '',
   hrContactPhone: '',
-  defaultOneToOneMode: 'full',
+  defaultOneToOneMode: 'quick', // P1.5: new users start with the quick check-in; Full is one tap away
   emailFooterEnabled: true,
   savedTimeZones: [],
   holidayNation: 'ew',
@@ -39,7 +39,7 @@ function sanitise(key, value) {
     case 'savedTimeZones':
       return Array.isArray(value) ? value.filter((v) => typeof v === 'string' && v.length < 64).slice(0, 6) : d;
     case 'defaultOneToOneMode':
-      return value === 'quick' ? 'quick' : 'full';
+      return value === 'full' ? 'full' : 'quick';
     case 'holidayNation':
       return ['ew', 'sc', 'ni'].includes(value) ? value : 'ew';
     case 'theme':

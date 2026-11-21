@@ -604,3 +604,40 @@ button { cursor: pointer; }
 .sensitive-box { border: 1.5px solid var(--line); border-radius: var(--radius-sm); padding: 4px 14px 10px; margin: 0 0 12px; background: var(--surface); }
 .sensitive-box.on { border-color: var(--flag2); background: var(--flag2-bg); }
 .sensitive-box .field-help { margin: 0; }
+
+/* ---------------- Search (P1.1) ---------------- */
+.search-risk { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: flex-start; border-left: 5px solid var(--flag3); background: var(--flag3-bg); padding: 10px 12px; border-radius: var(--radius-sm); margin: 0 0 12px; }
+.search-risk > svg { color: var(--flag3-ink); flex: none; margin-top: 2px; }
+.search-risk p { margin: 0; flex: 1 1 14rem; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 0 0 14px; }
+.pill { min-height: 44px; padding: 8px 14px; border-radius: 999px; border: 1.5px solid var(--primary); background: var(--surface); color: var(--accent-ink); font: inherit; font-weight: 700; cursor: pointer; }
+.pill:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* ---------------- Quick Help (P1.2) and reaction chips (P1.4) ---------------- */
+.qh-cta { display: flex; align-items: center; gap: 14px; text-decoration: none; background: var(--primary); color: var(--on-primary); border-radius: var(--radius); padding: 16px; margin: 4px 0 14px; box-shadow: var(--shadow); }
+.qh-cta:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.qh-cta > span:nth-child(2) { flex: 1; display: grid; gap: 2px; }
+.qh-cta-icon { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; background: var(--amber); color: #26103D; flex: none; }
+.qh-cta-title { font-weight: 800; font-size: 1.12rem; }
+.qh-cta-sub { font-size: .9rem; opacity: .9; }
+.qh-choice.card-link { display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; text-align: left; }
+.qh-choice .card-title { flex: 1; }
+.qh-choice.qh-tone-hr, .qh-choice.qh-tone-urgent { border-left: 5px solid var(--flag3); }
+.qh-card .prep-block { margin: 0 0 12px; }
+.qh-card .quotes { margin-bottom: 12px; }
+.qh-card .btn-block { margin-top: 12px; }
+.qh-hr { border-left: 5px solid var(--flag2); background: var(--flag2-bg); border-radius: var(--radius-sm); padding: 10px 12px; margin: 0 0 12px; }
+.qh-hr p { margin: 0 0 6px; }
+.react-chips { margin: 4px 0 14px; }
+.react-chips .mini-title { margin-top: 0; }
+.chip-row.left { justify-content: flex-start; }
+a.pill { display: inline-flex; align-items: center; text-decoration: none; }
+.react-sheet { margin: 0 0 16px; font-size: 1.05rem; line-height: 1.5; }
+.related { margin-top: 18px; }
+.related .card-sub { font-size: .78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+.cta-needs { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0 10px; font-size: .92rem; color: var(--ink-2); margin: 0 0 6px; text-align: center; }
+.cta-needs .link-btn { min-height: 36px; padding: 6px 2px; }
+/* P1.5: Employee / Manager / Both never wraps; owner and due date sit side by side only when both fit. */
+.row-split.owner-row { grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); }
+.owner .segmented { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.owner .segmented .choice { padding: 6px 4px; white-space: nowrap; }

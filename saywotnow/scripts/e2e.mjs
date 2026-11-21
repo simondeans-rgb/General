@@ -97,6 +97,9 @@ await check('AC-01/06/07: run a 1:1, validation, preview content, send clears th
   const { ctx, page, log } = await newApp();
   await shot(page, '03-home');
   await page.getByRole('link', { name: 'Run a 1:1' }).click();
+  // P1.5: new users start with the quick check-in; Full is one tap away.
+  await page.getByRole('heading', { name: 'Quick Check-in' }).waitFor();
+  await page.getByRole('radio', { name: 'Full' }).check({ force: true });
   await page.getByRole('heading', { name: '1:1 Meeting' }).waitFor();
   // AC-07: can't proceed, first invalid field focused. (aria-disabled, but still tappable to show errors.)
   await page.getByRole('button', { name: 'Preview & send' }).click({ force: true });
@@ -136,7 +139,7 @@ await check('AC-01/06/07: run a 1:1, validation, preview content, send clears th
   await page.getByText("Sent. SayWotNow hasn't kept a copy.").waitFor();
   assert.match(page.url(), /#\/$/);
   // AC-01: reopening shows an empty form.
-  await page.getByRole('link', { name: 'Run a 1:1' }).click();
+  await page.goto(BASE + '#/template/T01');
   assert.equal(await page.inputValue('#f-employeeName'), '');
   assert.equal(await page.inputValue('#f-wins'), '');
   assert.deepEqual(log.external, []);
@@ -304,13 +307,13 @@ await check('AC-14: search "late" → G02, "sick" → G05 and T03', async () => 
   const { ctx, page } = await newApp();
   await page.getByRole('link', { name: 'Search guides, templates and tools' }).click();
   await page.fill('input[type=search]', 'late');
-  await page.getByRole('link', { name: /Lateness and timekeeping/ }).waitFor();
+  await page.locator('a[href="#/guide/G02"]').waitFor();
   await page.fill('input[type=search]', 'sick');
-  await page.getByRole('link', { name: /Frequent short-term sickness absence/ }).waitFor();
-  await page.getByRole('link', { name: /Return to Work/ }).waitFor();
+  await page.locator('a[href="#/guide/G05"]').waitFor();
+  await page.locator('a[href="#/template/T03"]').waitFor();
   await shot(page, '15-search');
   await page.fill('input[type=search]', 'qqqzzz');
-  await page.getByText('No results.').waitFor();
+  await page.getByText('No results for that.').waitFor();
   assert.doesNotMatch(page.url(), /sick|qqq/);
   await ctx.close();
 });
@@ -625,6 +628,139 @@ await check('P0.5 wellbeing and health stay out of emails unless included for th
   assert.equal(await page.getByRole('switch', { name: 'Include wellbeing and health details' }).getAttribute('aria-checked'), 'false', 'off again next time');
   const stored = await page.evaluate(() => localStorage.getItem('saywotnow.prefs.v1'));
   assert.ok(!/includeSensitive|Struggling/.test(stored));
+  await ctx.close();
+});
+
+await check('P1 journey: first difficult conversation via Quick Help (opening, 3 prompts, escalation) in under 60 seconds', async () => {
+  const { ctx, page, log } = await newApp();
+  const t0 = Date.now();
+  await page.getByRole('link', { name: /I need help with a conversation/ }).click();
+  await page.getByRole('link', { name: "They're often late or leave early" }).click();
+  await page.getByRole('link', { name: 'None of these' }).click();
+  const card = page.locator('.qh-card');
+  await card.waitFor();
+  assert.ok(Date.now() - t0 < 60000);
+  assert.equal(await card.getAttribute('data-guide'), 'G02', 'traceable to its guide');
+  await card.locator('.quote-card blockquote').waitFor();
+  assert.equal(await card.locator('.prep-ask li').count(), 3);
+  await card.getByText('Is there anything behind this that I should know about?').waitFor();
+  await card.locator('.flag-chip, .chip').first().waitFor().catch(() => {});
+  await card.getByRole('button', { name: 'If they react: Upset' }).waitFor();
+  await card.getByRole('link', { name: /Full guidance: Lateness and timekeeping/ }).click();
+  await page.waitForURL(/#\/guide\/G02$/);
+  // Back returns to the card.
+  await page.goBack();
+  await page.locator('.qh-card').waitFor();
+  assert.deepEqual(log.errors, []);
+  await ctx.close();
+});
+
+await check('P1 safety: Quick Help and search can\'t bypass the HR-first gate', async () => {
+  const { ctx, page } = await newApp();
+  // Serious concern chosen: HR-first page, not the script card.
+  await page.goto(BASE + '#/quick/G01');
+  await page.getByRole('link', { name: 'Harassment, bullying or discrimination' }).click();
+  await page.locator('.gate').getByText(/Stop here and speak to HR/).waitFor();
+  assert.equal(await page.locator('.qh-card').count(), 0);
+  // Harm: urgent route with 999.
+  await page.goto(BASE + '#/quick/G06');
+  await page.getByRole('link', { name: 'Someone may harm themselves or others' }).click();
+  assert.equal(await page.getByRole('link', { name: 'Call 999 (UK)' }).getAttribute('href'), 'tel:999');
+  // A Level 3 guide's quick card shows its full gate before any script.
+  await page.goto(BASE + '#/quick/G13/card');
+  const order = await page.evaluate(() => [...document.querySelectorAll('.qh-card .gate, .qh-card .quote-card')].map((e) => e.className.split(' ')[0]));
+  assert.equal(order[0], 'gate');
+  // Search: risky words show the HR message and lead to G03 first.
+  await page.goto(BASE + '#/search');
+  await page.fill('input[type=search]', 'harassment');
+  await page.locator('.search-risk').getByText('Contact HR first.').waitFor();
+  assert.equal(await page.locator('.card-list a').first().getAttribute('href'), '#/guide/G03');
+  await page.fill('input[type=search]', 'self harm');
+  await page.locator('.search-risk.urgent').getByRole('link', { name: 'Call 999 (UK)' }).waitFor();
+  await ctx.close();
+});
+
+await check('P1 journey: everyday search phrases find usable wording', async () => {
+  const { ctx, page } = await newApp();
+  await page.goto(BASE + '#/search');
+  await page.fill('input[type=search]', 'always late');
+  assert.equal(await page.locator('.card-list a').first().getAttribute('href'), '#/guide/G02');
+  await page.locator('a[href="#/prep/P-G02"]').waitFor();
+  await page.fill('input[type=search]', 'crying');
+  await page.locator('a[href="#/reactions/R01"]').click();
+  await page.getByText(/Offer water, tissues or a break/).waitFor();
+  await page.goBack();
+  await page.fill('input[type=search]', 'menopase');
+  await page.getByText('Showing results for').waitFor();
+  await page.fill('input[type=search]', 'qqqzzz');
+  await page.getByRole('button', { name: 'always late' }).click();
+  await page.locator('a[href="#/guide/G02"]').first().waitFor();
+  assert.doesNotMatch(page.url(), /late|qqq/);
+  assert.ok(!(await page.evaluate(() => localStorage.getItem('saywotnow.prefs.v1'))).includes('late'));
+  await ctx.close();
+});
+
+await check('P1 journey: upset employee gets one-tap help without nested sheets', async () => {
+  const { ctx, page } = await newApp();
+  await page.goto(BASE + '#/guide/G01');
+  await page.getByRole('tab', { name: 'During' }).click();
+  await page.getByRole('button', { name: 'If they react: Upset' }).click();
+  await dialog(page).getByText(/Offer water, tissues or a break/).waitFor();
+  assert.equal(await dialog(page).count(), 1);
+  assert.equal(await dialog(page).locator('[role=dialog] [role=dialog], .dialog .dialog').count(), 0);
+  await dialog(page).getByRole('button', { name: 'Done' }).click();
+  assert.equal(await dialog(page).count(), 0);
+  await page.getByRole('button', { name: 'If they react: Angry or defensive' }).click();
+  await dialog(page).getByRole('button', { name: 'All reactions' }).click();
+  await page.waitForURL(/#\/reactions$/);
+  assert.equal(await dialog(page).count(), 0);
+  await ctx.close();
+});
+
+await check('P1 cross-links: references read as words and resolve; G11 leads to the SBI builder and back', async () => {
+  const { ctx, page } = await newApp();
+  await page.goto(BASE + '#/guide/G02');
+  await page.getByRole('tab', { name: 'During' }).click();
+  await page.getByRole('button', { name: /It's childcare/ }).click();
+  const link = page.getByRole('link', { name: 'Open the Flexible working request guide' });
+  assert.equal(await link.innerText(), 'Flexible working guide');
+  assert.doesNotMatch(await page.locator('#main').innerText(), /\(G\d\d\)/, 'no raw codes on screen');
+  await link.click();
+  await page.waitForURL(/#\/guide\/G13$/);
+  await page.goto(BASE + '#/guide/G11');
+  await page.locator('.related').getByRole('link', { name: /Feedback builder/ }).click();
+  await page.waitForURL(/#\/tool\/sbi$/);
+  await page.goBack();
+  await page.waitForURL(/#\/guide\/G11$/);
+  await ctx.close();
+});
+
+await check('P1.5 first-run deep link, tab state and the Preview & send explanation', async () => {
+  // A fresh visitor opening #/meetings lands on Meetings after onboarding.
+  const ctx = await browser.newContext({ viewport: { width: 500, height: 900 }, locale: 'en-GB' });
+  const page = await ctx.newPage();
+  await page.goto(BASE + '#/meetings');
+  await page.locator('.onboarding').waitFor();
+  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'I understand' }).click();
+  await page.getByRole('heading', { name: 'Meetings' }).waitFor();
+  assert.match(page.url(), /#\/meetings$/);
+  // No tab is shown as current on Settings, Search or an info page.
+  for (const path of ['#/settings', '#/search', '#/page/about']) {
+    await page.goto(BASE + path);
+    await page.locator('#main h1').waitFor();
+    assert.equal(await page.locator('.tab.on, .tab[aria-current]').count(), 0, path);
+  }
+  await page.goto(BASE + '#/meetings');
+  assert.equal(await page.locator('.tab.on').innerText(), 'Meetings');
+  // The disabled Preview & send says what's needed, and each item takes you to the field.
+  await page.goto(BASE + '#/template/T02');
+  const needs = page.locator('#cta-needs');
+  await needs.getByText('To preview, fill in:').waitFor();
+  await needs.getByRole('button', { name: 'Employee name' }).click();
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'f-employeeName');
+  await fillHeader(page);
+  assert.equal(await needs.count(), 0);
   await ctx.close();
 });
 

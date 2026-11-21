@@ -1,6 +1,6 @@
 // Service worker: caches the whole app on install so it works fully offline,
 // and never talks to any other origin. Bump VERSION on every release.
-const VERSION = 'saywotnow-1.5.0-1';
+const VERSION = 'saywotnow-1.6.0-1';
 
 const FILES = [
   './',
@@ -23,6 +23,8 @@ const FILES = [
   'content/tools.json',
   'content/pages.json',
   'content/prep.json',
+  'content/search.json',
+  'content/quickhelp.json',
   'content/timezones.json',
   'content/currencies.json',
   'src/main.js',
@@ -48,6 +50,9 @@ const FILES = [
   'src/ui/form.js',
   'src/ui/prep.js',
   'src/ui/escalation.js',
+  'src/ui/quickhelp.js',
+  'src/ui/reactchips.js',
+  'src/ui/linked.js',
   'src/ui/preview.js',
   'src/ui/guide.js',
   'src/ui/tools.js',

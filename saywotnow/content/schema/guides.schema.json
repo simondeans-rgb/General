@@ -309,6 +309,31 @@
                 }
               }
             }
+          },
+          "related": {
+            "description": "Cross-links shown under 'Related' (P1.3).",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "type",
+                "id"
+              ],
+              "properties": {
+                "type": {
+                  "enum": [
+                    "guide",
+                    "template",
+                    "tool"
+                  ]
+                },
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
           }
         }
       }

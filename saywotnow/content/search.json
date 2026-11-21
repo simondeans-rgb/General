@@ -1,0 +1,532 @@
+{
+  "contentVersion": "1.0.0",
+  "lastEdited": "2026-11-21",
+  "review": {
+    "jurisdiction": "UK",
+    "reviewStatus": "draft",
+    "reviewedBy": null,
+    "reviewedOn": null,
+    "nextReviewOn": null
+  },
+  "suggestions": [
+    "always late",
+    "upset",
+    "feedback",
+    "off sick",
+    "pay rise",
+    "flexible working",
+    "bullying",
+    "new starter"
+  ],
+  "riskyMessages": {
+    "urgent": "If someone may harm themselves or others, call 999 (UK emergency services) and don't leave them alone. Then contact HR.",
+    "hr": "This could be serious. Speak to HR before you talk to the employee about it, and don't investigate or promise confidentiality."
+  },
+  "synonyms": [
+    {
+      "phrases": [
+        "not pulling their weight",
+        "not pulling weight",
+        "poor performance",
+        "underperforming",
+        "underperformance",
+        "not good enough",
+        "missing deadlines",
+        "misses deadlines",
+        "sloppy work",
+        "low quality work",
+        "slacking",
+        "not doing their job",
+        "capability"
+      ],
+      "targets": [
+        "G01",
+        "P-G01"
+      ]
+    },
+    {
+      "phrases": [
+        "always late",
+        "keeps being late",
+        "late again",
+        "late for work",
+        "turning up late",
+        "comes in late",
+        "late every day",
+        "leaving early",
+        "long breaks",
+        "punctuality",
+        "timekeeping"
+      ],
+      "targets": [
+        "G02",
+        "P-G02"
+      ]
+    },
+    {
+      "phrases": [
+        "rude",
+        "attitude",
+        "swearing",
+        "inappropriate behaviour",
+        "misconduct",
+        "bullying",
+        "bullied",
+        "bully",
+        "harassment",
+        "harassing",
+        "harassed",
+        "racist",
+        "sexist",
+        "discrimination",
+        "discriminating",
+        "aggressive",
+        "threatening",
+        "fighting",
+        "theft",
+        "stealing",
+        "fraud",
+        "drunk",
+        "drugs",
+        "under the influence",
+        "refuses instructions",
+        "insubordination",
+        "wont listen",
+        "won't listen",
+        "ignores me"
+      ],
+      "targets": [
+        "G03",
+        "P-G03"
+      ]
+    },
+    {
+      "phrases": [
+        "dont get on",
+        "don't get on",
+        "not getting on",
+        "falling out",
+        "fell out",
+        "arguing",
+        "argument",
+        "feud",
+        "personality clash",
+        "clash",
+        "tension in the team",
+        "team conflict",
+        "conflict"
+      ],
+      "targets": [
+        "G04",
+        "P-G04"
+      ]
+    },
+    {
+      "phrases": [
+        "off sick",
+        "sick a lot",
+        "keeps phoning in sick",
+        "calls in sick",
+        "sickness",
+        "absent",
+        "absence",
+        "sickies",
+        "time off sick",
+        "short term absence"
+      ],
+      "targets": [
+        "G05",
+        "P-G05",
+        "T03"
+      ]
+    },
+    {
+      "phrases": [
+        "stressed",
+        "stress",
+        "anxious",
+        "anxiety",
+        "depressed",
+        "depression",
+        "burnout",
+        "burnt out",
+        "burned out",
+        "struggling",
+        "not coping",
+        "overwhelmed",
+        "mental health",
+        "crying",
+        "in tears",
+        "tearful",
+        "upset"
+      ],
+      "targets": [
+        "G06",
+        "P-G06",
+        "R01"
+      ]
+    },
+    {
+      "phrases": [
+        "died",
+        "death",
+        "passed away",
+        "funeral",
+        "grief",
+        "grieving",
+        "bereaved",
+        "bereavement",
+        "loss of",
+        "compassionate leave"
+      ],
+      "targets": [
+        "G07",
+        "P-G07"
+      ]
+    },
+    {
+      "phrases": [
+        "menopause",
+        "perimenopause",
+        "hot flushes",
+        "brain fog"
+      ],
+      "targets": [
+        "G08",
+        "P-G08"
+      ]
+    },
+    {
+      "phrases": [
+        "pregnant",
+        "pregnancy",
+        "expecting a baby",
+        "having a baby",
+        "maternity"
+      ],
+      "targets": [
+        "G09",
+        "P-G09"
+      ]
+    },
+    {
+      "phrases": [
+        "smells",
+        "smell",
+        "body odour",
+        "bo",
+        "hygiene",
+        "bad breath",
+        "dirty clothes"
+      ],
+      "targets": [
+        "G10",
+        "P-G10"
+      ]
+    },
+    {
+      "phrases": [
+        "feedback",
+        "praise",
+        "well done",
+        "criticism",
+        "constructive",
+        "tell them how they did",
+        "wont listen",
+        "won't listen"
+      ],
+      "targets": [
+        "G11",
+        "P-G11",
+        "sbi"
+      ]
+    },
+    {
+      "phrases": [
+        "say no",
+        "saying no",
+        "turn down",
+        "turning down",
+        "refuse a request",
+        "cant approve",
+        "can't approve",
+        "decline"
+      ],
+      "targets": [
+        "G12",
+        "P-G12"
+      ]
+    },
+    {
+      "phrases": [
+        "flexible working",
+        "part time",
+        "work from home",
+        "working from home",
+        "wfh",
+        "hybrid",
+        "change hours",
+        "change their hours",
+        "compressed hours",
+        "school run"
+      ],
+      "targets": [
+        "G13",
+        "P-G13"
+      ]
+    },
+    {
+      "phrases": [
+        "pay rise",
+        "payrise",
+        "more money",
+        "salary",
+        "raise",
+        "pay increase",
+        "underpaid",
+        "wants a raise"
+      ],
+      "targets": [
+        "G14",
+        "P-G14"
+      ]
+    },
+    {
+      "phrases": [
+        "change",
+        "restructure",
+        "reorganisation",
+        "reorganization",
+        "new process",
+        "office move",
+        "new manager",
+        "reporting lines"
+      ],
+      "targets": [
+        "G15",
+        "P-G15"
+      ]
+    },
+    {
+      "phrases": [
+        "crying",
+        "in tears",
+        "tearful",
+        "upset",
+        "emotional"
+      ],
+      "targets": [
+        "R01"
+      ]
+    },
+    {
+      "phrases": [
+        "angry",
+        "shouting",
+        "shouted",
+        "defensive",
+        "kicked off",
+        "lost their temper",
+        "lost temper",
+        "furious"
+      ],
+      "targets": [
+        "R02"
+      ]
+    },
+    {
+      "phrases": [
+        "silent",
+        "quiet",
+        "wont talk",
+        "won't talk",
+        "not talking",
+        "shut down",
+        "says nothing"
+      ],
+      "targets": [
+        "R03"
+      ]
+    },
+    {
+      "phrases": [
+        "denies",
+        "denied",
+        "disagrees",
+        "says its not true",
+        "says it's not true",
+        "argues back"
+      ],
+      "targets": [
+        "R04"
+      ]
+    },
+    {
+      "phrases": [
+        "grievance",
+        "complains about me",
+        "complaint about me"
+      ],
+      "targets": [
+        "R05",
+        "G03"
+      ]
+    },
+    {
+      "phrases": [
+        "someone with them",
+        "companion",
+        "union rep",
+        "union representative",
+        "bring someone"
+      ],
+      "targets": [
+        "R06"
+      ]
+    },
+    {
+      "phrases": [
+        "one to one",
+        "1 to 1",
+        "one-to-one",
+        "121",
+        "1:1",
+        "check in",
+        "catch up",
+        "catch-up",
+        "weekly meeting"
+      ],
+      "targets": [
+        "T01",
+        "T02",
+        "P-1to1"
+      ]
+    },
+    {
+      "phrases": [
+        "back from sick",
+        "back after sickness",
+        "return to work",
+        "returning to work",
+        "rtw"
+      ],
+      "targets": [
+        "T03",
+        "P-T03"
+      ]
+    },
+    {
+      "phrases": [
+        "probation",
+        "trial period",
+        "end of probation"
+      ],
+      "targets": [
+        "T04",
+        "P-T04"
+      ]
+    },
+    {
+      "phrases": [
+        "appraisal",
+        "annual review",
+        "performance review",
+        "mid year",
+        "mid-year",
+        "year end review"
+      ],
+      "targets": [
+        "T05",
+        "P-T05"
+      ]
+    },
+    {
+      "phrases": [
+        "retention",
+        "might leave",
+        "thinking of leaving",
+        "flight risk",
+        "keep them"
+      ],
+      "targets": [
+        "T06",
+        "P-T06"
+      ]
+    },
+    {
+      "phrases": [
+        "new starter",
+        "new joiner",
+        "onboarding",
+        "first week",
+        "induction"
+      ],
+      "targets": [
+        "T07",
+        "P-T07"
+      ]
+    }
+  ],
+  "risky": [
+    {
+      "level": "urgent",
+      "phrases": [
+        "suicide",
+        "suicidal",
+        "self harm",
+        "self-harm",
+        "harm themselves",
+        "hurt themselves",
+        "kill themselves",
+        "end their life",
+        "overdose"
+      ],
+      "targets": [
+        "G06"
+      ]
+    },
+    {
+      "level": "hr",
+      "phrases": [
+        "bullying",
+        "bullied",
+        "bully",
+        "harassment",
+        "harassing",
+        "harassed",
+        "sexual",
+        "racist",
+        "sexist",
+        "discrimination",
+        "discriminating",
+        "assault",
+        "violence",
+        "violent",
+        "threatening",
+        "threat",
+        "theft",
+        "stealing",
+        "fraud",
+        "drunk",
+        "drugs",
+        "under the influence",
+        "data breach",
+        "whistleblowing",
+        "whistleblower",
+        "grievance",
+        "gross misconduct",
+        "dismiss",
+        "dismissal",
+        "sack",
+        "sacking",
+        "fire them",
+        "redundancy",
+        "redundant",
+        "disciplinary"
+      ],
+      "targets": [
+        "G03"
+      ]
+    }
+  ]
+}

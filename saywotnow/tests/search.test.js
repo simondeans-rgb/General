@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadContentSync } from './helpers.js';
-import { buildIndex, search, normalise } from '../src/lib/search.js';
+import { buildIndex, search, normalise, RESULT_KINDS } from '../src/lib/search.js';
 
 const index = buildIndex(loadContentSync());
 const idsOf = (r, k) => r[k].map((x) => x.id);
@@ -32,4 +32,75 @@ test('no results and empty query', () => {
   const r = search(index, 'zzzqqq');
   assert.equal(r.template.length + r.guide.length + r.tool.length, 0);
   assert.equal(search(index, '   ').guide.length, 0);
+});
+
+/* ---------- P1.1 everyday phrases, synonyms and safety ---------- */
+const top = (r, kind) => (r[kind][0] || {}).id;
+
+test('P1.1 panel examples: "always late", "crying", "bullying", "not pulling weight", "won\'t listen"', () => {
+  let r = search(index, 'always late');
+  assert.equal(top(r, 'guide'), 'G02');
+  assert.ok(idsOf(r, 'prep').includes('P-G02'), 'and its 1-minute prep');
+  r = search(index, 'my employee is crying');
+  assert.ok(idsOf(r, 'reaction').includes('R01'));
+  assert.ok(idsOf(r, 'guide').includes('G06'));
+  r = search(index, 'bullying');
+  assert.equal(top(r, 'guide'), 'G03');
+  assert.equal(r.risk, 'hr');
+  r = search(index, 'not pulling their weight');
+  assert.equal(top(r, 'guide'), 'G01');
+  r = search(index, "won't listen");
+  assert.ok(idsOf(r, 'guide').includes('G11') && idsOf(r, 'guide').includes('G03'));
+});
+
+test('P1.1 more everyday phrases', () => {
+  assert.equal(top(search(index, 'off sick again'), 'guide'), 'G05');
+  assert.equal(top(search(index, 'wants to work from home'), 'guide'), 'G13');
+  assert.equal(top(search(index, 'asking for a pay rise'), 'guide'), 'G14');
+  assert.equal(top(search(index, 'two people fell out'), 'guide'), 'G04');
+  assert.equal(top(search(index, 'body odour'), 'guide'), 'G10');
+  assert.ok(idsOf(search(index, 'back from sick'), 'template').includes('T03'));
+  assert.ok(idsOf(search(index, 'feedback'), 'tool').includes('sbi'));
+});
+
+test('P1.1 full text: words only in the guide body are found', () => {
+  // "trial period" appears in G13's text but not its title or keywords.
+  assert.ok(idsOf(search(index, 'trial period'), 'guide').includes('G13'));
+  // Word endings: "argued" finds conflict content.
+  assert.ok(idsOf(search(index, 'argued'), 'guide').includes('G04'));
+});
+
+test('P1.1 risky terms always surface HR-first or urgent help', () => {
+  for (const q of ['harassment', 'racist comments', 'stealing from the till', 'drunk at work', 'thinking of dismissal', 'raised a grievance']) {
+    const r = search(index, q);
+    assert.equal(r.risk, 'hr', q);
+    assert.equal(top(r, 'guide'), 'G03', q);
+    assert.match(r.riskMessage, /HR/);
+  }
+  for (const q of ['said they might self harm', 'suicidal']) {
+    const r = search(index, q);
+    assert.equal(r.risk, 'urgent', q);
+    assert.equal(top(r, 'guide'), 'G06', q);
+    assert.match(r.riskMessage, /999/);
+  }
+});
+
+test('P1.1 false positives: ordinary words are not flagged as risky', () => {
+  for (const q of ['feedback', 'always late', 'holiday', 'new starter', 'fire drill', 'pay rise']) assert.equal(search(index, q).risk, null, q);
+  // "late" doesn't drag in unrelated guides at the top.
+  assert.notEqual(top(search(index, 'late'), 'guide'), 'G09');
+});
+
+test('P1.1 spelling: one-letter typos are corrected only when nothing matches', () => {
+  const r = search(index, 'menopase');
+  assert.equal(r.corrected, 'menopause');
+  assert.equal(top(r, 'guide'), 'G08');
+  assert.equal(search(index, 'feedback').corrected, null);
+});
+
+test('P1.1 no results offer suggestions; nothing for empty queries', () => {
+  const r = search(index, 'zzzqqq xxyy');
+  assert.equal(RESULT_KINDS.reduce((n, k) => n + r[k].length, 0), 0);
+  assert.ok(r.suggestions.length > 0);
+  assert.equal(search(index, '   ').suggestions.length, 0);
 });

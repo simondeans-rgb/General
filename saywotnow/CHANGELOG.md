@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.6.0: Phase 1 (find the right words quickly)
+
+- **Search (P1.1):** full text of guides, templates, prep cards and reactions; a
+  curated phrase list (`content/search.json`) so "always late", "crying", "bullying",
+  "not pulling their weight" and "won't listen" find the right content; simple word
+  endings; one-letter typo correction only when nothing matches; suggestions and
+  a Quick Help link when there are no results. Risky terms show an HR-first or
+  urgent (999) message and put G03 or G06 first. Nothing leaves the device.
+- **Quick Help (P1.2):** the Home screen's main button. Two choices lead to a
+  compact card built from the guide and its prep card; any serious concern goes to
+  HR-first or urgent help, and a Level 3 guide's card shows its full gate first.
+- **Cross-links (P1.3):** "the Flexible working guide (G13)" reads as a link
+  without the code; guides have a "Related" section (G11 links to the SBI builder).
+  The validator checks every reference.
+- **Reactions (P1.4):** one-tap "If they react" chips on guides and Quick Help open
+  a single sheet, with a link to all reactions.
+- **Fixes (P1.5):** a deep link (e.g. #/meetings) survives first-run onboarding;
+  no tab shows as current on Settings, Search or info pages; new users' 1:1 opens
+  in Quick mode; a disabled Preview & send lists what's missing, each item taking
+  you to the field; the action owner choice no longer wraps at 320–500px.
+- New wording (search phrases, Quick Help labels) is in the review register as draft.
+- Service worker cache `saywotnow-1.6.0-1`.
+
 ## 1.5.0: Phase 0 (safety, privacy, removals)
 
 From the consolidated panel review plan, Phase 0.

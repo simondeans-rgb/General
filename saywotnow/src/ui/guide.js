@@ -5,6 +5,8 @@ import { content, navigate, goBack, TopBar, FavStar, FlagChip, toast, showDialog
 import { prepFor } from '../content.js';
 import { PrepButton } from './prep.js';
 import { EscalationGate, GateReminder } from './escalation.js';
+import { ReactChips } from './reactchips.js';
+import { Linked, Related } from './linked.js';
 import { toggleFavourite } from '../prefs.js';
 import { copyText } from '../platform.js';
 import { ContactHrButton, startSummary } from './form.js';
@@ -24,7 +26,7 @@ function showLarge(lead, text) {
   });
 }
 
-function QuoteCard({ lead, text }) {
+export function QuoteCard({ lead, text }) {
   return html`<li class="quote-card">
     ${lead ? html`<p class="quote-lead">${lead}:</p>` : null}
     <blockquote><p>${text}</p></blockquote>
@@ -111,12 +113,13 @@ export function Guide({ id, prefs }) {
         <p class="progress-line">${done} of ${guide.before.length} done · <span class="muted">${S.checklistNote}</span></p>
         <ul class="checklist" role="list">
           ${guide.before.map((item, i) => html`<li><label class=${`choice check ${ticks[i] ? 'on' : ''}`}>
-            <input type="checkbox" checked=${!!ticks[i]} onChange=${(e) => setTicks({ ...ticks, [i]: e.target.checked })} /><span>${item}</span>
+            <input type="checkbox" checked=${!!ticks[i]} onChange=${(e) => setTicks({ ...ticks, [i]: e.target.checked })} /><span><${Linked} text=${item} /></span>
           </label></li>`)}
         </ul>` : null}
 
       ${tab === 'during' ? html`
         <${GateReminder} guide=${guide} />
+        <${ReactChips} />
         ${guide.urgentBanner ? html`<div class="urgent-banner" role="alert">
           <${Icon} name="alert" size=${24} />
           <p>${S.urgent}</p>
@@ -128,29 +131,30 @@ export function Guide({ id, prefs }) {
           <p class="muted say-note">${S.sayItNote}</p>
           <ul class="quotes" role="list">${guide.sayIt.map((x) => html`<${QuoteCard} lead=${x.when} text=${x.line} />`)}</ul>` : null}
         <h2 class="mini-title">${S.keyQuestions}</h2>
-        <ul class="bullets">${guide.during.map((l) => html`<li>${l}</li>`)}</ul>
+        <ul class="bullets">${guide.during.map((l) => html`<li><${Linked} text=${l} /></li>`)}</ul>
         <h2 class="mini-title">${S.likelyResponses}</h2>
         <ul class="accordion" role="list">
           ${guide.responses.map((r, i) => html`<li class=${`acc-item ${openResp === i ? 'open' : ''}`}>
             <h3 class="acc-h"><button type="button" aria-expanded=${openResp === i} aria-controls=${`resp-${i}`} onClick=${() => setOpenResp(openResp === i ? null : i)}>
               <span><span class="muted">${S.ifTheySay}</span> ${r.theySay}</span><${Icon} name="down" class="chev" />
             </button></h3>
-            <div id=${`resp-${i}`} class="acc-panel" hidden=${openResp !== i}><p><strong>${S.youCould} </strong>${r.youCould}</p></div>
+            <div id=${`resp-${i}`} class="acc-panel" hidden=${openResp !== i}><p><strong>${S.youCould} </strong><${Linked} text=${r.youCould} /></p></div>
           </li>`)}
         </ul>
         <a class="react-link" href="#/reactions" onClick=${(e) => { e.preventDefault(); navigate('/reactions'); }}>
           <${Icon} name="conversations" /><span>${S.reactionsLink}</span><${Icon} name="chevron" size=${18} />
         </a>
         <h2 class="mini-title">${S.donts}</h2>
-        <ul class="bullets donts">${guide.donts.map((l) => html`<li>${l}</li>`)}</ul>` : null}
+        <ul class="bullets donts">${guide.donts.map((l) => html`<li><${Linked} text=${l} /></li>`)}</ul>` : null}
 
       ${tab === 'after' ? html`
-        <ul class="bullets">${guide.after.map((l) => html`<li>${l}</li>`)}</ul>
+        <ul class="bullets">${guide.after.map((l) => html`<li><${Linked} text=${l} /></li>`)}</ul>
         <button type="button" class=${`btn btn-block ${guide.summary.recommended ? 'btn-primary' : 'btn-secondary'}`} onClick=${() => startSummary(guide)}>
           <${Icon} name="doc" size=${20} /> ${summaryLabel}
         </button>` : null}
     </div>
 
     <${HrPanel} guide=${guide} prefs=${prefs} />
+    <${Related} guide=${guide} />
   </div>`;
 }
