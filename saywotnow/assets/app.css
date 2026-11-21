@@ -646,3 +646,7 @@ a.pill { display: inline-flex; align-items: center; text-decoration: none; }
 .personaliser { margin: 0 0 12px; }
 .ph { background: var(--edge-bg); color: var(--edge-ink); border-radius: 4px; padding: 0 3px; }
 .ph-filled { background: var(--tip-bg); color: var(--tip-ink); border-radius: 4px; padding: 0 3px; }
+.cal-btn { margin: 0 0 12px; }
+.cal-list { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 6px; }
+.cal-list li { background: var(--surface-2); border-radius: var(--radius-sm); padding: 8px 12px; }
+.cal-sheet .field-help { margin: 0 0 12px; }

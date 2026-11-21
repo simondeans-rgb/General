@@ -97,7 +97,7 @@
         {
           "id": "next", "title": "Next meeting", "optional": true, "emailHeading": false,
           "fields": [
-            { "id": "nextDate", "label": "Next 1:1 date", "emailLabelText": "Next 1:1", "type": "date", "helper": "Shown at the bottom of the email." }
+            { "id": "nextDate", "label": "Next 1:1 date", "emailLabelText": "Next 1:1", "calendar": "1:1", "type": "date", "helper": "Shown at the bottom of the email." }
           ]
         }
       ]
@@ -133,7 +133,7 @@
         {
           "id": "next", "title": "Next meeting", "optional": true, "emailHeading": false,
           "fields": [
-            { "id": "nextDate", "label": "Next check-in date", "emailLabelText": "Next check-in", "type": "date" }
+            { "id": "nextDate", "label": "Next check-in date", "emailLabelText": "Next check-in", "calendar": "Check-in", "type": "date" }
           ]
         }
       ]
@@ -186,7 +186,7 @@
           "id": "actions", "title": "Agreed actions", "optional": true,
           "fields": [
             { "id": "actions", "label": "Actions", "type": "actionList", "emailLabel": false },
-            { "id": "followUp", "label": "Follow-up date", "type": "date", "helper": "If a review is needed." }
+            { "id": "followUp", "label": "Follow-up date", "calendar": "Return to work follow-up", "type": "date", "helper": "If a review is needed." }
           ]
         }
       ],
@@ -250,7 +250,7 @@
           "showIf": { "field": "reviewType", "equals": "Final" },
           "fields": [
             { "id": "outcome", "label": "Outcome", "type": "singleChoice", "requiredIf": { "field": "reviewType", "equals": "Final" }, "options": ["Probation passed", "Probation extended", "Not confirming – contact HR"] },
-            { "id": "newEnd", "label": "New probation end date", "type": "date", "showIf": { "field": "outcome", "equals": "Probation extended" }, "requiredIf": { "field": "outcome", "equals": "Probation extended" }, "min": { "field": "probationEnd" } },
+            { "id": "newEnd", "label": "New probation end date", "calendar": "Probation end date", "type": "date", "showIf": { "field": "outcome", "equals": "Probation extended" }, "requiredIf": { "field": "outcome", "equals": "Probation extended" }, "min": { "field": "probationEnd" } },
             { "id": "extensionImprove", "label": "What needs to improve during the extension", "type": "longText", "showIf": { "field": "outcome", "equals": "Probation extended" }, "requiredIf": { "field": "outcome", "equals": "Probation extended" } }
           ]
         },
@@ -264,7 +264,7 @@
           "id": "actions", "title": "Agreed actions", "optional": true,
           "fields": [
             { "id": "actions", "label": "Actions", "type": "actionList", "emailLabel": false },
-            { "id": "nextReview", "label": "Next review date", "type": "date" }
+            { "id": "nextReview", "label": "Next review date", "calendar": "Probation review", "type": "date" }
           ]
         }
       ],
@@ -438,7 +438,7 @@
           "id": "actions", "title": "Agreed actions", "optional": true,
           "fields": [
             { "id": "actions", "label": "Actions", "type": "actionList", "emailLabel": false },
-            { "id": "nextDate", "label": "Next check-in date", "emailLabelText": "Next check-in", "type": "date" }
+            { "id": "nextDate", "label": "Next check-in date", "emailLabelText": "Next check-in", "calendar": "New starter check-in", "type": "date" }
           ]
         }
       ]
@@ -465,7 +465,7 @@
             { "id": "agreed", "label": "What we agreed", "type": "longText", "hideInShort": true },
             { "id": "support", "label": "Support offered", "type": "longText", "hideInShort": true },
             { "id": "expectations", "label": "Expectations going forward", "type": "longText", "helper": "Clear, specific and measurable where possible.", "hideInShort": true },
-            { "id": "reviewDate", "label": "Review date", "type": "date", "hideInShort": true }
+            { "id": "reviewDate", "label": "Review date", "calendar": "Review of agreed points", "type": "date", "hideInShort": true }
           ]
         },
         {

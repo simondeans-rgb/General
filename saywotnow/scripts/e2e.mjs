@@ -783,6 +783,32 @@ await check('P2.3 Full 1:1 shows core sections first; the rest are one tap away 
   await ctx.close();
 });
 
+await check('P2.4 calendar file for agreed dates: generic by default, downloaded on the device', async () => {
+  const { ctx, page, log } = await newApp();
+  await page.goto(BASE + '#/template/T02');
+  await page.locator('#f-employeeName').waitFor();
+  await fillHeader(page);
+  await page.getByRole('button', { name: 'Add an action' }).click();
+  await page.fill('#f-actions-0-action', 'Book first-aid course');
+  await page.fill('#f-actions-0-due', '2026-12-01');
+  await page.fill('#f-nextDate', '2026-12-07');
+  await page.getByRole('button', { name: 'Preview & send' }).click({ force: true });
+  await page.waitForURL(/preview$/);
+  await page.getByRole('button', { name: 'Add the dates to my calendar' }).click();
+  const items = await dialog(page).locator('.cal-list li').allInnerTexts();
+  assert.equal(items.length, 2, 'the action due date and the next check-in');
+  assert.ok(!items.join(' ').match(/Sam|first-aid/), 'no names or action wording by default');
+  const [dl] = await Promise.all([page.waitForEvent('download'), dialog(page).getByRole('button', { name: /Download calendar file/ }).click()]);
+  assert.equal(dl.suggestedFilename(), 'saywotnow-dates.ics');
+  const { readFileSync } = await import('node:fs');
+  const ics = readFileSync(await dl.path(), 'utf8');
+  assert.match(ics, /^BEGIN:VCALENDAR\r\n/);
+  assert.match(ics, /DTSTART;VALUE=DATE:2026120[17]/);
+  assert.doesNotMatch(ics, /Sam|Patel|first-aid/);
+  assert.deepEqual(log.external, []);
+  await ctx.close();
+});
+
 await check('Time zone converter: defaults, set a time, day offsets, saved zones, planner', async () => {
   const { ctx, page, log } = await newApp();
   await page.goto(BASE + '#/tool/timezones');

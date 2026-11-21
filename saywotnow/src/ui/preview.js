@@ -7,6 +7,8 @@ import { buildEmail, emailAsText } from '../lib/email.js';
 import { openMail, canShare, shareEmail, copySensitive } from '../platform.js';
 import { Notice } from './form.js';
 import { Switch } from './fields.js';
+import { calendarEvents, buildIcs } from '../lib/ics.js';
+import { formatShort } from '../lib/dates.js';
 
 function finish(message) {
   clearForm();
@@ -46,6 +48,33 @@ export async function showFallbacks(getEmail) {
     try { await copySensitive(emailAsText(email)); toast(S.copied, 6000); } catch { toast(S.copyFailed); return; }
     await askClearNow();
   }
+}
+
+/** P2.4: download an .ics of the agreed dates. Built on the device; nothing is kept or synced. */
+function CalendarSheet({ getForm, resolve }) {
+  const [detailed, setDetailed] = useState(false);
+  const f = getForm();
+  if (!f) return html`<p>${S.summaryGone}</p>`;
+  const events = calendarEvents(f.template, f.state, { detailed });
+  const download = () => {
+    const blob = new Blob([buildIcs(events)], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'saywotnow-dates.ics';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    resolve('done');
+    toast(S.calDownloaded, 5000);
+  };
+  return html`<div class="cal-sheet">
+    <ul class="cal-list" role="list">${events.map((e) => html`<li><strong>${formatShort(e.date)}</strong> ${e.title}</li>`)}</ul>
+    <div class="field-toggle"><span id="cal-detail">${S.calDetailed}</span><${Switch} checked=${detailed} onChange=${setDetailed} label=${S.calDetailed} describedby="cal-help" /></div>
+    <p class="field-help" id="cal-help">${S.calHelp}</p>
+    <button type="button" class="btn btn-primary btn-block" onClick=${download}><${Icon} name="calendar" size=${18} /> ${S.calDownload}</button>
+  </div>`;
 }
 
 export function Preview({ id, prefs }) {
@@ -149,6 +178,14 @@ export function Preview({ id, prefs }) {
 
     <div class="email-body" tabindex="0" role="document" aria-label="Email body">${email.body}</div>
     <p class="privacy-line"><${Icon} name="lock" size=${16} /> ${S.leavesApp}</p>
+    ${calendarEvents(template, state).length ? html`<button type="button" class="btn btn-secondary btn-block cal-btn" onClick=${() => showDialog({
+      title: S.calTitle,
+      sheet: true,
+      sensitive: true,
+      contentFirst: true,
+      content: (resolve) => html`<${CalendarSheet} resolve=${resolve} getForm=${() => { const f = formStore.get(); return f && f.template.id === id ? f : null; }} />`,
+      actions: [{ label: S.cancel, value: null }],
+    })}><${Icon} name="calendar" size=${18} /> ${S.calButton}</button>` : null}
 
     <div class="sticky-cta">
       <button type="button" class="btn btn-primary btn-block" onClick=${() => send(email)}>

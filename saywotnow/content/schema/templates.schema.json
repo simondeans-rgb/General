@@ -277,6 +277,11 @@
         "sensitive": {
           "description": "Wellbeing or health detail (P0.5): left out of emails, copies and shares unless the manager switches it on for that email.",
           "type": "boolean"
+        },
+        "calendar": {
+          "description": "Date fields only: title of the calendar entry offered by 'Add to calendar' (P2.4). No names.",
+          "type": "string",
+          "minLength": 1
         }
       }
     },

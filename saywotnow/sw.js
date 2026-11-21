@@ -54,6 +54,7 @@ const FILES = [
   'src/ui/reactchips.js',
   'src/ui/linked.js',
   'src/lib/placeholders.js',
+  'src/lib/ics.js',
   'src/ui/preview.js',
   'src/ui/guide.js',
   'src/ui/tools.js',
