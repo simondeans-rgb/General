@@ -498,6 +498,11 @@ await check('Interview packs: build, save, Word export, reopen; nothing about ca
   assert.ok(dl2.suggestedFilename().endsWith('.docx'));
   await page.getByText('Candidate details were not saved.').waitFor();
   await shot(page, '31-interview-pack');
+  // Printed pack: how-to-use, each competency and the evaluation start on a new page.
+  await page.emulateMedia({ media: 'print' });
+  const pb = await page.$$eval('.print-doc .pd-comp, .print-doc .pd-newpage', (els) => els.map((e) => getComputedStyle(e).breakBefore));
+  assert.deepEqual(pb, ['page', 'page', 'page', 'page', 'page']);
+  await page.emulateMedia({ media: 'screen' });
   // Saved on the device without candidate details; survives a restart.
   const stored = await page.evaluate(() => localStorage.getItem('saywotnow.prefs.v1'));
   assert.ok(stored.includes('Head of Product') && stored.includes('Sam Lee'));
@@ -553,6 +558,11 @@ await check('Interview mode: notes and ratings in memory only; leaving asks; rec
   assert.match(mail, /Rating: 4 — Above Requirement/);
   assert.match(mail, /Backup question used/);
   assert.match(mail, /Self-Awareness\r?\nAssigned interviewer: Sam Lee[\s\S]*Rating: Not rated/);
+  // Printed record: each competency starts on a new page.
+  await page.emulateMedia({ media: 'print' });
+  const breaks = await page.$$eval('.print-doc .pd-rec', (els) => els.map((e) => getComputedStyle(e).breakBefore));
+  assert.deepEqual(breaks, ['page', 'page']);
+  await page.emulateMedia({ media: 'screen' });
   await page.getByRole('button', { name: 'Finish and clear' }).click();
   await dialog(page).getByRole('button', { name: 'Clear the interview' }).click();
   await page.locator('.iv-home').waitFor();

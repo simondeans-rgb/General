@@ -138,7 +138,8 @@ deliberate exception to P4 and acceptance test AC-05. It's kept as small as poss
   ratings in memory only (leaving asks first, and "Finish and clear" wipes them), so an
   interview can't be resumed after closing the app; the emailed record contains the
   notes as text rather than asking you to attach a PDF. Packs and records are branded
-  SayWotNow. Word files are built on the device by the vendored docx library.
+  SayWotNow. As in aHRcade, every competency starts on a new page in the Word pack,
+  the printed pack and the printed interview record. Word files are built on the device by the vendored docx library.
 - **Currency converter.** It uses the same places as the time zone converter. Each
   place's currency comes from its country, via `countryCurrency` in
   `content/currencies.json`. The defaults are the same seven locations: USD, GBP,

@@ -164,6 +164,8 @@ test('Word export: builds a valid .docx with every competency, and a safe file n
   const generic = await unzipDocumentXml(await docx.Packer.toBuffer(buildPackDocument(docx, L, pack, {})));
   assert.ok(generic.includes('Generic reusable pack'));
   assert.ok(!generic.includes('Alex Doe'));
+  // Like aHRcade: how-to-use, every competency and the evaluation each start a new page.
+  assert.equal((xml.match(/<w:br w:type="page"\/>/g) || []).length, 1 + pack.items.length + 1);
   assert.equal(packFileName('Head of / Product: "Lead"'), 'SayWotNow Interview Pack - Head of Product Lead.docx');
   assert.equal(packFileName(''), 'SayWotNow Interview Pack - Untitled role.docx');
 });

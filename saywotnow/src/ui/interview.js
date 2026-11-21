@@ -490,7 +490,7 @@ function PackPrint({ pack }) {
       <tr><th>Interview panel</th><td>${panel.join(' · ') || '-'}</td></tr>
     </tbody></table>
     ${pack.description ? html`<h2>Role description</h2><p>${pack.description}</p>` : null}
-    <h2>How to use this pack</h2>
+    <h2 class="pd-newpage">How to use this pack</h2>
     <ul>${L.guidance.howToUse.map((t) => html`<li>${t}</li>`)}</ul>
     <h2>Use STAR to probe the evidence</h2>
     ${L.guidance.star.map((s) => html`<p><b>${s.label}:</b> ${s.pack}</p>`)}

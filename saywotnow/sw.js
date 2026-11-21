@@ -1,6 +1,6 @@
 // Service worker: caches the whole app on install so it works fully offline,
 // and never talks to any other origin. Bump VERSION on every release.
-const VERSION = 'saywotnow-1.4.0-1';
+const VERSION = 'saywotnow-1.4.0-2';
 
 const FILES = [
   './',

@@ -716,7 +716,6 @@ button { cursor: pointer; }
 .iv-overview small { color: var(--ink-2); }
 .iv-overview em { font-style: normal; font-weight: 800; color: var(--accent-ink); white-space: nowrap; }
 .btn-col { display: grid; gap: 8px; margin: 12px 0; }
-.pd-rec { border-top: 1px solid #ddd; margin-top: 10pt; break-inside: avoid; }
 
 /* Printable pack and record: hidden on screen, the only thing printed. */
 .print-doc { display: none; }
@@ -730,7 +729,8 @@ button { cursor: pointer; }
   .print-doc th, .print-doc td { border: 1px solid #bbb; padding: 4pt 6pt; text-align: left; vertical-align: top; }
   .print-doc th { background: #f1ecf6; }
   .pd-brand { color: #4B1F7A; font-weight: 800; margin: 0 0 6pt; }
-  .pd-comp { break-before: page; }
+  /* Like the aHRcade packs: every competency starts on a new page, in the pack and in the interview record. */
+  .pd-comp, .pd-rec, .pd-newpage { break-before: page; }
   .pd-dim, .pd-label { font-size: 8pt; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #4B1F7A; margin: 8pt 0 2pt; }
   .pd-q { font-weight: 700; margin: 0 0 6pt; }
   .pd-backup { color: #4F4653; }
