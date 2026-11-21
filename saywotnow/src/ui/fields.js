@@ -215,7 +215,7 @@ function ActionList({ field, id, value, onChange, error, errId, helpId }) {
         <label class="sub-label" for=${`${id}-${i}-action`}>${S.action}</label>
         <input id=${`${id}-${i}-action`} class="input" type="text" value=${r.action} maxlength=${LIMITS.shortText * 2} enterkeyhint="next" ...${PRIVATE_INPUT}
           onInput=${(e) => set(i, { action: e.target.value })} onKeyDown=${moveToNext} />
-        <div class="row-split">
+        <div class="row-split owner-row">
           <fieldset class="owner"><legend class="sub-label">${S.owner}</legend>
             <div class="segmented small" role="radiogroup">
               ${OWNERS.map((o) => html`<label class=${`choice ${r.owner === o ? 'on' : ''}`}>

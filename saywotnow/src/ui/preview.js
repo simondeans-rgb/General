@@ -6,6 +6,9 @@ import { validateForm, sendMode } from '../lib/engine.js';
 import { buildEmail, emailAsText } from '../lib/email.js';
 import { openMail, canShare, shareEmail, copySensitive } from '../platform.js';
 import { Notice } from './form.js';
+import { Switch } from './fields.js';
+import { calendarEvents, buildIcs } from '../lib/ics.js';
+import { formatShort } from '../lib/dates.js';
 
 function finish(message) {
   clearForm();
@@ -18,17 +21,26 @@ async function askClearNow() {
   if (yes) finish('Form cleared.');
 }
 
-export async function showFallbacks(email) {
+/**
+ * "No mail app?" sheet. It never holds a copy of the summary: each action asks
+ * getEmail() for the current one, which returns null once the form has been
+ * discarded, so a stale sheet or callback can't recover the notes (P0.2).
+ */
+export async function showFallbacks(getEmail) {
   const choice = await showDialog({
     title: S.noMail,
     body: 'Send the summary another way. Nothing is kept by SayWotNow.',
     sheet: true,
+    sensitive: true,
     actions: [
       ...(canShare() ? [{ label: S.share, value: 'share', primary: true }] : []),
       { label: S.copy, value: 'copy', primary: !canShare() },
       { label: S.cancel, value: null },
     ],
   });
+  if (!choice) return;
+  const email = getEmail();
+  if (!email) { toast(S.summaryGone); return; }
   if (choice === 'share') {
     try { await shareEmail(email); } catch (e) { if (e && e.name === 'AbortError') return; toast("Couldn't open the share sheet."); return; }
     await askClearNow();
@@ -38,12 +50,47 @@ export async function showFallbacks(email) {
   }
 }
 
+/** P2.4: download an .ics of the agreed dates. Built on the device; nothing is kept or synced. */
+function CalendarSheet({ getForm, resolve }) {
+  const [detailed, setDetailed] = useState(false);
+  const f = getForm();
+  if (!f) return html`<p>${S.summaryGone}</p>`;
+  const events = calendarEvents(f.template, f.state, { detailed });
+  const download = () => {
+    const blob = new Blob([buildIcs(events)], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'saywotnow-dates.ics';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    resolve('done');
+    toast(S.calDownloaded, 5000);
+  };
+  return html`<div class="cal-sheet">
+    <ul class="cal-list" role="list">${events.map((e) => html`<li><strong>${formatShort(e.date)}</strong> ${e.title}</li>`)}</ul>
+    <div class="field-toggle"><span id="cal-detail">${S.calDetailed}</span><${Switch} checked=${detailed} onChange=${setDetailed} label=${S.calDetailed} describedby="cal-help" /></div>
+    <p class="field-help" id="cal-help">${S.calHelp}</p>
+    <button type="button" class="btn btn-primary btn-block" onClick=${download}><${Icon} name="calendar" size=${18} /> ${S.calDownload}</button>
+  </div>`;
+}
+
 export function Preview({ id, prefs }) {
   const c = content();
   const form = useStore(formStore);
   const [alsoHr, setAlsoHr] = useState(false);
+  // P0.5: off every time the preview opens; never remembered.
+  const [includeSensitive, setIncludeSensitive] = useState(false);
   const waiting = useRef(false);
-  const emailRef = useRef(null);
+  const optsRef = useRef({ alsoHr: false, prefs, includeSensitive: false });
+  // The summary as it stands now, or null if the form has gone (sent, discarded or reloaded).
+  const currentEmail = () => {
+    const f = formStore.get();
+    if (!f || f.template.id !== id) return null;
+    return buildEmail(content(), f.template, f.state, optsRef.current);
+  };
 
   const template = c.templateById[id];
   const valid = form && form.template.id === id && validateForm(template, c.header, form.state).length === 0;
@@ -69,11 +116,12 @@ export function Preview({ id, prefs }) {
           { label: S.noBack, value: 'back' },
         ],
         dismissable: false,
+        sensitive: true,
         content: (resolve) => html`<p class="dialog-extra"><button type="button" class="link-btn" onClick=${() => resolve('fallback')}>Mail didn't open?</button></p>`,
       });
       if (choice === 'sent') finish(S.sentToast);
       else if (choice === 'draft') finish(S.draftToast);
-      else if (choice === 'fallback' && emailRef.current) showFallbacks(emailRef.current);
+      else if (choice === 'fallback') showFallbacks(currentEmail);
     };
     const onVis = () => { if (document.visibilityState === 'visible') setTimeout(ask, 400); };
     const onFocus = () => setTimeout(ask, 400);
@@ -93,8 +141,8 @@ export function Preview({ id, prefs }) {
   const { state } = form;
   const mode = sendMode(template, state);
   const hasHr = !!prefs.hrContactEmail;
-  const email = buildEmail(c, template, state, { prefs, alsoHr });
-  emailRef.current = email;
+  optsRef.current = { prefs, alsoHr, includeSensitive };
+  const email = buildEmail(c, template, state, optsRef.current);
 
   const send = (e) => {
     openMail(e);
@@ -103,7 +151,7 @@ export function Preview({ id, prefs }) {
 
   const sendToEmployee = async () => {
     const ok = await showDialog({ title: S.sendToEmployeeTitle, body: S.sendToEmployeeBody, actions: [{ label: S.cancel, value: false, primary: true }, { label: S.sendAnyway, value: true, danger: true }] });
-    if (ok) send(buildEmail(c, template, state, { prefs, alsoHr, forceEmployee: true }));
+    if (ok) send(buildEmail(c, template, state, { ...optsRef.current, forceEmployee: true }));
   };
 
   return html`<div class="screen preview-screen">
@@ -122,7 +170,22 @@ export function Preview({ id, prefs }) {
       <input type="checkbox" checked=${alsoHr} onChange=${(e) => setAlsoHr(e.target.checked)} /><span>${S.alsoHr} <span class="muted">(${prefs.hrContactEmail})</span></span>
     </label>` : null}
 
+    ${email.withheld.length || includeSensitive ? html`<div class=${`sensitive-box ${includeSensitive ? 'on' : ''}`}>
+      <div class="field-toggle"><span id="inc-sens">${S.includeSensitive}</span>
+        <${Switch} checked=${includeSensitive} onChange=${setIncludeSensitive} label=${S.includeSensitive} describedby="inc-sens-h" /></div>
+      <p class="field-help" id="inc-sens-h">${includeSensitive ? S.sensitiveOn : S.sensitiveOff}</p>
+    </div>` : null}
+
     <div class="email-body" tabindex="0" role="document" aria-label="Email body">${email.body}</div>
+    <p class="privacy-line"><${Icon} name="lock" size=${16} /> ${S.leavesApp}</p>
+    ${calendarEvents(template, state).length ? html`<button type="button" class="btn btn-secondary btn-block cal-btn" onClick=${() => showDialog({
+      title: S.calTitle,
+      sheet: true,
+      sensitive: true,
+      contentFirst: true,
+      content: (resolve) => html`<${CalendarSheet} resolve=${resolve} getForm=${() => { const f = formStore.get(); return f && f.template.id === id ? f : null; }} />`,
+      actions: [{ label: S.cancel, value: null }],
+    })}><${Icon} name="calendar" size=${18} /> ${S.calButton}</button>` : null}
 
     <div class="sticky-cta">
       <button type="button" class="btn btn-primary btn-block" onClick=${() => send(email)}>
@@ -130,7 +193,7 @@ export function Preview({ id, prefs }) {
       </button>
       <div class="cta-secondary">
         <button type="button" class="btn btn-secondary" onClick=${() => navigate(`/template/${id}`)}>${S.edit}</button>
-        <button type="button" class="btn btn-ghost" onClick=${() => showFallbacks(email)}><${Icon} name="share" size=${18} /> ${S.noMail}</button>
+        <button type="button" class="btn btn-ghost" onClick=${() => showFallbacks(currentEmail)}><${Icon} name="share" size=${18} /> ${S.noMail}</button>
       </div>
       ${email.mode === 'hrOnly' ? html`<button type="button" class="link-btn center" onClick=${sendToEmployee}>${S.sendToEmployee}</button>` : null}
     </div>

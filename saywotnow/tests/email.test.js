@@ -26,7 +26,8 @@ test('T01 email matches the spec example (8.2)', () => {
     ],
     nextDate: '2026-11-30',
   });
-  const e = buildEmail(c, T('T01'), s, { prefs });
+  // The spec example includes wellbeing, so this opts in (P0.5 leaves it out by default).
+  const e = buildEmail(c, T('T01'), s, { prefs, includeSensitive: true });
   assert.equal(e.subject, '1:1 summary – Sam Patel – 16 Nov 2026');
   assert.deepEqual(e.to, ['sam@example.co.uk']);
   assert.deepEqual(e.cc, []);
@@ -39,7 +40,7 @@ test('T01 email matches the spec example (8.2)', () => {
     'AGREED ACTIONS\n\n1. Share draft Q1 plan – Owner: Employee – Due: 23 Nov 2026\n2. Approve recruitment advert – Owner: Manager – Due: 20 Nov 2026',
     'Next 1:1: 30 Nov 2026',
     'Best wishes,\nJo Smith',
-    '—\nSent from SayWotNow. This summary was not stored in the app.',
+    '—\nSent from SayWotNow – practical people-management guidance for managers. This summary was not stored in the app.',
   ].join('\n\n'));
 });
 
@@ -131,4 +132,49 @@ test('mailto URL encoding', () => {
 test('first name and share text', () => {
   assert.equal(firstName('  Sam   Patel '), 'Sam');
   assert.equal(emailAsText({ subject: 'S', body: 'B' }), 'Subject: S\n\nB');
+});
+
+test('P0.5 wellbeing and health details are left out of emails by default', () => {
+  const s1 = state('T01', { wellbeingRating: 2, wellbeingComments: 'Struggling with sleep.', wins: 'Shipped the report.' });
+  const e = buildEmail(c, T('T01'), s1, { prefs });
+  assert.doesNotMatch(e.body, /WELLBEING|Struggling with sleep|2\/5/);
+  assert.match(e.body, /WINS\n\nShipped the report\./);
+  assert.deepEqual(e.withheld, ['wellbeingRating', 'wellbeingComments']);
+  const s2 = state('T02', { wellbeingRating: 1, wellbeingComments: 'Bereavement in the family.', priorities: 'Cover rota.' });
+  const e2 = buildEmail(c, T('T02'), s2, { prefs });
+  assert.doesNotMatch(e2.body, /Bereavement|How are things/);
+  assert.match(e2.body, /Cover rota/);
+  const s3 = state('T03', { reason: 'Migraine', fitNote: 'Provided', absenceStart: '2026-11-10', returnDate: '2026-11-16', fit: 'Yes' });
+  const e3 = buildEmail(c, T('T03'), s3, { prefs });
+  assert.doesNotMatch(e3.body, /Migraine|Fit note/);
+  assert.deepEqual(e3.withheld.sort(), ['fitNote', 'reason']);
+});
+
+test('P0.5 the manager can include them for one email; nothing withheld when empty', () => {
+  const s1 = state('T01', { wellbeingRating: 4, wellbeingComments: 'Feeling positive.' });
+  const e = buildEmail(c, T('T01'), s1, { prefs, includeSensitive: true });
+  assert.match(e.body, /WELLBEING[\s\S]*Feeling positive\./);
+  assert.deepEqual(e.withheld, []);
+  const empty = buildEmail(c, T('T01'), state('T01', { wins: 'x' }), { prefs });
+  assert.deepEqual(empty.withheld, [], 'empty sensitive fields are not reported as withheld');
+  // Copy/share use the same text as the preview.
+  assert.equal(emailAsText(buildEmail(c, T('T01'), s1, { prefs })).includes('Feeling positive'), false);
+});
+
+test('P2.3 the "Sent from SayWotNow" footer is never on formal records', () => {
+  const footer = /Sent from SayWotNow/;
+  for (const id of ['T03', 'T04', 'T05', 'T08']) {
+    const s = state(id, { topic: 'Timekeeping', discussed: 'Start times.', reason: 'Cold', fitNote: 'Provided' });
+    assert.doesNotMatch(buildEmail(c, T(id), s, { prefs }).body, footer, id);
+  }
+  assert.match(buildEmail(c, T('T01'), state('T01', { wins: 'x' }), { prefs }).body, footer);
+  assert.doesNotMatch(buildEmail(c, T('T01'), state('T01', { wins: 'x' }), { prefs: { ...prefs, emailFooterEnabled: false } }).body, footer);
+});
+
+test('P2.3 T08 separates what the manager said from the employee\'s response', () => {
+  const s = state('T08', { topic: 'Timekeeping', discussed: 'I explained the start time.', theirViews: 'They said the bus is unreliable.' });
+  const body = buildEmail(c, T('T08'), s, { prefs }).body;
+  assert.match(body, /What we discussed:?\s*\n?I explained the start time\./);
+  assert.match(body, /Your response and the points you raised:?\s*\n?They said the bus is unreliable\./);
+  assert.equal(T('T08').sections[0].fields.find((f) => f.id === 'theirViews').label, 'Their response');
 });

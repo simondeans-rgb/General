@@ -1,8 +1,11 @@
 {
-  "contentVersion": "1.2.0",
-  "lastReviewed": "2026-11-21",
+  "contentVersion": "1.3.0",
+  "lastEdited": "2026-11-21",
+  "review": { "jurisdiction": "UK", "reviewStatus": "draft", "reviewedBy": null, "reviewedOn": null, "nextReviewOn": null },
   "appName": "SayWotNow",
   "tagline": "Lost for words? We've got you.",
+  "descriptor": "Practical people-management guidance for managers",
+  "privacyLine": "Private by design: nothing you type is saved, and nothing is sent anywhere unless you choose to email, copy or share it.",
   "supportEmail": "",
   "onboarding": [
     {
@@ -30,22 +33,22 @@
   "privacy": {
     "title": "Privacy statement",
     "text": [
-      "SayWotNow does not collect, store or share any personal data. Everything you type into a template is held only while you're using it and is cleared when you send, discard or close it. The same goes for interviews: candidate names, evidence notes and ratings are kept only while the interview is open.",
+      "SayWotNow does not collect, store or share any personal data. Everything you type into a template is held only while you're using it and is cleared when you send, discard or close it.",
       "Summaries are sent using your device's own email app, so they're handled by your email provider, not by us.",
       "SayWotNow contains no analytics, advertising or tracking. Once installed, it only connects to the internet for one thing: when you open the currency converter, it downloads the day's exchange rates from the Exchange Rate API (exchangerate-api.com). That request doesn't include anything you've typed. Like any website, the rates service can see your device's internet address when it answers.",
-      "The only things saved on your device are your preferences (such as favourites, your HR team's contact details and your chosen time zones and currencies), the last exchange rates downloaded, and any interview packs you choose to save (the role, interviewer names and chosen questions, never candidate details). These never leave your device."
+      "The only things saved on your device are your preferences (such as favourites, your HR team's contact details and your chosen time zones and currencies) and the last exchange rates downloaded. These never leave your device."
     ]
   },
   "about": {
     "title": "About SayWotNow",
     "text": [
-      "SayWotNow is the support every line manager wishes they had.",
+      "SayWotNow: Practical people-management guidance for managers. The support every line manager wishes they had.",
       "Run better 1:1s – fill in a structured template and email the summary in seconds.",
-      "Prepare for tough conversations – step-by-step guides for 15 situations, from lateness to mental health to pay rise requests.",
+      "Prepare for tough conversations – step-by-step guides for 21 situations, from lateness to mental health to pay rise requests. Six of them are new drafts, clearly labelled until they've been reviewed.",
       "Know when to call HR – every guide flags when to get advice.",
-      "Handy tools – time zones, currency, holiday and notice calculators, the Bradford Factor, a feedback builder and more.",
-      "Private by design: SayWotNow never stores what you type. Your notes leave the app only through your own email.",
-      "Guidance is based on UK employment practice and isn't legal advice."
+      "Handy tools – time zones, currency, holiday and notice calculators, and a feedback builder.",
+      "Private by design: SayWotNow never stores what you type. Your notes leave the app only when you choose to email, copy or share them.",
+      "SayWotNow is for UK workplaces. Its communication tips (opening words, \"Say it like this\" and reactions) can help anywhere, but anything about law, policy or process is UK only and isn't legal advice. Outside the UK, check local law and your own HR team."
     ]
   },
   "contentInfo": {

@@ -11,7 +11,7 @@ import { Guide } from './ui/guide.js';
 import { Tool } from './ui/tools.js';
 import { Settings, StaticPage, Onboarding } from './ui/settings.js';
 import { PrepList, PrepCard } from './ui/prep.js';
-import { InterviewBuilder, InterviewLibrary, InterviewRun } from './ui/interview.js';
+import { QuickHelp } from './ui/quickhelp.js';
 
 const TABS = [
   ['home', '/', 'home', S.tabs.home],
@@ -22,10 +22,12 @@ const TABS = [
 
 function tabFor(parts) {
   const p = parts[0];
-  if (!p || p === 'search' || p === 'settings' || p === 'page' || p === 'prep') return 'home';
+  // P1.5: Search, Settings and info pages aren't tabs, so no tab is shown as current there.
+  if (p === 'search' || p === 'settings' || p === 'page') return null;
+  if (!p || p === 'prep' || p === 'quick') return 'home';
   if (p === 'template') return parts[1] === 'T08' ? 'conversations' : 'meetings';
   if (p === 'guide' || p === 'reactions' || p === 'conversations') return 'conversations';
-  if (p === 'tool' || p === 'toolkit' || p === 'interview') return 'toolkit';
+  if (p === 'tool' || p === 'toolkit') return 'toolkit';
   return p;
 }
 
@@ -52,16 +54,11 @@ function Screen({ route, prefs }) {
     case 'template': return c === 'preview' ? html`<${Preview} key=${'p' + b} id=${b} prefs=${prefs} />` : html`<${TemplateForm} key=${'t' + b} id=${b} prefs=${prefs} />`;
     case 'conversations': return html`<${Conversations} prefs=${prefs} />`;
     case 'guide': return html`<${Guide} key=${b} id=${b} prefs=${prefs} />`;
-    case 'reactions': return html`<${Reactions} />`;
+    case 'reactions': return html`<${Reactions} key=${b || 'all'} id=${b || null} />`;
     case 'toolkit': return html`<${Toolkit} prefs=${prefs} />`;
     case 'tool': return html`<${Tool} key=${b} id=${b} prefs=${prefs} />`;
     case 'prep': return b ? html`<${PrepCard} key=${b} id=${b} prefs=${prefs} />` : html`<${PrepList} prefs=${prefs} />`;
-    case 'interview':
-      if (b === 'new') return html`<${InterviewBuilder} key="new" />`;
-      if (b === 'edit') return html`<${InterviewBuilder} key=${'e' + c} id=${c} />`;
-      if (b === 'library') return html`<${InterviewLibrary} key=${'l' + (c || '')} id=${c} />`;
-      if (b === 'run') return html`<${InterviewRun} key=${'r' + c} id=${c} />`;
-      return html`<${Tool} key="interview" id="interview" prefs=${prefs} />`;
+    case 'quick': return html`<${QuickHelp} key=${route.path} parts=${route.parts.slice(1)} prefs=${prefs} />`;
     case 'settings': return html`<${Settings} prefs=${prefs} />`;
     case 'page': return html`<${StaticPage} id=${b} />`;
     default: return html`<${Home} prefs=${prefs} />`;
@@ -115,13 +112,15 @@ function App({ disclaimerVersion }) {
     return html`<div id="app-shell" class="app"><main id="main" class="main"><${Onboarding} replay=${replay && !needsOnboarding}
       onDone=${(accepted) => {
         if (accepted) { setPref('disclaimerAcceptedVersion', disclaimerVersion); setPref('onboardingComplete', true); }
-        if (replay) navigate('/settings', { replace: true }); else navigate('/', { replace: true });
+        // P1.5: after first-run onboarding, go where the person was heading (e.g. #/meetings).
+        if (replay) navigate('/settings', { replace: true });
+        else navigate(route.parts[0] && route.parts[0] !== 'onboarding' ? route.path : '/', { replace: true });
       }} /></main></div>
       <${DialogHost} /><${ToastHost} /><${PrivacyCover} />`;
   }
 
   const active = tabFor(route.parts);
-  const hideTabs = route.parts[0] === 'template' || (route.parts[0] === 'interview' && ['new', 'edit', 'run'].includes(route.parts[1]));
+  const hideTabs = route.parts[0] === 'template';
   return html`<div id="app-shell" class=${`app ${hideTabs ? 'no-tabs' : ''}`}>
       <a class="skip-link" href="#main" onClick=${(e) => { e.preventDefault(); document.querySelector('#main h1')?.focus(); }}>Skip to content</a>
       <main id="main" class="main"><${Screen} route=${route} prefs=${prefs} /></main>
