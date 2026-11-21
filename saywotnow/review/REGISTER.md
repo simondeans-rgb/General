@@ -180,12 +180,14 @@ Jurisdiction: UK · Risk: high · Source: Written for SayWotNow v1.5 (P1.1) from
 Jurisdiction: UK · Risk: high · Source: Pocket HR App Build Specification v1.0 (MVP), Appendix A
 
 - Wellbeing and health fields (reason for absence, fit note) are left out of emails by default from v1.5; confirm this suits return-to-work record keeping.
+- **Changed 2026-11-21** (SayWotNow build (P2.3)): Marked as a formal record: the 'Sent from SayWotNow' footer is never added.
 
 ### T04: Probation Review
 
 Jurisdiction: UK · Risk: high · Source: Pocket HR App Build Specification v1.0 (MVP), Appendix A
 
 - Probation outcomes route to HR first ('Not confirming'); confirm the wording and process with HR.
+- **Changed 2026-11-21** (SayWotNow build (P2.3)): Marked as a formal record: the 'Sent from SayWotNow' footer is never added.
 
 ### tool:holiday: Holiday calculator (statutory copy and rules)
 
@@ -242,11 +244,17 @@ Jurisdiction: UK · Risk: medium · Source: Written for SayWotNow v1.3 from the 
 
 - New wording: needs review before release.
 
+### T05: Performance Review
+
+Jurisdiction: UK · Risk: medium · Source: Pocket HR App Build Specification v1.0 (MVP), Appendix A
+
+- **Changed 2026-11-21** (SayWotNow build (P2.3)): Marked as a formal record: the 'Sent from SayWotNow' footer is never added.
+
 ### T08: Conversation Summary
 
 Jurisdiction: UK · Risk: medium · Source: Pocket HR App Build Specification v1.0 (MVP), Appendix A
 
-- 'Your views / points you raised' is ambiguous (planned fix in Phase 2, P2.3).
+- **Changed 2026-11-21** (SayWotNow build (P2.3)): Form labels changed: 'What we discussed' -> 'What you said' (email heading still 'What we discussed'); 'Your views / points you raised' -> 'Their response' (email heading 'Your response and the points you raised'). Footer no longer added (formal record).
 
 ### G02: Lateness and timekeeping
 
@@ -358,6 +366,7 @@ Jurisdiction: UK · Risk: low · Source: Written for SayWotNow v1.3 from the mat
 Jurisdiction: UK · Risk: low · Source: Pocket HR App Build Specification v1.0 (MVP), Appendix A
 
 - Wellbeing rating and comments are left out of emails by default from v1.5.
+- **Changed 2026-11-21** (SayWotNow build (P2.3)): Previous actions, Development, Feedback and Anything else now sit under 'More sections' until opened or filled in. Wording unchanged.
 
 ### T02: Quick Check-in
 

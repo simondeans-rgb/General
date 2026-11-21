@@ -7,6 +7,7 @@ import {
   replaceForm, clearForm, toast,
 } from './core.js';
 import { prepFor } from '../content.js';
+import { isEmptyValue } from '../lib/rules.js';
 import { PrepButton } from './prep.js';
 import {
   validateForm, activeFlags, isSectionVisible, isSectionIncluded, isFieldVisible, isFieldToggledOn,
@@ -66,6 +67,8 @@ export function TemplateForm({ id, prefs }) {
   const template = c.templateById[id];
   const form = useStore(formStore);
   const [showErrors, setShowErrors] = useState(false);
+  // P2.3: Full forms show the core sections first; the rest are one tap away.
+  const [showMore, setShowMore] = useState(false);
   const liveRef = useRef(null);
 
   // Open (or keep) the in-memory form for this template.
@@ -168,8 +171,21 @@ export function TemplateForm({ id, prefs }) {
         </div>
       </section>
 
-      ${template.sections.filter((s) => isSectionVisible(s, state)).map((s) => html`<${SectionCard} key=${s.id} section=${s} state=${state}
-        errors=${errors} showErrors=${showErrors} scales=${c.ratingScales} onValue=${onValue} onInclude=${onInclude} onToggle=${onToggle} />`)}
+      ${(() => {
+        const visible = template.sections.filter((s) => isSectionVisible(s, state));
+        const hasData = (s) => s.fields.some((f) => !isEmptyValue(state.values[f.id]));
+        const shown = visible.filter((s) => !s.more || showMore || hasData(s) || (showErrors && s.fields.some((f) => errors[f.id])));
+        const hidden = visible.filter((s) => !shown.includes(s));
+        const card = (s) => html`<${SectionCard} key=${s.id} section=${s} state=${state}
+          errors=${errors} showErrors=${showErrors} scales=${c.ratingScales} onValue=${onValue} onInclude=${onInclude} onToggle=${onToggle} />`;
+        const insertAt = shown.findIndex((s) => s.id === 'actions');
+        const before = insertAt < 0 ? shown : shown.slice(0, insertAt);
+        const after = insertAt < 0 ? [] : shown.slice(insertAt);
+        return html`${before.map(card)}
+          ${hidden.length ? html`<button type="button" class="btn btn-secondary btn-block more-sections" aria-expanded="false" onClick=${() => setShowMore(true)}>
+            <${Icon} name="plus" size=${18} /> ${S.moreSections(hidden.map((s) => s.title))}</button>` : null}
+          ${after.map(card)}`;
+      })()}
 
       <p class="privacy-line"><${Icon} name="lock" size=${16} /> Nothing here is saved. It's cleared when you send or leave.</p>
 

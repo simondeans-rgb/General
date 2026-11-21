@@ -160,3 +160,21 @@ test('P0.5 the manager can include them for one email; nothing withheld when emp
   // Copy/share use the same text as the preview.
   assert.equal(emailAsText(buildEmail(c, T('T01'), s1, { prefs })).includes('Feeling positive'), false);
 });
+
+test('P2.3 the "Sent from SayWotNow" footer is never on formal records', () => {
+  const footer = /Sent from SayWotNow/;
+  for (const id of ['T03', 'T04', 'T05', 'T08']) {
+    const s = state(id, { topic: 'Timekeeping', discussed: 'Start times.', reason: 'Cold', fitNote: 'Provided' });
+    assert.doesNotMatch(buildEmail(c, T(id), s, { prefs }).body, footer, id);
+  }
+  assert.match(buildEmail(c, T('T01'), state('T01', { wins: 'x' }), { prefs }).body, footer);
+  assert.doesNotMatch(buildEmail(c, T('T01'), state('T01', { wins: 'x' }), { prefs: { ...prefs, emailFooterEnabled: false } }).body, footer);
+});
+
+test('P2.3 T08 separates what the manager said from the employee\'s response', () => {
+  const s = state('T08', { topic: 'Timekeeping', discussed: 'I explained the start time.', theirViews: 'They said the bus is unreliable.' });
+  const body = buildEmail(c, T('T08'), s, { prefs }).body;
+  assert.match(body, /What we discussed:?\s*\n?I explained the start time\./);
+  assert.match(body, /Your response and the points you raised:?\s*\n?They said the bus is unreliable\./);
+  assert.equal(T('T08').sections[0].fields.find((f) => f.id === 'theirViews').label, 'Their response');
+});

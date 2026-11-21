@@ -349,7 +349,7 @@ await check('Tools: holiday, notice, SBI work; inputs clear on leaving', async (
   await page.fill('#sbi-situation', 'the team meeting');
   await page.fill('#sbi-behaviour', 'you interrupted Priya');
   await page.fill('#sbi-impact', 'she stopped contributing');
-  await page.getByText('In the team meeting, I noticed you interrupted Priya. The impact was she stopped contributing.').waitFor();
+  await page.getByText('In the team meeting, I noticed you interrupted Priya. The impact was that she stopped contributing.').waitFor();
   await page.goto(BASE + '#/tool/holiday');
   assert.equal(await page.inputValue('#h-emp'), '');
   await ctx.close();
@@ -761,6 +761,25 @@ await check('P1.5 first-run deep link, tab state and the Preview & send explanat
   assert.equal(await page.evaluate(() => document.activeElement.id), 'f-employeeName');
   await fillHeader(page);
   assert.equal(await needs.count(), 0);
+  await ctx.close();
+});
+
+await check('P2.3 Full 1:1 shows core sections first; the rest are one tap away and never lost', async () => {
+  const { ctx, page } = await newApp();
+  await page.goto(BASE + '#/template/T01');
+  await page.locator('#f-employeeName').waitFor();
+  assert.equal(await page.locator('#f-development').count(), 0, 'Development starts under More sections');
+  const more = page.getByRole('button', { name: /More sections: Actions from last time, Development, Feedback, Anything else/ });
+  await more.click();
+  await page.locator('#f-development').fill('Presenting skills.');
+  assert.equal(await more.count(), 0);
+  // Preview and come back: a filled "more" section stays visible.
+  await fillHeader(page);
+  await page.getByRole('button', { name: 'Preview & send' }).click();
+  await page.getByRole('heading', { name: 'Check and send' }).waitFor();
+  assert.match(await page.locator('.email-body').innerText(), /Presenting skills\./);
+  await page.getByRole('button', { name: 'Edit' }).click();
+  assert.equal(await page.inputValue('#f-development'), 'Presenting skills.');
   await ctx.close();
 });
 

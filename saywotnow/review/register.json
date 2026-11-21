@@ -319,7 +319,13 @@
       "issues": [
         "Wellbeing rating and comments are left out of emails by default from v1.5."
       ],
-      "changeLog": []
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Previous actions, Development, Feedback and Anything else now sit under 'More sections' until opened or filled in. Wording unchanged.",
+          "by": "SayWotNow build (P2.3)"
+        }
+      ]
     },
     {
       "id": "T02",
@@ -353,7 +359,13 @@
       "issues": [
         "Wellbeing and health fields (reason for absence, fit note) are left out of emails by default from v1.5; confirm this suits return-to-work record keeping."
       ],
-      "changeLog": []
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Marked as a formal record: the 'Sent from SayWotNow' footer is never added.",
+          "by": "SayWotNow build (P2.3)"
+        }
+      ]
     },
     {
       "id": "T04",
@@ -370,7 +382,13 @@
       "issues": [
         "Probation outcomes route to HR first ('Not confirming'); confirm the wording and process with HR."
       ],
-      "changeLog": []
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Marked as a formal record: the 'Sent from SayWotNow' footer is never added.",
+          "by": "SayWotNow build (P2.3)"
+        }
+      ]
     },
     {
       "id": "T05",
@@ -385,7 +403,13 @@
       "nextReviewOn": null,
       "status": "draft",
       "issues": [],
-      "changeLog": []
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Marked as a formal record: the 'Sent from SayWotNow' footer is never added.",
+          "by": "SayWotNow build (P2.3)"
+        }
+      ]
     },
     {
       "id": "T06",
@@ -429,10 +453,14 @@
       "reviewedOn": null,
       "nextReviewOn": null,
       "status": "draft",
-      "issues": [
-        "'Your views / points you raised' is ambiguous (planned fix in Phase 2, P2.3)."
-      ],
-      "changeLog": []
+      "issues": [],
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Form labels changed: 'What we discussed' -> 'What you said' (email heading still 'What we discussed'); 'Your views / points you raised' -> 'Their response' (email heading 'Your response and the points you raised'). Footer no longer added (formal record).",
+          "by": "SayWotNow build (P2.3)"
+        }
+      ]
     },
     {
       "id": "P-1to1",

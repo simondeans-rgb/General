@@ -68,7 +68,8 @@ export function Settings({ prefs }) {
           ${[['full', S.full], ['quick', S.quick]].map(([k, l]) => html`<label class=${`choice ${prefs.defaultOneToOneMode === k ? 'on' : ''}`}><input type="radio" name="d11" checked=${prefs.defaultOneToOneMode === k} onChange=${() => setPref('defaultOneToOneMode', k)} /><span>${l}</span></label>`)}
         </div>
       </fieldset>
-      <div class="field-toggle"><span id="footer-l">Add "Sent from SayWotNow" to emails</span><${Switch} checked=${prefs.emailFooterEnabled} onChange=${(v) => setPref('emailFooterEnabled', v)} label='Add "Sent from SayWotNow" to emails' /></div>
+      <div class="field-toggle"><span id="footer-l">Add "Sent from SayWotNow" to 1:1 and check-in emails</span><${Switch} checked=${prefs.emailFooterEnabled} onChange=${(v) => setPref('emailFooterEnabled', v)} label='Add "Sent from SayWotNow" to 1:1 and check-in emails' describedby="footer-h" /></div>
+      <p class="field-help" id="footer-h">Never added to formal records: return to work, probation, performance review and conversation summaries.</p>
       <fieldset class="field"><legend class="field-label">Appearance</legend>
         <div class="segmented" role="radiogroup">
           ${[['system', 'Automatic'], ['light', 'Light'], ['dark', 'Dark']].map(([k, l]) => html`<label class=${`choice ${prefs.theme === k ? 'on' : ''}`}><input type="radio" name="theme" checked=${prefs.theme === k} onChange=${() => setPref('theme', k)} /><span>${l}</span></label>`)}

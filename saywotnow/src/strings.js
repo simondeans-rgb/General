@@ -45,6 +45,7 @@ export const S = {
   clearBody: 'Everything you’ve typed will be removed.',
   clear: 'Clear',
   cancel: 'Cancel',
+  moreSections: (titles) => `More sections: ${titles.join(', ')}`,
   toPreview: 'To preview, fill in:',
   andMore: (n) => `and ${n} more`,
   fixErrors: (n) => `${n} thing${n === 1 ? '' : 's'} to fix before you can send.`,

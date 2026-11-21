@@ -37,7 +37,7 @@
       "allowHrCc": false,
       "sections": [
         {
-          "id": "previous", "title": "Actions from last time", "optional": true,
+          "id": "previous", "title": "Actions from last time", "optional": true, "more": true,
           "fields": [
             { "id": "previousActions", "label": "Previous actions and progress", "type": "longText", "helper": "Paste the agreed actions from your last 1:1 email and note progress on each.", "emailLabel": false }
           ]
@@ -70,20 +70,20 @@
           ]
         },
         {
-          "id": "development", "title": "Development", "optional": true,
+          "id": "development", "title": "Development", "optional": true, "more": true,
           "fields": [
             { "id": "development", "label": "Learning and development", "type": "longText", "helper": "Skills being developed, training, stretch opportunities, career conversations.", "emailLabel": false }
           ]
         },
         {
-          "id": "feedback", "title": "Feedback", "optional": true,
+          "id": "feedback", "title": "Feedback", "optional": true, "more": true,
           "fields": [
             { "id": "feedbackFromMe", "label": "Feedback from me", "type": "longText", "helper": "Specific feedback – use Situation, Behaviour, Impact." },
             { "id": "feedbackForMe", "label": "Feedback for me", "type": "longText", "helper": "Ask: \"Is there anything I could do differently to support you better?\"" }
           ]
         },
         {
-          "id": "aob", "title": "Anything else", "optional": true,
+          "id": "aob", "title": "Anything else", "optional": true, "more": true,
           "fields": [
             { "id": "aob", "label": "Any other business", "type": "longText", "helper": "Anything else either person wants to raise.", "emailLabel": false }
           ]
@@ -139,7 +139,7 @@
       ]
     },
     {
-      "id": "T03",
+      "formalRecord": true, "id": "T03",
       "name": "Return to Work",
       "purpose": "Welcome someone back after sickness absence, check they're fit to work and agree support.",
       "whenToUse": "On the employee's first day back (or as soon as possible) after any sickness absence.",
@@ -204,7 +204,7 @@
       ]
     },
     {
-      "id": "T04",
+      "formalRecord": true, "id": "T04",
       "name": "Probation Review",
       "purpose": "An interim or final review of a new employee's progress during probation.",
       "whenToUse": "At interim points (e.g. month 1 and month 3) and at the end of the probation period.",
@@ -290,7 +290,7 @@
       ]
     },
     {
-      "id": "T05",
+      "formalRecord": true, "id": "T05",
       "name": "Performance Review",
       "purpose": "A structured mid-year or annual review against objectives, plus objectives and development for the next period.",
       "whenToUse": "Mid-year and end-of-year reviews, or at the end of a project.",
@@ -444,7 +444,7 @@
       ]
     },
     {
-      "id": "T08",
+      "formalRecord": true, "id": "T08",
       "name": "Conversation Summary",
       "purpose": "A summary of a difficult or sensitive conversation, opened from a conversation guide.",
       "whenToUse": "Immediately after a conversation covered by one of the guides.",
@@ -460,8 +460,8 @@
           "id": "summary", "title": "Summary",
           "fields": [
             { "id": "topic", "label": "Conversation topic", "type": "shortText", "required": true, "helper": "Filled in from the guide, but you can edit it.", "inEmail": false },
-            { "id": "discussed", "label": "What we discussed", "type": "longText", "required": true },
-            { "id": "theirViews", "label": "Your views / points you raised", "type": "longText", "helper": "The employee's response, in neutral language.", "hideInShort": true },
+            { "id": "discussed", "label": "What you said", "helper": "What you raised or explained in the conversation.", "emailLabelText": "What we discussed", "type": "longText", "required": true },
+            { "id": "theirViews", "label": "Their response", "helper": "What the employee said, including any points they raised or disagreed with, in neutral language.", "emailLabelText": "Your response and the points you raised", "type": "longText", "hideInShort": true },
             { "id": "agreed", "label": "What we agreed", "type": "longText", "hideInShort": true },
             { "id": "support", "label": "Support offered", "type": "longText", "hideInShort": true },
             { "id": "expectations", "label": "Expectations going forward", "type": "longText", "helper": "Clear, specific and measurable where possible.", "hideInShort": true },

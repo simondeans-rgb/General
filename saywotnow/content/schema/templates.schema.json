@@ -319,6 +319,10 @@
           "items": {
             "$ref": "#/$defs/field"
           }
+        },
+        "more": {
+          "description": "Shown under 'More sections' in full forms until opened or filled in (P2.3).",
+          "type": "boolean"
         }
       }
     },
@@ -483,6 +487,10 @@
             },
             "additionalProperties": false
           }
+        },
+        "formalRecord": {
+          "description": "Formal record: the 'Sent from SayWotNow' footer is never added (P2.3).",
+          "type": "boolean"
         }
       }
     }

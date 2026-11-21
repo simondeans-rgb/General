@@ -171,7 +171,8 @@ export function buildEmail(content, template, state, options = {}) {
   }
   if (template.closing) paras.push(template.closing);
   paras.push(`${cfg.signOff}${NL}${cleanText(v.managerName || '')}`);
-  if (prefs.emailFooterEnabled !== false) paras.push(`—${NL}${cfg.footer}`);
+  // P2.3: never on formal records (return to work, probation, performance review, conversation summary).
+  if (prefs.emailFooterEnabled !== false && !template.formalRecord) paras.push(`—${NL}${cfg.footer}`);
 
   const subjectBase = fillPlaceholders(template.subject, state, template).replace(/\s+/g, ' ').replace(/\(\s*\)/g, '').trim();
   const subject = hrOnly ? `For HR advice – ${subjectBase}` : subjectBase;
