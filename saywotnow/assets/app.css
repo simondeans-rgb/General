@@ -164,7 +164,7 @@ button { cursor: pointer; }
   text-decoration: none; box-shadow: var(--shadow); margin: 8px 0 20px;
 }
 .search-field input { flex: 1; border: 0; background: transparent; min-height: 50px; outline: none; color: var(--ink); }
-.search-field:focus-within { border-color: var(--focus); }
+.search-field:focus-within { border-color: var(--focus); box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 30%, transparent); }
 .section-title { font-size: 1.05rem; font-weight: 800; color: var(--ink); margin: 22px 0 12px; }
 /* Columns are sized in rem, so the grid drops to one column at large text sizes. */
 .tile-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5rem), 1fr)); gap: 12px; }
@@ -308,7 +308,7 @@ button { cursor: pointer; }
 .choice-list { display: grid; gap: 8px; }
 .choice { position: relative; display: flex; align-items: flex-start; gap: 12px; min-height: 50px; padding: 12px 14px; border-radius: var(--radius-sm); border: 1.5px solid var(--line); background: var(--bg); cursor: pointer; font-weight: 600; }
 .choice.on { border-color: var(--primary); background: var(--surface-2); }
-.choice input { width: 22px; height: 22px; margin: 1px 0 0; accent-color: var(--primary); flex: none; }
+.choice input { width: 24px; height: 24px; margin: 0; accent-color: var(--primary); flex: none; }
 .segmented .choice input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
 .choice:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
 
@@ -570,6 +570,14 @@ button { cursor: pointer; }
 @media (min-width: 600px) {
   .topbar h1 { font-size: 1.6rem; }
 }
+/* Desktop (P2.5): use the width for lists and tiles; keep reading screens at a comfortable measure. */
+@media (min-width: 1024px) {
+  :root { --col: 1080px; }
+  .card-list { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; }
+  .tile-grid { grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr)); }
+  .guide-screen, .form-screen, .preview-screen, .page, .qh, .tool-screen, .prep-screen, .settings { max-width: 760px; margin-inline: auto; }
+  .qh .card-list, .guide-screen .card-list, .tool-screen .card-list, .settings .card-list { grid-template-columns: 1fr; }
+}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
@@ -650,3 +658,10 @@ a.pill { display: inline-flex; align-items: center; text-decoration: none; }
 .cal-list { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 6px; }
 .cal-list li { background: var(--surface-2); border-radius: var(--radius-sm); padding: 8px 12px; }
 .cal-sheet .field-help { margin: 0 0 12px; }
+.home-title { margin: 0; font-size: inherit; line-height: 1; }
+/* P2.5: large text (200%) without sideways scrolling or clipped controls. */
+.search-field input { min-width: 0; width: 100%; }
+.form-section-head { flex-wrap: wrap; row-gap: 6px; }
+.form-section-head h2 { min-width: 0; overflow-wrap: anywhere; }
+.card-list > li, .card { min-width: 0; }
+.card-title, .card-sub { overflow-wrap: anywhere; }

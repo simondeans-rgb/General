@@ -1,6 +1,6 @@
 {
   "name": "saywotnow",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "private": true,
   "description": "SayWotNow: offline support for line managers. 1:1s, reviews and difficult conversations, with no personal data stored.",
   "type": "module",

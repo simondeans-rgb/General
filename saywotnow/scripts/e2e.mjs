@@ -809,6 +809,34 @@ await check('P2.4 calendar file for agreed dates: generic by default, downloaded
   await ctx.close();
 });
 
+await check('P2.5 accessibility basics on every main screen: one h1, no sideways scroll at 320px or 200% text, 24px targets', async () => {
+  const routes = ['#/', '#/quick', '#/quick/G02/card', '#/search', '#/meetings', '#/template/T01', '#/template/T03', '#/template/T08', '#/conversations', '#/guide/G03', '#/guide/G06',
+    '#/reactions', '#/prep', '#/prep/P-G05', '#/toolkit', '#/tool/holiday', '#/tool/notice', '#/tool/sbi', '#/tool/currency', '#/tool/timezones', '#/settings', '#/page/privacy'];
+  for (const big of [false, true]) {
+    const ctx = await browser.newContext({ viewport: { width: big ? 375 : 320, height: 800 }, locale: 'en-GB' });
+    const page = await ctx.newPage();
+    await page.addInitScript((b) => {
+      localStorage.setItem('saywotnow.prefs.v1', JSON.stringify({ onboardingComplete: true, disclaimerAcceptedVersion: '1.0' }));
+      if (b) document.addEventListener('DOMContentLoaded', () => { document.documentElement.style.fontSize = '200%'; });
+    }, big);
+    for (const r of routes) {
+      await page.goto(BASE + r);
+      await page.locator('#main h1').first().waitFor();
+      assert.equal(await page.locator('#main h1').count(), 1, `${r}: one h1`);
+      const over = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+      assert.ok(over <= 0, `${r}${big ? ' at 200%' : ' at 320px'}: scrolls sideways by ${over}px`);
+      if (!big) {
+        const small = await page.evaluate(() => [...document.querySelectorAll('#main button, #main a[href], #main input:not([type=hidden])')]
+          .filter((e) => e.offsetParent && !e.closest('.prose, p, li > a.link, .link-btn')).map((e) => [e, e.getBoundingClientRect()])
+          .filter(([e, r]) => r.width > 0 && (r.width < 24 || r.height < 24) && !(e.closest('label') && e.closest('label').getBoundingClientRect().height >= 24))
+          .map(([e, r]) => `${e.outerHTML.slice(0, 60)} ${Math.round(r.width)}x${Math.round(r.height)}`));
+        assert.deepEqual(small, [], `${r}: touch targets under 24px`);
+      }
+    }
+    await ctx.close();
+  }
+});
+
 await check('Time zone converter: defaults, set a time, day offsets, saved zones, planner', async () => {
   const { ctx, page, log } = await newApp();
   await page.goto(BASE + '#/tool/timezones');
@@ -891,10 +919,12 @@ await check('Currency converter: live rates, defaults, convert, swap, saved loca
   assert.doesNotMatch(stored, /750|1,000/);
   // Reopening within the hour doesn't fetch again.
   await page.goto(BASE + '#/toolkit');
+  await page.getByRole('heading', { name: 'Toolkit' }).waitFor();
   await page.goto(BASE + '#/tool/currency');
   await page.getByText(/Rates updated/).waitFor();
   assert.equal(rateCalls.length, 1);
-  assert.equal(await page.inputValue('#cur-amount'), '100');
+  // Hash navigation doesn't reload the page, so wait for the fresh screen before reading the amount.
+  await page.waitForFunction(() => document.querySelector('#cur-amount')?.value === '100', null, { timeout: 5000 });
   assert.deepEqual(log.external.filter((u) => !u.startsWith('https://open.er-api.com/')), []);
   assert.deepEqual(log.errors, []);
   await ctx.close();

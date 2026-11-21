@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.7.0: Phase 2 (better conversations without AI)
+
+- **Script personaliser (P2.1):** "Fill in the blanks" on each guide's During tab
+  fills [placeholders] in the scripts, Copy and the large view. Held in memory only;
+  no tone variants until reviewed ones exist.
+- **SBI builder repaired (P2.2):** no "In in…", names and days keep capitals,
+  "The impact was that…", optional request sentence, link to the feedback guide.
+- **Templates (P2.3):** Full 1:1 shows core sections first with "More sections";
+  T08 now says "What you said" and "Their response"; no "Sent from SayWotNow"
+  footer on formal records (T03, T04, T05, T08).
+- **Calendar file (P2.4):** "Add the dates to my calendar" downloads an .ics of
+  agreed dates and action due dates, generic by default, built on the device.
+- **Accessibility and desktop (P2.5):** WCAG 2.2 AA audit with axe (0 violations
+  across 124 runs), 24px targets, a Home heading, 200% text and 320px reflow fixes,
+  wider desktop lists. Report in `docs/ACCESSIBILITY.md`.
+- Service worker cache `saywotnow-1.7.0-1`.
+
 ## 1.6.0: Phase 1 (find the right words quickly)
 
 - **Search (P1.1):** full text of guides, templates, prep cards and reactions; a

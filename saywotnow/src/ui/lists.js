@@ -38,7 +38,7 @@ export function Home({ prefs }) {
   return html`<div class="screen home">
     <header class="home-head">
       <div>
-        <${Logo} size=${30} />
+        <h1 class="home-title"><${Logo} size=${30} /></h1>
         <p class="greeting">${greeting()}</p>
       </div>
       <a href="#/settings" class="icon-btn" aria-label=${S.settings} onClick=${(e) => go(e, '/settings')}><${Icon} name="gear" /></a>

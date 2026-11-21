@@ -42,6 +42,7 @@ npm run validate   # content files against content/schema/*.json + cross-referen
 npm test           # unit tests: template engine, email builder, search, all calculators (node --test)
 npm run e2e        # browser acceptance checks in Chromium (needs Playwright)
 npm run register   # writes review/REGISTER.md from review/register.json
+# Accessibility: see docs/ACCESSIBILITY.md for the axe audit and the checks e2e runs.
 ```
 
 Baseline for v1.5 Phase 0 (21 Nov 2026, before changes): validator OK, 92 unit tests, 28 browser checks.
