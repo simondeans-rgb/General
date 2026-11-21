@@ -465,6 +465,100 @@
         "T07",
         "P-T07"
       ]
+    },
+    {
+      "phrases": [
+        "grievance",
+        "formal complaint",
+        "complaint about",
+        "raise a concern",
+        "unfair treatment"
+      ],
+      "targets": [
+        "G16",
+        "P-G16"
+      ]
+    },
+    {
+      "phrases": [
+        "harassment",
+        "harassed",
+        "bullying",
+        "bullied",
+        "bully",
+        "discrimination",
+        "sexual harassment",
+        "inappropriate comments",
+        "racist",
+        "sexist"
+      ],
+      "targets": [
+        "G17",
+        "P-G17"
+      ]
+    },
+    {
+      "phrases": [
+        "drunk",
+        "alcohol",
+        "drugs",
+        "under the influence",
+        "smells of alcohol",
+        "smell of alcohol",
+        "hungover",
+        "unfit for work",
+        "not safe to work",
+        "impaired"
+      ],
+      "targets": [
+        "G18",
+        "P-G18"
+      ]
+    },
+    {
+      "phrases": [
+        "redundancy",
+        "redundant",
+        "job cuts",
+        "at risk of redundancy",
+        "restructure",
+        "restructuring",
+        "layoffs",
+        "consultation"
+      ],
+      "targets": [
+        "G19",
+        "P-G19"
+      ]
+    },
+    {
+      "phrases": [
+        "morale",
+        "low morale",
+        "team morale",
+        "demotivated",
+        "disengaged",
+        "fed up",
+        "team spirit"
+      ],
+      "targets": [
+        "G20",
+        "P-G20"
+      ]
+    },
+    {
+      "phrases": [
+        "promoted",
+        "managing friends",
+        "former colleague",
+        "former peer",
+        "used to be colleagues",
+        "new manager of my old team"
+      ],
+      "targets": [
+        "G21",
+        "P-G21"
+      ]
     }
   ],
   "risky": [
@@ -499,6 +593,49 @@
         "sexist",
         "discrimination",
         "discriminating",
+        "victimisation"
+      ],
+      "targets": [
+        "G17",
+        "G03"
+      ]
+    },
+    {
+      "level": "hr",
+      "phrases": [
+        "grievance",
+        "whistleblowing",
+        "whistleblower"
+      ],
+      "targets": [
+        "G16"
+      ]
+    },
+    {
+      "level": "hr",
+      "phrases": [
+        "drunk",
+        "drugs",
+        "under the influence"
+      ],
+      "targets": [
+        "G18",
+        "G03"
+      ]
+    },
+    {
+      "level": "hr",
+      "phrases": [
+        "redundancy",
+        "redundant"
+      ],
+      "targets": [
+        "G19"
+      ]
+    },
+    {
+      "level": "hr",
+      "phrases": [
         "assault",
         "violence",
         "violent",
@@ -507,21 +644,13 @@
         "theft",
         "stealing",
         "fraud",
-        "drunk",
-        "drugs",
-        "under the influence",
         "data breach",
-        "whistleblowing",
-        "whistleblower",
-        "grievance",
         "gross misconduct",
         "dismiss",
         "dismissal",
         "sack",
         "sacking",
         "fire them",
-        "redundancy",
-        "redundant",
         "disciplinary"
       ],
       "targets": [

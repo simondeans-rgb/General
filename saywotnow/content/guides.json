@@ -1,5 +1,5 @@
 {
-  "contentVersion": "1.2.0",
+  "contentVersion": "1.3.0",
   "lastEdited": "2026-11-21",
   "review": {
     "jurisdiction": "UK",
@@ -1268,6 +1268,606 @@
           "id": "T01"
         }
       ]
+    },
+    {
+      "id": "G16",
+      "title": "Grievance raised",
+      "category": "performance",
+      "flagLevel": 3,
+      "length": "10–15 mins (first conversation)",
+      "keywords": [
+        "grievance",
+        "complaint",
+        "formal complaint",
+        "unfair treatment",
+        "raise a concern",
+        "complaining"
+      ],
+      "whenToUse": "An employee tells you they want to raise a grievance, or puts a complaint about their work, their treatment or a colleague in writing.",
+      "escalation": {
+        "reviewStatus": "draft",
+        "headline": "Contact HR before you respond to a grievance",
+        "stop": "A grievance may need to follow your grievance procedure and the Acas Code of Practice. Listen and acknowledge it, but don't investigate or decide anything yourself, and contact HR before you respond in writing.",
+        "triageIntro": "Answer for yourself. Your answers are not saved and are not a clearance to go ahead.",
+        "triage": [
+          "Is the grievance about you, or about someone you manage closely?",
+          "Does it mention harassment, bullying, discrimination, whistleblowing or safety?",
+          "Has it been put in writing, or have they asked for it to be dealt with formally?"
+        ],
+        "ifYes": "Don't handle it yourself. Pass it to HR straight away, and don't discuss it with the person it's about.",
+        "ifNo": "Even so, tell HR. An informal concern can still become a formal grievance.",
+        "holdingIntro": "If you need to respond before you've spoken to HR, you could say:",
+        "holding": [
+          "Thank you for raising this with me. I want to make sure it's handled properly, so I'll speak to HR and come back to you by [date].",
+          "I can't promise what the outcome will be, but I can promise it will be taken seriously.",
+          "If you'd like to put it in writing, you can, and you can ask for it to be dealt with formally."
+        ]
+      },
+      "before": [
+        "Find your organisation's grievance policy and who handles grievances.",
+        "Note the date the concern was raised and how (in person, email or letter).",
+        "Check whether you're involved in the complaint. If you are, someone else must deal with it."
+      ],
+      "opening": [
+        "\"Thank you for telling me. I want to understand what's happened, and then make sure it goes to the right place.\""
+      ],
+      "sayIt": [
+        {
+          "when": "Listening first",
+          "line": "Take your time. Tell me what's happened and what you'd like to happen next."
+        },
+        {
+          "when": "Explaining the next step",
+          "line": "I'm going to pass this to HR so it's handled fairly and in the right way. They'll be in touch by [date]."
+        },
+        {
+          "when": "Keeping it confidential",
+          "line": "I'll only share this with the people who need to know to deal with it."
+        }
+      ],
+      "during": [
+        "Listen and let them explain in their own words.",
+        "Ask what outcome they're hoping for.",
+        "Explain the next step: you'll involve HR, and they can put the grievance in writing if they want it handled formally.",
+        "Explain that they can be accompanied at a formal grievance meeting."
+      ],
+      "responses": [
+        {
+          "theySay": "\"I don't want it to be formal.\"",
+          "youCould": "Respect that, but explain you still need to tell HR so it's handled properly. Let them know they can make it formal later."
+        },
+        {
+          "theySay": "\"It's about you.\"",
+          "youCould": "Thank them for telling you. Don't defend yourself or discuss it. Explain that someone else will deal with it, and contact HR."
+        }
+      ],
+      "donts": [
+        "Don't investigate or reach a view yourself.",
+        "Don't discuss the grievance with the person it's about.",
+        "Don't promise an outcome.",
+        "Don't treat them differently for raising it."
+      ],
+      "hrTriggers": [
+        "Always, when a grievance is raised, and before you respond in writing.",
+        "The grievance is about you.",
+        "It involves harassment, discrimination, whistleblowing or safety."
+      ],
+      "after": [
+        "Pass the details to HR the same day if you can.",
+        "Follow HR's guidance on records. Don't send your own summary of the grievance unless HR agrees."
+      ],
+      "summary": {
+        "topic": "A concern you raised",
+        "prompt": "Only that they raised a concern, the date, and that you've passed it to HR.",
+        "recommended": false,
+        "notice": "Check with HR before sending anything in writing about a grievance."
+      },
+      "related": [
+        {
+          "type": "guide",
+          "id": "G17"
+        },
+        {
+          "type": "guide",
+          "id": "G03"
+        }
+      ],
+      "draft": true
+    },
+    {
+      "id": "G17",
+      "title": "Harassment or bullying complaint",
+      "category": "performance",
+      "flagLevel": 3,
+      "length": "10–15 mins (first conversation)",
+      "keywords": [
+        "harassment",
+        "bullying",
+        "bullied",
+        "discrimination",
+        "sexual harassment",
+        "inappropriate comments",
+        "racist",
+        "sexist",
+        "victimisation"
+      ],
+      "whenToUse": "An employee tells you they've been harassed, bullied or discriminated against at work, or you see it happen.",
+      "escalation": {
+        "reviewStatus": "draft",
+        "headline": "Contact HR before you take any further step",
+        "stop": "Harassment, bullying and discrimination complaints need HR to lead. Listen, check the person is safe, and contact HR. Don't investigate, confront the person accused or promise confidentiality.",
+        "triageIntro": "Answer for yourself. Your answers are not saved and are not a clearance to go ahead.",
+        "triage": [
+          "Is anyone at risk of harm, or do they feel unsafe at work right now?",
+          "Does it involve sexual harassment, violence or a threat?",
+          "Is the person accused their manager, someone senior, or you?"
+        ],
+        "ifYes": "Contact HR now. If anyone is in immediate danger, call 999. Agree with HR how to keep the person safe while it's looked into.",
+        "ifNo": "Even so, contact HR before you do anything else. Complaints like this need a fair, independent process.",
+        "holdingIntro": "While you contact HR, you could say:",
+        "holding": [
+          "Thank you for telling me. I'm taking this seriously, and I'm going to get the right people involved so it's handled properly.",
+          "I can't promise to keep this completely confidential, but I'll only share it with the people who need to know.",
+          "Is there anything you need right now to feel safe at work?"
+        ]
+      },
+      "before": [
+        "Find a private place where you won't be overheard.",
+        "Know your HR contact and your organisation's dignity at work or harassment policy.",
+        "If you saw it happen, write down what you saw, with the date and time, for HR."
+      ],
+      "opening": [
+        "\"Thank you for coming to me. Take your time. I'm going to listen.\""
+      ],
+      "sayIt": [
+        {
+          "when": "Listening without judging",
+          "line": "I'm glad you told me. I'm not going to decide anything now; I'm going to make sure it's looked at properly."
+        },
+        {
+          "when": "Checking safety",
+          "line": "Do you feel safe at work at the moment? Is there anything we need to change straight away?"
+        },
+        {
+          "when": "Next steps",
+          "line": "I'm going to speak to HR today. They'll explain what happens next, and I'll check in with you by [date]."
+        }
+      ],
+      "during": [
+        "Listen without interrupting or questioning their account.",
+        "Note what they tell you in their own words, with dates if they give them.",
+        "Ask whether they feel safe and whether anything needs to change now, for example who they work with.",
+        "Explain that you'll involve HR, and what happens next as far as you know."
+      ],
+      "responses": [
+        {
+          "theySay": "\"Please don't tell anyone.\"",
+          "youCould": "Explain honestly that you can't keep it completely confidential, because it has to be dealt with properly, but you'll only share it with the people who need to know."
+        },
+        {
+          "theySay": "\"I don't want to make a fuss.\"",
+          "youCould": "Reassure them that raising it is the right thing to do, and that it will be handled carefully."
+        }
+      ],
+      "donts": [
+        "Don't investigate or question witnesses yourself.",
+        "Don't confront or warn the person accused.",
+        "Don't say whether you believe it.",
+        "Don't promise confidentiality or a particular outcome.",
+        "Don't move the person who complained without their agreement and HR's advice."
+      ],
+      "hrTriggers": [
+        "Always, straight away.",
+        "Anyone is at risk of harm. Also call 999 if the danger is immediate.",
+        "The person accused is senior, or is you."
+      ],
+      "after": [
+        "Give HR your notes the same day.",
+        "Check in with the person who raised it, as agreed with HR.",
+        "Watch for any victimisation of the person who complained, and tell HR straight away."
+      ],
+      "summary": {
+        "topic": "A concern you raised",
+        "prompt": "Only that they raised a concern and you've passed it to HR. Check with HR first.",
+        "recommended": false,
+        "notice": "Speak to HR before sending anything in writing about this."
+      },
+      "related": [
+        {
+          "type": "guide",
+          "id": "G16"
+        },
+        {
+          "type": "guide",
+          "id": "G03"
+        }
+      ],
+      "draft": true
+    },
+    {
+      "id": "G18",
+      "title": "Suspected impairment at work",
+      "category": "wellbeing",
+      "flagLevel": 3,
+      "length": "5–10 mins",
+      "keywords": [
+        "alcohol",
+        "drugs",
+        "drunk",
+        "under the influence",
+        "smell of alcohol",
+        "unfit for work",
+        "impaired",
+        "hungover",
+        "medication",
+        "not safe to work"
+      ],
+      "whenToUse": "You think an employee may be under the influence of alcohol or drugs at work, or unfit to work safely for another reason, such as medication or exhaustion.",
+      "escalation": {
+        "reviewStatus": "draft",
+        "headline": "Safety first, then HR",
+        "stop": "If someone may be unfit to work safely, stop them doing safety-critical work (such as driving or using machinery) straight away. Contact HR before any conversation about possible misconduct. If they seem seriously unwell, get medical help.",
+        "triageIntro": "Answer for yourself. Your answers are not saved and are not a clearance to go ahead.",
+        "triage": [
+          "Could they, or anyone else, be in danger if they carry on working?",
+          "Do they seem unwell, confused or injured?",
+          "Could this lead to disciplinary action?"
+        ],
+        "ifYes": "Make the situation safe first: stop the task, and call 999 or get first aid if they're unwell. Then contact HR before you talk about what's happened.",
+        "ifNo": "Even so, speak to HR before you talk to them about possible alcohol or drug use.",
+        "holdingIntro": "To keep everyone safe while you contact HR, you could say:",
+        "holding": [
+          "I'm concerned you're not well enough to work safely right now, so I'm going to stop you working on [task] for now.",
+          "I'm not making any judgement about why. I just need to make sure you and everyone else are safe.",
+          "Let's get you home safely. We'll talk properly when you're back, and I'll be in touch by [date]."
+        ]
+      },
+      "before": [
+        "Check your organisation's drugs and alcohol policy, including any testing rules.",
+        "Ask a second manager or HR to be with you if you can.",
+        "Note what you've seen: behaviour, speech, smell, coordination, and the time and date."
+      ],
+      "opening": [
+        "\"I've noticed you don't seem yourself today, and I'm worried about you. Can we talk somewhere private?\""
+      ],
+      "sayIt": [
+        {
+          "when": "Describing what you see",
+          "line": "I've noticed [what you observed], and I'm concerned about whether you're OK to work safely."
+        },
+        {
+          "when": "Getting home safely",
+          "line": "I don't want you to drive. Who can collect you, or shall I arrange a taxi?"
+        },
+        {
+          "when": "Offering support",
+          "line": "If there's something going on, support is available, and you can talk to me or HR about it in confidence."
+        }
+      ],
+      "during": [
+        "Describe what you've seen, factually.",
+        "Don't accuse or diagnose. Ask if they're OK, and whether they've taken any medication.",
+        "Stop them doing safety-critical work and arrange for them to get home safely, not by driving.",
+        "Mention support, such as your Employee Assistance Programme (EAP), if you have one."
+      ],
+      "responses": [
+        {
+          "theySay": "\"I'm fine, I've just had a bad night.\"",
+          "youCould": "Acknowledge that. If you're still concerned about safety, explain that you need them to stop work today, and that you'll talk properly later."
+        },
+        {
+          "theySay": "\"I've got a problem and I need help.\"",
+          "youCould": "Thank them for telling you. Treat it as a health and support matter, mention the EAP or their GP, and contact HR about support."
+        }
+      ],
+      "donts": [
+        "Don't let them drive or carry on with safety-critical work.",
+        "Don't search them or their belongings.",
+        "Don't accuse them or discuss it in front of others.",
+        "Don't send them home alone if they seem unwell."
+      ],
+      "hrTriggers": [
+        "Always, before any conversation about possible alcohol or drug use.",
+        "Safety-critical work is involved.",
+        "They tell you about an addiction or a health condition."
+      ],
+      "after": [
+        "Write down what you saw and what you did, and give it to HR.",
+        "Plan a return-to-work conversation with HR's advice."
+      ],
+      "summary": {
+        "topic": "Our conversation about working safely",
+        "prompt": "Only what's needed: that you were concerned about safety and what you agreed. Check with HR first.",
+        "recommended": false,
+        "notice": "Speak to HR before sending anything in writing about this."
+      },
+      "related": [
+        {
+          "type": "guide",
+          "id": "G06"
+        },
+        {
+          "type": "guide",
+          "id": "G03"
+        }
+      ],
+      "draft": true
+    },
+    {
+      "id": "G19",
+      "title": "Redundancy or restructure",
+      "category": "everyday",
+      "flagLevel": 3,
+      "length": "15–30 mins",
+      "keywords": [
+        "redundancy",
+        "redundant",
+        "restructure",
+        "restructuring",
+        "job cuts",
+        "at risk",
+        "consultation",
+        "reorganisation",
+        "layoffs"
+      ],
+      "whenToUse": "Your organisation is planning changes that could put jobs at risk, change roles or reduce numbers, and you need to talk to your team or someone in it.",
+      "escalation": {
+        "reviewStatus": "draft",
+        "headline": "Don't share anything until HR is ready",
+        "stop": "Redundancy and restructuring have legal consultation requirements. Only share what HR has approved, at the time they agree. Don't speculate, make promises or select anyone yourself.",
+        "triageIntro": "Answer for yourself. Your answers are not saved and are not a clearance to go ahead.",
+        "triage": [
+          "Could any roles be at risk, or could terms (pay, hours or location) change?",
+          "Are you being asked about plans that haven't been announced?",
+          "Is anyone affected pregnant, on or just back from maternity, adoption or shared parental leave, or off sick?"
+        ],
+        "ifYes": "Speak to HR before you say anything. There may be rules about timing and consultation, and extra protection for some people.",
+        "ifNo": "Even so, check your wording with HR before you talk to the team.",
+        "holdingIntro": "If you're asked before HR is ready, you could say:",
+        "holding": [
+          "I can't share any more at the moment. When I can, I will, and I'll tell you as soon as I'm able.",
+          "I don't know the answer yet. I'll find out and come back to you by [date].",
+          "I know this is unsettling. Please come and talk to me if you're worried."
+        ]
+      },
+      "before": [
+        "Get HR's briefing, the approved message and the timetable.",
+        "Know what support is available, such as your Employee Assistance Programme (EAP).",
+        "Plan for people's reactions: allow time and a private space."
+      ],
+      "opening": [
+        "\"I want to update you on some proposed changes. I'll tell you what I know, what it could mean for you, and what happens next.\""
+      ],
+      "sayIt": [
+        {
+          "when": "Being clear it's a proposal",
+          "line": "These are proposals at this stage. There will be a consultation, and your views will be listened to."
+        },
+        {
+          "when": "Acknowledging feelings",
+          "line": "It's completely understandable to feel worried. You can ask me anything, and if I don't know, I'll find out."
+        },
+        {
+          "when": "Pointing to support",
+          "line": "If you'd like to talk to someone outside the team, [support] is available."
+        }
+      ],
+      "during": [
+        "Stick to HR's approved message.",
+        "Explain what is proposed, why, and the timetable.",
+        "Explain how consultation will work and who to contact.",
+        "Listen, and write down any questions you can't answer."
+      ],
+      "responses": [
+        {
+          "theySay": "\"Is my job safe?\"",
+          "youCould": "Be honest. If you don't know, say so. Don't guess or reassure without the facts."
+        },
+        {
+          "theySay": "\"Why me?\"",
+          "youCould": "Explain that no decisions have been made and that there will be a fair process. Refer detailed questions to HR."
+        }
+      ],
+      "donts": [
+        "Don't speculate or share rumours.",
+        "Don't make promises about who will be affected.",
+        "Don't talk about it before HR's agreed timing.",
+        "Don't discuss individuals with the team."
+      ],
+      "hrTriggers": [
+        "Always, before any conversation.",
+        "Someone affected is pregnant, on or returning from family leave, or off sick.",
+        "Someone raises a grievance about the process."
+      ],
+      "after": [
+        "Pass unanswered questions to HR.",
+        "Follow HR's guidance on written records and letters. Don't send your own summary unless HR agrees.",
+        "Check in with people individually."
+      ],
+      "summary": {
+        "topic": "Proposed changes",
+        "prompt": "Only what HR has approved. Check with HR first.",
+        "recommended": false,
+        "notice": "Speak to HR before sending anything in writing about redundancy or restructuring."
+      },
+      "related": [
+        {
+          "type": "guide",
+          "id": "G15"
+        }
+      ],
+      "draft": true
+    },
+    {
+      "id": "G20",
+      "title": "Poor team morale",
+      "category": "everyday",
+      "flagLevel": 1,
+      "length": "30–45 mins (team)",
+      "keywords": [
+        "morale",
+        "motivation",
+        "low morale",
+        "team spirit",
+        "disengaged",
+        "unhappy team",
+        "demotivated",
+        "fed up"
+      ],
+      "whenToUse": "Your team seems flat, frustrated or disengaged, for example after a difficult period, a change or a heavy workload.",
+      "before": [
+        "Look for patterns: workload, recent changes, absence, conflict or lack of recognition.",
+        "Decide whether to start with one-to-ones or a team conversation.",
+        "Be ready to listen rather than fix everything at once."
+      ],
+      "opening": [
+        "\"I've noticed the team seems under pressure lately, and I want to hear how things really are for you.\""
+      ],
+      "sayIt": [
+        {
+          "when": "Inviting honesty",
+          "line": "I'd really like to hear what's working and what isn't. Nothing you say will be held against you."
+        },
+        {
+          "when": "Owning your part",
+          "line": "Some of this may be down to me. What could I do differently?"
+        },
+        {
+          "when": "Agreeing small steps",
+          "line": "Let's pick one or two things we can change in the next [period], and check back on them."
+        }
+      ],
+      "during": [
+        "Ask open questions: what's going well, what's hard, and what would help.",
+        "Listen, and sum up what you hear without defending.",
+        "Agree one or two practical changes, with owners and dates.",
+        "Recognise effort and what's gone well."
+      ],
+      "responses": [
+        {
+          "theySay": "\"Nothing ever changes.\"",
+          "youCould": "Acknowledge it. Agree something small you can change quickly, and report back on it."
+        },
+        {
+          "theySay": "Silence.",
+          "youCould": "Give people time. Offer other ways to share their views, such as one-to-ones."
+        }
+      ],
+      "donts": [
+        "Don't get defensive or dismiss concerns.",
+        "Don't promise changes you can't deliver.",
+        "Don't single people out in a group."
+      ],
+      "hrTriggers": [
+        "Morale problems involve bullying, harassment or discrimination.",
+        "Several people raise the same serious concern.",
+        "High absence or turnover suggests a wider problem."
+      ],
+      "after": [
+        "Share what you heard and what will change.",
+        "Follow up the agreed actions by the date you set.",
+        "Keep checking in at 1:1s."
+      ],
+      "summary": {
+        "topic": "How the team is doing",
+        "prompt": "What you heard and the changes you agreed.",
+        "recommended": true
+      },
+      "related": [
+        {
+          "type": "template",
+          "id": "T01"
+        },
+        {
+          "type": "guide",
+          "id": "G15"
+        }
+      ],
+      "draft": true
+    },
+    {
+      "id": "G21",
+      "title": "Managing a former peer",
+      "category": "everyday",
+      "flagLevel": 1,
+      "length": "20–30 mins",
+      "keywords": [
+        "promoted",
+        "new manager",
+        "former colleague",
+        "managing friends",
+        "former peer",
+        "used to be colleagues",
+        "step up"
+      ],
+      "whenToUse": "You've been promoted to manage people who used to be your colleagues or friends at work.",
+      "before": [
+        "Plan one-to-ones with each person early on.",
+        "Think about what will change in your relationships, and what won't.",
+        "Be clear about any decisions you can't discuss with them yet."
+      ],
+      "opening": [
+        "\"Things are a bit different now I'm managing the team, and I wanted to talk about how we make it work.\""
+      ],
+      "sayIt": [
+        {
+          "when": "Naming the change",
+          "line": "I know it might feel strange that I'm now your manager. It does for me too."
+        },
+        {
+          "when": "Setting expectations",
+          "line": "I'll be fair and consistent with everyone, which means some things will need to be different from before."
+        },
+        {
+          "when": "Asking what they need",
+          "line": "What would help you most from me as your manager?"
+        }
+      ],
+      "during": [
+        "Acknowledge the change openly.",
+        "Ask about their goals and what they need from you.",
+        "Explain how you'll work: one-to-ones, decisions, and how to raise issues.",
+        "Be clear that you'll treat everyone fairly."
+      ],
+      "responses": [
+        {
+          "theySay": "\"I thought I should have got the job.\"",
+          "youCould": "Acknowledge their disappointment without debating the decision. Ask about their career goals and how you can support them."
+        },
+        {
+          "theySay": "\"You've changed.\"",
+          "youCould": "Agree that your role has changed, and explain why you need to be consistent with everyone."
+        }
+      ],
+      "donts": [
+        "Don't overcompensate by being too strict or too relaxed.",
+        "Don't share confidential information with former close colleagues.",
+        "Don't avoid difficult conversations because of a friendship."
+      ],
+      "hrTriggers": [
+        "A former peer raises a grievance about your appointment or how you manage.",
+        "You need to deal with a performance or conduct issue with a close friend."
+      ],
+      "after": [
+        "Hold regular one-to-ones.",
+        "Ask your own manager for support or coaching if you need it."
+      ],
+      "summary": {
+        "topic": "Working together now I'm your manager",
+        "prompt": "What you agreed about how you'll work together.",
+        "recommended": true
+      },
+      "related": [
+        {
+          "type": "guide",
+          "id": "G11"
+        },
+        {
+          "type": "template",
+          "id": "T01"
+        }
+      ],
+      "draft": true
     }
   ]
 }

@@ -161,7 +161,7 @@ export function Conversations({ prefs }) {
       <ul class="card-list" role="list">
         ${c.guides.guides.filter((x) => x.category === g).map((x) => html`<li class="card has-star">
           <a class="card-link-cover" href=${'#/guide/' + x.id} onClick=${(e) => go(e, '/guide/' + x.id)}>
-            <span class="card-title">${x.title}</span>
+            <span class="card-title">${x.title}${x.draft ? html` <span class="badge draft-badge">${S.newDraft}</span>` : null}</span>
           </a>
           <span class="card-sub clamp">${x.whenToUse}</span>
           <${FlagChip} level=${x.flagLevel} small />

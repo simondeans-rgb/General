@@ -995,7 +995,13 @@
       "issues": [
         "New: decides which content appears for everyday phrases. Check that risky terms (harassment, self-harm, dismissal…) always lead to HR-first or urgent help, and that the two safety messages are right."
       ],
-      "changeLog": []
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Added phrases for the six new guides; risky terms now lead to the specific HR-first guide (harassment → G17, grievance → G16, alcohol/drugs → G18, redundancy → G19) as well as G03 where relevant.",
+          "by": "SayWotNow build (P3.1)"
+        }
+      ]
     },
     {
       "id": "quickhelp:wording",
@@ -1011,6 +1017,260 @@
       "status": "draft",
       "issues": [
         "New: plain-language situation labels and the 'Is any of this involved?' options decide whether the HR-first or urgent route is shown. Check none of them can lead a serious case past the HR-first gate."
+      ],
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Added six situations for the new guides.",
+          "by": "SayWotNow build (P3.1)"
+        }
+      ]
+    },
+    {
+      "id": "G16",
+      "kind": "guide",
+      "title": "Grievance raised",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "New draft written for SayWotNow v1.8 (P3.1); shown in the app labelled as a draft",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New draft guide: needs qualified HR/legal review before it can be marked approved.",
+        "Serious case: gives a safe first response and HR referral only, by design. Check the HR-first gate wording, especially any statements about legal process (e.g. Acas Code, right to be accompanied, consultation)."
+      ],
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Created as a draft (owner decision: show now, labelled as draft).",
+          "by": "SayWotNow build (P3.1)"
+        }
+      ]
+    },
+    {
+      "id": "P-G16",
+      "kind": "prep",
+      "title": "Grievance raised",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "New draft written for SayWotNow v1.8 (P3.1)",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release.",
+        "Shows the HR-first reminder for this Level 3 guide."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "G17",
+      "kind": "guide",
+      "title": "Harassment or bullying complaint",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "New draft written for SayWotNow v1.8 (P3.1); shown in the app labelled as a draft",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New draft guide: needs qualified HR/legal review before it can be marked approved.",
+        "Serious case: gives a safe first response and HR referral only, by design. Check the HR-first gate wording, especially any statements about legal process (e.g. Acas Code, right to be accompanied, consultation)."
+      ],
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Created as a draft (owner decision: show now, labelled as draft).",
+          "by": "SayWotNow build (P3.1)"
+        }
+      ]
+    },
+    {
+      "id": "P-G17",
+      "kind": "prep",
+      "title": "Harassment or bullying complaint",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "New draft written for SayWotNow v1.8 (P3.1)",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release.",
+        "Shows the HR-first reminder for this Level 3 guide."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "G18",
+      "kind": "guide",
+      "title": "Suspected impairment at work",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "New draft written for SayWotNow v1.8 (P3.1); shown in the app labelled as a draft",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New draft guide: needs qualified HR/legal review before it can be marked approved.",
+        "Serious case: gives a safe first response and HR referral only, by design. Check the HR-first gate wording, especially any statements about legal process (e.g. Acas Code, right to be accompanied, consultation)."
+      ],
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Created as a draft (owner decision: show now, labelled as draft).",
+          "by": "SayWotNow build (P3.1)"
+        }
+      ]
+    },
+    {
+      "id": "P-G18",
+      "kind": "prep",
+      "title": "Suspected impairment at work",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "New draft written for SayWotNow v1.8 (P3.1)",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release.",
+        "Shows the HR-first reminder for this Level 3 guide."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "G19",
+      "kind": "guide",
+      "title": "Redundancy or restructure",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "New draft written for SayWotNow v1.8 (P3.1); shown in the app labelled as a draft",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New draft guide: needs qualified HR/legal review before it can be marked approved.",
+        "Serious case: gives a safe first response and HR referral only, by design. Check the HR-first gate wording, especially any statements about legal process (e.g. Acas Code, right to be accompanied, consultation)."
+      ],
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Created as a draft (owner decision: show now, labelled as draft).",
+          "by": "SayWotNow build (P3.1)"
+        }
+      ]
+    },
+    {
+      "id": "P-G19",
+      "kind": "prep",
+      "title": "Redundancy or restructure",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "New draft written for SayWotNow v1.8 (P3.1)",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release.",
+        "Shows the HR-first reminder for this Level 3 guide."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "G20",
+      "kind": "guide",
+      "title": "Poor team morale",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "New draft written for SayWotNow v1.8 (P3.1); shown in the app labelled as a draft",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New draft guide: needs qualified HR/legal review before it can be marked approved."
+      ],
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Created as a draft (owner decision: show now, labelled as draft).",
+          "by": "SayWotNow build (P3.1)"
+        }
+      ]
+    },
+    {
+      "id": "P-G20",
+      "kind": "prep",
+      "title": "Poor team morale",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "New draft written for SayWotNow v1.8 (P3.1)",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "G21",
+      "kind": "guide",
+      "title": "Managing a former peer",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "New draft written for SayWotNow v1.8 (P3.1); shown in the app labelled as a draft",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New draft guide: needs qualified HR/legal review before it can be marked approved."
+      ],
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Created as a draft (owner decision: show now, labelled as draft).",
+          "by": "SayWotNow build (P3.1)"
+        }
+      ]
+    },
+    {
+      "id": "P-G21",
+      "kind": "prep",
+      "title": "Managing a former peer",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "New draft written for SayWotNow v1.8 (P3.1)",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release."
       ],
       "changeLog": []
     }

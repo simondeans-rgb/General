@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import { loadContentSync } from './helpers.js';
 import { buildIndex, search, normalise, RESULT_KINDS } from '../src/lib/search.js';
 
-const index = buildIndex(loadContentSync());
+const c = loadContentSync();
+c.guideById = Object.fromEntries(c.guides.guides.map((g) => [g.id, g]));
+const index = buildIndex(c);
 const idsOf = (r, k) => r[k].map((x) => x.id);
 
 test('AC-14: "late" returns G02', () => {
@@ -45,7 +47,8 @@ test('P1.1 panel examples: "always late", "crying", "bullying", "not pulling wei
   assert.ok(idsOf(r, 'reaction').includes('R01'));
   assert.ok(idsOf(r, 'guide').includes('G06'));
   r = search(index, 'bullying');
-  assert.equal(top(r, 'guide'), 'G03');
+  assert.equal(top(r, 'guide'), 'G17');
+  assert.ok(idsOf(r, 'guide').includes('G03'));
   assert.equal(r.risk, 'hr');
   r = search(index, 'not pulling their weight');
   assert.equal(top(r, 'guide'), 'G01');
@@ -70,12 +73,14 @@ test('P1.1 full text: words only in the guide body are found', () => {
   assert.ok(idsOf(search(index, 'argued'), 'guide').includes('G04'));
 });
 
-test('P1.1 risky terms always surface HR-first or urgent help', () => {
-  for (const q of ['harassment', 'racist comments', 'stealing from the till', 'drunk at work', 'thinking of dismissal', 'raised a grievance']) {
+test('P1.1/P3.1 risky terms always surface HR-first or urgent help, specific guide first', () => {
+  const expect = { harassment: 'G17', 'racist comments': 'G17', 'stealing from the till': 'G03', 'drunk at work': 'G18', 'thinking of dismissal': 'G03', 'raised a grievance': 'G16', 'at risk of redundancy': 'G19' };
+  for (const [q, id] of Object.entries(expect)) {
     const r = search(index, q);
     assert.equal(r.risk, 'hr', q);
-    assert.equal(top(r, 'guide'), 'G03', q);
+    assert.equal(top(r, 'guide'), id, q);
     assert.match(r.riskMessage, /HR/);
+    assert.ok(c.guideById[top(r, 'guide')].escalation, `${q}: leads to a guide with an HR-first gate`);
   }
   for (const q of ['said they might self harm', 'suicidal']) {
     const r = search(index, q);

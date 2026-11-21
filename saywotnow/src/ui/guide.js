@@ -114,6 +114,7 @@ export function Guide({ id, prefs }) {
       <${FlagChip} level=${guide.flagLevel} />
     </div>
     <p class="scope-note"><span class="uk-chip">${S.ukGuidance}</span> ${S.ukScopeShort}</p>
+    ${guide.draft ? html`<div class="draft-notice" role="note"><${Icon} name="info" size=${20} /><p><strong>${S.newDraft}.</strong> ${S.newDraftBody}</p></div>` : null}
     <${EscalationGate} guide=${guide} prefs=${prefs} />
     <${PrepButton} card=${prepFor(c, 'guide', guide.id)} />
 

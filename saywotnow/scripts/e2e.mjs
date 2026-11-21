@@ -359,7 +359,7 @@ await check('1-minute prep: Home tile, list, card, start the meeting; prep sheet
   const { ctx, page, log } = await newApp();
   await page.locator('.tile', { hasText: '1-minute prep' }).click();
   await page.locator('#main h1', { hasText: '1-minute prep' }).waitFor();
-  assert.equal(await page.locator('.card-list .card').count(), 21);
+  assert.equal(await page.locator('.card-list .card').count(), 27);
   await page.locator('.card', { hasText: 'Return to work' }).click();
   assert.equal(await page.locator('.prep-ask li').count(), 3);
   await page.getByText("Don't ask for more medical detail than you need.").waitFor();
@@ -519,7 +519,7 @@ await check('P0.2 privacy: discarded notes can never come back through the "No m
 
 await check('P0.3 HR-first gate: Level 3 guides warn before any script, from every way in', async () => {
   const { ctx, page, log } = await newApp();
-  for (const id of ['G03', 'G13']) {
+  for (const id of ['G03', 'G13', 'G16', 'G17', 'G18', 'G19']) {
     await page.goto(BASE + `#/guide/${id}`);
     const gate = page.locator('.gate');
     await gate.waitFor();
@@ -674,7 +674,7 @@ await check('P1 safety: Quick Help and search can\'t bypass the HR-first gate', 
   await page.goto(BASE + '#/search');
   await page.fill('input[type=search]', 'harassment');
   await page.locator('.search-risk').getByText('Contact HR first.').waitFor();
-  assert.equal(await page.locator('.card-list a').first().getAttribute('href'), '#/guide/G03');
+  assert.equal(await page.locator('.card-list a').first().getAttribute('href'), '#/guide/G17');
   await page.fill('input[type=search]', 'self harm');
   await page.locator('.search-risk.urgent').getByRole('link', { name: 'Call 999 (UK)' }).waitFor();
   await ctx.close();
@@ -835,6 +835,27 @@ await check('P2.5 accessibility basics on every main screen: one h1, no sideways
     }
     await ctx.close();
   }
+});
+
+await check('P3.1 new draft guides are labelled as drafts and reachable from lists, search and Quick Help', async () => {
+  const { ctx, page, log } = await newApp();
+  await page.goto(BASE + '#/conversations');
+  for (const t of ['Grievance raised', 'Harassment or bullying complaint', 'Suspected impairment at work', 'Redundancy or restructure', 'Poor team morale', 'Managing a former peer']) {
+    await page.locator('.card', { hasText: t }).locator('.draft-badge').waitFor();
+  }
+  await page.goto(BASE + '#/guide/G20');
+  await page.locator('.draft-notice').getByText(/hasn't been reviewed/).waitFor();
+  assert.equal(await page.locator('.gate').count(), 0, 'everyday guides have no gate');
+  await page.goto(BASE + '#/search');
+  await page.fill('input[type=search]', 'low morale');
+  assert.equal(await page.locator('.card-list a').first().getAttribute('href'), '#/guide/G20');
+  await page.goto(BASE + '#/quick');
+  await page.getByRole('link', { name: 'I think they may be under the influence or unfit to work' }).click();
+  await page.getByRole('link', { name: 'None of these' }).click();
+  const order = await page.evaluate(() => [...document.querySelectorAll('.qh-card .gate, .qh-card .quote-card')].map((e) => e.className.split(' ')[0]));
+  assert.equal(order[0], 'gate', 'the impairment card shows its HR-first gate first');
+  assert.deepEqual(log.errors, []);
+  await ctx.close();
 });
 
 await check('Time zone converter: defaults, set a time, day offsets, saved zones, planner', async () => {

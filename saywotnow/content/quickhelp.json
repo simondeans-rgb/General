@@ -71,6 +71,30 @@
     {
       "label": "I need to tell them about a change",
       "guide": "G15"
+    },
+    {
+      "label": "They've raised a grievance or complaint",
+      "guide": "G16"
+    },
+    {
+      "label": "They've told me they're being harassed or bullied",
+      "guide": "G17"
+    },
+    {
+      "label": "I think they may be under the influence or unfit to work",
+      "guide": "G18"
+    },
+    {
+      "label": "Jobs or roles may be affected by a restructure",
+      "guide": "G19"
+    },
+    {
+      "label": "The team's morale is low",
+      "guide": "G20"
+    },
+    {
+      "label": "I now manage people who used to be my peers",
+      "guide": "G21"
     }
   ],
   "seriousQuestion": "Is any of this involved?",

@@ -334,6 +334,10 @@
                 }
               }
             }
+          },
+          "draft": {
+            "description": "New guide not yet reviewed: shown with a 'New draft' label (P3.1).",
+            "type": "boolean"
           }
         }
       }

@@ -1,7 +1,13 @@
 {
   "contentVersion": "1.0.0",
   "lastEdited": "2026-11-20",
-  "review": { "jurisdiction": "UK", "reviewStatus": "draft", "reviewedBy": null, "reviewedOn": null, "nextReviewOn": null },
+  "review": {
+    "jurisdiction": "UK",
+    "reviewStatus": "draft",
+    "reviewedBy": null,
+    "reviewedOn": null,
+    "nextReviewOn": null
+  },
   "title": "1-minute prep",
   "intro": "Three questions to ask, one thing to avoid, one thing to remember. Read it on your way in.",
   "groups": {
@@ -327,6 +333,96 @@
       ],
       "avoid": "Don't speculate or share rumours.",
       "remember": "Be clear on what's changing, why, when, and how it affects them."
+    },
+    {
+      "id": "P-G16",
+      "title": "Grievance raised",
+      "target": {
+        "type": "guide",
+        "id": "G16"
+      },
+      "ask": [
+        "What happened, in your own words?",
+        "What would you like to happen next?",
+        "Would you like this to be dealt with formally?"
+      ],
+      "avoid": "Don't investigate or reach a view yourself.",
+      "remember": "Pass it to HR the same day if you can."
+    },
+    {
+      "id": "P-G17",
+      "title": "Harassment or bullying complaint",
+      "target": {
+        "type": "guide",
+        "id": "G17"
+      },
+      "ask": [
+        "Can you tell me what happened?",
+        "Do you feel safe at work right now?",
+        "Is there anything you need straight away?"
+      ],
+      "avoid": "Don't confront the person accused or promise confidentiality.",
+      "remember": "Contact HR straight away. If anyone is in immediate danger, call 999."
+    },
+    {
+      "id": "P-G18",
+      "title": "Suspected impairment at work",
+      "target": {
+        "type": "guide",
+        "id": "G18"
+      },
+      "ask": [
+        "Are you OK?",
+        "Have you taken any medication today?",
+        "Who can help you get home safely?"
+      ],
+      "avoid": "Don't let them drive or carry on with safety-critical work.",
+      "remember": "Safety first, then HR."
+    },
+    {
+      "id": "P-G19",
+      "title": "Redundancy or restructure",
+      "target": {
+        "type": "guide",
+        "id": "G19"
+      },
+      "ask": [
+        "What questions do you have?",
+        "How are you feeling about it?",
+        "What support would help?"
+      ],
+      "avoid": "Don't speculate or promise who will be affected.",
+      "remember": "Only share what HR has approved, when they agree."
+    },
+    {
+      "id": "P-G20",
+      "title": "Poor team morale",
+      "target": {
+        "type": "guide",
+        "id": "G20"
+      },
+      "ask": [
+        "What's going well at the moment?",
+        "What's making things hard?",
+        "What one thing would make the biggest difference?"
+      ],
+      "avoid": "Don't get defensive.",
+      "remember": "Agree a small change, then report back on it."
+    },
+    {
+      "id": "P-G21",
+      "title": "Managing a former peer",
+      "target": {
+        "type": "guide",
+        "id": "G21"
+      },
+      "ask": [
+        "How are you feeling about the change?",
+        "What would help you most from me?",
+        "What are your goals for the next year?"
+      ],
+      "avoid": "Don't share confidential information with former close colleagues.",
+      "remember": "Be fair and consistent with everyone."
     }
   ]
 }

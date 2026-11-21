@@ -665,3 +665,9 @@ a.pill { display: inline-flex; align-items: center; text-decoration: none; }
 .form-section-head h2 { min-width: 0; overflow-wrap: anywhere; }
 .card-list > li, .card { min-width: 0; }
 .card-title, .card-sub { overflow-wrap: anywhere; }
+
+/* ---------------- New draft guides (P3.1) ---------------- */
+.draft-badge { background: var(--edge-bg); color: var(--edge-ink); }
+.draft-notice { display: flex; gap: 10px; align-items: flex-start; border: 1.5px dashed var(--edge-line); background: var(--edge-bg); color: var(--ink); border-radius: var(--radius-sm); padding: 10px 12px; margin: 0 0 12px; }
+.draft-notice > svg { color: var(--edge-ink); flex: none; margin-top: 2px; }
+.draft-notice p { margin: 0; }

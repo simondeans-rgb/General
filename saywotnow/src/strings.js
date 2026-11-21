@@ -98,6 +98,8 @@ export const S = {
   contactHrOrAdviser: 'Contact your HR team or a qualified adviser.',
   gateCheck: 'Check before you go any further',
   gateOpenGuide: 'See the HR checks in the full guide',
+  newDraft: 'New draft',
+  newDraftBody: "This guide is new and hasn't been reviewed by an HR professional or employment lawyer yet. Use it with care, and check with HR if you're unsure.",
   draftContent: 'Draft wording – not yet independently reviewed.',
   draftStatus: 'Status: draft. This content has not yet been independently reviewed by a qualified HR professional or employment lawyer.',
   ukGuidance: 'UK guidance',
