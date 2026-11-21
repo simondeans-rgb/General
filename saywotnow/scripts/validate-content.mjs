@@ -59,7 +59,7 @@ function check(schema, value, path, file, defs) {
 
 /* ---------- Load and schema-check ---------- */
 
-const NAMES = ['home', 'templates', 'guides', 'reactions', 'tools', 'pages', 'timezones', 'currencies'];
+const NAMES = ['home', 'templates', 'guides', 'reactions', 'tools', 'pages', 'timezones', 'currencies', 'prep', 'interview'];
 const content = {};
 for (const name of NAMES) {
   const file = `content/${name}.json`;
@@ -144,12 +144,41 @@ if (content.currencies && content.timezones) {
   const lib = readFileSync(join(root, 'src/lib/calc/currency.js'), 'utf8');
   if (!lib.includes(C.source.endpoint)) fail('src/lib/calc/currency.js', '', 'RATES_URL must match source.endpoint in currencies.json');
 }
+if (content.prep && content.templates && content.guides) {
+  const f = 'content/prep.json';
+  unique(f, content.prep.cards.map((p) => p.id), 'prep card id');
+  const targets = content.prep.cards.map((p) => `${p.target.type}:${p.target.id || ''}`);
+  unique(f, targets, 'prep target');
+  for (const p of content.prep.cards) {
+    const { type, id } = p.target;
+    if (type === 'oneToOne' && id) fail(f, p.id, 'a oneToOne target has no id');
+    if (type === 'template' && !content.templates.templates.some((t) => t.id === id)) fail(f, p.id, `unknown template "${id}"`);
+    if (type === 'template' && content.templates.templates.find((t) => t.id === id)?.pair) fail(f, p.id, `${id} is part of the 1:1 pair: use a oneToOne target`);
+    if (type === 'guide' && !content.guides.guides.some((g) => g.id === id)) fail(f, p.id, `unknown guide "${id}"`);
+  }
+  for (const g of content.guides.guides) if (!targets.includes(`guide:${g.id}`)) fail(f, '', `no prep card for ${g.id}`);
+}
+if (content.interview) {
+  const f = 'content/interview.json';
+  const I = content.interview;
+  const dims = new Set(I.dimensions.map((d) => d.id));
+  unique(f, I.dimensions.map((d) => d.id), 'dimension id');
+  unique(f, I.competencies.map((c) => c.id), 'competency id');
+  unique(f, I.competencies.flatMap((c) => c.questions.map((q) => q.id)), 'question id');
+  for (const c of I.competencies) {
+    if (!dims.has(c.dimension)) fail(f, c.id, `unknown dimension "${c.dimension}"`);
+    for (const q of c.questions) if (!I.levels.includes(q.level)) fail(f, q.id, `unknown level "${q.level}"`);
+  }
+  for (const d of I.dimensions) if (!I.competencies.some((c) => c.dimension === d.id)) fail(f, d.id, 'dimension has no competencies');
+  const values = I.ratingScale.map((r) => r.value).join(',');
+  if (values !== '1,2,3,4,5') fail(f, '.ratingScale', 'must list values 1 to 5 in order');
+}
 if (content.reactions) unique('content/reactions.json', content.reactions.reactions.map((r) => r.id), 'reaction id');
 if (content.tools) unique('content/tools.json', content.tools.tools.map((t) => t.id), 'tool id');
 
 if (content.home && content.templates && content.guides && content.tools) {
   const f = 'content/home.json';
-  const screens = ['conversations', 'meetings', 'toolkit', 'reactions', 'settings', 'search'];
+  const screens = ['conversations', 'meetings', 'toolkit', 'reactions', 'settings', 'search', 'prep'];
   for (const tile of content.home.tiles) {
     const { type, id } = tile.target;
     const ok = type === 'oneToOne'

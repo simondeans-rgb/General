@@ -1,6 +1,6 @@
 {
-  "contentVersion": "1.1.0",
-  "lastReviewed": "2026-11-17",
+  "contentVersion": "1.2.0",
+  "lastReviewed": "2026-11-21",
   "appName": "SayWotNow",
   "tagline": "Lost for words? We've got you.",
   "supportEmail": "",
@@ -30,10 +30,10 @@
   "privacy": {
     "title": "Privacy statement",
     "text": [
-      "SayWotNow does not collect, store or share any personal data. Everything you type into a template is held only while you're using it and is cleared when you send, discard or close it.",
+      "SayWotNow does not collect, store or share any personal data. Everything you type into a template is held only while you're using it and is cleared when you send, discard or close it. The same goes for interviews: candidate names, evidence notes and ratings are kept only while the interview is open.",
       "Summaries are sent using your device's own email app, so they're handled by your email provider, not by us.",
       "SayWotNow contains no analytics, advertising or tracking. Once installed, it only connects to the internet for one thing: when you open the currency converter, it downloads the day's exchange rates from the Exchange Rate API (exchangerate-api.com). That request doesn't include anything you've typed. Like any website, the rates service can see your device's internet address when it answers.",
-      "The only things saved on your device are your preferences (such as favourites, your HR team's contact details and your chosen time zones and currencies) and the last exchange rates downloaded. These never leave your device."
+      "The only things saved on your device are your preferences (such as favourites, your HR team's contact details and your chosen time zones and currencies), the last exchange rates downloaded, and any interview packs you choose to save (the role, interviewer names and chosen questions, never candidate details). These never leave your device."
     ]
   },
   "about": {

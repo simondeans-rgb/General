@@ -1,7 +1,9 @@
 import { html, useState, useEffect, useRef } from '../vendor/preact-htm.js';
 import { S } from '../strings.js';
 import { Icon, FLAG_ICON } from './icons.js';
-import { content, navigate, goBack, TopBar, FavStar, FlagChip, toast } from './core.js';
+import { content, navigate, goBack, TopBar, FavStar, FlagChip, toast, showDialog } from './core.js';
+import { prepFor } from '../content.js';
+import { PrepButton } from './prep.js';
 import { toggleFavourite } from '../prefs.js';
 import { copyText } from '../platform.js';
 import { ContactHrButton, startSummary } from './form.js';
@@ -11,19 +13,37 @@ function stripQuotes(s) {
   return m ? { quote: true, text: m[1] } : { quote: false, text: s };
 }
 
-function OpeningLine({ line }) {
-  // Lines can be "Context: "quote"" or a plain quote.
-  const m = /^(.*?):\s*"(.*)"$/.exec(line);
-  const lead = m ? m[1] : null;
-  const { text } = m ? { text: m[2] } : stripQuotes(line);
+function showLarge(lead, text) {
+  return showDialog({
+    title: lead || S.sayIt,
+    sheet: true,
+    contentFirst: true,
+    content: () => html`<p class="say-large">${text}</p>`,
+    actions: [{ label: S.done, value: true, primary: true }],
+  });
+}
+
+function QuoteCard({ lead, text }) {
   return html`<li class="quote-card">
     ${lead ? html`<p class="quote-lead">${lead}:</p>` : null}
     <blockquote><p>${text}</p></blockquote>
-    <button type="button" class="icon-btn small" aria-label=${`${S.copyLine}: ${text}`}
-      onClick=${async () => { try { await copyText(text); toast(S.lineCopied, 1500); } catch { toast(S.copyFailed); } }}>
-      <${Icon} name="copy" size=${20} />
-    </button>
+    <div class="quote-actions">
+      <button type="button" class="icon-btn small" aria-label=${`${S.showLarge}: ${text}`} onClick=${() => showLarge(lead, text)}>
+        <${Icon} name="expand" size=${20} />
+      </button>
+      <button type="button" class="icon-btn small" aria-label=${`${S.copyLine}: ${text}`}
+        onClick=${async () => { try { await copyText(text); toast(S.lineCopied, 1500); } catch { toast(S.copyFailed); } }}>
+        <${Icon} name="copy" size=${20} />
+      </button>
+    </div>
   </li>`;
+}
+
+function OpeningLine({ line }) {
+  // Lines can be "Context: "quote"" or a plain quote.
+  const m = /^(.*?):\s*"(.*)"$/.exec(line);
+  const { text } = m ? { text: m[2] } : stripQuotes(line);
+  return html`<${QuoteCard} lead=${m ? m[1] : null} text=${text} />`;
 }
 
 function HrPanel({ guide, prefs }) {
@@ -70,6 +90,7 @@ export function Guide({ id, prefs }) {
       <span>${S.categories[guide.category]}</span><span aria-hidden="true">·</span><span><${Icon} name="calendar" size=${16} /> ${guide.length}</span>
       <${FlagChip} level=${guide.flagLevel} />
     </div>
+    <${PrepButton} card=${prepFor(c, 'guide', guide.id)} />
 
     <section class="when" aria-labelledby="when-h">
       <h2 id="when-h" class="mini-title">${S.whenToUse}</h2>
@@ -99,6 +120,9 @@ export function Guide({ id, prefs }) {
         </div>` : null}
         <h2 class="mini-title">${S.opening}</h2>
         <ul class="quotes" role="list">${guide.opening.map((l) => html`<${OpeningLine} line=${l} />`)}</ul>
+        ${guide.sayIt ? html`<h2 class="mini-title">${S.sayIt}</h2>
+          <p class="muted say-note">${S.sayItNote}</p>
+          <ul class="quotes" role="list">${guide.sayIt.map((x) => html`<${QuoteCard} lead=${x.when} text=${x.line} />`)}</ul>` : null}
         <h2 class="mini-title">${S.keyQuestions}</h2>
         <ul class="bullets">${guide.during.map((l) => html`<li>${l}</li>`)}</ul>
         <h2 class="mini-title">${S.likelyResponses}</h2>

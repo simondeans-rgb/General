@@ -1,0 +1,331 @@
+{
+  "contentVersion": "1.0.0",
+  "lastReviewed": "2026-11-20",
+  "title": "1-minute prep",
+  "intro": "Three questions to ask, one thing to avoid, one thing to remember. Read it on your way in.",
+  "groups": {
+    "meetings": "Meetings",
+    "conversations": "Tough conversations"
+  },
+  "labels": {
+    "ask": "Ask",
+    "avoid": "Avoid",
+    "remember": "Remember"
+  },
+  "cards": [
+    {
+      "id": "P-1to1",
+      "title": "Regular 1:1",
+      "target": {
+        "type": "oneToOne"
+      },
+      "ask": [
+        "How are you doing, really?",
+        "What's going well, and what's getting in the way?",
+        "What do you need from me before we next meet?"
+      ],
+      "avoid": "Don't let it turn into a status update. Their agenda comes first.",
+      "remember": "Check the actions you agreed last time."
+    },
+    {
+      "id": "P-T03",
+      "title": "Return to work",
+      "target": {
+        "type": "template",
+        "id": "T03"
+      },
+      "ask": [
+        "How are you feeling now?",
+        "Is there anything we should do to help you settle back in?",
+        "Did anything at work contribute to the absence?"
+      ],
+      "avoid": "Don't ask for more medical detail than you need.",
+      "remember": "Hold it on their first day back if you can."
+    },
+    {
+      "id": "P-T04",
+      "title": "Probation review",
+      "target": {
+        "type": "template",
+        "id": "T04"
+      },
+      "ask": [
+        "How do you feel the role is going so far?",
+        "What's been hardest to get to grips with?",
+        "What support would help you meet the standard?"
+      ],
+      "avoid": "Don't let a concern come up for the first time at the final review.",
+      "remember": "Know the possible outcomes before you go in."
+    },
+    {
+      "id": "P-T05",
+      "title": "Performance review",
+      "target": {
+        "type": "template",
+        "id": "T05"
+      },
+      "ask": [
+        "What are you most proud of this period?",
+        "Where do you think things fell short, and why?",
+        "What do you want to develop next?"
+      ],
+      "avoid": "Don't bring up criticism that hasn't been raised during the year.",
+      "remember": "Bring their objectives and a few specific examples."
+    },
+    {
+      "id": "P-T06",
+      "title": "Stay interview",
+      "target": {
+        "type": "template",
+        "id": "T06"
+      },
+      "ask": [
+        "What do you look forward to at work?",
+        "What might tempt you to leave?",
+        "What's one thing I could change to make your job better?"
+      ],
+      "avoid": "Don't get defensive, or promise what you can't deliver.",
+      "remember": "Follow through on what you say you'll do."
+    },
+    {
+      "id": "P-T07",
+      "title": "New starter check-in",
+      "target": {
+        "type": "template",
+        "id": "T07"
+      },
+      "ask": [
+        "How are you settling in?",
+        "Is there anything you still need that you don't have?",
+        "Is anything different from what you expected?"
+      ],
+      "avoid": "Don't assume that no questions means no problems.",
+      "remember": "Check in at week 1, month 1 and month 3."
+    },
+    {
+      "id": "P-G01",
+      "title": "Underperformance",
+      "target": {
+        "type": "guide",
+        "id": "G01"
+      },
+      "ask": [
+        "How do you think things have been going?",
+        "Is anything getting in the way: workload, training, tools, or anything outside work?",
+        "What would help you improve here?"
+      ],
+      "avoid": "Don't generalise with \"always\" or \"never\". Use specific examples.",
+      "remember": "Have 2 or 3 dated examples ready."
+    },
+    {
+      "id": "P-G02",
+      "title": "Lateness and timekeeping",
+      "target": {
+        "type": "guide",
+        "id": "G02"
+      },
+      "ask": [
+        "Is there anything behind this that I should know about?",
+        "Is anything making the start time difficult?",
+        "What can we agree from here?"
+      ],
+      "avoid": "Don't raise it in front of colleagues.",
+      "remember": "Bring the dates and their contracted hours."
+    },
+    {
+      "id": "P-G03",
+      "title": "Behaviour and conduct",
+      "target": {
+        "type": "guide",
+        "id": "G03"
+      },
+      "ask": [
+        "Can you talk me through what happened from your point of view?",
+        "How do you think it came across to others?",
+        "What will you do differently from now on?"
+      ],
+      "avoid": "Don't reach a conclusion before you've heard their account.",
+      "remember": "If it's serious, talk to HR before you do anything else."
+    },
+    {
+      "id": "P-G04",
+      "title": "Conflict between team members",
+      "target": {
+        "type": "guide",
+        "id": "G04"
+      },
+      "ask": [
+        "How do things look from your side?",
+        "What do you need from [colleague] to work well together?",
+        "Would you be willing to meet together?"
+      ],
+      "avoid": "Don't take sides.",
+      "remember": "Speak to each person on their own first."
+    },
+    {
+      "id": "P-G05",
+      "title": "Frequent short-term absence",
+      "target": {
+        "type": "guide",
+        "id": "G05"
+      },
+      "ask": [
+        "Is there an underlying reason, or anything that connects these absences?",
+        "Is anything at work contributing?",
+        "What support would help?"
+      ],
+      "avoid": "Don't suggest they're not genuinely ill.",
+      "remember": "Have the absence record to hand, and check your policy."
+    },
+    {
+      "id": "P-G06",
+      "title": "Mental health",
+      "target": {
+        "type": "guide",
+        "id": "G06"
+      },
+      "ask": [
+        "How are you doing?",
+        "How is it affecting you at work?",
+        "What would help right now?"
+      ],
+      "avoid": "Don't diagnose or give opinions about conditions.",
+      "remember": "Know where to point them: EAP, GP or OH. If there's a risk to life, call 999."
+    },
+    {
+      "id": "P-G07",
+      "title": "Bereavement",
+      "target": {
+        "type": "guide",
+        "id": "G07"
+      },
+      "ask": [
+        "How are you doing?",
+        "How much time do you think you need?",
+        "How would you like us to keep in touch?"
+      ],
+      "avoid": "Don't push for a return date.",
+      "remember": "Keep the first conversation short and kind."
+    },
+    {
+      "id": "P-G08",
+      "title": "Menopause",
+      "target": {
+        "type": "guide",
+        "id": "G08"
+      },
+      "ask": [
+        "How is it affecting you at work?",
+        "What adjustments would help?",
+        "When shall we review how it's going?"
+      ],
+      "avoid": "Don't make jokes, assumptions or comments about age.",
+      "remember": "They only need to share what they're comfortable with."
+    },
+    {
+      "id": "P-G09",
+      "title": "Pregnancy announcement",
+      "target": {
+        "type": "guide",
+        "id": "G09"
+      },
+      "ask": [
+        "How are you feeling?",
+        "Who knows, and when would you like the team told?",
+        "Is there anything you need right now?"
+      ],
+      "avoid": "Don't ask whether they plan to come back.",
+      "remember": "A risk assessment is needed, and HR will cover leave and pay."
+    },
+    {
+      "id": "P-G10",
+      "title": "Personal hygiene",
+      "target": {
+        "type": "guide",
+        "id": "G10"
+      },
+      "ask": [
+        "Is there anything that might be contributing to this?",
+        "Is there anything I can do to help?",
+        "Is there anything you'd like to ask me?"
+      ],
+      "avoid": "Don't drop hints or drag it out. Be direct, brief and kind.",
+      "remember": "Find a private place and a quiet moment."
+    },
+    {
+      "id": "P-G11",
+      "title": "Giving feedback",
+      "target": {
+        "type": "guide",
+        "id": "G11"
+      },
+      "ask": [
+        "How did you see it?",
+        "What would you do differently next time?",
+        "What support would help?"
+      ],
+      "avoid": "Don't sandwich the message between compliments.",
+      "remember": "Situation, Behaviour, Impact."
+    },
+    {
+      "id": "P-G12",
+      "title": "Saying no to a request",
+      "target": {
+        "type": "guide",
+        "id": "G12"
+      },
+      "ask": [
+        "What matters most to you about this request?",
+        "Would any of these alternatives work for you?",
+        "What would you like to happen next?"
+      ],
+      "avoid": "Don't blame others if it's your decision.",
+      "remember": "Give the honest reason, and what would need to change for a yes."
+    },
+    {
+      "id": "P-G13",
+      "title": "Flexible working request",
+      "target": {
+        "type": "guide",
+        "id": "G13"
+      },
+      "ask": [
+        "What exactly are you looking for?",
+        "How do you see it working day to day?",
+        "Would a trial period work for you?"
+      ],
+      "avoid": "Don't refuse in the meeting before you've considered it properly.",
+      "remember": "They don't have to give a reason. Know when the written decision is due."
+    },
+    {
+      "id": "P-G14",
+      "title": "Pay rise request",
+      "target": {
+        "type": "guide",
+        "id": "G14"
+      },
+      "ask": [
+        "What do you think justifies the increase?",
+        "What are you hoping for?",
+        "If it's not possible now, what would you like to work towards?"
+      ],
+      "avoid": "Don't promise an increase you can't approve.",
+      "remember": "Know how and when pay decisions are made."
+    },
+    {
+      "id": "P-G15",
+      "title": "Announcing change",
+      "target": {
+        "type": "guide",
+        "id": "G15"
+      },
+      "ask": [
+        "What questions do you have?",
+        "How do you feel about it?",
+        "What would help you through the change?"
+      ],
+      "avoid": "Don't speculate or share rumours.",
+      "remember": "Be clear on what's changing, why, when, and how it affects them."
+    }
+  ]
+}

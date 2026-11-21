@@ -12,8 +12,9 @@ Cream; Nunito).
 | | |
 |---|---|
 | Meetings | 8 templates (T01–T08) rendered by one form engine from `content/templates.json` |
-| Conversations | 15 guides (G01–G15) rendered by one guide screen from `content/guides.json`, plus the shared "If they react…" library |
-| Toolkit | Time zone converter (ported from the Worldly Explorer world clock), currency converter (live rates), holiday, notice period, Bradford Factor and SBI feedback builder. The interview pack generator is a placeholder until its existing code and question library are supplied (spec Q3). |
+| Home | "I need to…" tiles, search, favourites, and **1-minute prep**: a card for each meeting type and guide with three questions to ask, one thing to avoid and one to remember (`content/prep.json`). It opens from Home as its own screen, or as a sheet from a guide or template, so nothing typed into a form is lost |
+| Conversations | 15 guides (G01–G15) rendered by one guide screen from `content/guides.json`, plus the shared "If they react…" library. Each guide's During tab has **Say it like this**: copy-ready lines (`sayIt`), each with Copy and a large-text view for reading straight off the screen |
+| Toolkit | Time zone converter (ported from the Worldly Explorer world clock), currency converter (live rates), holiday, notice period, Bradford Factor and SBI feedback builder. **Interview pack generator** (ported from the aHRcade ACTED tool): build a pack in 4 steps (role and panel, competencies, primary and backup questions, review), export it to Word or PDF, explore the 350-question library, and run the interview with notes and 1–5 ratings. |
 | Settings | HR contact, default 1:1 format, email footer, Bradford bands, appearance, About / Disclaimer / Privacy / Content information |
 
 ## Run it
@@ -60,13 +61,13 @@ scripts/              content validator, e2e checks, icon renderer
 | # | Requirement | How it's met here |
 |---|---|---|
 | P1 | Form data in memory only | Held in a JavaScript object. Cleared on send, discard, leaving the form, reload or close. |
-| P2 | No state restoration | Nothing is written to `localStorage`, `sessionStorage`, IndexedDB, cookies or the URL. Inputs use `autocomplete="off"`. The e2e suite checks storage and URL after typing. |
+| P2 | No state restoration | Nothing typed into a template, guide, tool or interview is written to `localStorage`, `sessionStorage`, IndexedDB, cookies or the URL. Inputs use `autocomplete="off"`. The e2e suite checks storage and URL after typing. **Agreed exception:** interview packs the user chooses to save (role, function, level, description, interviewer names and chosen questions). Candidate names, notes and ratings are never stored. |
 | P3 | Privacy screen | A branded cover is shown on `visibilitychange`/`pagehide` (and `blur` on touch devices). **Best effort:** browsers don't guarantee the cover is painted before the OS takes its app-switcher snapshot. |
 | P4 | No network | **One agreed exception: the currency converter's exchange rates** (see below). Otherwise the Content Security Policy only allows the app's own origin, and once installed the service worker serves everything from cache. The first visit must download the app. |
-| P5 | No third-party SDKs | None. The only third-party code is the vendored Preact/htm UI library and the Nunito font, both served locally. |
+| P5 | No third-party SDKs | None. The only third-party code is the vendored Preact/htm UI library, the docx library for Word export (loaded only when exporting) and the Nunito font, all served locally. |
 | P6 | Clipboard expiry | Copy fallback asks the browser to clear the clipboard after 2 minutes. **Best effort:** this only works while the app is open and in front. Browsers can't mark clipboard content as sensitive. |
 | P7 | No keyboard learning | `spellcheck="false"` (which also stops browsers sending text to cloud spellcheckers), `autocorrect="off"`. Web pages can't switch off the keyboard's own learning. |
-| P8 | Backups | Only the preferences allow-list is ever stored. |
+| P8 | Backups | Only the preferences allow-list is ever stored (including saved interview packs, which hold no candidate details). |
 
 ### Currency converter: the one network request
 
@@ -120,8 +121,25 @@ deliberate exception to P4 and acceptance test AC-05. It's kept as small as poss
 - T04 "Not confirming" sends to HR only, with a short covering line asking for
   advice. "Send to employee instead" is behind a confirmation.
 - For the holiday statutory check, when the entitlement excludes bank holidays,
-  8 bank holidays (England and Wales), pro-rated, are added before comparing.
+  the usual number of bank holidays for the nation chosen in the calculator is
+  added, pro-rated, before comparing: 8 in England and Wales, 9 in Scotland,
+  10 in Northern Ireland. The chosen nation is remembered (`holidayNation`, a
+  non-personal preference); the figures entered are not.
+- **New content written for v1.3** (needs the same HR review as the rest, see
+  "Still needed"): the "Say it like this" lines in each guide and every card in
+  `content/prep.json`. They're drawn from each guide's own advice, and words in
+  [square brackets] are for the manager to fill in.
 - A checklist with nothing ticked counts as empty and is left out of the email.
+- **Interview pack generator.** The 35 competencies, 350 questions, indicators, rating
+  scale and guidance are copied word for word from the client's aHRcade tool
+  (`content/interview.json`), keeping the ACTED name. Differences from the original,
+  to fit SayWotNow's privacy rules: no accounts or cloud sync (packs are saved on the
+  device only when you tap Save); interview mode keeps candidate details, notes and
+  ratings in memory only (leaving asks first, and "Finish and clear" wipes them), so an
+  interview can't be resumed after closing the app; the emailed record contains the
+  notes as text rather than asking you to attach a PDF. Packs and records are branded
+  SayWotNow. As in aHRcade, every competency starts on a new page in the Word pack,
+  the printed pack and the printed interview record. Word files are built on the device by the vendored docx library.
 - **Currency converter.** It uses the same places as the time zone converter. Each
   place's currency comes from its country, via `countryCurrency` in
   `content/currencies.json`. The defaults are the same seven locations: USD, GBP,
@@ -139,6 +157,6 @@ deliberate exception to P4 and acceptance test AC-05. It's kept as small as poss
 
 ## Still needed from the client
 
-1. Interview pack generator source and question library (spec Q3).
-2. Support email (spec Q5): set `supportEmail` in `content/pages.json`.
-3. Content review by an HR professional or employment lawyer (spec Q4).
+1. Support email (spec Q5): set `supportEmail` in `content/pages.json`.
+2. Content review by an HR professional or employment lawyer (spec Q4),
+   including the v1.3 "Say it like this" lines and 1-minute prep cards.

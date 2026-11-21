@@ -4,8 +4,8 @@ import { Icon } from './icons.js';
 import { content, navigate, goBack, TopBar, FavStar, Disclosure, toast } from './core.js';
 import { DateInput, Switch } from './fields.js';
 import { Notice } from './form.js';
-import { toggleFavourite } from '../prefs.js';
-import { calculateHoliday } from '../lib/calc/holiday.js';
+import { toggleFavourite, setPref } from '../prefs.js';
+import { calculateHoliday, NATIONS } from '../lib/calc/holiday.js';
 import { calculateNotice } from '../lib/calc/notice.js';
 import { bradford, bandFor } from '../lib/calc/bradford.js';
 import { buildSbi } from '../lib/calc/sbi.js';
@@ -13,6 +13,7 @@ import { formatWithDay, todayISO } from '../lib/dates.js';
 import { copySensitive } from '../platform.js';
 import { TimeZones } from './timezones.js';
 import { Currency } from './currency.js';
+import { InterviewTool } from './interview.js';
 
 const PRIVATE = { autocomplete: 'off', autocorrect: 'off', spellcheck: false };
 
@@ -70,8 +71,10 @@ function Holiday({ tool, prefs }) {
   const set = (k) => (x) => { setV({ ...v, [k]: x }); setRes(null); };
   const errs = res && !res.ok ? res.errors : {};
   return html`<${ToolShell} tool=${tool} prefs=${prefs}>
-    <form class="form tool-form" onSubmit=${(e) => { e.preventDefault(); setRes(calculateHoliday({ ...v })); }} novalidate>
+    <form class="form tool-form" onSubmit=${(e) => { e.preventDefault(); setRes(calculateHoliday({ ...v, nation: prefs.holidayNation })); }} novalidate>
       <${NumField} id="h-ent" label="Full-time annual entitlement" suffix="days" value=${v.entitlement} onChange=${set('entitlement')} error=${errs.entitlement} />
+      <${Segmented} name="nation" label="Where do they work?" options=${Object.entries(NATIONS).map(([k, n]) => [k, n.short])}
+        value=${prefs.holidayNation} onChange=${(k) => { setPref('holidayNation', k); setRes(null); }} />
       <div class="field-toggle"><span id="h-bh">Includes bank holidays</span><${Switch} checked=${v.includesBankHolidays} onChange=${set('includesBankHolidays')} label="Entitlement includes bank holidays" /></div>
       <${NumField} id="h-ft" label="Full-time days per week" value=${v.fullTimeDays} step="0.5" min="0.5" max="7" onChange=${set('fullTimeDays')} error=${errs.fullTimeDays} />
       <${NumField} id="h-emp" label="Employee's days per week" help="0.5 to 7, in half days." value=${v.employeeDays} step="0.5" min="0.5" max="7" onChange=${set('employeeDays')} error=${errs.employeeDays} />
@@ -84,7 +87,7 @@ function Holiday({ tool, prefs }) {
     </form>
     ${res && res.ok ? html`<${ResultCard} title="Holiday entitlement">
       <p class="big-number">${res.rounded} <span>days</span></p>
-      <p class="muted">Exact figure: ${res.exact.toFixed(2)} days, rounded up to the nearest half day.${!v.includesBankHolidays ? ' Bank holidays are on top.' : ''}</p>
+      <p class="muted">Exact figure: ${res.exact.toFixed(2)} days, rounded up to the nearest half day.${!v.includesBankHolidays ? ` Bank holidays are on top (${res.bankHolidays} a year in ${NATIONS[res.nation].label}).` : ''}</p>
       ${res.belowStatutory ? html`<${Notice} level=${3}>This is below the statutory minimum of ${res.statutory.toFixed(2)} days (including bank holidays). Check the entitlement with HR.</${Notice}>` : html`<p class="ok-line"><${Icon} name="check" size=${18} /> Meets the statutory minimum of ${res.statutory.toFixed(2)} days.</p>`}
       <h3 class="mini-title">The working</h3>
       <ol class="working">${res.steps.map((s) => html`<li>${s}</li>`)}</ol>
@@ -203,7 +206,7 @@ function CurrencyTool({ tool, prefs }) {
   return html`<${ToolShell} tool=${tool} prefs=${prefs}><${Currency} tool=${tool} prefs=${prefs} /></${ToolShell}>`;
 }
 
-const TOOLS = { holiday: Holiday, notice: Notice_, bradford: Bradford, sbi: Sbi, timezones: TimeZoneTool, currency: CurrencyTool };
+const TOOLS = { holiday: Holiday, notice: Notice_, bradford: Bradford, sbi: Sbi, timezones: TimeZoneTool, currency: CurrencyTool, interview: InterviewTool };
 
 export function Tool({ id, prefs }) {
   const tool = content().toolById[id];

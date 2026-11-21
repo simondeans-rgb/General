@@ -1,7 +1,7 @@
 // Loads the bundled content files. They're served from the app's own origin and
 // cached by the service worker, so this works offline.
 
-export const CONTENT_FILES = ['home', 'templates', 'guides', 'reactions', 'tools', 'pages', 'timezones', 'currencies'];
+export const CONTENT_FILES = ['home', 'templates', 'guides', 'reactions', 'tools', 'pages', 'timezones', 'currencies', 'prep', 'interview'];
 
 export async function loadContent(base = './content/') {
   const entries = await Promise.all(
@@ -21,6 +21,7 @@ export async function loadContent(base = './content/') {
     templateById: Object.fromEntries(tpl.templates.map((t) => [t.id, t])),
     guideById: Object.fromEntries(c.guides.guides.map((g) => [g.id, g])),
     toolById: Object.fromEntries(c.tools.tools.map((t) => [t.id, t])),
+    prepById: Object.fromEntries(c.prep.cards.map((p) => [p.id, p])),
     contentVersion: c.templates.contentVersion,
     lastReviewed: CONTENT_FILES.map((n) => c[n].lastReviewed).sort().pop(),
   };
@@ -32,4 +33,10 @@ export function lookupItem(content, id) {
   if (content.guideById[id]) return { kind: 'guide', id, title: content.guideById[id].title, summary: content.guideById[id].whenToUse, flagLevel: content.guideById[id].flagLevel };
   if (content.toolById[id]) return { kind: 'tool', id, title: content.toolById[id].title, summary: content.toolById[id].summary };
   return null;
+}
+
+/** The 1-minute prep card for a guide or template, if there is one. T01/T02 share the 1:1 card. */
+export function prepFor(content, kind, id) {
+  const pair = kind === 'template' && content.templateById[id]?.pair;
+  return content.prep.cards.find((p) => (pair ? p.target.type === 'oneToOne' : p.target.type === kind && p.target.id === id)) || null;
 }

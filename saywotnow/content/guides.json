@@ -1,6 +1,6 @@
 {
-  "contentVersion": "1.0.0",
-  "lastReviewed": "2026-11-16",
+  "contentVersion": "1.1.0",
+  "lastReviewed": "2026-11-20",
   "guides": [
     {
       "id": "G01",
@@ -30,6 +30,20 @@
       "opening": [
         "\"I want to talk about how [area of work] has been going. I've noticed some things I'm concerned about, and I want to help get it back on track.\"",
         "\"This is an informal conversation. The aim is to understand what's happening and agree how I can support you.\""
+      ],
+      "sayIt": [
+        {
+          "when": "Checking how they see it",
+          "line": "Before I share what I've noticed, how do you feel things have been going?"
+        },
+        {
+          "when": "Naming the gap",
+          "line": "The standard for [task] is [standard]. Over the last [period] it's been [what happened]. I want to understand why, so we can fix it together."
+        },
+        {
+          "when": "Offering support",
+          "line": "What's one thing I could do differently that would make the biggest difference for you?"
+        }
       ],
       "during": [
         "Describe each example and its impact, using Situation, Behaviour, Impact.",
@@ -105,6 +119,20 @@
       "opening": [
         "\"I wanted to have a quick word about timekeeping. You've been late on [number] occasions over the last [period], and I wanted to understand what's going on.\""
       ],
+      "sayIt": [
+        {
+          "when": "Raising it",
+          "line": "I've noticed you've been late a few times recently, on [dates]. Is everything OK?"
+        },
+        {
+          "when": "Restating the expectation",
+          "line": "Your start time is [time]. I need you here by then because [reason]. Can we agree that from tomorrow?"
+        },
+        {
+          "when": "Leaving the door open",
+          "line": "If something's making mornings difficult, tell me. There may be options we can look at properly."
+        }
+      ],
       "during": [
         "Share the dates. Be factual, not accusatory.",
         "Ask: \"Is there anything behind this that I should know about?\"",
@@ -172,6 +200,20 @@
       "opening": [
         "\"I want to talk about something that happened on [date]. I'd like to hear your side first, and then explain why it's a concern.\""
       ],
+      "sayIt": [
+        {
+          "when": "Hearing their side",
+          "line": "Before I say anything else, I'd like to hear what happened from your point of view."
+        },
+        {
+          "when": "Separating intent from impact",
+          "line": "I don't think you meant it that way, but the impact was [impact], and that's what I need to address."
+        },
+        {
+          "when": "Setting the standard",
+          "line": "From now on, I need [expected behaviour]. Is there anything that would get in the way of that?"
+        }
+      ],
       "during": [
         "Describe what was seen or reported, factually.",
         "Ask: \"Can you talk me through what happened from your point of view?\"",
@@ -236,6 +278,20 @@
       "opening": [
         "\"I've noticed some tension between you and [colleague], and I'd like to help sort it out. Can you tell me how things look from your side?\""
       ],
+      "sayIt": [
+        {
+          "when": "Staying neutral",
+          "line": "I'm not here to decide who's right. I want to find a way for you both to work well together."
+        },
+        {
+          "when": "Looking forward",
+          "line": "What's one thing [colleague] could do that would make working together easier? And one thing you could do?"
+        },
+        {
+          "when": "Suggesting a joint meeting",
+          "line": "Would you be willing to sit down together with me, with some simple ground rules?"
+        }
+      ],
       "during": [
         "In each one-to-one, listen, ask what's happened, what they need, and what they could do differently.",
         "Ask if they'd be willing to meet together.",
@@ -296,6 +352,20 @@
       ],
       "opening": [
         "\"I wanted to talk about your absences over the last [period]. This isn't about doubting that you've been unwell. I want to understand whether there's anything behind it and how we can support you.\""
+      ],
+      "sayIt": [
+        {
+          "when": "Reassuring them",
+          "line": "I'm not questioning that you've been ill. I want to see whether there's anything we can do to help."
+        },
+        {
+          "when": "Looking for a pattern",
+          "line": "Is there anything that links these absences, or anything at work that's making things harder?"
+        },
+        {
+          "when": "Explaining the policy",
+          "line": "I want to be open with you: our policy says [trigger]. I'd much rather we find support that helps before it gets to that."
+        }
       ],
       "during": [
         "Share the record factually.",
@@ -361,6 +431,20 @@
       "opening": [
         "\"I've noticed you haven't seemed yourself lately. How are you doing?\"",
         "If they tell you something: \"Thank you for telling me. I'm glad you felt able to.\""
+      ],
+      "sayIt": [
+        {
+          "when": "Checking in",
+          "line": "You don't seem quite yourself lately. How are things, really?"
+        },
+        {
+          "when": "When they open up",
+          "line": "Thank you for telling me. That can't have been easy. What would help most right now?"
+        },
+        {
+          "when": "Agreeing what's shared",
+          "line": "Who, if anyone, would you like me to share this with? I'll only tell people what they need to know."
+        }
       ],
       "during": [
         "Listen more than you talk. Silence is fine.",
@@ -428,6 +512,20 @@
       "opening": [
         "\"I'm so sorry to hear about your [relationship]. Please don't worry about work right now. I want to make sure you have what you need.\""
       ],
+      "sayIt": [
+        {
+          "when": "When they first tell you",
+          "line": "Please don't think about work right now. Take the time you need, and tell me what would help."
+        },
+        {
+          "when": "Agreeing contact",
+          "line": "How would you like me to keep in touch while you're off? A message now and then, or would you rather contact me?"
+        },
+        {
+          "when": "When they come back",
+          "line": "Welcome back. There's no right way to feel. If you need some flexibility, just say."
+        }
+      ],
       "during": [
         "First conversation: keep it short and kind.",
         "Ask how much time they think they need and explain what leave is available.",
@@ -486,6 +584,20 @@
       "opening": [
         "\"Thanks for raising this with me. I'd like to understand how it's affecting you at work and what would help.\""
       ],
+      "sayIt": [
+        {
+          "when": "Putting them at ease",
+          "line": "Thanks for telling me. You only need to share what you're comfortable with."
+        },
+        {
+          "when": "Finding what helps",
+          "line": "What would make the biggest difference to you at work right now?"
+        },
+        {
+          "when": "Agreeing a review",
+          "line": "Let's try these changes and check in again in [time] to see how they're working."
+        }
+      ],
       "during": [
         "Ask which symptoms affect their work, only as much as they want to share.",
         "Ask what adjustments would help.",
@@ -543,6 +655,20 @@
       ],
       "opening": [
         "\"Congratulations! Thank you for letting me know.\""
+      ],
+      "sayIt": [
+        {
+          "when": "Congratulating them",
+          "line": "Congratulations! How are you feeling?"
+        },
+        {
+          "when": "Telling the team",
+          "line": "Who knows so far? When, and how, would you like the team to be told?"
+        },
+        {
+          "when": "Next steps",
+          "line": "HR will be in touch about leave and pay. In the meantime, time off for appointments is absolutely fine."
+        }
       ],
       "during": [
         "Ask how they're feeling and whether they need anything now.",
@@ -603,6 +729,20 @@
       ],
       "opening": [
         "\"There's something a bit sensitive I need to talk to you about. I'm going to be direct, because I think that's kinder than not saying anything. There have been times recently when there's been a noticeable body odour.\""
+      ],
+      "sayIt": [
+        {
+          "when": "Being direct",
+          "line": "This is a sensitive thing to raise. I'm telling you because I'd want someone to tell me."
+        },
+        {
+          "when": "Giving them space",
+          "line": "Take a moment. I know this isn't easy to hear."
+        },
+        {
+          "when": "Offering support",
+          "line": "Is there anything going on that's making this harder? If there is, I'd like to help."
+        }
       ],
       "during": [
         "Be direct, brief and factual. Then pause and let them respond.",
@@ -669,6 +809,20 @@
       "opening": [
         "\"Have you got 10 minutes? I wanted to give you some feedback on [situation].\""
       ],
+      "sayIt": [
+        {
+          "when": "Positive feedback",
+          "line": "In [situation], you [behaviour]. That meant [impact]. Please keep doing that."
+        },
+        {
+          "when": "Developmental feedback",
+          "line": "In [situation], you [behaviour]. The impact was [impact]. How did you see it?"
+        },
+        {
+          "when": "Agreeing next time",
+          "line": "What could you try differently next time?"
+        }
+      ],
       "during": [
         "Situation: \"In yesterday's client meeting…\"",
         "Behaviour: \"…you interrupted the client twice while they were explaining the issue…\"",
@@ -723,6 +877,20 @@
       ],
       "opening": [
         "\"Thanks for asking about [request]. I've thought about it carefully and I'm not able to agree to it right now. I want to explain why.\""
+      ],
+      "sayIt": [
+        {
+          "when": "Saying no clearly",
+          "line": "I've thought about it properly, and the answer is no for now. I want to explain why."
+        },
+        {
+          "when": "Acknowledging it",
+          "line": "I know that's disappointing, and I appreciate you asking."
+        },
+        {
+          "when": "Offering a route",
+          "line": "What would need to change for a yes is [condition]. Shall we look at that together?"
+        }
       ],
       "during": [
         "Give the honest reason.",
@@ -779,6 +947,20 @@
       ],
       "opening": [
         "\"Thanks for your request. I'd like to talk it through so I fully understand what you're looking for, and we can explore what might work.\""
+      ],
+      "sayIt": [
+        {
+          "when": "Understanding the request",
+          "line": "Talk me through what you're looking for and how you think it would work day to day."
+        },
+        {
+          "when": "No reason needed",
+          "line": "You don't need to tell me why. I just want to find something that works for you and the team."
+        },
+        {
+          "when": "Next steps",
+          "line": "I'll consider it properly and give you a written decision by [date]."
+        }
       ],
       "during": [
         "Understand exactly what they're asking for. They don't have to give a reason.",
@@ -839,6 +1021,20 @@
       "opening": [
         "\"Thanks for raising this. I'd like to hear your case, and then I'll explain how pay decisions work here.\""
       ],
+      "sayIt": [
+        {
+          "when": "Hearing their case",
+          "line": "Thanks for raising this. Tell me what you think justifies an increase."
+        },
+        {
+          "when": "Being honest",
+          "line": "I can't promise anything today. Pay decisions here are made [how and when]."
+        },
+        {
+          "when": "Making a plan",
+          "line": "If it's not possible now, let's agree what would need to happen for it to be possible."
+        }
+      ],
       "during": [
         "Listen to their case in full.",
         "Ask what they think justifies the increase.",
@@ -897,6 +1093,20 @@
       ],
       "opening": [
         "\"I want to update you on a change that's coming to [team/process], and what it means for you.\""
+      ],
+      "sayIt": [
+        {
+          "when": "Explaining the change",
+          "line": "Here's what's changing, why it's happening, and when it takes effect."
+        },
+        {
+          "when": "Acknowledging feelings",
+          "line": "Change can be unsettling. It's fine to have questions or worries, and I want to hear them."
+        },
+        {
+          "when": "When you don't know",
+          "line": "I don't know yet. I'll find out and come back to you by [date]."
+        }
       ],
       "during": [
         "Explain what is changing, why, when, and how it affects them.",
