@@ -601,3 +601,6 @@ button { cursor: pointer; }
 /* ---------------- UK scope labels (P0.4) ---------------- */
 .scope-note { font-size: .88rem; color: var(--ink-2); margin: -4px 0 12px; }
 .uk-chip { display: inline-block; font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; padding: 2px 8px; border-radius: 999px; background: var(--tint); color: var(--accent-ink); margin-right: 4px; vertical-align: 1px; }
+.sensitive-box { border: 1.5px solid var(--line); border-radius: var(--radius-sm); padding: 4px 14px 10px; margin: 0 0 12px; background: var(--surface); }
+.sensitive-box.on { border-color: var(--flag2); background: var(--flag2-bg); }
+.sensitive-box .field-help { margin: 0; }

@@ -129,7 +129,8 @@ function fillPlaceholders(pattern, state, template) {
 
 /**
  * Builds { to, cc, subject, body, mode } for a form.
- * options: { prefs: { emailFooterEnabled, hrContactEmail }, alsoHr, forceEmployee }
+ * options: { prefs: { emailFooterEnabled, hrContactEmail }, alsoHr, forceEmployee, includeSensitive }
+ * Returns withheld: ids of filled-in sensitive fields left out (P0.5).
  */
 export function buildEmail(content, template, state, options = {}) {
   const { email: cfg, ratingScales } = content;
@@ -141,11 +142,14 @@ export function buildEmail(content, template, state, options = {}) {
 
   // Group live fields by section, in definition order.
   const parts = [];
+  const withheld = [];
   let current = null;
   for (const { section, field } of activeFields(template, state)) {
     if (field.inEmail === false) continue;
     const text = formatField(field, v[field.id], ratingScales);
     if (!text) continue;
+    // P0.5: wellbeing and health details stay out unless the manager includes them for this email.
+    if (field.sensitive && !options.includeSensitive) { withheld.push(field.id); continue; }
     if (!current || current.section !== section) {
       current = { section, items: [] };
       parts.push(current);
@@ -181,7 +185,7 @@ export function buildEmail(content, template, state, options = {}) {
     if (!isEmptyValue(v.cc)) cc.push(cleanText(v.cc));
     if (options.alsoHr && template.allowHrCc && hrEmail) cc.push(hrEmail);
   }
-  return { to, cc: [...new Set(cc)].filter((x) => !to.includes(x)), subject, body: paras.join(NL + NL), mode: hrOnly ? 'hrOnly' : 'normal' };
+  return { to, cc: [...new Set(cc)].filter((x) => !to.includes(x)), subject, body: paras.join(NL + NL), mode: hrOnly ? 'hrOnly' : 'normal', withheld };
 }
 
 /** Text used by the Share and Copy fallbacks. */

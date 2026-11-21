@@ -6,6 +6,7 @@ import { validateForm, sendMode } from '../lib/engine.js';
 import { buildEmail, emailAsText } from '../lib/email.js';
 import { openMail, canShare, shareEmail, copySensitive } from '../platform.js';
 import { Notice } from './form.js';
+import { Switch } from './fields.js';
 
 function finish(message) {
   clearForm();
@@ -51,8 +52,10 @@ export function Preview({ id, prefs }) {
   const c = content();
   const form = useStore(formStore);
   const [alsoHr, setAlsoHr] = useState(false);
+  // P0.5: off every time the preview opens; never remembered.
+  const [includeSensitive, setIncludeSensitive] = useState(false);
   const waiting = useRef(false);
-  const optsRef = useRef({ alsoHr: false, prefs });
+  const optsRef = useRef({ alsoHr: false, prefs, includeSensitive: false });
   // The summary as it stands now, or null if the form has gone (sent, discarded or reloaded).
   const currentEmail = () => {
     const f = formStore.get();
@@ -109,7 +112,7 @@ export function Preview({ id, prefs }) {
   const { state } = form;
   const mode = sendMode(template, state);
   const hasHr = !!prefs.hrContactEmail;
-  optsRef.current = { prefs, alsoHr };
+  optsRef.current = { prefs, alsoHr, includeSensitive };
   const email = buildEmail(c, template, state, optsRef.current);
 
   const send = (e) => {
@@ -119,7 +122,7 @@ export function Preview({ id, prefs }) {
 
   const sendToEmployee = async () => {
     const ok = await showDialog({ title: S.sendToEmployeeTitle, body: S.sendToEmployeeBody, actions: [{ label: S.cancel, value: false, primary: true }, { label: S.sendAnyway, value: true, danger: true }] });
-    if (ok) send(buildEmail(c, template, state, { prefs, alsoHr, forceEmployee: true }));
+    if (ok) send(buildEmail(c, template, state, { ...optsRef.current, forceEmployee: true }));
   };
 
   return html`<div class="screen preview-screen">
@@ -138,7 +141,14 @@ export function Preview({ id, prefs }) {
       <input type="checkbox" checked=${alsoHr} onChange=${(e) => setAlsoHr(e.target.checked)} /><span>${S.alsoHr} <span class="muted">(${prefs.hrContactEmail})</span></span>
     </label>` : null}
 
+    ${email.withheld.length || includeSensitive ? html`<div class=${`sensitive-box ${includeSensitive ? 'on' : ''}`}>
+      <div class="field-toggle"><span id="inc-sens">${S.includeSensitive}</span>
+        <${Switch} checked=${includeSensitive} onChange=${setIncludeSensitive} label=${S.includeSensitive} describedby="inc-sens-h" /></div>
+      <p class="field-help" id="inc-sens-h">${includeSensitive ? S.sensitiveOn : S.sensitiveOff}</p>
+    </div>` : null}
+
     <div class="email-body" tabindex="0" role="document" aria-label="Email body">${email.body}</div>
+    <p class="privacy-line"><${Icon} name="lock" size=${16} /> ${S.leavesApp}</p>
 
     <div class="sticky-cta">
       <button type="button" class="btn btn-primary btn-block" onClick=${() => send(email)}>

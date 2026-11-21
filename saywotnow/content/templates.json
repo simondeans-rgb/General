@@ -46,8 +46,8 @@
           "id": "wellbeing", "title": "Wellbeing", "optional": true,
           "notice": "Only record what the employee is happy to share. Don't include medical details.",
           "fields": [
-            { "id": "wellbeingRating", "label": "How are you feeling at the moment?", "type": "rating", "scale": "wellbeing", "helper": "Ask the question; let the employee choose the number." },
-            { "id": "wellbeingComments", "label": "Wellbeing comments", "type": "longText", "helper": "Note only what the employee is happy to have written down. Do not record medical details.", "emailLabel": false }
+            { "id": "wellbeingRating", "label": "How are you feeling at the moment?", "sensitive": true, "type": "rating", "scale": "wellbeing", "helper": "Ask the question; let the employee choose the number." },
+            { "id": "wellbeingComments", "label": "Wellbeing comments", "sensitive": true, "type": "longText", "helper": "Note only what the employee is happy to have written down. Do not record medical details.", "emailLabel": false }
           ]
         },
         {
@@ -118,8 +118,8 @@
         {
           "id": "checkin", "title": "Check-in", "optional": true,
           "fields": [
-            { "id": "wellbeingRating", "label": "How are things?", "type": "rating", "scale": "wellbeing" },
-            { "id": "wellbeingComments", "label": "Comments", "type": "longText", "emailLabel": false },
+            { "id": "wellbeingRating", "label": "How are things?", "sensitive": true, "type": "rating", "scale": "wellbeing" },
+            { "id": "wellbeingComments", "label": "Comments", "sensitive": true, "type": "longText", "emailLabel": false },
             { "id": "priorities", "label": "Top priorities", "type": "longText", "helper": "Up to 3 priorities." },
             { "id": "supportNeeded", "label": "Anything you need from me?", "type": "longText" }
           ]
@@ -156,8 +156,8 @@
             { "id": "absenceStart", "label": "First day of absence", "type": "date", "required": true },
             { "id": "returnDate", "label": "Date returned to work", "type": "date", "required": true, "min": { "field": "absenceStart" }, "helper": "Must be on or after the first day of absence." },
             { "id": "daysAbsent", "label": "Working days absent", "type": "number", "required": true, "helper": "Whole or half days (e.g. 2.5)." },
-            { "id": "reason", "label": "Reason for absence (general)", "type": "shortText", "required": true, "helper": "Keep it general, e.g. \"Cold / flu\", \"Back pain\". Do not record detailed medical information." },
-            { "id": "fitNote", "label": "Fit note", "type": "singleChoice", "required": true, "options": ["Not needed (7 calendar days or fewer – self-certified)", "Provided", "Awaiting"] }
+            { "id": "reason", "label": "Reason for absence (general)", "sensitive": true, "type": "shortText", "required": true, "helper": "Keep it general, e.g. \"Cold / flu\", \"Back pain\". Do not record detailed medical information." },
+            { "id": "fitNote", "label": "Fit note", "sensitive": true, "type": "singleChoice", "required": true, "options": ["Not needed (7 calendar days or fewer – self-certified)", "Provided", "Awaiting"] }
           ]
         },
         {

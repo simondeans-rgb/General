@@ -273,6 +273,10 @@
         },
         "hideInShort": {
           "type": "boolean"
+        },
+        "sensitive": {
+          "description": "Wellbeing or health detail (P0.5): left out of emails, copies and shares unless the manager switches it on for that email.",
+          "type": "boolean"
         }
       }
     },

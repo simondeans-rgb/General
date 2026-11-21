@@ -116,7 +116,10 @@ await check('AC-01/06/07: run a 1:1, validation, preview content, send clears th
   await shot(page, '05-form-filled');
   await page.getByRole('button', { name: 'Preview & send' }).click();
   await page.getByRole('heading', { name: 'Check and send' }).waitFor();
-  const body = await page.locator('.email-body').innerText();
+  let body = await page.locator('.email-body').innerText();
+  assert.doesNotMatch(body, /How are you feeling/, 'wellbeing left out by default (P0.5)');
+  await page.getByRole('switch', { name: 'Include wellbeing and health details' }).click();
+  body = await page.locator('.email-body').innerText();
   assert.match(body, /How are you feeling at the moment\? 4\/5 – Good/);
   assert.match(body, /WINS\n\nLaunched/);
   assert.doesNotMatch(body, /PRIORITIES|Finalise/, 'switched-off section left out');
@@ -584,6 +587,44 @@ await check('P0.4 UK scope and honest review status', async () => {
   assert.match(info, /not yet been independently reviewed/);
   assert.doesNotMatch(info, /last reviewed/i, 'no automatic "reviewed on" stamp');
   assert.deepEqual(log.errors, []);
+  await ctx.close();
+});
+
+await check('P0.5 wellbeing and health stay out of emails unless included for that email', async () => {
+  const { ctx, page, log } = await newApp();
+  await page.goto(BASE + '#/template/T02');
+  await page.locator('#f-employeeName').waitFor();
+  await fillHeader(page);
+  await page.locator('[data-field="wellbeingRating"]').getByRole('button', { name: /^2 / }).click();
+  await page.locator('[data-field="wellbeingComments"] textarea').fill('Struggling with sleep.');
+  await page.locator('[data-field="priorities"] textarea').fill('Cover rota.');
+  await page.getByRole('button', { name: /Preview/ }).click({ force: true });
+  await page.waitForURL(/preview$/);
+  const body = page.locator('.email-body');
+  assert.doesNotMatch(await body.innerText(), /Struggling with sleep|How are things/);
+  assert.match(await body.innerText(), /Cover rota/);
+  const sw = page.getByRole('switch', { name: 'Include wellbeing and health details' });
+  assert.equal(await sw.getAttribute('aria-checked'), 'false');
+  await page.getByText("Once you send, copy or share this, it's outside SayWotNow").waitFor();
+  // What's sent and copied matches the preview.
+  await page.getByRole('button', { name: 'Open in Mail' }).click();
+  assert.doesNotMatch(decodeURIComponent(log.mailto.at(-1)), /Struggling with sleep/);
+  await dialog(page).filter({ hasText: 'Did your email send?' }).waitFor({ timeout: 5000 });
+  await dialog(page).getByRole('button', { name: /take me back|go back/i }).first().click();
+  await page.getByRole('button', { name: 'No mail app?' }).click();
+  await dialog(page).getByRole('button', { name: 'Copy' }).click();
+  await page.waitForTimeout(200);
+  assert.ok(!(await page.evaluate(() => navigator.clipboard.readText())).includes('Struggling with sleep'));
+  if (await dialog(page).count()) await dialog(page).getByRole('button', { name: /Not yet/ }).click();
+  // Switching it on includes it for this email only.
+  await sw.click();
+  assert.match(await body.innerText(), /Struggling with sleep/);
+  await page.getByRole('button', { name: 'Edit' }).click();
+  await page.getByRole('button', { name: /Preview/ }).click({ force: true });
+  await page.waitForURL(/preview$/);
+  assert.equal(await page.getByRole('switch', { name: 'Include wellbeing and health details' }).getAttribute('aria-checked'), 'false', 'off again next time');
+  const stored = await page.evaluate(() => localStorage.getItem('saywotnow.prefs.v1'));
+  assert.ok(!/includeSensitive|Struggling/.test(stored));
   await ctx.close();
 });
 

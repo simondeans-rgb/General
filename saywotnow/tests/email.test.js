@@ -26,7 +26,8 @@ test('T01 email matches the spec example (8.2)', () => {
     ],
     nextDate: '2026-11-30',
   });
-  const e = buildEmail(c, T('T01'), s, { prefs });
+  // The spec example includes wellbeing, so this opts in (P0.5 leaves it out by default).
+  const e = buildEmail(c, T('T01'), s, { prefs, includeSensitive: true });
   assert.equal(e.subject, '1:1 summary – Sam Patel – 16 Nov 2026');
   assert.deepEqual(e.to, ['sam@example.co.uk']);
   assert.deepEqual(e.cc, []);
@@ -131,4 +132,31 @@ test('mailto URL encoding', () => {
 test('first name and share text', () => {
   assert.equal(firstName('  Sam   Patel '), 'Sam');
   assert.equal(emailAsText({ subject: 'S', body: 'B' }), 'Subject: S\n\nB');
+});
+
+test('P0.5 wellbeing and health details are left out of emails by default', () => {
+  const s1 = state('T01', { wellbeingRating: 2, wellbeingComments: 'Struggling with sleep.', wins: 'Shipped the report.' });
+  const e = buildEmail(c, T('T01'), s1, { prefs });
+  assert.doesNotMatch(e.body, /WELLBEING|Struggling with sleep|2\/5/);
+  assert.match(e.body, /WINS\n\nShipped the report\./);
+  assert.deepEqual(e.withheld, ['wellbeingRating', 'wellbeingComments']);
+  const s2 = state('T02', { wellbeingRating: 1, wellbeingComments: 'Bereavement in the family.', priorities: 'Cover rota.' });
+  const e2 = buildEmail(c, T('T02'), s2, { prefs });
+  assert.doesNotMatch(e2.body, /Bereavement|How are things/);
+  assert.match(e2.body, /Cover rota/);
+  const s3 = state('T03', { reason: 'Migraine', fitNote: 'Provided', absenceStart: '2026-11-10', returnDate: '2026-11-16', fit: 'Yes' });
+  const e3 = buildEmail(c, T('T03'), s3, { prefs });
+  assert.doesNotMatch(e3.body, /Migraine|Fit note/);
+  assert.deepEqual(e3.withheld.sort(), ['fitNote', 'reason']);
+});
+
+test('P0.5 the manager can include them for one email; nothing withheld when empty', () => {
+  const s1 = state('T01', { wellbeingRating: 4, wellbeingComments: 'Feeling positive.' });
+  const e = buildEmail(c, T('T01'), s1, { prefs, includeSensitive: true });
+  assert.match(e.body, /WELLBEING[\s\S]*Feeling positive\./);
+  assert.deepEqual(e.withheld, []);
+  const empty = buildEmail(c, T('T01'), state('T01', { wins: 'x' }), { prefs });
+  assert.deepEqual(empty.withheld, [], 'empty sensitive fields are not reported as withheld');
+  // Copy/share use the same text as the preview.
+  assert.equal(emailAsText(buildEmail(c, T('T01'), s1, { prefs })).includes('Feeling positive'), false);
 });
