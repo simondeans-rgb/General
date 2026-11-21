@@ -59,7 +59,7 @@ function check(schema, value, path, file, defs) {
 
 /* ---------- Load and schema-check ---------- */
 
-const NAMES = ['home', 'templates', 'guides', 'reactions', 'tools', 'pages', 'timezones', 'currencies', 'prep', 'interview'];
+const NAMES = ['home', 'templates', 'guides', 'reactions', 'tools', 'pages', 'timezones', 'currencies', 'prep', 'search', 'quickhelp'];
 const content = {};
 for (const name of NAMES) {
   const file = `content/${name}.json`;
@@ -68,6 +68,25 @@ for (const name of NAMES) {
   const schema = JSON.parse(readFileSync(join(root, `content/schema/${name}.schema.json`), 'utf8'));
   check(schema, data, '', file, schema.$defs || {});
   content[name] = data;
+}
+
+/* ---------- Review status (P0.4): no approval claims without a real reviewer ---------- */
+
+const isDate = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v));
+for (const [name, data] of Object.entries(content)) {
+  const r = data.review;
+  if (!r) continue;
+  const f = `content/${name}.json`;
+  for (const k of ['reviewedBy', 'reviewedOn', 'nextReviewOn']) if (r[k] !== null && typeof r[k] !== 'string') fail(f, `.review.${k}`, 'must be text or null');
+  if (r.reviewedOn !== null && !isDate(r.reviewedOn)) fail(f, '.review.reviewedOn', 'must be a date (YYYY-MM-DD) or null');
+  if (r.nextReviewOn !== null && !isDate(r.nextReviewOn)) fail(f, '.review.nextReviewOn', 'must be a date (YYYY-MM-DD) or null');
+  if (r.reviewStatus === 'approved') {
+    if (!r.reviewedBy || !r.reviewedBy.trim()) fail(f, '.review', 'can only be "approved" with a named reviewer (reviewedBy)');
+    if (!isDate(r.reviewedOn)) fail(f, '.review', 'can only be "approved" with a review date (reviewedOn)');
+    if (!isDate(r.nextReviewOn)) fail(f, '.review', 'approved content needs a next review date (nextReviewOn)');
+  } else if (r.reviewedBy || r.reviewedOn) {
+    fail(f, '.review', `has a reviewer or review date but is still "${r.reviewStatus}"; set the status honestly`);
+  }
 }
 
 /* ---------- Cross-reference checks ---------- */
@@ -116,6 +135,12 @@ if (content.templates) {
 if (content.guides) {
   const f = 'content/guides.json';
   unique(f, content.guides.guides.map((g) => g.id), 'guide id');
+  for (const g of content.guides.guides) {
+    // P0.3: every "Contact HR first" guide needs the HR-first gate, and nothing else may be ticked off as a STOP.
+    if (g.flagLevel === 3 && !g.escalation) fail(f, g.id, 'Level 3 ("Contact HR first") guides need an escalation gate');
+    if (g.escalation && g.flagLevel !== 3) fail(f, g.id, 'only Level 3 guides have an escalation gate');
+    g.before.forEach((t, i) => { if (/^STOP\b/.test(t)) fail(f, `${g.id}.before[${i}]`, 'a STOP instruction must not be a tickable checklist item; put it in the escalation gate'); });
+  }
 }
 if (content.timezones) {
   const f = 'content/timezones.json';
@@ -158,21 +183,6 @@ if (content.prep && content.templates && content.guides) {
   }
   for (const g of content.guides.guides) if (!targets.includes(`guide:${g.id}`)) fail(f, '', `no prep card for ${g.id}`);
 }
-if (content.interview) {
-  const f = 'content/interview.json';
-  const I = content.interview;
-  const dims = new Set(I.dimensions.map((d) => d.id));
-  unique(f, I.dimensions.map((d) => d.id), 'dimension id');
-  unique(f, I.competencies.map((c) => c.id), 'competency id');
-  unique(f, I.competencies.flatMap((c) => c.questions.map((q) => q.id)), 'question id');
-  for (const c of I.competencies) {
-    if (!dims.has(c.dimension)) fail(f, c.id, `unknown dimension "${c.dimension}"`);
-    for (const q of c.questions) if (!I.levels.includes(q.level)) fail(f, q.id, `unknown level "${q.level}"`);
-  }
-  for (const d of I.dimensions) if (!I.competencies.some((c) => c.dimension === d.id)) fail(f, d.id, 'dimension has no competencies');
-  const values = I.ratingScale.map((r) => r.value).join(',');
-  if (values !== '1,2,3,4,5') fail(f, '.ratingScale', 'must list values 1 to 5 in order');
-}
 if (content.reactions) unique('content/reactions.json', content.reactions.reactions.map((r) => r.id), 'reaction id');
 if (content.tools) unique('content/tools.json', content.tools.tools.map((t) => t.id), 'tool id');
 
@@ -191,6 +201,103 @@ if (content.home && content.templates && content.guides && content.tools) {
   const icons = readFileSync(join(root, 'src/ui/icons.js'), 'utf8');
   for (const name of [...content.home.tiles.map((t) => t.icon), ...content.tools.tools.map((t) => t.icon)]) {
     if (!new RegExp(`^\\s+${name}: '`, 'm').test(icons)) fail('content', '', `icon "${name}" doesn't exist in src/ui/icons.js`);
+  }
+}
+
+/* ---------- Cross-links (P1.3) ---------- */
+
+if (content.guides && content.templates && content.tools) {
+  const f = 'content/guides.json';
+  const has = { guide: (id) => content.guides.guides.some((g) => g.id === id), template: (id) => content.templates.templates.some((t) => t.id === id), tool: (id) => content.tools.tools.some((t) => t.id === id) };
+  const REF = /\((G\d{2}|T\d{2})\)/g;
+  for (const g of content.guides.guides) {
+    for (const r of g.related || []) {
+      if (!has[r.type](r.id)) fail(f, `${g.id}.related`, `unknown ${r.type} "${r.id}"`);
+      if (r.type === 'guide' && r.id === g.id) fail(f, `${g.id}.related`, 'links to itself');
+    }
+    const text = JSON.stringify([g.before, g.during, g.responses, g.donts, g.after, g.hrTriggers]);
+    for (const m of text.matchAll(REF)) {
+      const id = m[1];
+      if (!(id.startsWith('G') ? has.guide(id) : has.template(id))) fail(f, g.id, `refers to "${id}", which doesn't exist`);
+    }
+  }
+}
+
+/* ---------- Search phrases (P1.1) ---------- */
+
+if (content.search) {
+  const f = 'content/search.json';
+  const known = new Set([
+    ...(content.guides?.guides || []).map((x) => x.id), ...(content.templates?.templates || []).map((x) => x.id),
+    ...(content.prep?.cards || []).map((x) => x.id), ...(content.reactions?.reactions || []).map((x) => x.id),
+    ...(content.tools?.tools || []).map((x) => x.id),
+  ]);
+  [...content.search.synonyms, ...content.search.risky].forEach((g, i) => {
+    for (const t of g.targets) if (!known.has(t)) fail(f, `[${i}]`, `points at unknown content "${t}"`);
+  });
+  // Risky terms must lead to content that warns: an HR-first gate or the urgent banner.
+  for (const g of content.search.risky) for (const t of g.targets) {
+    const guide = content.guides?.guides.find((x) => x.id === t);
+    if (g.level === 'hr' && !guide?.escalation) fail(f, '.risky', `"${t}" has no HR-first gate`);
+    if (g.level === 'urgent' && !guide?.urgentBanner) fail(f, '.risky', `"${t}" has no urgent banner`);
+  }
+}
+
+/* ---------- Quick Help (P1.2) ---------- */
+
+if (content.quickhelp && content.guides && content.prep) {
+  const f = 'content/quickhelp.json';
+  for (const s of content.quickhelp.situations) {
+    if (!content.guides.guides.some((g) => g.id === s.guide)) fail(f, s.label, `unknown guide "${s.guide}"`);
+    if (!content.prep.cards.some((c) => c.target.type === 'guide' && c.target.id === s.guide)) fail(f, s.label, `"${s.guide}" has no 1-minute prep card to build the quick card from`);
+  }
+  for (const g of content.guides.guides) if (!content.quickhelp.situations.some((s) => s.guide === g.id)) fail(f, '', `no situation leads to ${g.id}`);
+  if (!content.quickhelp.serious.some((s) => s.level === 'urgent')) fail(f, '.serious', 'needs an urgent option');
+}
+
+/* ---------- Content review register (P0.6) ---------- */
+
+{
+  const f = 'review/register.json';
+  let reg = null;
+  try { reg = JSON.parse(readFileSync(join(root, f), 'utf8')); } catch (e) { fail(f, '', `missing or not valid JSON (${e.message})`); }
+  if (reg) {
+    const expected = [
+      ...(content.guides?.guides || []).map((g) => g.id),
+      ...(content.templates?.templates || []).map((t) => t.id),
+      ...(content.prep?.cards || []).map((c) => c.id),
+      ...(content.reactions?.reactions || []).map((r) => r.id),
+      ...(content.tools?.tools || []).filter((t) => t.ukOnly).map((t) => `tool:${t.id}`),
+      'page:disclaimer', 'page:privacy', 'search:phrases', 'quickhelp:wording',
+    ];
+    const ids = reg.items.map((i) => i.id);
+    unique(f, ids, 'register entry');
+    for (const id of expected) if (!ids.includes(id)) fail(f, '', `no review entry for ${id}`);
+    for (const id of ids) if (!expected.includes(id)) fail(f, id, "isn't a content item any more; remove it or update the id");
+    const need = ['id', 'kind', 'title', 'owner', 'jurisdiction', 'riskTier', 'source', 'reviewer', 'reviewedOn', 'nextReviewOn', 'status', 'issues', 'changeLog'];
+    for (const i of reg.items) {
+      for (const k of need) if (!(k in i)) fail(f, i.id, `missing "${k}"`);
+      if (!reg.statusValues.includes(i.status)) fail(f, i.id, `unknown status "${i.status}"`);
+      if (!reg.riskTiers.includes(i.riskTier)) fail(f, i.id, `unknown risk tier "${i.riskTier}"`);
+      if (!i.owner || !String(i.owner).trim()) fail(f, i.id, 'needs an owner');
+      if (i.status === 'approved') {
+        if (!i.reviewer || !String(i.reviewer).trim()) fail(f, i.id, 'can only be approved with a named reviewer');
+        if (!isDate(i.reviewedOn) || !isDate(i.nextReviewOn)) fail(f, i.id, 'approved items need reviewedOn and nextReviewOn dates');
+      } else if (i.reviewer || i.reviewedOn) {
+        fail(f, i.id, `has a reviewer or review date but status is "${i.status}"`);
+      }
+    }
+    // A content file can only be "approved" if every high-risk item in it is approved.
+    for (const [name, kind] of [['guides', 'guide'], ['templates', 'template'], ['prep', 'prep'], ['reactions', 'reaction']]) {
+      if (content[name]?.review?.reviewStatus !== 'approved') continue;
+      const open = reg.items.filter((i) => i.kind === kind && i.status !== 'approved').map((i) => i.id);
+      if (open.length) fail(`content/${name}.json`, '.review', `is "approved" but these items aren't: ${open.join(', ')}`);
+    }
+    // The HR-first gates are draft until the register says otherwise.
+    for (const g of content.guides?.guides || []) {
+      const e = reg.items.find((i) => i.id === g.id);
+      if (g.escalation?.reviewStatus === 'approved' && e?.status !== 'approved') fail('content/guides.json', g.id, 'escalation is "approved" but the guide is not approved in the review register');
+    }
   }
 }
 

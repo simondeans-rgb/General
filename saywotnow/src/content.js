@@ -1,7 +1,7 @@
 // Loads the bundled content files. They're served from the app's own origin and
 // cached by the service worker, so this works offline.
 
-export const CONTENT_FILES = ['home', 'templates', 'guides', 'reactions', 'tools', 'pages', 'timezones', 'currencies', 'prep', 'interview'];
+export const CONTENT_FILES = ['home', 'templates', 'guides', 'reactions', 'tools', 'pages', 'timezones', 'currencies', 'prep', 'search', 'quickhelp'];
 
 export async function loadContent(base = './content/') {
   const entries = await Promise.all(
@@ -23,7 +23,9 @@ export async function loadContent(base = './content/') {
     toolById: Object.fromEntries(c.tools.tools.map((t) => [t.id, t])),
     prepById: Object.fromEntries(c.prep.cards.map((p) => [p.id, p])),
     contentVersion: c.templates.contentVersion,
-    lastReviewed: CONTENT_FILES.map((n) => c[n].lastReviewed).sort().pop(),
+    // Review status of the UK guidance (P0.4): approved only if every UK file is approved.
+    reviewStatus: CONTENT_FILES.filter((n) => c[n].review.jurisdiction === 'UK').every((n) => c[n].review.reviewStatus === 'approved') ? 'approved' : 'draft',
+    reviewers: [...new Set(CONTENT_FILES.map((n) => c[n].review).filter((r) => r.reviewStatus === 'approved').map((r) => `${r.reviewedBy} (${r.reviewedOn})`))],
   };
 }
 

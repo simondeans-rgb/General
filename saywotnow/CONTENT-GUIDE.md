@@ -9,7 +9,8 @@ touching any code.
 | `home.json` | The "I need to…" tiles and favourites wording |
 | `templates.json` | Meeting templates: sections, fields, email subject and opening, HR banners |
 | `guides.json` | Conversation guides: Before / During / After, HR triggers, summary prompts |
-| `interview.json` | The ACTED interview library: dimensions (with "what good looks like" and watch-outs), 35 competencies and their questions, rating scale and interviewer guidance |
+| `search.json` | Everyday search phrases and what they find, plus the risky terms that show HR-first or urgent help |
+| `quickhelp.json` | Quick Help's questions and the plain-language situations, each leading to a guide |
 | `prep.json` | 1-minute prep cards: three questions to ask, one thing to avoid, one to remember |
 | `reactions.json` | The shared "If they react…" library |
 | `tools.json` | Toolkit names, "How this works" text, notes and SBI examples |
@@ -49,11 +50,29 @@ its button goes: `{ "type": "guide", "id": "G05" }`,
 regular 1:1 (shared by the full and quick versions). Every guide needs a card;
 the check will tell you if one is missing.
 
-**Change an interview question.** Find the competency in `interview.json` by its
-`id` (e.g. `"resilience"`) and edit a question's `text`. Keep each question's `id`
-the same: saved packs refer to questions by id. A pack that points at a question
-that no longer exists drops that competency until it's edited again. `level` must be
-one of `Essential`, `Intermediate` or `Advanced`.
+**Review status (every file).** Each file has a `review` block:
+`jurisdiction` ("UK" or "general"), `reviewStatus` ("draft", "in-review" or
+"approved"), `reviewedBy`, `reviewedOn` and `nextReviewOn`. Only set "approved"
+once a qualified reviewer has actually signed it off: the check refuses
+"approved" without a named reviewer and dates. Record item-level review in
+`review/register.json` and run `npm run register` to refresh `review/REGISTER.md`.
+
+**Search phrases.** In `search.json`, add everyday words to a group's `phrases`;
+`targets` lists the guides, templates, prep cards (`P-…`), reactions (`R…`) or tools
+they should find. Risky phrases go under `risky`: "hr" ones must point at a guide
+with an HR-first gate, "urgent" ones at the guide with the urgent banner.
+
+**Related links.** A guide's `related` list adds links under "Related", e.g.
+`{ "type": "tool", "id": "sbi" }`. To link from inside a sentence, write the guide's
+name followed by its code, e.g. "the Flexible working guide (G13)": the app shows
+the words as a link and hides the code.
+
+**Wellbeing and health fields.** Add `"sensitive": true` to a template field to keep
+it out of emails unless the manager includes it for that email.
+
+**HR-first gate.** A guide with `flagLevel` 3 must have an `escalation` block
+(headline, stop text, up to four triage questions, what to do if yes or no, and
+holding words). Never put a "STOP…" instruction in the `before` checklist.
 
 **Change an HR flag level.** Set `flagLevel` to `1` (Good to know), `2` (Consider
 HR advice) or `3` (Contact HR first).

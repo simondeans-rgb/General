@@ -1,6 +1,7 @@
 {
   "contentVersion": "1.0.0",
-  "lastReviewed": "2026-11-16",
+  "lastEdited": "2026-11-16",
+  "review": { "jurisdiction": "UK", "reviewStatus": "draft", "reviewedBy": null, "reviewedOn": null, "nextReviewOn": null },
   "header": {
     "title": "Meeting details",
     "fields": [
@@ -14,7 +15,7 @@
   "email": {
     "greeting": "Hi {firstName},",
     "signOff": "Best wishes,",
-    "footer": "Sent from SayWotNow. This summary was not stored in the app."
+    "footer": "Sent from SayWotNow – practical people-management guidance for managers. This summary was not stored in the app."
   },
   "ratingScales": {
     "wellbeing": ["Struggling", "Not great", "OK", "Good", "Great"],
@@ -36,7 +37,7 @@
       "allowHrCc": false,
       "sections": [
         {
-          "id": "previous", "title": "Actions from last time", "optional": true,
+          "id": "previous", "title": "Actions from last time", "optional": true, "more": true,
           "fields": [
             { "id": "previousActions", "label": "Previous actions and progress", "type": "longText", "helper": "Paste the agreed actions from your last 1:1 email and note progress on each.", "emailLabel": false }
           ]
@@ -45,8 +46,8 @@
           "id": "wellbeing", "title": "Wellbeing", "optional": true,
           "notice": "Only record what the employee is happy to share. Don't include medical details.",
           "fields": [
-            { "id": "wellbeingRating", "label": "How are you feeling at the moment?", "type": "rating", "scale": "wellbeing", "helper": "Ask the question; let the employee choose the number." },
-            { "id": "wellbeingComments", "label": "Wellbeing comments", "type": "longText", "helper": "Note only what the employee is happy to have written down. Do not record medical details.", "emailLabel": false }
+            { "id": "wellbeingRating", "label": "How are you feeling at the moment?", "sensitive": true, "type": "rating", "scale": "wellbeing", "helper": "Ask the question; let the employee choose the number." },
+            { "id": "wellbeingComments", "label": "Wellbeing comments", "sensitive": true, "type": "longText", "helper": "Note only what the employee is happy to have written down. Do not record medical details.", "emailLabel": false }
           ]
         },
         {
@@ -69,20 +70,20 @@
           ]
         },
         {
-          "id": "development", "title": "Development", "optional": true,
+          "id": "development", "title": "Development", "optional": true, "more": true,
           "fields": [
             { "id": "development", "label": "Learning and development", "type": "longText", "helper": "Skills being developed, training, stretch opportunities, career conversations.", "emailLabel": false }
           ]
         },
         {
-          "id": "feedback", "title": "Feedback", "optional": true,
+          "id": "feedback", "title": "Feedback", "optional": true, "more": true,
           "fields": [
             { "id": "feedbackFromMe", "label": "Feedback from me", "type": "longText", "helper": "Specific feedback – use Situation, Behaviour, Impact." },
             { "id": "feedbackForMe", "label": "Feedback for me", "type": "longText", "helper": "Ask: \"Is there anything I could do differently to support you better?\"" }
           ]
         },
         {
-          "id": "aob", "title": "Anything else", "optional": true,
+          "id": "aob", "title": "Anything else", "optional": true, "more": true,
           "fields": [
             { "id": "aob", "label": "Any other business", "type": "longText", "helper": "Anything else either person wants to raise.", "emailLabel": false }
           ]
@@ -96,7 +97,7 @@
         {
           "id": "next", "title": "Next meeting", "optional": true, "emailHeading": false,
           "fields": [
-            { "id": "nextDate", "label": "Next 1:1 date", "emailLabelText": "Next 1:1", "type": "date", "helper": "Shown at the bottom of the email." }
+            { "id": "nextDate", "label": "Next 1:1 date", "emailLabelText": "Next 1:1", "calendar": "1:1", "type": "date", "helper": "Shown at the bottom of the email." }
           ]
         }
       ]
@@ -117,8 +118,8 @@
         {
           "id": "checkin", "title": "Check-in", "optional": true,
           "fields": [
-            { "id": "wellbeingRating", "label": "How are things?", "type": "rating", "scale": "wellbeing" },
-            { "id": "wellbeingComments", "label": "Comments", "type": "longText", "emailLabel": false },
+            { "id": "wellbeingRating", "label": "How are things?", "sensitive": true, "type": "rating", "scale": "wellbeing" },
+            { "id": "wellbeingComments", "label": "Comments", "sensitive": true, "type": "longText", "emailLabel": false },
             { "id": "priorities", "label": "Top priorities", "type": "longText", "helper": "Up to 3 priorities." },
             { "id": "supportNeeded", "label": "Anything you need from me?", "type": "longText" }
           ]
@@ -132,13 +133,13 @@
         {
           "id": "next", "title": "Next meeting", "optional": true, "emailHeading": false,
           "fields": [
-            { "id": "nextDate", "label": "Next check-in date", "emailLabelText": "Next check-in", "type": "date" }
+            { "id": "nextDate", "label": "Next check-in date", "emailLabelText": "Next check-in", "calendar": "Check-in", "type": "date" }
           ]
         }
       ]
     },
     {
-      "id": "T03",
+      "formalRecord": true, "id": "T03",
       "name": "Return to Work",
       "purpose": "Welcome someone back after sickness absence, check they're fit to work and agree support.",
       "whenToUse": "On the employee's first day back (or as soon as possible) after any sickness absence.",
@@ -155,8 +156,8 @@
             { "id": "absenceStart", "label": "First day of absence", "type": "date", "required": true },
             { "id": "returnDate", "label": "Date returned to work", "type": "date", "required": true, "min": { "field": "absenceStart" }, "helper": "Must be on or after the first day of absence." },
             { "id": "daysAbsent", "label": "Working days absent", "type": "number", "required": true, "helper": "Whole or half days (e.g. 2.5)." },
-            { "id": "reason", "label": "Reason for absence (general)", "type": "shortText", "required": true, "helper": "Keep it general, e.g. \"Cold / flu\", \"Back pain\". Do not record detailed medical information." },
-            { "id": "fitNote", "label": "Fit note", "type": "singleChoice", "required": true, "options": ["Not needed (7 calendar days or fewer – self-certified)", "Provided", "Awaiting"] }
+            { "id": "reason", "label": "Reason for absence (general)", "sensitive": true, "type": "shortText", "required": true, "helper": "Keep it general, e.g. \"Cold / flu\", \"Back pain\". Do not record detailed medical information." },
+            { "id": "fitNote", "label": "Fit note", "sensitive": true, "type": "singleChoice", "required": true, "options": ["Not needed (7 calendar days or fewer – self-certified)", "Provided", "Awaiting"] }
           ]
         },
         {
@@ -185,7 +186,7 @@
           "id": "actions", "title": "Agreed actions", "optional": true,
           "fields": [
             { "id": "actions", "label": "Actions", "type": "actionList", "emailLabel": false },
-            { "id": "followUp", "label": "Follow-up date", "type": "date", "helper": "If a review is needed." }
+            { "id": "followUp", "label": "Follow-up date", "calendar": "Return to work follow-up", "type": "date", "helper": "If a review is needed." }
           ]
         }
       ],
@@ -203,7 +204,7 @@
       ]
     },
     {
-      "id": "T04",
+      "formalRecord": true, "id": "T04",
       "name": "Probation Review",
       "purpose": "An interim or final review of a new employee's progress during probation.",
       "whenToUse": "At interim points (e.g. month 1 and month 3) and at the end of the probation period.",
@@ -249,7 +250,7 @@
           "showIf": { "field": "reviewType", "equals": "Final" },
           "fields": [
             { "id": "outcome", "label": "Outcome", "type": "singleChoice", "requiredIf": { "field": "reviewType", "equals": "Final" }, "options": ["Probation passed", "Probation extended", "Not confirming – contact HR"] },
-            { "id": "newEnd", "label": "New probation end date", "type": "date", "showIf": { "field": "outcome", "equals": "Probation extended" }, "requiredIf": { "field": "outcome", "equals": "Probation extended" }, "min": { "field": "probationEnd" } },
+            { "id": "newEnd", "label": "New probation end date", "calendar": "Probation end date", "type": "date", "showIf": { "field": "outcome", "equals": "Probation extended" }, "requiredIf": { "field": "outcome", "equals": "Probation extended" }, "min": { "field": "probationEnd" } },
             { "id": "extensionImprove", "label": "What needs to improve during the extension", "type": "longText", "showIf": { "field": "outcome", "equals": "Probation extended" }, "requiredIf": { "field": "outcome", "equals": "Probation extended" } }
           ]
         },
@@ -263,7 +264,7 @@
           "id": "actions", "title": "Agreed actions", "optional": true,
           "fields": [
             { "id": "actions", "label": "Actions", "type": "actionList", "emailLabel": false },
-            { "id": "nextReview", "label": "Next review date", "type": "date" }
+            { "id": "nextReview", "label": "Next review date", "calendar": "Probation review", "type": "date" }
           ]
         }
       ],
@@ -289,7 +290,7 @@
       ]
     },
     {
-      "id": "T05",
+      "formalRecord": true, "id": "T05",
       "name": "Performance Review",
       "purpose": "A structured mid-year or annual review against objectives, plus objectives and development for the next period.",
       "whenToUse": "Mid-year and end-of-year reviews, or at the end of a project.",
@@ -437,13 +438,13 @@
           "id": "actions", "title": "Agreed actions", "optional": true,
           "fields": [
             { "id": "actions", "label": "Actions", "type": "actionList", "emailLabel": false },
-            { "id": "nextDate", "label": "Next check-in date", "emailLabelText": "Next check-in", "type": "date" }
+            { "id": "nextDate", "label": "Next check-in date", "emailLabelText": "Next check-in", "calendar": "New starter check-in", "type": "date" }
           ]
         }
       ]
     },
     {
-      "id": "T08",
+      "formalRecord": true, "id": "T08",
       "name": "Conversation Summary",
       "purpose": "A summary of a difficult or sensitive conversation, opened from a conversation guide.",
       "whenToUse": "Immediately after a conversation covered by one of the guides.",
@@ -459,12 +460,12 @@
           "id": "summary", "title": "Summary",
           "fields": [
             { "id": "topic", "label": "Conversation topic", "type": "shortText", "required": true, "helper": "Filled in from the guide, but you can edit it.", "inEmail": false },
-            { "id": "discussed", "label": "What we discussed", "type": "longText", "required": true },
-            { "id": "theirViews", "label": "Your views / points you raised", "type": "longText", "helper": "The employee's response, in neutral language.", "hideInShort": true },
+            { "id": "discussed", "label": "What you said", "helper": "What you raised or explained in the conversation.", "emailLabelText": "What we discussed", "type": "longText", "required": true },
+            { "id": "theirViews", "label": "Their response", "helper": "What the employee said, including any points they raised or disagreed with, in neutral language.", "emailLabelText": "Your response and the points you raised", "type": "longText", "hideInShort": true },
             { "id": "agreed", "label": "What we agreed", "type": "longText", "hideInShort": true },
             { "id": "support", "label": "Support offered", "type": "longText", "hideInShort": true },
             { "id": "expectations", "label": "Expectations going forward", "type": "longText", "helper": "Clear, specific and measurable where possible.", "hideInShort": true },
-            { "id": "reviewDate", "label": "Review date", "type": "date", "hideInShort": true }
+            { "id": "reviewDate", "label": "Review date", "calendar": "Review of agreed points", "type": "date", "hideInShort": true }
           ]
         },
         {

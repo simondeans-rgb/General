@@ -1,0 +1,1278 @@
+{
+  "description": "SayWotNow content review register (P0.6). One entry per reviewable item. Status may only be 'approved' with a real, named reviewer and dates; qualified HR/legal sign-off is a human release gate.",
+  "statusValues": [
+    "draft",
+    "in-review",
+    "approved",
+    "needs-changes"
+  ],
+  "riskTiers": [
+    "high",
+    "medium",
+    "low"
+  ],
+  "items": [
+    {
+      "id": "G01",
+      "kind": "guide",
+      "title": "Underperformance",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "medium",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), Appendix B; 'Say it like this' lines added in v1.3",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "'Say it like this' lines were written for SayWotNow v1.3 from the guide's own advice, not taken from the specification."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "G02",
+      "kind": "guide",
+      "title": "Lateness and timekeeping",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), Appendix B; 'Say it like this' lines added in v1.3",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "'Say it like this' lines were written for SayWotNow v1.3 from the guide's own advice, not taken from the specification."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "G03",
+      "kind": "guide",
+      "title": "Behaviour and conduct",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), Appendix B; 'Say it like this' lines added in v1.3",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New HR-first gate wording (stop panel, triage questions, holding words) was drafted for SayWotNow v1.5 and needs review before release.",
+        "The 'STOP if this could be serious (gross) misconduct…' instruction was moved, word for word, from the checklist into the gate.",
+        "'Say it like this' lines were written for SayWotNow v1.3 from the guide's own advice, not taken from the specification."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "G04",
+      "kind": "guide",
+      "title": "Conflict between team members",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "medium",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), Appendix B; 'Say it like this' lines added in v1.3",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "'Say it like this' lines were written for SayWotNow v1.3 from the guide's own advice, not taken from the specification."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "G05",
+      "kind": "guide",
+      "title": "Frequent short-term sickness absence",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), Appendix B; 'Say it like this' lines added in v1.3",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "Check the guidance on not counting pregnancy- or disability-related absence against current law and the employer's absence policy.",
+        "'Say it like this' lines were written for SayWotNow v1.3 from the guide's own advice, not taken from the specification."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "G06",
+      "kind": "guide",
+      "title": "Mental health disclosure or concern",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), Appendix B; 'Say it like this' lines added in v1.3",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "Crisis contacts (999, Samaritans 116 123) are UK-only and must be checked for currency.",
+        "Was flagged for duplicate wording: a 'Say it like this' line nearly repeated the opening line. Replaced in v1.5 (see change log).",
+        "'Say it like this' lines were written for SayWotNow v1.3 from the guide's own advice, not taken from the specification."
+      ],
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Replaced the 'Say it like this' line \"You don't seem quite yourself lately. How are things, really?\" (near-duplicate of the opening line) with \"There's no pressure to talk now. If you'd like to, now or another time, I'm here.\"",
+          "by": "SayWotNow build (P0.6)"
+        },
+        {
+          "date": "2026-11-21",
+          "change": "Spelled out Employee Assistance Programme (EAP) and/or Occupational Health (OH) at first use. Plain-language edit; meaning unchanged.",
+          "by": "SayWotNow build (P0.6)"
+        }
+      ]
+    },
+    {
+      "id": "G07",
+      "kind": "guide",
+      "title": "Bereavement",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), Appendix B; 'Say it like this' lines added in v1.3",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "'Say it like this' lines were written for SayWotNow v1.3 from the guide's own advice, not taken from the specification."
+      ],
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Spelled out Employee Assistance Programme (EAP) and/or Occupational Health (OH) at first use. Plain-language edit; meaning unchanged.",
+          "by": "SayWotNow build (P0.6)"
+        }
+      ]
+    },
+    {
+      "id": "G08",
+      "kind": "guide",
+      "title": "Menopause",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), Appendix B; 'Say it like this' lines added in v1.3",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "'Say it like this' lines were written for SayWotNow v1.3 from the guide's own advice, not taken from the specification."
+      ],
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Spelled out Employee Assistance Programme (EAP) and/or Occupational Health (OH) at first use. Plain-language edit; meaning unchanged.",
+          "by": "SayWotNow build (P0.6)"
+        }
+      ]
+    },
+    {
+      "id": "G09",
+      "kind": "guide",
+      "title": "Pregnancy announcement",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), Appendix B; 'Say it like this' lines added in v1.3",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "Check statements on risk assessment and time off for antenatal appointments against current law.",
+        "'Say it like this' lines were written for SayWotNow v1.3 from the guide's own advice, not taken from the specification."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "G10",
+      "kind": "guide",
+      "title": "Personal hygiene",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), Appendix B; 'Say it like this' lines added in v1.3",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "'Say it like this' lines were written for SayWotNow v1.3 from the guide's own advice, not taken from the specification."
+      ],
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Spelled out Employee Assistance Programme (EAP) and/or Occupational Health (OH) at first use. Plain-language edit; meaning unchanged.",
+          "by": "SayWotNow build (P0.6)"
+        }
+      ]
+    },
+    {
+      "id": "G11",
+      "kind": "guide",
+      "title": "Giving feedback",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), Appendix B; 'Say it like this' lines added in v1.3",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "'Say it like this' lines were written for SayWotNow v1.3 from the guide's own advice, not taken from the specification."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "G12",
+      "kind": "guide",
+      "title": "Saying no to a request",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), Appendix B; 'Say it like this' lines added in v1.3",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "'Say it like this' lines were written for SayWotNow v1.3 from the guide's own advice, not taken from the specification."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "G13",
+      "kind": "guide",
+      "title": "Flexible working request",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), Appendix B; 'Say it like this' lines added in v1.3",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "Statutory claims to verify against current law: request from day one of employment, up to two requests in 12 months, two-month decision period including appeal, eight business reasons for refusal, duty to consult.",
+        "New HR-first gate wording (stop panel, triage questions, holding words) was drafted for SayWotNow v1.5 and needs review before release.",
+        "'Say it like this' lines were written for SayWotNow v1.3 from the guide's own advice, not taken from the specification."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "G14",
+      "kind": "guide",
+      "title": "Pay rise request",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), Appendix B; 'Say it like this' lines added in v1.3",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "'Say it like this' lines were written for SayWotNow v1.3 from the guide's own advice, not taken from the specification."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "G15",
+      "kind": "guide",
+      "title": "Announcing change",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "medium",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), Appendix B; 'Say it like this' lines added in v1.3",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "'Say it like this' lines were written for SayWotNow v1.3 from the guide's own advice, not taken from the specification."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "T01",
+      "kind": "template",
+      "title": "1:1 Meeting",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), Appendix A",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "Wellbeing rating and comments are left out of emails by default from v1.5."
+      ],
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Previous actions, Development, Feedback and Anything else now sit under 'More sections' until opened or filled in. Wording unchanged.",
+          "by": "SayWotNow build (P2.3)"
+        }
+      ]
+    },
+    {
+      "id": "T02",
+      "kind": "template",
+      "title": "Quick Check-in",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), Appendix A",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "Wellbeing rating and comments are left out of emails by default from v1.5."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "T03",
+      "kind": "template",
+      "title": "Return to Work",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), Appendix A",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "Wellbeing and health fields (reason for absence, fit note) are left out of emails by default from v1.5; confirm this suits return-to-work record keeping."
+      ],
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Marked as a formal record: the 'Sent from SayWotNow' footer is never added.",
+          "by": "SayWotNow build (P2.3)"
+        }
+      ]
+    },
+    {
+      "id": "T04",
+      "kind": "template",
+      "title": "Probation Review",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), Appendix A",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "Probation outcomes route to HR first ('Not confirming'); confirm the wording and process with HR."
+      ],
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Marked as a formal record: the 'Sent from SayWotNow' footer is never added.",
+          "by": "SayWotNow build (P2.3)"
+        }
+      ]
+    },
+    {
+      "id": "T05",
+      "kind": "template",
+      "title": "Performance Review",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "medium",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), Appendix A",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [],
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Marked as a formal record: the 'Sent from SayWotNow' footer is never added.",
+          "by": "SayWotNow build (P2.3)"
+        }
+      ]
+    },
+    {
+      "id": "T06",
+      "kind": "template",
+      "title": "Stay Interview",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), Appendix A",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [],
+      "changeLog": []
+    },
+    {
+      "id": "T07",
+      "kind": "template",
+      "title": "New Starter Check-in",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), Appendix A",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [],
+      "changeLog": []
+    },
+    {
+      "id": "T08",
+      "kind": "template",
+      "title": "Conversation Summary",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "medium",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), Appendix A",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [],
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Form labels changed: 'What we discussed' -> 'What you said' (email heading still 'What we discussed'); 'Your views / points you raised' -> 'Their response' (email heading 'Your response and the points you raised'). Footer no longer added (formal record).",
+          "by": "SayWotNow build (P2.3)"
+        }
+      ]
+    },
+    {
+      "id": "P-1to1",
+      "kind": "prep",
+      "title": "Regular 1:1",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "Written for SayWotNow v1.3 from the matching guide or template; not in the specification",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "P-T03",
+      "kind": "prep",
+      "title": "Return to work",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "Written for SayWotNow v1.3 from the matching guide or template; not in the specification",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "P-T04",
+      "kind": "prep",
+      "title": "Probation review",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "Written for SayWotNow v1.3 from the matching guide or template; not in the specification",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "P-T05",
+      "kind": "prep",
+      "title": "Performance review",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "medium",
+      "source": "Written for SayWotNow v1.3 from the matching guide or template; not in the specification",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "P-T06",
+      "kind": "prep",
+      "title": "Stay interview",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "Written for SayWotNow v1.3 from the matching guide or template; not in the specification",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "P-T07",
+      "kind": "prep",
+      "title": "New starter check-in",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "Written for SayWotNow v1.3 from the matching guide or template; not in the specification",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "P-G01",
+      "kind": "prep",
+      "title": "Underperformance",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "medium",
+      "source": "Written for SayWotNow v1.3 from the matching guide or template; not in the specification",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "P-G02",
+      "kind": "prep",
+      "title": "Lateness and timekeeping",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "Written for SayWotNow v1.3 from the matching guide or template; not in the specification",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "P-G03",
+      "kind": "prep",
+      "title": "Behaviour and conduct",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "Written for SayWotNow v1.3 from the matching guide or template; not in the specification",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release.",
+        "Shows the HR-first reminder for this Level 3 guide."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "P-G04",
+      "kind": "prep",
+      "title": "Conflict between team members",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "medium",
+      "source": "Written for SayWotNow v1.3 from the matching guide or template; not in the specification",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "P-G05",
+      "kind": "prep",
+      "title": "Frequent short-term absence",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "Written for SayWotNow v1.3 from the matching guide or template; not in the specification",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "P-G06",
+      "kind": "prep",
+      "title": "Mental health",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "Written for SayWotNow v1.3 from the matching guide or template; not in the specification",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "P-G07",
+      "kind": "prep",
+      "title": "Bereavement",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "Written for SayWotNow v1.3 from the matching guide or template; not in the specification",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "P-G08",
+      "kind": "prep",
+      "title": "Menopause",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "Written for SayWotNow v1.3 from the matching guide or template; not in the specification",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "P-G09",
+      "kind": "prep",
+      "title": "Pregnancy announcement",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "Written for SayWotNow v1.3 from the matching guide or template; not in the specification",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "P-G10",
+      "kind": "prep",
+      "title": "Personal hygiene",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "Written for SayWotNow v1.3 from the matching guide or template; not in the specification",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "P-G11",
+      "kind": "prep",
+      "title": "Giving feedback",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "Written for SayWotNow v1.3 from the matching guide or template; not in the specification",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "P-G12",
+      "kind": "prep",
+      "title": "Saying no to a request",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "Written for SayWotNow v1.3 from the matching guide or template; not in the specification",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "P-G13",
+      "kind": "prep",
+      "title": "Flexible working request",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "Written for SayWotNow v1.3 from the matching guide or template; not in the specification",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release.",
+        "Shows the HR-first reminder for this Level 3 guide."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "P-G14",
+      "kind": "prep",
+      "title": "Pay rise request",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "Written for SayWotNow v1.3 from the matching guide or template; not in the specification",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "P-G15",
+      "kind": "prep",
+      "title": "Announcing change",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "medium",
+      "source": "Written for SayWotNow v1.3 from the matching guide or template; not in the specification",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "R01",
+      "kind": "reaction",
+      "title": "If they become upset or tearful",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), shared 'If they react…' library",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [],
+      "changeLog": []
+    },
+    {
+      "id": "R02",
+      "kind": "reaction",
+      "title": "If they become angry or defensive",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), shared 'If they react…' library",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [],
+      "changeLog": []
+    },
+    {
+      "id": "R03",
+      "kind": "reaction",
+      "title": "If they go quiet",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), shared 'If they react…' library",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [],
+      "changeLog": []
+    },
+    {
+      "id": "R04",
+      "kind": "reaction",
+      "title": "If they disagree or deny",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), shared 'If they react…' library",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [],
+      "changeLog": []
+    },
+    {
+      "id": "R05",
+      "kind": "reaction",
+      "title": "If they raise something new (e.g. a grievance, health or personal issue)",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), shared 'If they react…' library",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [],
+      "changeLog": []
+    },
+    {
+      "id": "R06",
+      "kind": "reaction",
+      "title": "If they ask for someone to be with them",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "Pocket HR App Build Specification v1.0 (MVP), shared 'If they react…' library",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [],
+      "changeLog": []
+    },
+    {
+      "id": "tool:holiday",
+      "kind": "calculator",
+      "title": "Holiday calculator (statutory copy and rules)",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "Spec Section 10.3; UK statutory annual leave (5.6 weeks, 28-day cap); bank holiday counts per UK nation added in v1.3",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "Verify 5.6 weeks / 28-day cap wording, the pro-rata method and the bank holiday counts (England and Wales 8, Scotland 9, Northern Ireland 10).",
+        "Irregular-hours and part-year workers may be calculated differently; the tool's note says so."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "tool:notice",
+      "kind": "calculator",
+      "title": "Notice period calculator (statutory copy and rules)",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "Spec Section 10.x; UK statutory minimum notice",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "Verify statutory minimum notice rules and the wording about contractual notice."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "page:disclaimer",
+      "kind": "page",
+      "title": "Disclaimer",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "Pocket HR App Build Specification v1.0 (MVP)",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "Flagged by the review panels: 'The app's creators accept no liability for decisions made using this guidance' is blanket liability language that may be misleading or unenforceable. Needs a lawyer's wording; not changed by the build."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "page:privacy",
+      "kind": "page",
+      "title": "Privacy statement",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "Written for SayWotNow; updated v1.4 and v1.5",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "Check against the actual data handling: preferences and exchange rates only on the device; the currency rates request; nothing typed is stored."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "search:phrases",
+      "kind": "search",
+      "title": "Search phrases and risky-term messages (content/search.json)",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "Written for SayWotNow v1.5 (P1.1) from the guides' keywords and the panels' example queries",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New: decides which content appears for everyday phrases. Check that risky terms (harassment, self-harm, dismissal…) always lead to HR-first or urgent help, and that the two safety messages are right."
+      ],
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Added phrases for the six new guides; risky terms now lead to the specific HR-first guide (harassment → G17, grievance → G16, alcohol/drugs → G18, redundancy → G19) as well as G03 where relevant.",
+          "by": "SayWotNow build (P3.1)"
+        }
+      ]
+    },
+    {
+      "id": "quickhelp:wording",
+      "kind": "quickhelp",
+      "title": "Quick Help questions and situation labels (content/quickhelp.json)",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "Written for SayWotNow v1.5 (P1.2); the card itself reuses each guide's and prep card's reviewed text",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New: plain-language situation labels and the 'Is any of this involved?' options decide whether the HR-first or urgent route is shown. Check none of them can lead a serious case past the HR-first gate."
+      ],
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Added six situations for the new guides.",
+          "by": "SayWotNow build (P3.1)"
+        }
+      ]
+    },
+    {
+      "id": "G16",
+      "kind": "guide",
+      "title": "Grievance raised",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "New draft written for SayWotNow v1.8 (P3.1); shown in the app labelled as a draft",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New draft guide: needs qualified HR/legal review before it can be marked approved.",
+        "Serious case: gives a safe first response and HR referral only, by design. Check the HR-first gate wording, especially any statements about legal process (e.g. Acas Code, right to be accompanied, consultation)."
+      ],
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Created as a draft (owner decision: show now, labelled as draft).",
+          "by": "SayWotNow build (P3.1)"
+        }
+      ]
+    },
+    {
+      "id": "P-G16",
+      "kind": "prep",
+      "title": "Grievance raised",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "New draft written for SayWotNow v1.8 (P3.1)",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release.",
+        "Shows the HR-first reminder for this Level 3 guide."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "G17",
+      "kind": "guide",
+      "title": "Harassment or bullying complaint",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "New draft written for SayWotNow v1.8 (P3.1); shown in the app labelled as a draft",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New draft guide: needs qualified HR/legal review before it can be marked approved.",
+        "Serious case: gives a safe first response and HR referral only, by design. Check the HR-first gate wording, especially any statements about legal process (e.g. Acas Code, right to be accompanied, consultation)."
+      ],
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Created as a draft (owner decision: show now, labelled as draft).",
+          "by": "SayWotNow build (P3.1)"
+        }
+      ]
+    },
+    {
+      "id": "P-G17",
+      "kind": "prep",
+      "title": "Harassment or bullying complaint",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "New draft written for SayWotNow v1.8 (P3.1)",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release.",
+        "Shows the HR-first reminder for this Level 3 guide."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "G18",
+      "kind": "guide",
+      "title": "Suspected impairment at work",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "New draft written for SayWotNow v1.8 (P3.1); shown in the app labelled as a draft",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New draft guide: needs qualified HR/legal review before it can be marked approved.",
+        "Serious case: gives a safe first response and HR referral only, by design. Check the HR-first gate wording, especially any statements about legal process (e.g. Acas Code, right to be accompanied, consultation)."
+      ],
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Created as a draft (owner decision: show now, labelled as draft).",
+          "by": "SayWotNow build (P3.1)"
+        }
+      ]
+    },
+    {
+      "id": "P-G18",
+      "kind": "prep",
+      "title": "Suspected impairment at work",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "New draft written for SayWotNow v1.8 (P3.1)",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release.",
+        "Shows the HR-first reminder for this Level 3 guide."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "G19",
+      "kind": "guide",
+      "title": "Redundancy or restructure",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "New draft written for SayWotNow v1.8 (P3.1); shown in the app labelled as a draft",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New draft guide: needs qualified HR/legal review before it can be marked approved.",
+        "Serious case: gives a safe first response and HR referral only, by design. Check the HR-first gate wording, especially any statements about legal process (e.g. Acas Code, right to be accompanied, consultation)."
+      ],
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Created as a draft (owner decision: show now, labelled as draft).",
+          "by": "SayWotNow build (P3.1)"
+        }
+      ]
+    },
+    {
+      "id": "P-G19",
+      "kind": "prep",
+      "title": "Redundancy or restructure",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "high",
+      "source": "New draft written for SayWotNow v1.8 (P3.1)",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release.",
+        "Shows the HR-first reminder for this Level 3 guide."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "G20",
+      "kind": "guide",
+      "title": "Poor team morale",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "New draft written for SayWotNow v1.8 (P3.1); shown in the app labelled as a draft",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New draft guide: needs qualified HR/legal review before it can be marked approved."
+      ],
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Created as a draft (owner decision: show now, labelled as draft).",
+          "by": "SayWotNow build (P3.1)"
+        }
+      ]
+    },
+    {
+      "id": "P-G20",
+      "kind": "prep",
+      "title": "Poor team morale",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "New draft written for SayWotNow v1.8 (P3.1)",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release."
+      ],
+      "changeLog": []
+    },
+    {
+      "id": "G21",
+      "kind": "guide",
+      "title": "Managing a former peer",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "New draft written for SayWotNow v1.8 (P3.1); shown in the app labelled as a draft",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New draft guide: needs qualified HR/legal review before it can be marked approved."
+      ],
+      "changeLog": [
+        {
+          "date": "2026-11-21",
+          "change": "Created as a draft (owner decision: show now, labelled as draft).",
+          "by": "SayWotNow build (P3.1)"
+        }
+      ]
+    },
+    {
+      "id": "P-G21",
+      "kind": "prep",
+      "title": "Managing a former peer",
+      "owner": "Unassigned (product owner to assign)",
+      "jurisdiction": "UK",
+      "riskTier": "low",
+      "source": "New draft written for SayWotNow v1.8 (P3.1)",
+      "reviewer": null,
+      "reviewedOn": null,
+      "nextReviewOn": null,
+      "status": "draft",
+      "issues": [
+        "New wording: needs review before release."
+      ],
+      "changeLog": []
+    }
+  ]
+}

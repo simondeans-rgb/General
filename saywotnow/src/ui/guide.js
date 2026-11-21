@@ -1,9 +1,13 @@
 import { html, useState, useEffect, useRef } from '../vendor/preact-htm.js';
 import { S } from '../strings.js';
 import { Icon, FLAG_ICON } from './icons.js';
-import { content, navigate, goBack, TopBar, FavStar, FlagChip, toast, showDialog } from './core.js';
+import { content, navigate, goBack, TopBar, FavStar, FlagChip, toast, showDialog, Disclosure } from './core.js';
 import { prepFor } from '../content.js';
 import { PrepButton } from './prep.js';
+import { EscalationGate, GateReminder } from './escalation.js';
+import { ReactChips } from './reactchips.js';
+import { Linked, Related } from './linked.js';
+import { findPlaceholders, fillText, fillParts, placeholderLabel } from '../lib/placeholders.js';
 import { toggleFavourite } from '../prefs.js';
 import { copyText } from '../platform.js';
 import { ContactHrButton, startSummary } from './form.js';
@@ -23,10 +27,12 @@ function showLarge(lead, text) {
   });
 }
 
-function QuoteCard({ lead, text }) {
+export function QuoteCard({ lead, text: raw, fills = {} }) {
+  // P2.1: the copied and large-text versions use the filled-in words; [blanks] stay visible until filled.
+  const text = fillText(raw, fills);
   return html`<li class="quote-card">
     ${lead ? html`<p class="quote-lead">${lead}:</p>` : null}
-    <blockquote><p>${text}</p></blockquote>
+    <blockquote><p>${fillParts(raw, fills).map((p) => (p.text !== undefined ? p.text : html`<span class=${p.filled ? 'ph-filled' : 'ph'}>${p.value}</span>`))}</p></blockquote>
     <div class="quote-actions">
       <button type="button" class="icon-btn small" aria-label=${`${S.showLarge}: ${text}`} onClick=${() => showLarge(lead, text)}>
         <${Icon} name="expand" size=${20} />
@@ -39,11 +45,34 @@ function QuoteCard({ lead, text }) {
   </li>`;
 }
 
-function OpeningLine({ line }) {
+function OpeningLine({ line, fills }) {
   // Lines can be "Context: "quote"" or a plain quote.
   const m = /^(.*?):\s*"(.*)"$/.exec(line);
   const { text } = m ? { text: m[2] } : stripQuotes(line);
-  return html`<${QuoteCard} lead=${m ? m[1] : null} text=${text} />`;
+  return html`<${QuoteCard} lead=${m ? m[1] : null} text=${text} fills=${fills} />`;
+}
+
+/** P2.1: optional boxes for the [blanks] in this guide's scripts. Held in memory only. */
+function Personaliser({ names, fills, setFills }) {
+  if (!names.length) return null;
+  const filled = names.filter((n) => (fills[n] || '').trim()).length;
+  return html`<${Disclosure} summary=${`${S.fillBlanks}${filled ? ` (${filled} of ${names.length})` : ''}`} class="personaliser">
+    <p class="field-help">${S.fillBlanksHelp}</p>
+    ${names.map((n) => html`<div class="field" key=${n}>
+      <label class="field-label" for=${`ph-${n.replace(/\W+/g, '-')}`}>${placeholderLabel(n)}</label>
+      <input id=${`ph-${n.replace(/\W+/g, '-')}`} class="input" type="text" maxlength="80" value=${fills[n] || ''} autocomplete="off" autocorrect="off" spellcheck=${false}
+        onInput=${(e) => setFills({ ...fills, [n]: e.target.value })} />
+    </div>`)}
+    ${filled ? html`<button type="button" class="btn btn-ghost btn-small" onClick=${() => setFills({})}>${S.clearBlanks}</button>` : null}
+  </${Disclosure}>`;
+}
+
+/** P3.2: a truthful review stamp. Names a reviewer only when the content is actually approved. */
+function ReviewStamp({ guide }) {
+  const r = content().guides.review;
+  const approved = r.reviewStatus === 'approved' && r.reviewedBy && !guide.draft;
+  return html`<p class="review-stamp"><${Icon} name=${approved ? 'check' : 'info'} size=${16} />
+    ${approved ? `Reviewed by ${r.reviewedBy} on ${r.reviewedOn}. Next review due ${r.nextReviewOn}.` : guide.draft ? S.stampNew : S.stampDraft}</p>`;
 }
 
 function HrPanel({ guide, prefs }) {
@@ -64,6 +93,8 @@ export function Guide({ id, prefs }) {
   const [tab, setTab] = useState('before');
   // Checklist ticks are held for this visit only (never stored).
   const [ticks, setTicks] = useState({});
+  // P2.1: script blanks, for this visit only (never stored).
+  const [fills, setFills] = useState({});
   const [openResp, setOpenResp] = useState(null);
   const tabRefs = useRef({});
   useEffect(() => { setTab('before'); setTicks({}); }, [id]);
@@ -90,6 +121,9 @@ export function Guide({ id, prefs }) {
       <span>${S.categories[guide.category]}</span><span aria-hidden="true">·</span><span><${Icon} name="calendar" size=${16} /> ${guide.length}</span>
       <${FlagChip} level=${guide.flagLevel} />
     </div>
+    <p class="scope-note"><span class="uk-chip">${S.ukGuidance}</span> ${S.ukScopeShort}</p>
+    ${guide.draft ? html`<div class="draft-notice" role="note"><${Icon} name="info" size=${20} /><p><strong>${S.newDraft}.</strong> ${S.newDraftBody}</p></div>` : null}
+    <${EscalationGate} guide=${guide} prefs=${prefs} />
     <${PrepButton} card=${prepFor(c, 'guide', guide.id)} />
 
     <section class="when" aria-labelledby="when-h">
@@ -108,45 +142,50 @@ export function Guide({ id, prefs }) {
         <p class="progress-line">${done} of ${guide.before.length} done · <span class="muted">${S.checklistNote}</span></p>
         <ul class="checklist" role="list">
           ${guide.before.map((item, i) => html`<li><label class=${`choice check ${ticks[i] ? 'on' : ''}`}>
-            <input type="checkbox" checked=${!!ticks[i]} onChange=${(e) => setTicks({ ...ticks, [i]: e.target.checked })} /><span>${item}</span>
+            <input type="checkbox" checked=${!!ticks[i]} onChange=${(e) => setTicks({ ...ticks, [i]: e.target.checked })} /><span><${Linked} text=${item} /></span>
           </label></li>`)}
         </ul>` : null}
 
       ${tab === 'during' ? html`
+        <${GateReminder} guide=${guide} />
+        <${ReactChips} />
         ${guide.urgentBanner ? html`<div class="urgent-banner" role="alert">
           <${Icon} name="alert" size=${24} />
           <p>${S.urgent}</p>
           <a class="btn btn-danger btn-small" href="tel:999"><${Icon} name="phone" size=${18} /> ${S.call999}</a>
         </div>` : null}
         <h2 class="mini-title">${S.opening}</h2>
-        <ul class="quotes" role="list">${guide.opening.map((l) => html`<${OpeningLine} line=${l} />`)}</ul>
+        <${Personaliser} names=${findPlaceholders([...guide.opening, ...(guide.sayIt || []).map((x) => x.line)])} fills=${fills} setFills=${setFills} />
+        <ul class="quotes" role="list">${guide.opening.map((l) => html`<${OpeningLine} line=${l} fills=${fills} />`)}</ul>
         ${guide.sayIt ? html`<h2 class="mini-title">${S.sayIt}</h2>
           <p class="muted say-note">${S.sayItNote}</p>
-          <ul class="quotes" role="list">${guide.sayIt.map((x) => html`<${QuoteCard} lead=${x.when} text=${x.line} />`)}</ul>` : null}
+          <ul class="quotes" role="list">${guide.sayIt.map((x) => html`<${QuoteCard} lead=${x.when} text=${x.line} fills=${fills} />`)}</ul>` : null}
         <h2 class="mini-title">${S.keyQuestions}</h2>
-        <ul class="bullets">${guide.during.map((l) => html`<li>${l}</li>`)}</ul>
+        <ul class="bullets">${guide.during.map((l) => html`<li><${Linked} text=${l} /></li>`)}</ul>
         <h2 class="mini-title">${S.likelyResponses}</h2>
         <ul class="accordion" role="list">
           ${guide.responses.map((r, i) => html`<li class=${`acc-item ${openResp === i ? 'open' : ''}`}>
             <h3 class="acc-h"><button type="button" aria-expanded=${openResp === i} aria-controls=${`resp-${i}`} onClick=${() => setOpenResp(openResp === i ? null : i)}>
               <span><span class="muted">${S.ifTheySay}</span> ${r.theySay}</span><${Icon} name="down" class="chev" />
             </button></h3>
-            <div id=${`resp-${i}`} class="acc-panel" hidden=${openResp !== i}><p><strong>${S.youCould} </strong>${r.youCould}</p></div>
+            <div id=${`resp-${i}`} class="acc-panel" hidden=${openResp !== i}><p><strong>${S.youCould} </strong><${Linked} text=${r.youCould} /></p></div>
           </li>`)}
         </ul>
         <a class="react-link" href="#/reactions" onClick=${(e) => { e.preventDefault(); navigate('/reactions'); }}>
           <${Icon} name="conversations" /><span>${S.reactionsLink}</span><${Icon} name="chevron" size=${18} />
         </a>
         <h2 class="mini-title">${S.donts}</h2>
-        <ul class="bullets donts">${guide.donts.map((l) => html`<li>${l}</li>`)}</ul>` : null}
+        <ul class="bullets donts">${guide.donts.map((l) => html`<li><${Linked} text=${l} /></li>`)}</ul>` : null}
 
       ${tab === 'after' ? html`
-        <ul class="bullets">${guide.after.map((l) => html`<li>${l}</li>`)}</ul>
+        <ul class="bullets">${guide.after.map((l) => html`<li><${Linked} text=${l} /></li>`)}</ul>
         <button type="button" class=${`btn btn-block ${guide.summary.recommended ? 'btn-primary' : 'btn-secondary'}`} onClick=${() => startSummary(guide)}>
           <${Icon} name="doc" size=${20} /> ${summaryLabel}
         </button>` : null}
     </div>
 
     <${HrPanel} guide=${guide} prefs=${prefs} />
+    <${Related} guide=${guide} />
+    <${ReviewStamp} guide=${guide} />
   </div>`;
 }

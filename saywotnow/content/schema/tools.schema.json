@@ -4,7 +4,8 @@
   "type": "object",
   "required": [
     "contentVersion",
-    "lastReviewed",
+    "lastEdited",
+    "review",
     "tools"
   ],
   "additionalProperties": false,
@@ -13,9 +14,46 @@
       "type": "string",
       "pattern": "^\\d+\\.\\d+\\.\\d+$"
     },
-    "lastReviewed": {
+    "lastEdited": {
+      "description": "When the file was last edited. This is not a review date.",
       "type": "string",
       "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "review": {
+      "description": "Review status (P0.4). Never mark approved without a real, named reviewer and date.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "jurisdiction",
+        "reviewStatus",
+        "reviewedBy",
+        "reviewedOn",
+        "nextReviewOn"
+      ],
+      "properties": {
+        "jurisdiction": {
+          "enum": [
+            "UK",
+            "general"
+          ]
+        },
+        "reviewStatus": {
+          "enum": [
+            "draft",
+            "in-review",
+            "approved"
+          ]
+        },
+        "reviewedBy": {
+          "description": "Name and qualification of the reviewer, or null"
+        },
+        "reviewedOn": {
+          "description": "YYYY-MM-DD or null"
+        },
+        "nextReviewOn": {
+          "description": "YYYY-MM-DD or null"
+        }
+      }
     },
     "tools": {
       "type": "array",
@@ -56,13 +94,8 @@
           },
           "status": {
             "enum": [
-              "ready",
-              "pending"
+              "ready"
             ]
-          },
-          "pendingNote": {
-            "type": "string",
-            "minLength": 1
           },
           "howItWorks": {
             "type": "string",
@@ -81,10 +114,6 @@
           },
           "noteFirst": {
             "type": "boolean"
-          },
-          "noBands": {
-            "type": "string",
-            "minLength": 1
           },
           "placeholders": {
             "type": "object",
@@ -130,6 +159,10 @@
               },
               "additionalProperties": false
             }
+          },
+          "ukOnly": {
+            "description": "Shows the 'UK rules' label (P0.4).",
+            "type": "boolean"
           }
         }
       }

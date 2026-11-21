@@ -97,6 +97,9 @@ await check('AC-01/06/07: run a 1:1, validation, preview content, send clears th
   const { ctx, page, log } = await newApp();
   await shot(page, '03-home');
   await page.getByRole('link', { name: 'Run a 1:1' }).click();
+  // P1.5: new users start with the quick check-in; Full is one tap away.
+  await page.getByRole('heading', { name: 'Quick Check-in' }).waitFor();
+  await page.getByRole('radio', { name: 'Full' }).check({ force: true });
   await page.getByRole('heading', { name: '1:1 Meeting' }).waitFor();
   // AC-07: can't proceed, first invalid field focused. (aria-disabled, but still tappable to show errors.)
   await page.getByRole('button', { name: 'Preview & send' }).click({ force: true });
@@ -116,7 +119,10 @@ await check('AC-01/06/07: run a 1:1, validation, preview content, send clears th
   await shot(page, '05-form-filled');
   await page.getByRole('button', { name: 'Preview & send' }).click();
   await page.getByRole('heading', { name: 'Check and send' }).waitFor();
-  const body = await page.locator('.email-body').innerText();
+  let body = await page.locator('.email-body').innerText();
+  assert.doesNotMatch(body, /How are you feeling/, 'wellbeing left out by default (P0.5)');
+  await page.getByRole('switch', { name: 'Include wellbeing and health details' }).click();
+  body = await page.locator('.email-body').innerText();
   assert.match(body, /How are you feeling at the moment\? 4\/5 – Good/);
   assert.match(body, /WINS\n\nLaunched/);
   assert.doesNotMatch(body, /PRIORITIES|Finalise/, 'switched-off section left out');
@@ -133,7 +139,7 @@ await check('AC-01/06/07: run a 1:1, validation, preview content, send clears th
   await page.getByText("Sent. SayWotNow hasn't kept a copy.").waitFor();
   assert.match(page.url(), /#\/$/);
   // AC-01: reopening shows an empty form.
-  await page.getByRole('link', { name: 'Run a 1:1' }).click();
+  await page.goto(BASE + '#/template/T01');
   assert.equal(await page.inputValue('#f-employeeName'), '');
   assert.equal(await page.inputValue('#f-wins'), '');
   assert.deepEqual(log.external, []);
@@ -286,8 +292,8 @@ await check('G06 shows the urgent 999 banner; G03 shows a notice before the summ
   const { ctx, page } = await newApp();
   await page.goto(BASE + '#/guide/G06');
   await page.getByRole('tab', { name: 'During' }).click();
-  await page.getByText('If someone is at risk of harming themselves or others, call 999.').waitFor();
-  assert.equal(await page.getByRole('link', { name: 'Call 999' }).getAttribute('href'), 'tel:999');
+  await page.getByText('If someone is at risk of harming themselves or others, call 999 (UK emergency services).').waitFor();
+  assert.equal(await page.getByRole('link', { name: 'Call 999 (UK)' }).getAttribute('href'), 'tel:999');
   await page.goto(BASE + '#/guide/G03');
   await page.getByRole('tab', { name: 'After' }).click();
   await page.getByRole('button', { name: 'Write summary' }).click();
@@ -301,13 +307,13 @@ await check('AC-14: search "late" → G02, "sick" → G05 and T03', async () => 
   const { ctx, page } = await newApp();
   await page.getByRole('link', { name: 'Search guides, templates and tools' }).click();
   await page.fill('input[type=search]', 'late');
-  await page.getByRole('link', { name: /Lateness and timekeeping/ }).waitFor();
+  await page.locator('a[href="#/guide/G02"]').waitFor();
   await page.fill('input[type=search]', 'sick');
-  await page.getByRole('link', { name: /Frequent short-term sickness absence/ }).waitFor();
-  await page.getByRole('link', { name: /Return to Work/ }).waitFor();
+  await page.locator('a[href="#/guide/G05"]').waitFor();
+  await page.locator('a[href="#/template/T03"]').waitFor();
   await shot(page, '15-search');
   await page.fill('input[type=search]', 'qqqzzz');
-  await page.getByText('No results.').waitFor();
+  await page.getByText('No results for that.').waitFor();
   assert.doesNotMatch(page.url(), /sick|qqq/);
   await ctx.close();
 });
@@ -327,8 +333,8 @@ await check('AC-15: favourites persist after restart and appear on Home', async 
   await ctx.close();
 });
 
-await check('Tools: holiday, notice, Bradford, SBI work; inputs clear on leaving', async () => {
-  const { ctx, page } = await newApp({ prefs: { bradfordBands: [{ from: '0', to: '49', label: 'No action' }, { from: '50', to: '', label: 'Review' }] } });
+await check('Tools: holiday, notice, SBI work; inputs clear on leaving', async () => {
+  const { ctx, page } = await newApp();
   await page.goto(BASE + '#/tool/holiday');
   await page.fill('#h-emp', '3');
   await page.getByRole('button', { name: 'Calculate' }).click();
@@ -339,18 +345,11 @@ await check('Tools: holiday, notice, Bradford, SBI work; inputs clear on leaving
   await page.fill('#n-nd', '2026-11-16');
   await page.getByRole('button', { name: 'Calculate' }).click();
   await page.getByText('Monday 28 December 2026').waitFor();
-  await page.goto(BASE + '#/tool/bradford');
-  await page.fill('#sp-0', '1');
-  await page.getByRole('button', { name: 'Add a spell' }).click();
-  await page.fill('#sp-1', '2');
-  await page.getByText('Band: 0–49: No action').waitFor();
-  await page.locator('.big-number', { hasText: '12' }).waitFor();
-  await shot(page, '18-bradford');
   await page.goto(BASE + '#/tool/sbi');
   await page.fill('#sbi-situation', 'the team meeting');
   await page.fill('#sbi-behaviour', 'you interrupted Priya');
   await page.fill('#sbi-impact', 'she stopped contributing');
-  await page.getByText('In the team meeting, I noticed you interrupted Priya. The impact was she stopped contributing.').waitFor();
+  await page.getByText('In the team meeting, I noticed you interrupted Priya. The impact was that she stopped contributing.').waitFor();
   await page.goto(BASE + '#/tool/holiday');
   assert.equal(await page.inputValue('#h-emp'), '');
   await ctx.close();
@@ -360,7 +359,7 @@ await check('1-minute prep: Home tile, list, card, start the meeting; prep sheet
   const { ctx, page, log } = await newApp();
   await page.locator('.tile', { hasText: '1-minute prep' }).click();
   await page.locator('#main h1', { hasText: '1-minute prep' }).waitFor();
-  assert.equal(await page.locator('.card-list .card').count(), 21);
+  assert.equal(await page.locator('.card-list .card').count(), 27);
   await page.locator('.card', { hasText: 'Return to work' }).click();
   assert.equal(await page.locator('.prep-ask li').count(), 3);
   await page.getByText("Don't ask for more medical detail than you need.").waitFor();
@@ -444,143 +443,435 @@ await check('Holiday: bank holidays follow the UK nation, which is remembered', 
   await ctx.close();
 });
 
-await check('Interview packs: build, save, Word export, reopen; nothing about candidates is stored', async () => {
-  const { ctx, page, log } = await newApp();
-  await page.goto(BASE + '#/tool/interview');
-  await page.getByText('No interview packs yet').waitFor();
-  await page.getByRole('link', { name: 'Create an interview pack' }).click();
-  // Step 1: role is required.
-  await page.getByRole('button', { name: 'Continue', exact: true }).click({ force: true });
-  await page.locator('#iv-role').waitFor();
-  assert.equal(await page.locator('.iv-step-title').textContent(), 'Role & interview panel');
-  await page.fill('#iv-role', 'Head of Product');
-  await page.fill('#iv-func', 'Product');
-  await page.getByLabel('Interviewer 1 name').fill('Jo Smith');
-  await page.getByRole('button', { name: 'Add interviewer' }).click();
-  await page.getByLabel('Interviewer 2 name').fill('Sam Lee');
-  await page.getByRole('button', { name: 'Continue', exact: true }).click();
-  // Step 2: competencies and coverage.
-  await page.getByText('0 of 5 ACTED dimensions represented').waitFor();
-  for (const n of ['Self-Awareness', 'Resilience', 'Navigates Conflict']) await page.getByRole('button', { name: new RegExp(`^${n}`) }).click();
-  await page.getByText('2 of 5 ACTED dimensions represented').waitFor();
-  await page.fill('#iv-search', 'setbacks');
-  assert.equal(await page.locator('.iv-comp').count(), 1);
-  await page.fill('#iv-search', '');
-  await page.getByRole('button', { name: 'Continue', exact: true }).click();
-  // Step 3: same question can't be primary and backup; completing one moves to the next.
-  const rows = page.locator('.iv-qrow');
-  await rows.nth(0).getByRole('button', { name: /^Primary/ }).click();
-  assert.equal(await rows.nth(0).getByRole('button', { name: /^Backup/ }).isDisabled(), true);
-  await page.getByRole('button', { name: 'Continue', exact: true }).click({ force: true }); // blocked
-  await page.getByText('1 of 3', { exact: true }).waitFor();
-  for (let k = 0; k < 3; k++) {
-    await page.getByText(`${k + 1} of 3`, { exact: true }).waitFor();
-    if (k > 0) await rows.nth(0).getByRole('button', { name: /^Primary/ }).click(); // the first one is already chosen
-    await rows.nth(5).getByRole('button', { name: /^Backup/ }).click();
-    await page.waitForTimeout(400);
+await check('P0.1 removed: Interview Pack Builder and Bradford Factor are gone everywhere; old saved data is deleted', async () => {
+  const old = { interviewPacks: [{ id: 'pack-old-1', role: 'Head of Product', panel: ['Jo Smith'], competencies: [{ id: 'resilience', primary: 'resilience-1', backup: 'resilience-2' }] }],
+    bradfordBands: [{ from: '0', to: '49', label: 'No action' }], favourites: ['bradford', 'interview', 'G02'] };
+  const { ctx, page, log } = await newApp({ prefs: old });
+  // Old data is removed from the device on first launch, silently.
+  const stored = JSON.parse(await page.evaluate(() => localStorage.getItem('saywotnow.prefs.v1')));
+  assert.equal('interviewPacks' in stored, false);
+  assert.equal('bradfordBands' in stored, false);
+  assert.equal(await dialog(page).count(), 0, 'no notice is shown');
+  // Not on Home (tiles or favourites) or in the Toolkit.
+  const home = await page.locator('#main').innerText();
+  assert.doesNotMatch(home, /Bradford|Interview pack/i);
+  await page.goto(BASE + '#/toolkit');
+  const kit = await page.locator('#main').innerText();
+  assert.doesNotMatch(kit, /Bradford|Interview pack/i);
+  assert.equal(await page.locator('.card-list .card').count(), 5);
+  // Not in search.
+  await page.goto(BASE + '#/search');
+  for (const q of ['bradford', 'interview pack', 'ACTED', 'competency']) {
+    await page.fill('input[type=search]', q);
+    await page.waitForTimeout(150);
+    assert.doesNotMatch(await page.locator('#main').innerText(), /Bradford|Interview pack generator/i, q);
   }
-  await page.getByText('3 of 3 complete').waitFor();
-  await page.getByRole('button', { name: 'Continue', exact: true }).click();
-  // Step 4: summary, who asks what, save, export.
-  await page.locator('.iv-who li', { hasText: 'Resilience' }).getByText('Sam Lee').waitFor();
-  await page.getByRole('button', { name: 'Save pack' }).click();
-  await page.getByText('Pack saved on this device.').waitFor();
-  const [dl] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Download Word pack' }).click()]);
-  assert.equal(dl.suggestedFilename(), 'SayWotNow Interview Pack - Head of Product.docx');
-  const file = await dl.path();
-  const { readFileSync } = await import('node:fs');
-  const bytes = readFileSync(file);
-  assert.equal(bytes.subarray(0, 2).toString(), 'PK');
-  assert.ok(bytes.length > 8000);
-  await page.getByRole('button', { name: 'Customise for a candidate' }).click();
-  await page.fill('#iv-cand', 'Alex Doe');
-  const [dl2] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Download customised Word pack' }).click()]);
-  assert.ok(dl2.suggestedFilename().endsWith('.docx'));
-  await page.getByText('Candidate details were not saved.').waitFor();
-  await shot(page, '31-interview-pack');
-  // Printed pack: how-to-use, each competency and the evaluation start on a new page.
-  await page.emulateMedia({ media: 'print' });
-  const pb = await page.$$eval('.print-doc .pd-comp, .print-doc .pd-newpage', (els) => els.map((e) => getComputedStyle(e).breakBefore));
-  assert.deepEqual(pb, ['page', 'page', 'page', 'page', 'page']);
-  await page.emulateMedia({ media: 'screen' });
-  // Saved on the device without candidate details; survives a restart.
-  const stored = await page.evaluate(() => localStorage.getItem('saywotnow.prefs.v1'));
-  assert.ok(stored.includes('Head of Product') && stored.includes('Sam Lee'));
-  assert.ok(!stored.includes('Alex'), 'candidate name must not be stored');
-  await page.goto(BASE + '#/tool/interview');
-  await page.reload();
-  await page.locator('.iv-pack', { hasText: 'Head of Product' }).waitFor();
-  await page.getByRole('button', { name: 'Duplicate Head of Product' }).click();
-  await page.locator('.iv-pack', { hasText: 'Head of Product — Copy' }).waitFor();
-  await page.getByRole('button', { name: 'Delete Head of Product — Copy' }).click();
-  await dialog(page).getByRole('button', { name: 'Delete' }).click();
-  assert.equal(await page.locator('.iv-pack').count(), 1);
+  // Not in Settings.
+  await page.goto(BASE + '#/settings');
+  assert.doesNotMatch(await page.locator('#main').innerText(), /Bradford/i);
+  // Old deep links don't open them.
+  for (const path of ['#/tool/bradford', '#/tool/interview', '#/interview/new', '#/interview/library', '#/interview/run/pack-old-1']) {
+    await page.goto(BASE + path);
+    await page.waitForTimeout(150);
+    assert.doesNotMatch(await page.locator('#main').innerText(), /Bradford Factor|Interview pack generator|ACTED/i, path);
+  }
+  // Not in the offline cache.
+  const cached = await page.evaluate(async () => { const keys = await caches.keys(); const out = []; for (const k of keys) { const c = await caches.open(k); out.push(...(await c.keys()).map((r) => r.url)); } return out; });
+  assert.ok(!cached.some((u) => /bradford|interview|docx/i.test(u)), 'nothing retired is cached');
   assert.deepEqual(log.errors, []);
+  await ctx.close();
+});
+
+await check('P0.2 privacy: discarded notes can never come back through the "No mail app?" sheet', async () => {
+  const { ctx, page, log } = await newApp();
+  const SECRET = 'SECRET NOTE about health';
+  const fillAndPreview = async () => {
+    await page.evaluate(() => { location.hash = '#/template/T02'; });
+    await page.locator('#f-employeeName').waitFor();
+    await fillHeader(page);
+    await page.locator('textarea').first().fill(SECRET);
+    await page.getByRole('button', { name: /Preview/ }).click({ force: true });
+    await page.waitForURL(/preview$/);
+  };
+  // 1. The panel's report: sheet open, back, back, Discard. The sheet must be gone and nothing copyable.
+  await fillAndPreview();
+  await page.getByRole('button', { name: 'No mail app?' }).click();
+  await dialog(page).getByRole('button', { name: 'Copy' }).waitFor();
+  await page.goBack();
+  await page.waitForURL(/T02$/);
+  assert.equal(await dialog(page).count(), 0, 'the sheet closes when you leave the preview');
+  await page.goBack();
+  await dialog(page).getByText('Leave this form?').waitFor();
+  await dialog(page).getByRole('button', { name: 'Discard' }).click();
+  await page.waitForTimeout(300);
+  assert.equal(await dialog(page).count(), 0, 'no pop-up survives the discard');
+  assert.doesNotMatch(await page.locator('body').innerText(), new RegExp(SECRET));
+  // 2. Coming straight back to the preview (deep link) or reopening the form shows nothing.
+  await page.evaluate(() => { location.hash = '#/template/T02/preview'; });
+  await page.waitForURL(/T02$/);
+  assert.equal(await page.inputValue('#f-employeeName'), '');
+  assert.doesNotMatch(await page.locator('body').innerText(), new RegExp(SECRET));
+  // 3. The clipboard never received the note in any of this.
+  assert.ok(!(await page.evaluate(() => navigator.clipboard.readText().catch(() => ''))).includes(SECRET));
+  assert.deepEqual(log.errors, []);
+  await ctx.close();
+});
+
+await check('P0.3 HR-first gate: Level 3 guides warn before any script, from every way in', async () => {
+  const { ctx, page, log } = await newApp();
+  for (const id of ['G03', 'G13', 'G16', 'G17', 'G18', 'G19']) {
+    await page.goto(BASE + `#/guide/${id}`);
+    const gate = page.locator('.gate');
+    await gate.waitFor();
+    // The gate comes before the tabs, scripts and checklist, and is announced as a warning.
+    const order = await page.evaluate(() => {
+      const els = [...document.querySelectorAll('.gate, [role=tablist], .checklist')];
+      return els.map((e) => e.className.split(' ')[0]);
+    });
+    assert.equal(order[0], 'gate', id);
+    assert.match(await gate.locator('h2').textContent(), /^Warning: /);
+    // No STOP instruction can be ticked off.
+    const ticks = await page.locator('.checklist li').allInnerTexts();
+    assert.ok(!ticks.some((t) => /^STOP/.test(t.trim())), id);
+    // Answering "No" to everything never removes the warning or says it's safe.
+    for (const r of await gate.getByRole('radio', { name: 'No' }).all()) await r.check();
+    assert.equal(await page.locator('.gate').count(), 1);
+    assert.doesNotMatch(await gate.innerText(), /safe to (go ahead|proceed)/i);
+    await gate.getByText(/Even (if none of these apply|so)/).waitFor();
+    // "Yes or not sure" shows the stop instruction and holding words.
+    await gate.getByRole('radio', { name: 'Yes or not sure' }).first().check();
+    await gate.locator('.gate-holding li').first().waitFor();
+    // No HR contact set: no dead link, a clear instruction instead.
+    await gate.getByText('Contact your HR team or a qualified adviser.').waitFor();
+    // The During tab repeats the warning before the scripts.
+    await page.getByRole('tab', { name: 'During' }).click();
+    const first = await page.locator('#panel-during > *').first().getAttribute('class');
+    assert.equal(first, 'gate-mini', `${id}: reminder before scripts`);
+    assert.equal(await page.locator('.draft-label').count(), 1, 'draft wording is labelled');
+  }
+  // From search, a prep card and a favourite.
+  await page.goto(BASE + '#/search');
+  await page.fill('input[type=search]', 'conduct'); // "bullying" -> G03 is Phase 1 (P1.1 synonym search)
+  await page.locator('.card', { hasText: 'Behaviour and conduct' }).first().click();
+  await page.locator('.gate').waitFor();
+  await page.goto(BASE + '#/prep/P-G03');
+  await page.locator('.gate-mini').waitFor();
+  await page.goto(BASE + '#/guide/G03');
+  await page.getByRole('button', { name: '1-minute prep' }).click();
+  await dialog(page).locator('.gate-mini').waitFor();
+  await page.keyboard.press('Escape');
+  // With an HR contact set, the gate offers it.
+  await page.evaluate(() => { const p = JSON.parse(localStorage.getItem('saywotnow.prefs.v1')); p.hrContactEmail = 'hr@example.co.uk'; localStorage.setItem('saywotnow.prefs.v1', JSON.stringify(p)); });
+  await page.reload();
+  await page.locator('.gate').getByRole('button', { name: /Email HR/ }).waitFor();
+  assert.deepEqual(log.errors, []);
+  await ctx.close();
+});
+
+await check('P0.4 UK scope and honest review status', async () => {
+  const { ctx, page, log } = await newApp();
+  for (const id of ['G01', 'G06', 'G13']) {
+    await page.goto(BASE + `#/guide/${id}`);
+    await page.locator('.scope-note', { hasText: 'UK guidance' }).waitFor();
+  }
+  await page.getByRole('tab', { name: 'During' }).click();
+  await page.goto(BASE + '#/guide/G06');
+  await page.getByRole('tab', { name: 'During' }).click();
+  await page.getByText('call 999 (UK emergency services)').waitFor();
+  for (const id of ['holiday', 'notice']) {
+    await page.goto(BASE + `#/tool/${id}`);
+    await page.locator('.scope-note', { hasText: 'UK rules' }).waitFor();
+  }
+  await page.goto(BASE + '#/tool/timezones');
+  await page.locator('#main h1').waitFor();
+  assert.equal(await page.locator('.scope-note').count(), 0, 'non-legal tools are not labelled UK');
+  await page.goto(BASE + '#/page/content');
+  const info = await page.locator('#main').innerText();
+  assert.match(info, /not yet been independently reviewed/);
+  assert.doesNotMatch(info, /last reviewed/i, 'no automatic "reviewed on" stamp');
+  assert.deepEqual(log.errors, []);
+  await ctx.close();
+});
+
+await check('P0.5 wellbeing and health stay out of emails unless included for that email', async () => {
+  const { ctx, page, log } = await newApp();
+  await page.goto(BASE + '#/template/T02');
+  await page.locator('#f-employeeName').waitFor();
+  await fillHeader(page);
+  await page.locator('[data-field="wellbeingRating"]').getByRole('button', { name: /^2 / }).click();
+  await page.locator('[data-field="wellbeingComments"] textarea').fill('Struggling with sleep.');
+  await page.locator('[data-field="priorities"] textarea').fill('Cover rota.');
+  await page.getByRole('button', { name: /Preview/ }).click({ force: true });
+  await page.waitForURL(/preview$/);
+  const body = page.locator('.email-body');
+  assert.doesNotMatch(await body.innerText(), /Struggling with sleep|How are things/);
+  assert.match(await body.innerText(), /Cover rota/);
+  const sw = page.getByRole('switch', { name: 'Include wellbeing and health details' });
+  assert.equal(await sw.getAttribute('aria-checked'), 'false');
+  await page.getByText("Once you send, copy or share this, it's outside SayWotNow").waitFor();
+  // What's sent and copied matches the preview.
+  await page.getByRole('button', { name: 'Open in Mail' }).click();
+  assert.doesNotMatch(decodeURIComponent(log.mailto.at(-1)), /Struggling with sleep/);
+  await dialog(page).filter({ hasText: 'Did your email send?' }).waitFor({ timeout: 5000 });
+  await dialog(page).getByRole('button', { name: /take me back|go back/i }).first().click();
+  await page.getByRole('button', { name: 'No mail app?' }).click();
+  await dialog(page).getByRole('button', { name: 'Copy' }).click();
+  await page.waitForTimeout(200);
+  assert.ok(!(await page.evaluate(() => navigator.clipboard.readText())).includes('Struggling with sleep'));
+  if (await dialog(page).count()) await dialog(page).getByRole('button', { name: /Not yet/ }).click();
+  // Switching it on includes it for this email only.
+  await sw.click();
+  assert.match(await body.innerText(), /Struggling with sleep/);
+  await page.getByRole('button', { name: 'Edit' }).click();
+  await page.getByRole('button', { name: /Preview/ }).click({ force: true });
+  await page.waitForURL(/preview$/);
+  assert.equal(await page.getByRole('switch', { name: 'Include wellbeing and health details' }).getAttribute('aria-checked'), 'false', 'off again next time');
+  const stored = await page.evaluate(() => localStorage.getItem('saywotnow.prefs.v1'));
+  assert.ok(!/includeSensitive|Struggling/.test(stored));
+  await ctx.close();
+});
+
+await check('P1 journey: first difficult conversation via Quick Help (opening, 3 prompts, escalation) in under 60 seconds', async () => {
+  const { ctx, page, log } = await newApp();
+  const t0 = Date.now();
+  await page.getByRole('link', { name: /I need help with a conversation/ }).click();
+  await page.getByRole('link', { name: "They're often late or leave early" }).click();
+  await page.getByRole('link', { name: 'None of these' }).click();
+  const card = page.locator('.qh-card');
+  await card.waitFor();
+  assert.ok(Date.now() - t0 < 60000);
+  assert.equal(await card.getAttribute('data-guide'), 'G02', 'traceable to its guide');
+  await card.locator('.quote-card blockquote').waitFor();
+  assert.equal(await card.locator('.prep-ask li').count(), 3);
+  await card.getByText('Is there anything behind this that I should know about?').waitFor();
+  await card.locator('.flag-chip, .chip').first().waitFor().catch(() => {});
+  await card.getByRole('button', { name: 'If they react: Upset' }).waitFor();
+  await card.getByRole('link', { name: /Full guidance: Lateness and timekeeping/ }).click();
+  await page.waitForURL(/#\/guide\/G02$/);
+  // Back returns to the card.
+  await page.goBack();
+  await page.locator('.qh-card').waitFor();
+  assert.deepEqual(log.errors, []);
+  await ctx.close();
+});
+
+await check('P1 safety: Quick Help and search can\'t bypass the HR-first gate', async () => {
+  const { ctx, page } = await newApp();
+  // Serious concern chosen: HR-first page, not the script card.
+  await page.goto(BASE + '#/quick/G01');
+  await page.getByRole('link', { name: 'Harassment, bullying or discrimination' }).click();
+  await page.locator('.gate').getByText(/Stop here and speak to HR/).waitFor();
+  assert.equal(await page.locator('.qh-card').count(), 0);
+  // Harm: urgent route with 999.
+  await page.goto(BASE + '#/quick/G06');
+  await page.getByRole('link', { name: 'Someone may harm themselves or others' }).click();
+  assert.equal(await page.getByRole('link', { name: 'Call 999 (UK)' }).getAttribute('href'), 'tel:999');
+  // A Level 3 guide's quick card shows its full gate before any script.
+  await page.goto(BASE + '#/quick/G13/card');
+  const order = await page.evaluate(() => [...document.querySelectorAll('.qh-card .gate, .qh-card .quote-card')].map((e) => e.className.split(' ')[0]));
+  assert.equal(order[0], 'gate');
+  // Search: risky words show the HR message and lead to G03 first.
+  await page.goto(BASE + '#/search');
+  await page.fill('input[type=search]', 'harassment');
+  await page.locator('.search-risk').getByText('Contact HR first.').waitFor();
+  assert.equal(await page.locator('.card-list a').first().getAttribute('href'), '#/guide/G17');
+  await page.fill('input[type=search]', 'self harm');
+  await page.locator('.search-risk.urgent').getByRole('link', { name: 'Call 999 (UK)' }).waitFor();
+  await ctx.close();
+});
+
+await check('P1 journey: everyday search phrases find usable wording', async () => {
+  const { ctx, page } = await newApp();
+  await page.goto(BASE + '#/search');
+  await page.fill('input[type=search]', 'always late');
+  assert.equal(await page.locator('.card-list a').first().getAttribute('href'), '#/guide/G02');
+  await page.locator('a[href="#/prep/P-G02"]').waitFor();
+  await page.fill('input[type=search]', 'crying');
+  await page.locator('a[href="#/reactions/R01"]').click();
+  await page.getByText(/Offer water, tissues or a break/).waitFor();
+  await page.goBack();
+  await page.fill('input[type=search]', 'menopase');
+  await page.getByText('Showing results for').waitFor();
+  await page.fill('input[type=search]', 'qqqzzz');
+  await page.getByRole('button', { name: 'always late' }).click();
+  await page.locator('a[href="#/guide/G02"]').first().waitFor();
+  assert.doesNotMatch(page.url(), /late|qqq/);
+  assert.ok(!(await page.evaluate(() => localStorage.getItem('saywotnow.prefs.v1'))).includes('late'));
+  await ctx.close();
+});
+
+await check('P1 journey: upset employee gets one-tap help without nested sheets', async () => {
+  const { ctx, page } = await newApp();
+  await page.goto(BASE + '#/guide/G01');
+  await page.getByRole('tab', { name: 'During' }).click();
+  await page.getByRole('button', { name: 'If they react: Upset' }).click();
+  await dialog(page).getByText(/Offer water, tissues or a break/).waitFor();
+  assert.equal(await dialog(page).count(), 1);
+  assert.equal(await dialog(page).locator('[role=dialog] [role=dialog], .dialog .dialog').count(), 0);
+  await dialog(page).getByRole('button', { name: 'Done' }).click();
+  assert.equal(await dialog(page).count(), 0);
+  await page.getByRole('button', { name: 'If they react: Angry or defensive' }).click();
+  await dialog(page).getByRole('button', { name: 'All reactions' }).click();
+  await page.waitForURL(/#\/reactions$/);
+  assert.equal(await dialog(page).count(), 0);
+  await ctx.close();
+});
+
+await check('P1 cross-links: references read as words and resolve; G11 leads to the SBI builder and back', async () => {
+  const { ctx, page } = await newApp();
+  await page.goto(BASE + '#/guide/G02');
+  await page.getByRole('tab', { name: 'During' }).click();
+  await page.getByRole('button', { name: /It's childcare/ }).click();
+  const link = page.getByRole('link', { name: 'Open the Flexible working request guide' });
+  assert.equal(await link.innerText(), 'Flexible working guide');
+  assert.doesNotMatch(await page.locator('#main').innerText(), /\(G\d\d\)/, 'no raw codes on screen');
+  await link.click();
+  await page.waitForURL(/#\/guide\/G13$/);
+  await page.goto(BASE + '#/guide/G11');
+  await page.locator('.related').getByRole('link', { name: /Feedback builder/ }).click();
+  await page.waitForURL(/#\/tool\/sbi$/);
+  await page.goBack();
+  await page.waitForURL(/#\/guide\/G11$/);
+  await ctx.close();
+});
+
+await check('P1.5 first-run deep link, tab state and the Preview & send explanation', async () => {
+  // A fresh visitor opening #/meetings lands on Meetings after onboarding.
+  const ctx = await browser.newContext({ viewport: { width: 500, height: 900 }, locale: 'en-GB' });
+  const page = await ctx.newPage();
+  await page.goto(BASE + '#/meetings');
+  await page.locator('.onboarding').waitFor();
+  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'I understand' }).click();
+  await page.getByRole('heading', { name: 'Meetings' }).waitFor();
+  assert.match(page.url(), /#\/meetings$/);
+  // No tab is shown as current on Settings, Search or an info page.
+  for (const path of ['#/settings', '#/search', '#/page/about']) {
+    await page.goto(BASE + path);
+    await page.locator('#main h1').waitFor();
+    assert.equal(await page.locator('.tab.on, .tab[aria-current]').count(), 0, path);
+  }
+  await page.goto(BASE + '#/meetings');
+  assert.equal(await page.locator('.tab.on').innerText(), 'Meetings');
+  // The disabled Preview & send says what's needed, and each item takes you to the field.
+  await page.goto(BASE + '#/template/T02');
+  const needs = page.locator('#cta-needs');
+  await needs.getByText('To preview, fill in:').waitFor();
+  await needs.getByRole('button', { name: 'Employee name' }).click();
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'f-employeeName');
+  await fillHeader(page);
+  assert.equal(await needs.count(), 0);
+  await ctx.close();
+});
+
+await check('P2.3 Full 1:1 shows core sections first; the rest are one tap away and never lost', async () => {
+  const { ctx, page } = await newApp();
+  await page.goto(BASE + '#/template/T01');
+  await page.locator('#f-employeeName').waitFor();
+  assert.equal(await page.locator('#f-development').count(), 0, 'Development starts under More sections');
+  const more = page.getByRole('button', { name: /More sections: Actions from last time, Development, Feedback, Anything else/ });
+  await more.click();
+  await page.locator('#f-development').fill('Presenting skills.');
+  assert.equal(await more.count(), 0);
+  // Preview and come back: a filled "more" section stays visible.
+  await fillHeader(page);
+  await page.getByRole('button', { name: 'Preview & send' }).click();
+  await page.getByRole('heading', { name: 'Check and send' }).waitFor();
+  assert.match(await page.locator('.email-body').innerText(), /Presenting skills\./);
+  await page.getByRole('button', { name: 'Edit' }).click();
+  assert.equal(await page.inputValue('#f-development'), 'Presenting skills.');
+  await ctx.close();
+});
+
+await check('P2.4 calendar file for agreed dates: generic by default, downloaded on the device', async () => {
+  const { ctx, page, log } = await newApp();
+  await page.goto(BASE + '#/template/T02');
+  await page.locator('#f-employeeName').waitFor();
+  await fillHeader(page);
+  await page.getByRole('button', { name: 'Add an action' }).click();
+  await page.fill('#f-actions-0-action', 'Book first-aid course');
+  await page.fill('#f-actions-0-due', '2026-12-01');
+  await page.fill('#f-nextDate', '2026-12-07');
+  await page.getByRole('button', { name: 'Preview & send' }).click({ force: true });
+  await page.waitForURL(/preview$/);
+  await page.getByRole('button', { name: 'Add the dates to my calendar' }).click();
+  const items = await dialog(page).locator('.cal-list li').allInnerTexts();
+  assert.equal(items.length, 2, 'the action due date and the next check-in');
+  assert.ok(!items.join(' ').match(/Sam|first-aid/), 'no names or action wording by default');
+  const [dl] = await Promise.all([page.waitForEvent('download'), dialog(page).getByRole('button', { name: /Download calendar file/ }).click()]);
+  assert.equal(dl.suggestedFilename(), 'saywotnow-dates.ics');
+  const { readFileSync } = await import('node:fs');
+  const ics = readFileSync(await dl.path(), 'utf8');
+  assert.match(ics, /^BEGIN:VCALENDAR\r\n/);
+  assert.match(ics, /DTSTART;VALUE=DATE:2026120[17]/);
+  assert.doesNotMatch(ics, /Sam|Patel|first-aid/);
   assert.deepEqual(log.external, []);
   await ctx.close();
 });
 
-await check('Interview mode: notes and ratings in memory only; leaving asks; record by email; finish clears', async () => {
-  const pack = { id: 'pack-e2e-1', role: 'Data Analyst', func: 'Data', seniority: '', description: '', panel: ['Jo Smith', 'Sam Lee'],
-    competencies: [{ id: 'resilience', primary: 'resilience-1', backup: 'resilience-2' }, { id: 'self-awareness', primary: 'self-awareness-1', backup: 'self-awareness-3' }],
-    createdAt: '2026-11-21T10:00:00Z', updatedAt: '2026-11-21T10:00:00Z' };
-  const { ctx, page, log } = await newApp({ prefs: { interviewPacks: [pack] } });
-  await page.goto(BASE + '#/tool/interview');
-  await page.getByRole('link', { name: 'Start interview' }).click();
-  assert.equal(await page.locator('.tabbar').count(), 0, 'no tab bar during an interview');
-  await page.fill('#iv-cname', 'Alex Doe');
-  await page.getByRole('button', { name: 'Start interview' }).click();
-  await page.getByText('Assigned to').waitFor();
-  await page.fill('#iv-notes', 'Talked through a failed launch and what changed.');
-  await page.getByRole('radio', { name: '4: Above Requirement' }).check();
-  await page.getByText('4 — Above Requirement').waitFor();
-  await page.getByRole('button', { name: 'Need another angle?' }).click();
-  await page.getByLabel('Backup used').check();
-  await shot(page, '32-interview-ask');
-  // Nothing typed is stored or in the URL.
-  const stored = await page.evaluate(() => JSON.stringify({ ...localStorage }) + JSON.stringify({ ...sessionStorage }) + location.href);
-  assert.ok(!stored.includes('Alex') && !stored.includes('failed launch'));
-  // Leaving asks first.
-  await page.goBack();
-  await dialog(page).getByText('Leave this interview?').waitFor();
-  await dialog(page).getByRole('button', { name: 'Keep editing' }).click();
-  assert.equal(await page.inputValue('#iv-notes'), 'Talked through a failed launch and what changed.');
-  await page.getByRole('button', { name: 'Next', exact: true }).click();
-  assert.equal(await page.inputValue('#iv-notes'), '');
-  await page.getByRole('button', { name: 'Review interview' }).click();
-  await page.getByText('1 rating is missing').waitFor();
-  await page.getByRole('button', { name: 'Finish without them' }).click();
-  await page.getByRole('heading', { name: 'Alex Doe' }).waitFor();
-  await page.getByRole('button', { name: 'Email the record' }).click();
-  const mail = decodeURIComponent(log.mailto.at(-1));
-  assert.match(mail, /subject=Interview record – Alex Doe – Data Analyst/);
-  assert.match(mail, /Talked through a failed launch/);
-  assert.match(mail, /Rating: 4 — Above Requirement/);
-  assert.match(mail, /Backup question used/);
-  assert.match(mail, /Self-Awareness\r?\nAssigned interviewer: Sam Lee[\s\S]*Rating: Not rated/);
-  // Printed record: each competency starts on a new page.
-  await page.emulateMedia({ media: 'print' });
-  const breaks = await page.$$eval('.print-doc .pd-rec', (els) => els.map((e) => getComputedStyle(e).breakBefore));
-  assert.deepEqual(breaks, ['page', 'page']);
-  await page.emulateMedia({ media: 'screen' });
-  await page.getByRole('button', { name: 'Finish and clear' }).click();
-  await dialog(page).getByRole('button', { name: 'Clear the interview' }).click();
-  await page.locator('.iv-home').waitFor();
-  await page.getByRole('link', { name: 'Start interview' }).click();
-  assert.equal(await page.inputValue('#iv-cname'), '', 'a new interview starts empty');
+await check('P2.5 accessibility basics on every main screen: one h1, no sideways scroll at 320px or 200% text, 24px targets', async () => {
+  const routes = ['#/', '#/quick', '#/quick/G02/card', '#/search', '#/meetings', '#/template/T01', '#/template/T03', '#/template/T08', '#/conversations', '#/guide/G03', '#/guide/G06',
+    '#/reactions', '#/prep', '#/prep/P-G05', '#/toolkit', '#/tool/holiday', '#/tool/notice', '#/tool/sbi', '#/tool/currency', '#/tool/timezones', '#/settings', '#/page/privacy'];
+  for (const big of [false, true]) {
+    const ctx = await browser.newContext({ viewport: { width: big ? 375 : 320, height: 800 }, locale: 'en-GB' });
+    const page = await ctx.newPage();
+    await page.addInitScript((b) => {
+      localStorage.setItem('saywotnow.prefs.v1', JSON.stringify({ onboardingComplete: true, disclaimerAcceptedVersion: '1.0' }));
+      if (b) document.addEventListener('DOMContentLoaded', () => { document.documentElement.style.fontSize = '200%'; });
+    }, big);
+    for (const r of routes) {
+      await page.goto(BASE + r);
+      await page.locator('#main h1').first().waitFor();
+      assert.equal(await page.locator('#main h1').count(), 1, `${r}: one h1`);
+      const over = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+      assert.ok(over <= 0, `${r}${big ? ' at 200%' : ' at 320px'}: scrolls sideways by ${over}px`);
+      if (!big) {
+        const small = await page.evaluate(() => [...document.querySelectorAll('#main button, #main a[href], #main input:not([type=hidden])')]
+          .filter((e) => e.offsetParent && !e.closest('.prose, p, li > a.link, .link-btn')).map((e) => [e, e.getBoundingClientRect()])
+          .filter(([e, r]) => r.width > 0 && (r.width < 24 || r.height < 24) && !(e.closest('label') && e.closest('label').getBoundingClientRect().height >= 24))
+          .map(([e, r]) => `${e.outerHTML.slice(0, 60)} ${Math.round(r.width)}x${Math.round(r.height)}`));
+        assert.deepEqual(small, [], `${r}: touch targets under 24px`);
+      }
+    }
+    await ctx.close();
+  }
+});
+
+await check('P3.1 new draft guides are labelled as drafts and reachable from lists, search and Quick Help', async () => {
+  const { ctx, page, log } = await newApp();
+  await page.goto(BASE + '#/conversations');
+  for (const t of ['Grievance raised', 'Harassment or bullying complaint', 'Suspected impairment at work', 'Redundancy or restructure', 'Poor team morale', 'Managing a former peer']) {
+    await page.locator('.card', { hasText: t }).locator('.draft-badge').waitFor();
+  }
+  await page.goto(BASE + '#/guide/G20');
+  await page.locator('.draft-notice').getByText(/hasn't been reviewed/).waitFor();
+  assert.equal(await page.locator('.gate').count(), 0, 'everyday guides have no gate');
+  await page.goto(BASE + '#/search');
+  await page.fill('input[type=search]', 'low morale');
+  assert.equal(await page.locator('.card-list a').first().getAttribute('href'), '#/guide/G20');
+  await page.goto(BASE + '#/quick');
+  await page.getByRole('link', { name: 'I think they may be under the influence or unfit to work' }).click();
+  await page.getByRole('link', { name: 'None of these' }).click();
+  const order = await page.evaluate(() => [...document.querySelectorAll('.qh-card .gate, .qh-card .quote-card')].map((e) => e.className.split(' ')[0]));
+  assert.equal(order[0], 'gate', 'the impairment card shows its HR-first gate first');
   assert.deepEqual(log.errors, []);
   await ctx.close();
 });
 
-await check('ACTED library: dimensions, competencies and questions', async () => {
+await check('P3.2/P3.4 trust layer: descriptor, privacy line, honest review stamps, UK scope wording', async () => {
   const { ctx, page } = await newApp();
-  await page.goto(BASE + '#/interview/library');
-  assert.equal(await page.getByRole('tab').count(), 5);
-  await page.getByRole('tab', { name: /Deliver/ }).click();
-  assert.equal(await page.locator('.card-list .card').count(), 7);
-  await page.goto(BASE + '#/interview/library/resilience');
-  assert.equal(await page.locator('.iv-qlist li').count(), 10);
-  await page.getByText('What good looks like').waitFor();
+  await page.getByText('Practical people-management guidance for managers').first().waitFor();
+  await page.getByText(/Private by design: nothing you type is saved/).waitFor();
+  for (const id of ['G02', 'G16']) {
+    await page.goto(BASE + `#/guide/${id}`);
+    const stamp = await page.locator('.review-stamp').innerText();
+    assert.match(stamp, /not yet independently reviewed/i);
+    assert.doesNotMatch(stamp, /Reviewed by/);
+  }
+  await page.goto(BASE + '#/page/about');
+  await page.getByText(/anything about law, policy or process is UK only/).waitFor();
+  const manifest = await (await page.request.get(BASE + 'manifest.webmanifest')).json();
+  assert.match(manifest.description, /^Practical people-management guidance for managers/);
   await ctx.close();
 });
 
@@ -666,10 +957,12 @@ await check('Currency converter: live rates, defaults, convert, swap, saved loca
   assert.doesNotMatch(stored, /750|1,000/);
   // Reopening within the hour doesn't fetch again.
   await page.goto(BASE + '#/toolkit');
+  await page.getByRole('heading', { name: 'Toolkit' }).waitFor();
   await page.goto(BASE + '#/tool/currency');
   await page.getByText(/Rates updated/).waitFor();
   assert.equal(rateCalls.length, 1);
-  assert.equal(await page.inputValue('#cur-amount'), '100');
+  // Hash navigation doesn't reload the page, so wait for the fresh screen before reading the amount.
+  await page.waitForFunction(() => document.querySelector('#cur-amount')?.value === '100', null, { timeout: 5000 });
   assert.deepEqual(log.external.filter((u) => !u.startsWith('https://open.er-api.com/')), []);
   assert.deepEqual(log.errors, []);
   await ctx.close();
@@ -723,7 +1016,7 @@ await check('AC-18: dark mode renders (screenshots)', async () => {
 
 await check('Accessibility basics: every input has a label; buttons have names', async () => {
   const { ctx, page } = await newApp();
-  for (const path of ['#/template/T01', '#/template/T03', '#/template/T05', '#/tool/holiday', '#/tool/notice', '#/settings', '#/guide/G01', '#/prep', '#/prep/P-G01', '#/tool/interview', '#/interview/new']) {
+  for (const path of ['#/template/T01', '#/template/T03', '#/template/T05', '#/tool/holiday', '#/tool/notice', '#/settings', '#/guide/G01', '#/prep', '#/prep/P-G01']) {
     await page.goto(BASE + path);
     await page.locator('#main h1').first().waitFor();
     const missing = await page.evaluate(() => {
@@ -741,7 +1034,7 @@ await check('Accessibility basics: every input has a label; buttons have names',
 
 await check('No console errors during a full session', async () => {
   const { ctx, page, log } = await newApp();
-  for (const path of ['#/', '#/meetings', '#/conversations', '#/toolkit', '#/search', '#/template/T06', '#/template/T07', '#/guide/G07', '#/tool/timezones', '#/tool/interview', '#/page/about', '#/page/content', '#/prep', '#/prep/P-1to1', '#/interview/library', '#/interview/library/resilience', '#/interview/new', '#/onboarding/replay']) {
+  for (const path of ['#/', '#/meetings', '#/conversations', '#/toolkit', '#/search', '#/template/T06', '#/template/T07', '#/guide/G07', '#/tool/timezones', '#/page/about', '#/page/content', '#/prep', '#/prep/P-1to1', '#/onboarding/replay']) {
     await page.goto(BASE + path);
     await page.waitForTimeout(80);
   }

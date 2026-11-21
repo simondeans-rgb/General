@@ -1,6 +1,13 @@
 {
-  "contentVersion": "1.1.0",
-  "lastReviewed": "2026-11-21",
+  "contentVersion": "1.2.0",
+  "lastEdited": "2026-11-21",
+  "review": {
+    "jurisdiction": "UK",
+    "reviewStatus": "draft",
+    "reviewedBy": null,
+    "reviewedOn": null,
+    "nextReviewOn": null
+  },
   "tools": [
     {
       "id": "timezones",
@@ -46,25 +53,6 @@
       "note": "Rates are indicative mid-market rates. Your bank, card or payroll provider will use its own rate and fees, so check with Finance before agreeing any pay or expenses."
     },
     {
-      "id": "interview",
-      "title": "Interview pack generator",
-      "summary": "Build a structured, competency-based interview pack, export it to Word, and run the interview.",
-      "icon": "doc",
-      "keywords": [
-        "interview",
-        "recruitment",
-        "hiring",
-        "questions",
-        "competency",
-        "candidate",
-        "pack",
-        "ACTED",
-        "behavioural",
-        "STAR"
-      ],
-      "status": "ready"
-    },
-    {
       "id": "holiday",
       "title": "Holiday calculator",
       "summary": "Work out pro rata holiday for part-time and part-year employees.",
@@ -80,7 +68,8 @@
       ],
       "status": "ready",
       "howItWorks": "Entitlement × (employee's days ÷ full-time days) × (days employed in the holiday year ÷ days in the holiday year). The statutory minimum is 5.6 weeks (5.6 × days worked per week, capped at 28 days), pro-rated the same way for part-years.",
-      "note": "For irregular-hours or part-year workers, holiday may be calculated differently. Check with HR."
+      "note": "For irregular-hours or part-year workers, holiday may be calculated differently. Check with HR.",
+      "ukOnly": true
     },
     {
       "id": "notice",
@@ -99,28 +88,8 @@
       ],
       "status": "ready",
       "howItWorks": "Statutory minimum notice from the employer is 1 week after 1 month's service, then 1 week for each complete year of service from 2 years, up to 12 weeks. From the employee it's 1 week after 1 month's service. When the employer gives notice, the longer of statutory and contractual notice applies. Notice starts the day after it's given.",
-      "note": "Check the employment contract, and contact HR for anything involving dismissal."
-    },
-    {
-      "id": "bradford",
-      "title": "Bradford Factor",
-      "summary": "Score short-term absence over a rolling 52 weeks.",
-      "icon": "chart",
-      "keywords": [
-        "bradford",
-        "bradford factor",
-        "absence",
-        "sickness",
-        "sick",
-        "attendance",
-        "score"
-      ],
-      "status": "ready",
-      "howItWorks": "B = S² × D, where S is the number of separate absence spells and D is the total number of days absent, in a rolling 52-week period. Frequent short absences score higher than one long absence.",
-      "noteLevel": 2,
-      "noteFirst": true,
-      "note": "Don't use this score on its own. Exclude disability-related and pregnancy-related absences, and take advice from HR before taking action.",
-      "noBands": "Your company's absence policy sets the trigger points."
+      "note": "Check the employment contract, and contact HR for anything involving dismissal.",
+      "ukOnly": true
     },
     {
       "id": "sbi",
@@ -140,7 +109,8 @@
       "placeholders": {
         "situation": "e.g. Tuesday's client call",
         "behaviour": "e.g. you joined ten minutes late without letting us know",
-        "impact": "e.g. we had to restart the agenda and ran out of time"
+        "impact": "e.g. we had to restart the agenda and ran out of time",
+        "request": "e.g. could you let us know if you're running late?"
       },
       "nextLine": {
         "Developmental": "How did you see it?",

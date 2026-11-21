@@ -1,0 +1,190 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SayWotNow quickhelp.json (P1.2)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contentVersion",
+    "lastEdited",
+    "review",
+    "title",
+    "intro",
+    "situationQuestion",
+    "situations",
+    "seriousQuestion",
+    "seriousHelp",
+    "serious",
+    "noneLabel",
+    "labels"
+  ],
+  "properties": {
+    "contentVersion": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "lastEdited": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "review": {
+      "description": "Review status (P0.4). Never mark approved without a real, named reviewer and date.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "jurisdiction",
+        "reviewStatus",
+        "reviewedBy",
+        "reviewedOn",
+        "nextReviewOn"
+      ],
+      "properties": {
+        "jurisdiction": {
+          "enum": [
+            "UK",
+            "general"
+          ]
+        },
+        "reviewStatus": {
+          "enum": [
+            "draft",
+            "in-review",
+            "approved"
+          ]
+        },
+        "reviewedBy": {
+          "description": "Name and qualification of the reviewer, or null"
+        },
+        "reviewedOn": {
+          "description": "YYYY-MM-DD or null"
+        },
+        "nextReviewOn": {
+          "description": "YYYY-MM-DD or null"
+        }
+      }
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "intro": {
+      "type": "string",
+      "minLength": 1
+    },
+    "situationQuestion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "seriousQuestion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "seriousHelp": {
+      "type": "string",
+      "minLength": 1
+    },
+    "noneLabel": {
+      "type": "string",
+      "minLength": 1
+    },
+    "situations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "label",
+          "guide"
+        ],
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "guide": {
+            "type": "string",
+            "pattern": "^G\\d{2}$"
+          }
+        }
+      }
+    },
+    "serious": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "label",
+          "level"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z]+$"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "level": {
+            "enum": [
+              "hr",
+              "urgent"
+            ]
+          }
+        }
+      }
+    },
+    "labels": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "objective",
+        "opening",
+        "prompts",
+        "avoid",
+        "next",
+        "full",
+        "hrTitle",
+        "urgentTitle"
+      ],
+      "properties": {
+        "objective": {
+          "type": "string",
+          "minLength": 1
+        },
+        "opening": {
+          "type": "string",
+          "minLength": 1
+        },
+        "prompts": {
+          "type": "string",
+          "minLength": 1
+        },
+        "avoid": {
+          "type": "string",
+          "minLength": 1
+        },
+        "next": {
+          "type": "string",
+          "minLength": 1
+        },
+        "full": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hrTitle": {
+          "type": "string",
+          "minLength": 1
+        },
+        "urgentTitle": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

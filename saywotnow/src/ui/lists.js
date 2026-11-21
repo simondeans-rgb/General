@@ -4,11 +4,13 @@ import { Icon, Logo } from './icons.js';
 import { content, navigate, TopBar, FavStar, FlagChip, greeting } from './core.js';
 import { toggleFavourite } from '../prefs.js';
 import { lookupItem } from '../content.js';
-import { buildIndex, search } from '../lib/search.js';
+import { buildIndex, search, RESULT_KINDS } from '../lib/search.js';
 
 export function hrefFor(kind, id) {
   if (kind === 'template') return `/template/${id}`;
   if (kind === 'guide') return `/guide/${id}`;
+  if (kind === 'prep') return `/prep/${id}`;
+  if (kind === 'reaction') return `/reactions/${id}`;
   return `/tool/${id}`;
 }
 
@@ -36,11 +38,18 @@ export function Home({ prefs }) {
   return html`<div class="screen home">
     <header class="home-head">
       <div>
-        <${Logo} size=${30} />
+        <h1 class="home-title"><${Logo} size=${30} /></h1>
+        <p class="descriptor">${c.pages.descriptor}</p>
         <p class="greeting">${greeting()}</p>
       </div>
       <a href="#/settings" class="icon-btn" aria-label=${S.settings} onClick=${(e) => go(e, '/settings')}><${Icon} name="gear" /></a>
     </header>
+
+    <a href="#/quick" class="qh-cta" onClick=${(e) => go(e, '/quick')}>
+      <span class="qh-cta-icon"><${Icon} name="chat" size=${26} /></span>
+      <span><span class="qh-cta-title">${S.quickHelpCta}</span><span class="qh-cta-sub">${S.quickHelpSub}</span></span>
+      <${Icon} name="chevron" size=${20} />
+    </a>
 
     <a href="#/search" class="search-bar" onClick=${(e) => go(e, '/search')}>
       <${Icon} name="search" /><span>${S.searchPlaceholder}</span>
@@ -70,6 +79,7 @@ export function Home({ prefs }) {
       </ul>` : html`<p class="hint"><${Icon} name="star" size=${18} /> ${c.home.favouritesHint}</p>`}
     </section>
 
+    <p class="privacy-line home-privacy"><${Icon} name="lock" size=${16} /> ${c.pages.privacyLine}</p>
     <p class="footer-link"><a href="#/page/disclaimer" onClick=${(e) => go(e, '/page/disclaimer')}>${S.disclaimerLink}</a></p>
   </div>`;
 }
@@ -78,13 +88,13 @@ export function Home({ prefs }) {
 
 export function Search() {
   const c = content();
-  // The query lives only in this component's state. It's never stored or put in the URL.
+  // The query lives only in this component's state. It's never stored, sent anywhere or put in the URL.
   const [q, setQ] = useState('');
   const index = useMemo(() => buildIndex(c), [c]);
   const results = useMemo(() => search(index, q), [index, q]);
   const inputRef = useRef(null);
   useEffect(() => { inputRef.current && inputRef.current.focus(); }, []);
-  const total = results.template.length + results.guide.length + results.tool.length;
+  const total = RESULT_KINDS.reduce((n, k) => n + results[k].length, 0);
   return html`<div class="screen">
     <${TopBar} title="Search" back=${() => navigate('/')} />
     <div class="search-field">
@@ -93,12 +103,21 @@ export function Search() {
         placeholder=${S.searchPlaceholder} aria-label=${S.searchPlaceholder}
         autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" />
     </div>
-    <div aria-live="polite" class="sr-only">${q.trim() ? `${total} result${total === 1 ? '' : 's'}` : ''}</div>
-    ${q.trim() && total === 0 ? html`<p class="empty">${S.searchEmpty}</p>` : null}
-    ${['template', 'guide', 'tool'].map((k) => results[k].length ? html`<section key=${k}>
+    <div aria-live="polite" class="sr-only">${q.trim() ? `${total} result${total === 1 ? '' : 's'}${results.risk ? `. ${results.riskMessage}` : ''}` : ''}</div>
+    ${results.risk ? html`<div class=${`search-risk ${results.risk}`} role="note">
+      <${Icon} name="alert" size=${22} /><p><strong>${results.risk === 'urgent' ? S.searchUrgent : S.searchHr}</strong> ${results.riskMessage}</p>
+      ${results.risk === 'urgent' ? html`<a class="btn btn-danger btn-small" href="tel:999"><${Icon} name="phone" size=${18} /> ${S.call999}</a>` : null}
+    </div>` : null}
+    ${results.corrected ? html`<p class="muted">${S.searchCorrected} <strong>${results.corrected}</strong></p>` : null}
+    ${q.trim() && total === 0 ? html`<div class="empty">
+      <p>${S.searchEmpty}</p>
+      ${results.suggestions.length ? html`<p class="muted">${S.searchTry}</p><div class="chip-row">${results.suggestions.map((sg) => html`<button type="button" class="pill" onClick=${() => setQ(sg)}>${sg}</button>`)}</div>` : null}
+      <a class="btn btn-secondary btn-small" href="#/quick" onClick=${(e) => go(e, '/quick')}>${S.quickHelpCta}</a>
+    </div>` : null}
+    ${RESULT_KINDS.map((k) => results[k].length ? html`<section key=${k}>
       <h2 class="section-title">${S.searchGroups[k]}</h2>
       <ul class="card-list" role="list">
-        ${results[k].map((r) => html`<li><a class="card card-link" href=${'#' + hrefFor(r.kind, r.id)} onClick=${(e) => go(e, hrefFor(r.kind, r.id))}>
+        ${results[k].slice(0, k === 'guide' ? 8 : 5).map((r) => html`<li><a class="card card-link" href=${'#' + hrefFor(r.kind, r.id)} onClick=${(e) => go(e, hrefFor(r.kind, r.id))}>
           <span class="card-title">${r.title}</span>
           <span class="card-sub clamp">${r.summary}</span>
           ${r.flagLevel ? html`<${FlagChip} level=${r.flagLevel} small />` : null}
@@ -144,7 +163,7 @@ export function Conversations({ prefs }) {
       <ul class="card-list" role="list">
         ${c.guides.guides.filter((x) => x.category === g).map((x) => html`<li class="card has-star">
           <a class="card-link-cover" href=${'#/guide/' + x.id} onClick=${(e) => go(e, '/guide/' + x.id)}>
-            <span class="card-title">${x.title}</span>
+            <span class="card-title">${x.title}${x.draft ? html` <span class="badge draft-badge">${S.newDraft}</span>` : null}</span>
           </a>
           <span class="card-sub clamp">${x.whenToUse}</span>
           <${FlagChip} level=${x.flagLevel} small />
@@ -157,9 +176,9 @@ export function Conversations({ prefs }) {
 
 /* ---------------- S09 Reactions ---------------- */
 
-export function Reactions() {
+export function Reactions({ id = null } = {}) {
   const r = content().reactions;
-  const [open, setOpen] = useState(null);
+  const [open, setOpen] = useState(id);
   return html`<div class="screen">
     <${TopBar} title=${r.title} back=${() => history.length > 1 ? history.back() : navigate('/conversations')} />
     <p class="lede">${r.intro}</p>
@@ -185,7 +204,7 @@ export function Toolkit({ prefs }) {
       ${c.tools.tools.map((t) => html`<li class="card has-star tool-card">
         <span class="tool-icon"><${Icon} name=${t.icon} /></span>
         <a class="card-link-cover" href=${'#/tool/' + t.id} onClick=${(e) => go(e, '/tool/' + t.id)}>
-          <span class="card-title">${t.title}${t.status === 'pending' ? html` <span class="badge">Coming soon</span>` : null}</span>
+          <span class="card-title">${t.title}</span>
         </a>
         <span class="card-sub">${t.summary}</span>
         <${FavStar} id=${t.id} favs=${prefs.favourites} onToggle=${toggleFavourite} title=${t.title} />

@@ -7,6 +7,7 @@ import {
   replaceForm, clearForm, toast,
 } from './core.js';
 import { prepFor } from '../content.js';
+import { isEmptyValue } from '../lib/rules.js';
 import { PrepButton } from './prep.js';
 import {
   validateForm, activeFlags, isSectionVisible, isSectionIncluded, isFieldVisible, isFieldToggledOn,
@@ -66,6 +67,8 @@ export function TemplateForm({ id, prefs }) {
   const template = c.templateById[id];
   const form = useStore(formStore);
   const [showErrors, setShowErrors] = useState(false);
+  // P2.3: Full forms show the core sections first; the rest are one tap away.
+  const [showMore, setShowMore] = useState(false);
   const liveRef = useRef(null);
 
   // Open (or keep) the in-memory form for this template.
@@ -89,6 +92,16 @@ export function TemplateForm({ id, prefs }) {
   const onValue = (fid, v) => updateForm((s) => ({ ...s, values: { ...s.values, [fid]: v } }));
   const onInclude = (sid, v) => updateForm((s) => ({ ...s, included: { ...s.included, [sid]: v } }));
   const onToggle = (fid, v) => updateForm((s) => ({ ...s, toggles: { ...s.toggles, [fid]: v } }));
+
+  // P1.5: say what's still needed before Preview & send works, and let each item take you there.
+  const labels = Object.fromEntries([...c.header.fields, ...template.sections.flatMap((s) => s.fields)].map((f) => [f.id, f.label]));
+  const labelFor = (fid) => labels[fid] || fid;
+  const focusField = (fid) => {
+    const wrap = document.querySelector(`[data-field="${fid}"]`);
+    const el = document.getElementById(`f-${fid}`) || (wrap && wrap.querySelector('input, textarea, button'));
+    if (wrap) wrap.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    if (el) el.focus({ preventScroll: true });
+  };
 
   const preview = () => {
     if (errorsList.length) {
@@ -158,15 +171,34 @@ export function TemplateForm({ id, prefs }) {
         </div>
       </section>
 
-      ${template.sections.filter((s) => isSectionVisible(s, state)).map((s) => html`<${SectionCard} key=${s.id} section=${s} state=${state}
-        errors=${errors} showErrors=${showErrors} scales=${c.ratingScales} onValue=${onValue} onInclude=${onInclude} onToggle=${onToggle} />`)}
+      ${(() => {
+        const visible = template.sections.filter((s) => isSectionVisible(s, state));
+        const hasData = (s) => s.fields.some((f) => !isEmptyValue(state.values[f.id]));
+        const shown = visible.filter((s) => !s.more || showMore || hasData(s) || (showErrors && s.fields.some((f) => errors[f.id])));
+        const hidden = visible.filter((s) => !shown.includes(s));
+        const card = (s) => html`<${SectionCard} key=${s.id} section=${s} state=${state}
+          errors=${errors} showErrors=${showErrors} scales=${c.ratingScales} onValue=${onValue} onInclude=${onInclude} onToggle=${onToggle} />`;
+        const insertAt = shown.findIndex((s) => s.id === 'actions');
+        const before = insertAt < 0 ? shown : shown.slice(0, insertAt);
+        const after = insertAt < 0 ? [] : shown.slice(insertAt);
+        return html`${before.map(card)}
+          ${hidden.length ? html`<button type="button" class="btn btn-secondary btn-block more-sections" aria-expanded="false" onClick=${() => setShowMore(true)}>
+            <${Icon} name="plus" size=${18} /> ${S.moreSections(hidden.map((s) => s.title))}</button>` : null}
+          ${after.map(card)}`;
+      })()}
 
       <p class="privacy-line"><${Icon} name="lock" size=${16} /> Nothing here is saved. It's cleared when you send or leave.</p>
 
       <div class="sticky-cta">
         <div ref=${liveRef} class="sr-only" aria-live="assertive"></div>
         ${showErrors && errorsList.length ? html`<p class="cta-errors">${S.fixErrors(errorsList.length)}</p>` : null}
-        <button type="submit" class=${`btn btn-primary btn-block ${errorsList.length ? 'is-disabled' : ''}`} aria-disabled=${errorsList.length ? 'true' : undefined}>
+        ${errorsList.length ? html`<div class="cta-needs" id="cta-needs">
+          <span>${S.toPreview}</span>
+          ${errorsList.slice(0, 4).map((er) => html`<button type="button" class="link-btn" onClick=${() => focusField(er.fieldId)}>${labelFor(er.fieldId)}</button>`)}
+          ${errorsList.length > 4 ? html`<span>${S.andMore(errorsList.length - 4)}</span>` : null}
+        </div>` : null}
+        <button type="submit" class=${`btn btn-primary btn-block ${errorsList.length ? 'is-disabled' : ''}`} aria-disabled=${errorsList.length ? 'true' : undefined}
+          aria-describedby=${errorsList.length ? 'cta-needs' : undefined}>
           ${S.previewSend}
         </button>
       </div>

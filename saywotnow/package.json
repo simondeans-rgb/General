@@ -1,6 +1,6 @@
 {
   "name": "saywotnow",
-  "version": "1.4.0",
+  "version": "1.8.0",
   "private": true,
   "description": "SayWotNow: offline support for line managers. 1:1s, reviews and difficult conversations, with no personal data stored.",
   "type": "module",
@@ -11,7 +11,10 @@
     "check": "node scripts/validate-content.mjs && node --test tests/*.test.js",
     "e2e": "node scripts/e2e.mjs",
     "serve": "python3 -m http.server 8765 --bind 127.0.0.1",
-    "icons": "node scripts/render-icons.mjs"
+    "icons": "node scripts/render-icons.mjs",
+    "register": "node scripts/review-report.mjs"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  }
 }

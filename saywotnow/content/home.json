@@ -1,6 +1,7 @@
 {
   "contentVersion": "1.1.0",
-  "lastReviewed": "2026-11-20",
+  "lastEdited": "2026-11-20",
+  "review": { "jurisdiction": "general", "reviewStatus": "draft", "reviewedBy": null, "reviewedOn": null, "nextReviewOn": null },
   "sectionTitle": "I need to…",
   "favouritesTitle": "Favourites",
   "favouritesHint": "Tap the star on any guide or template to pin it here.",

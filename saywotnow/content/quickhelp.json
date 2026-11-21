@@ -1,0 +1,135 @@
+{
+  "contentVersion": "1.0.0",
+  "lastEdited": "2026-11-21",
+  "review": {
+    "jurisdiction": "UK",
+    "reviewStatus": "draft",
+    "reviewedBy": null,
+    "reviewedOn": null,
+    "nextReviewOn": null
+  },
+  "title": "Help with a conversation",
+  "intro": "Two quick questions, then the words to start with. Nothing you choose is saved.",
+  "situationQuestion": "What's happening?",
+  "situations": [
+    {
+      "label": "Their work isn't up to standard",
+      "guide": "G01"
+    },
+    {
+      "label": "They're often late or leave early",
+      "guide": "G02"
+    },
+    {
+      "label": "Their behaviour or attitude is a problem",
+      "guide": "G03"
+    },
+    {
+      "label": "Two people aren't getting on",
+      "guide": "G04"
+    },
+    {
+      "label": "They're often off sick",
+      "guide": "G05"
+    },
+    {
+      "label": "They seem stressed or are struggling",
+      "guide": "G06"
+    },
+    {
+      "label": "They've lost someone close",
+      "guide": "G07"
+    },
+    {
+      "label": "They've mentioned the menopause",
+      "guide": "G08"
+    },
+    {
+      "label": "They've told me they're pregnant",
+      "guide": "G09"
+    },
+    {
+      "label": "There's a personal hygiene issue",
+      "guide": "G10"
+    },
+    {
+      "label": "I need to give feedback",
+      "guide": "G11"
+    },
+    {
+      "label": "I need to say no to a request",
+      "guide": "G12"
+    },
+    {
+      "label": "They want to change their hours or where they work",
+      "guide": "G13"
+    },
+    {
+      "label": "They've asked for a pay rise",
+      "guide": "G14"
+    },
+    {
+      "label": "I need to tell them about a change",
+      "guide": "G15"
+    },
+    {
+      "label": "They've raised a grievance or complaint",
+      "guide": "G16"
+    },
+    {
+      "label": "They've told me they're being harassed or bullied",
+      "guide": "G17"
+    },
+    {
+      "label": "I think they may be under the influence or unfit to work",
+      "guide": "G18"
+    },
+    {
+      "label": "Jobs or roles may be affected by a restructure",
+      "guide": "G19"
+    },
+    {
+      "label": "The team's morale is low",
+      "guide": "G20"
+    },
+    {
+      "label": "I now manage people who used to be my peers",
+      "guide": "G21"
+    }
+  ],
+  "seriousQuestion": "Is any of this involved?",
+  "seriousHelp": "Choose one if it applies, even if you're not sure.",
+  "serious": [
+    {
+      "id": "harassment",
+      "label": "Harassment, bullying or discrimination",
+      "level": "hr"
+    },
+    {
+      "id": "misconduct",
+      "label": "Violence, theft, fraud, or alcohol or drugs at work",
+      "level": "hr"
+    },
+    {
+      "id": "formal",
+      "label": "It could lead to formal or disciplinary action",
+      "level": "hr"
+    },
+    {
+      "id": "harm",
+      "label": "Someone may harm themselves or others",
+      "level": "urgent"
+    }
+  ],
+  "noneLabel": "None of these",
+  "labels": {
+    "objective": "What this is for",
+    "opening": "Start with",
+    "prompts": "Then ask",
+    "avoid": "Avoid",
+    "next": "Afterwards",
+    "full": "Full guidance",
+    "hrTitle": "Speak to HR before the conversation",
+    "urgentTitle": "Get help now"
+  }
+}
