@@ -5,7 +5,6 @@ import { content, navigate, goBack, TopBar, toast } from './core.js';
 import { Switch } from './fields.js';
 import { setPref } from '../prefs.js';
 import { isValidEmail } from '../lib/engine.js';
-import { formatLong } from '../lib/dates.js';
 import { openMail } from '../platform.js';
 
 export const APP_VERSION = '1.4.0';
@@ -99,7 +98,12 @@ export function StaticPage({ id }) {
   else if (id === 'about') { title = p.about.title; body = p.about.text; }
   else if (id === 'content') {
     title = p.contentInfo.title;
-    body = [`Content version ${c.contentVersion}, last reviewed ${formatLong(c.lastReviewed)}.`, p.contentInfo.text];
+    body = [
+      `Content version ${c.contentVersion}.`,
+      c.reviewStatus === 'approved' ? `Reviewed by ${c.reviewers.join('; ')}.` : S.draftStatus,
+      S.ukScope,
+      p.contentInfo.text,
+    ];
   } else { title = 'Not found'; body = ["That page doesn't exist."]; }
   return html`<div class="screen page">
     <${TopBar} title=${title} back=${() => goBack('/settings')} />

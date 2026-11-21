@@ -1,6 +1,7 @@
 {
  "contentVersion": "1.0.0",
- "lastReviewed": "2026-11-17",
+ "lastEdited": "2026-11-17",
+  "review": { "jurisdiction": "general", "reviewStatus": "draft", "reviewedBy": null, "reviewedOn": null, "nextReviewOn": null },
  "source": {
   "name": "Exchange Rate API",
   "url": "https://www.exchangerate-api.com",

@@ -4,7 +4,8 @@
   "type": "object",
   "required": [
     "contentVersion",
-    "lastReviewed",
+    "lastEdited",
+    "review",
     "defaults",
     "places"
   ],
@@ -14,9 +15,46 @@
       "type": "string",
       "pattern": "^\\d+\\.\\d+\\.\\d+$"
     },
-    "lastReviewed": {
+    "lastEdited": {
+      "description": "When the file was last edited. This is not a review date.",
       "type": "string",
       "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "review": {
+      "description": "Review status (P0.4). Never mark approved without a real, named reviewer and date.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "jurisdiction",
+        "reviewStatus",
+        "reviewedBy",
+        "reviewedOn",
+        "nextReviewOn"
+      ],
+      "properties": {
+        "jurisdiction": {
+          "enum": [
+            "UK",
+            "general"
+          ]
+        },
+        "reviewStatus": {
+          "enum": [
+            "draft",
+            "in-review",
+            "approved"
+          ]
+        },
+        "reviewedBy": {
+          "description": "Name and qualification of the reviewer, or null"
+        },
+        "reviewedOn": {
+          "description": "YYYY-MM-DD or null"
+        },
+        "nextReviewOn": {
+          "description": "YYYY-MM-DD or null"
+        }
+      }
     },
     "defaults": {
       "type": "array",

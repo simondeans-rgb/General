@@ -1,6 +1,13 @@
 {
   "contentVersion": "1.2.0",
-  "lastReviewed": "2026-11-21",
+  "lastEdited": "2026-11-21",
+  "review": {
+    "jurisdiction": "UK",
+    "reviewStatus": "draft",
+    "reviewedBy": null,
+    "reviewedOn": null,
+    "nextReviewOn": null
+  },
   "tools": [
     {
       "id": "timezones",
@@ -61,7 +68,8 @@
       ],
       "status": "ready",
       "howItWorks": "Entitlement × (employee's days ÷ full-time days) × (days employed in the holiday year ÷ days in the holiday year). The statutory minimum is 5.6 weeks (5.6 × days worked per week, capped at 28 days), pro-rated the same way for part-years.",
-      "note": "For irregular-hours or part-year workers, holiday may be calculated differently. Check with HR."
+      "note": "For irregular-hours or part-year workers, holiday may be calculated differently. Check with HR.",
+      "ukOnly": true
     },
     {
       "id": "notice",
@@ -80,7 +88,8 @@
       ],
       "status": "ready",
       "howItWorks": "Statutory minimum notice from the employer is 1 week after 1 month's service, then 1 week for each complete year of service from 2 years, up to 12 weeks. From the employee it's 1 week after 1 month's service. When the employer gives notice, the longer of statutory and contractual notice applies. Notice starts the day after it's given.",
-      "note": "Check the employment contract, and contact HR for anything involving dismissal."
+      "note": "Check the employment contract, and contact HR for anything involving dismissal.",
+      "ukOnly": true
     },
     {
       "id": "sbi",

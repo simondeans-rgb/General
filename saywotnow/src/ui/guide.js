@@ -91,6 +91,7 @@ export function Guide({ id, prefs }) {
       <span>${S.categories[guide.category]}</span><span aria-hidden="true">·</span><span><${Icon} name="calendar" size=${16} /> ${guide.length}</span>
       <${FlagChip} level=${guide.flagLevel} />
     </div>
+    <p class="scope-note"><span class="uk-chip">${S.ukGuidance}</span> ${S.ukScopeShort}</p>
     <${EscalationGate} guide=${guide} prefs=${prefs} />
     <${PrepButton} card=${prepFor(c, 'guide', guide.id)} />
 

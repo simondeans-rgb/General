@@ -19,6 +19,7 @@ function ToolShell({ tool, prefs, children }) {
   return html`<div class="screen tool-screen">
     <${TopBar} title=${tool.title} back=${() => goBack('/toolkit')}
       right=${html`<${FavStar} id=${tool.id} favs=${prefs.favourites} onToggle=${toggleFavourite} title=${tool.title} />`} />
+    ${tool.ukOnly ? html`<p class="scope-note"><span class="uk-chip">${S.ukRules}</span> ${S.ukToolScope}</p>` : null}
     ${tool.note && tool.noteFirst ? html`<${Notice} level=${tool.noteLevel || 1}>${tool.note}</${Notice}>` : null}
     ${tool.howItWorks ? html`<${Disclosure} summary=${S.howItWorks} class="how"><p>${tool.howItWorks}</p></${Disclosure}>` : null}
     ${children}

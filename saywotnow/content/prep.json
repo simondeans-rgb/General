@@ -1,6 +1,7 @@
 {
   "contentVersion": "1.0.0",
-  "lastReviewed": "2026-11-20",
+  "lastEdited": "2026-11-20",
+  "review": { "jurisdiction": "UK", "reviewStatus": "draft", "reviewedBy": null, "reviewedOn": null, "nextReviewOn": null },
   "title": "1-minute prep",
   "intro": "Three questions to ask, one thing to avoid, one thing to remember. Read it on your way in.",
   "groups": {

@@ -70,6 +70,25 @@ for (const name of NAMES) {
   content[name] = data;
 }
 
+/* ---------- Review status (P0.4): no approval claims without a real reviewer ---------- */
+
+const isDate = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v));
+for (const [name, data] of Object.entries(content)) {
+  const r = data.review;
+  if (!r) continue;
+  const f = `content/${name}.json`;
+  for (const k of ['reviewedBy', 'reviewedOn', 'nextReviewOn']) if (r[k] !== null && typeof r[k] !== 'string') fail(f, `.review.${k}`, 'must be text or null');
+  if (r.reviewedOn !== null && !isDate(r.reviewedOn)) fail(f, '.review.reviewedOn', 'must be a date (YYYY-MM-DD) or null');
+  if (r.nextReviewOn !== null && !isDate(r.nextReviewOn)) fail(f, '.review.nextReviewOn', 'must be a date (YYYY-MM-DD) or null');
+  if (r.reviewStatus === 'approved') {
+    if (!r.reviewedBy || !r.reviewedBy.trim()) fail(f, '.review', 'can only be "approved" with a named reviewer (reviewedBy)');
+    if (!isDate(r.reviewedOn)) fail(f, '.review', 'can only be "approved" with a review date (reviewedOn)');
+    if (!isDate(r.nextReviewOn)) fail(f, '.review', 'approved content needs a next review date (nextReviewOn)');
+  } else if (r.reviewedBy || r.reviewedOn) {
+    fail(f, '.review', `has a reviewer or review date but is still "${r.reviewStatus}"; set the status honestly`);
+  }
+}
+
 /* ---------- Cross-reference checks ---------- */
 
 function unique(file, list, what) {

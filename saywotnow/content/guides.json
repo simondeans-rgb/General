@@ -1,6 +1,7 @@
 {
   "contentVersion": "1.2.0",
-  "lastReviewed": "2026-11-21",
+  "lastEdited": "2026-11-21",
+  "review": { "jurisdiction": "UK", "reviewStatus": "draft", "reviewedBy": null, "reviewedOn": null, "nextReviewOn": null },
   "guides": [
     {
       "id": "G01",

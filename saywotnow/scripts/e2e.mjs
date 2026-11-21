@@ -286,8 +286,8 @@ await check('G06 shows the urgent 999 banner; G03 shows a notice before the summ
   const { ctx, page } = await newApp();
   await page.goto(BASE + '#/guide/G06');
   await page.getByRole('tab', { name: 'During' }).click();
-  await page.getByText('If someone is at risk of harming themselves or others, call 999.').waitFor();
-  assert.equal(await page.getByRole('link', { name: 'Call 999' }).getAttribute('href'), 'tel:999');
+  await page.getByText('If someone is at risk of harming themselves or others, call 999 (UK emergency services).').waitFor();
+  assert.equal(await page.getByRole('link', { name: 'Call 999 (UK)' }).getAttribute('href'), 'tel:999');
   await page.goto(BASE + '#/guide/G03');
   await page.getByRole('tab', { name: 'After' }).click();
   await page.getByRole('button', { name: 'Write summary' }).click();
@@ -558,6 +558,31 @@ await check('P0.3 HR-first gate: Level 3 guides warn before any script, from eve
   await page.evaluate(() => { const p = JSON.parse(localStorage.getItem('saywotnow.prefs.v1')); p.hrContactEmail = 'hr@example.co.uk'; localStorage.setItem('saywotnow.prefs.v1', JSON.stringify(p)); });
   await page.reload();
   await page.locator('.gate').getByRole('button', { name: /Email HR/ }).waitFor();
+  assert.deepEqual(log.errors, []);
+  await ctx.close();
+});
+
+await check('P0.4 UK scope and honest review status', async () => {
+  const { ctx, page, log } = await newApp();
+  for (const id of ['G01', 'G06', 'G13']) {
+    await page.goto(BASE + `#/guide/${id}`);
+    await page.locator('.scope-note', { hasText: 'UK guidance' }).waitFor();
+  }
+  await page.getByRole('tab', { name: 'During' }).click();
+  await page.goto(BASE + '#/guide/G06');
+  await page.getByRole('tab', { name: 'During' }).click();
+  await page.getByText('call 999 (UK emergency services)').waitFor();
+  for (const id of ['holiday', 'notice']) {
+    await page.goto(BASE + `#/tool/${id}`);
+    await page.locator('.scope-note', { hasText: 'UK rules' }).waitFor();
+  }
+  await page.goto(BASE + '#/tool/timezones');
+  await page.locator('#main h1').waitFor();
+  assert.equal(await page.locator('.scope-note').count(), 0, 'non-legal tools are not labelled UK');
+  await page.goto(BASE + '#/page/content');
+  const info = await page.locator('#main').innerText();
+  assert.match(info, /not yet been independently reviewed/);
+  assert.doesNotMatch(info, /last reviewed/i, 'no automatic "reviewed on" stamp');
   assert.deepEqual(log.errors, []);
   await ctx.close();
 });
