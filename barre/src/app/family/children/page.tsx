@@ -12,6 +12,7 @@ import {
   Badge, Button, Card, CardHeader, EmptyState, Field, Input, Select, Skeleton, ErrorState,
 } from '@/components/ui';
 import * as F from '@/lib/repos/family';
+import { YourDetails, EmergencyContacts } from '@/components/app/family-details';
 import { ageFrom, dateShort, initials, time, dateLong, dayRange } from '@/lib/format';
 
 type Child = {
@@ -86,6 +87,7 @@ export default function FamilyChildren() {
                 </div>
               )}
             </dl>
+            <EmergencyContacts studentId={c.id} name={c.first_name} />
             <div className="border-t border-line p-3">
               <Button size="sm" onClick={() => setReporting(c)}>
                 <CalendarOff className="size-4" aria-hidden /> Report an absence
@@ -93,6 +95,8 @@ export default function FamilyChildren() {
             </div>
           </Card>
         ))}
+
+        <YourDetails />
 
         {/* Everything about the family that is not a child, one tap away. */}
         <Card className="divide-y divide-line overflow-hidden">

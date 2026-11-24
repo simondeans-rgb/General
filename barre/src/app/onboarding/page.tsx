@@ -50,7 +50,7 @@ const STEPS: Step[] = [
   { key: 'classes', title: 'Classes', blurb: 'Day, time, capacity and price. Sessions are generated for you.',
     count: `select count(*)::int n from class where deleted_at is null`,
     href: '/classes', cta: 'Create a class' },
-  { key: 'families', title: 'Families', blurb: 'Invite them, or import a spreadsheet you already keep.',
+  { key: 'families', title: 'Families', blurb: 'Add families one by one, then invite them to the app.',
     count: `select count(*)::int n from family where deleted_at is null`,
     href: '/people', cta: 'Add families' },
   { key: 'payments', title: 'Billing', blurb: 'Raise term invoices and record transfers and cash. Card payments start once Stripe is connected on a hosted deployment.',

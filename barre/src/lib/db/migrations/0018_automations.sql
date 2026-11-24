@@ -237,8 +237,20 @@ begin
               false)
       returning id into cid;
       perform set_config('request.jwt.claims', caller, true);
-      insert into automation_run (studio_id, rule_id, subject_id, family_id, communication_id, ran_at)
-      values (p_studio, c.rule_id, c.subject_id, c.family_id, cid, p_now)
+      oid := null;
+      -- A family nobody has logged in to yet (typically one that has only
+      -- booked a trial) will not see an in-app message: email it as well.
+      if not exists (select 1 from guardian g where g.family_id = c.family_id and g.user_id is not null and g.deleted_at is null) then
+        insert into outbound_message (studio_id, channel, to_name, to_address, subject, body)
+        select p_studio, 'email', g.full_name, g.email,
+               app.render_template(tpl.subject, c.family_id, c.student_id, c.class_id, c.starts_at, c.expires_at, tz),
+               app.render_template(tpl.body,    c.family_id, c.student_id, c.class_id, c.starts_at, c.expires_at, tz)
+          from guardian g where g.family_id = c.family_id and g.email is not null and g.deleted_at is null
+         order by g.is_primary desc limit 1
+        returning id into oid;
+      end if;
+      insert into automation_run (studio_id, rule_id, subject_id, family_id, communication_id, outbound_id, ran_at)
+      values (p_studio, c.rule_id, c.subject_id, c.family_id, cid, oid, p_now)
       on conflict (rule_id, subject_id) do nothing;
     else
       insert into outbound_message (studio_id, channel, to_name, to_address, subject, body, enquiry_id)

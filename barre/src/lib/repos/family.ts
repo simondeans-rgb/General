@@ -82,3 +82,26 @@ select s.studio_id, 'direct', 'in_app', s.family_id,
        $3, auth.uid()
   from student s where s.id = $1
 returning id`;
+
+/* ── Parents keep their own details current (R-016, migration 0023) ─────── */
+export type Guardian = { id: string; full_name: string; email: string | null; phone: string | null; relationship: string | null; is_me: boolean };
+export const MY_GUARDIANS = `
+select g.id, g.full_name, g.email, g.phone, g.relationship, g.user_id = auth.uid() as is_me
+  from guardian g where g.deleted_at is null and g.family_id in (select app.guardian_family_ids())
+ order by (g.user_id = auth.uid()) desc nulls last, g.is_primary desc, g.full_name`;
+export const UPDATE_GUARDIAN = `
+update guardian set full_name = $2, email = nullif($3, ''), phone = nullif($4, ''), updated_at = now() where id = $1`;
+
+export type Contact = { id: string; student_id: string; full_name: string; relationship: string | null; phone: string };
+export const MY_CONTACTS = `
+select ec.id, ec.student_id, ec.full_name, ec.relationship, ec.phone from emergency_contact ec
+ where ec.deleted_at is null and ec.student_id in (select app.guardian_student_ids())
+ order by ec.priority, ec.created_at`;
+export const ADD_CONTACT = `
+insert into emergency_contact (studio_id, student_id, full_name, relationship, phone, priority)
+select s.studio_id, s.id, $2, nullif($3, ''), $4,
+       coalesce((select max(priority) + 1 from emergency_contact where student_id = s.id and deleted_at is null), 1)
+  from student s where s.id = $1`;
+export const UPDATE_CONTACT = `
+update emergency_contact set full_name = $2, relationship = nullif($3, ''), phone = $4, updated_at = now() where id = $1`;
+export const REMOVE_CONTACT = `select app.remove_emergency_contact($1)`;

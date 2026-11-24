@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Bell, CreditCard, MessageSquare, UserPlus, Sparkles, HeartPulse, ListOrdered, Inbox, GraduationCap, CheckCheck,
+  CalendarClock, UserRoundCheck, Contact,
 } from 'lucide-react';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
@@ -19,6 +20,7 @@ const ICON: Record<string, React.ElementType> = {
   message: MessageSquare, payment_failed: CreditCard, new_enquiry: Sparkles, new_trial: Sparkles,
   new_enrolment: UserPlus, waitlist: ListOrdered, waitlist_offer: ListOrdered,
   medical_updated: HeartPulse, request: Inbox, request_answered: MessageSquare, teacher_changed: GraduationCap,
+  schedule_change: CalendarClock, cover_assigned: UserRoundCheck, contact_updated: Contact,
 };
 
 /**

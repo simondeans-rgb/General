@@ -1054,6 +1054,13 @@ insert into student (studio_id, family_id, first_name, last_name, date_of_birth)
   (${q(S.kestrel)}, ${q(uid(NS.family, 191))}, 'Orla', 'Brennan', current_date - interval '11 years');
 insert into location (studio_id, name, city) values (${q(S.pointe)}, 'The Mill', 'Brighton');
 
+-- Every trial gets a child record and emergency contact (migration 0023).
+do $$ declare t record; begin
+  for t in select id from trial where student_id is null and deleted_at is null loop
+    perform app.ensure_trial_student(t.id);
+  end loop;
+end $$;
+
 -- Freya has let Barre support look at Northstar while they help with invoices.
 insert into support_access_grant (studio_id, granted_by, reason, expires_at, created_at) values
   (${q(STUDIO_ID)}, ${q(uid(NS.user, 1))}, 'Help setting up this term''s invoices', now() + interval '2 days', now() - interval '2 hours');

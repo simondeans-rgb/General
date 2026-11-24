@@ -180,12 +180,13 @@ export const OFFER_PLACE   = `select app.offer_waitlist_place($1, $2) as ok`;
 export const ACCEPT_PLACE  = `select app.accept_waitlist_place($1) as enrolment_id`;
 export const DECLINE_PLACE = `select app.decline_waitlist_place($1, $2) as ok`;
 
-export const BOOK_TRIAL = `
-insert into trial (studio_id, class_id, session_id, student_id, status, price_minor, created_by)
-select cs.studio_id, cs.class_id, cs.id, $2, 'booked', c.trial_price_minor, auth.uid()
-  from class_session cs join class c on c.id = cs.class_id
- where cs.id = $1
-returning id`;
+/** Every trial has a child record with an emergency contact (0023), so the
+ *  child is on the register. Either an existing child, or a new one. */
+export const BOOK_TRIAL = `select app.book_trial($1, $2, $3::jsonb) as id`;
+export const TRANSFER = `select app.transfer_enrolment($1, $2, $3) as id`;
+export const CLASS_OPTIONS = `
+select c.id, c.name, app.class_enrolled_count(c.id) as enrolled, c.capacity
+  from class c where c.deleted_at is null order by c.day_of_week, c.start_time`;
 
 export const TRIAL_OUTCOME = `select app.record_trial_outcome($1, $2, $3) as ok`;
 export const CONVERT_TRIAL = `select app.convert_trial($1, $2) as enrolment_id`;

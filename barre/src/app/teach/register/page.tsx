@@ -187,6 +187,7 @@ function Register() {
             Register closed. Everyone is accounted for — reopen it if something needs changing.
           </p>
         )}
+        {closed && <NextClass sessionId={sessionId} />}
         {closeRegister.isError && <ErrorState error={closeRegister.error} />}
 
         {(alerts.length > 0 || needs.length > 0) && (
@@ -387,5 +388,20 @@ function RegisterLine({ entry: r, onMark, onReason, disabled, saving }: {
         </div>
       )}
     </div>
+  );
+}
+
+/** After closing a register, the next class of the day is one tap away. */
+function NextClass({ sessionId }: { sessionId: string }) {
+  const next = useRows<{ id: string; name: string; starts_at: string }>(['next-session', sessionId], T.NEXT_SESSION, [sessionId]);
+  const n = next.data?.[0];
+  if (!n) return null;
+  return (
+    <Link href={`/teach/register/?session=${n.id}`}
+      className="flex items-center justify-between rounded-[var(--radius-lg)] border border-line bg-surface px-4 py-3 hover:bg-surface-2">
+      <span><span className="block text-[13px] text-ink-3">Next class</span>
+        <span className="font-medium">{n.name} · {time(n.starts_at)}</span></span>
+      <ChevronRight className="size-4 text-ink-3" aria-hidden />
+    </Link>
   );
 }

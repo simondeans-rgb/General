@@ -2,11 +2,14 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { CalendarCheck2, ChevronRight, CheckCircle2, MapPin, Users } from 'lucide-react';
+import { CalendarCheck2, ChevronRight, CheckCircle2, MapPin, Users, UserRoundX } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
 import { useSession } from '@/lib/auth/session';
-import { Badge, Card, CardHeader, EmptyState, Skeleton, ErrorState, type Tone } from '@/components/ui';
+import { Badge, Button, Card, CardHeader, EmptyState, Field, Input, Skeleton, ErrorState, type Tone } from '@/components/ui';
+import { RecordSheet } from '@/components/app/record-sheet';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { runAs } from '@/lib/db/client';
 import * as T from '@/lib/repos/teaching';
 import { time, greeting, dateLong, dayRange, relativeDay } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -16,10 +19,11 @@ const TONES: Record<string, Tone> = { violet:'violet', amber:'amber', teal:'teal
 export default function TeachToday() {
   const { session } = useSession();
   const [from] = React.useMemo(() => dayRange(0), []);
-  // Today, plus the next six days, so a teacher can see what is coming.
+  // Today, plus the next fortnight, so a teacher can see their week ahead.
   const to = React.useMemo(() => {
-    const d = new Date(from); d.setDate(d.getDate() + 7); return d.toISOString();
+    const d = new Date(from); d.setDate(d.getDate() + 14); return d.toISOString();
   }, [from]);
+  const [asking, setAsking] = React.useState<T.TeachSession | null>(null);
   const sessions = useRows<T.TeachSession>(['my-sessions', from], T.MY_SESSIONS, [from, to]);
 
   const today = (sessions.data ?? []).filter(s =>
@@ -43,27 +47,50 @@ export default function TeachToday() {
                 ? <EmptyState icon={<CalendarCheck2 className="size-5" />} title="No classes today"
                     body="Your next class is further down." />
                 : <ul className="divide-y divide-line">
-                    {today.map(s => <li key={s.id}><TeachRow s={s} /></li>)}
+                    {today.map(s => <li key={s.id}><TeachRow s={s} onAskCover={() => setAsking(s)} /></li>)}
                   </ul>}
             </Card>
 
             {later.length > 0 && (
               <Card>
-                <CardHeader title="Coming up" />
+                <CardHeader title="Your next two weeks" subtitle="Ask the office for cover from any class here" />
                 <ul className="divide-y divide-line">
-                  {later.map(s => <li key={s.id}><TeachRow s={s} showDay /></li>)}
+                  {later.map(s => <li key={s.id}><TeachRow s={s} showDay onAskCover={() => setAsking(s)} /></li>)}
                 </ul>
               </Card>
             )}
           </>
         )}
       </div>
+      {asking && <CoverRequestSheet s={asking} onClose={() => setAsking(null)} />}
     </Shell>
   );
 }
 
-function TeachRow({ s, showDay }: { s: T.TeachSession; showDay?: boolean }) {
+function CoverRequestSheet({ s, onClose }: { s: T.TeachSession; onClose: () => void }) {
+  const { session } = useSession();
+  const qc = useQueryClient();
+  const [reason, setReason] = React.useState('');
+  const [sent, setSent] = React.useState(false);
+  const ask = useMutation({
+    mutationFn: () => runAs(session, q => q(T.REQUEST_COVER, [s.id, reason.trim()])),
+    onSuccess: () => { setSent(true); qc.invalidateQueries({ queryKey: ['db'] }); },
+  });
+  if (sent) return <RecordSheet title="Asked" onClose={onClose} onSave={onClose} saveLabel="Done">
+    <p className="text-sm text-ink-2">The office has your request and will let you know who is covering.</p></RecordSheet>;
+  return (
+    <RecordSheet title="Ask for cover" subtitle={`${s.name} · ${dateLong(s.starts_at)} at ${time(s.starts_at)}`}
+      onClose={onClose} onSave={() => ask.mutate()} saving={ask.isPending} error={ask.error} canSave={reason.trim().length >= 3} saveLabel="Send to the office">
+      <Field label="Why" htmlFor="cr-r" required hint="Only the office sees this.">
+        <Input id="cr-r" value={reason} onChange={e => setReason(e.target.value)} placeholder="Hospital appointment" />
+      </Field>
+    </RecordSheet>
+  );
+}
+
+function TeachRow({ s, showDay, onAskCover }: { s: T.TeachSession; showDay?: boolean; onAskCover?: () => void }) {
   const cancelled = s.status === 'cancelled';
+  const coveredByOther = !!s.covered_by;
   const expected = s.enrolled + s.trials;
   const done = s.marked >= expected && expected > 0;
   const started = new Date(s.starts_at) <= new Date();
@@ -76,7 +103,10 @@ function TeachRow({ s, showDay }: { s: T.TeachSession; showDay?: boolean }) {
         <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className="tnum font-semibold">{showDay ? `${relativeDay(s.starts_at)} ` : ''}{time(s.starts_at)}</span>
           <span className="font-medium">{s.name}</span>
-          {cancelled && <Badge tone="critical">Cancelled</Badge>}
+          {cancelled && <Badge tone="critical">Cancelled{s.cancel_reason ? ` · ${s.cancel_reason}` : ''}</Badge>}
+          {s.covering && <Badge tone="info">You are covering</Badge>}
+          {coveredByOther && <Badge tone="neutral">Covered by {s.covered_by}</Badge>}
+          {s.cover_requested && !coveredByOther && <Badge tone="caution">Cover requested</Badge>}
           {!cancelled && done && <Badge tone="positive" icon={<CheckCircle2 className="size-3" />}>Register done</Badge>}
           {!cancelled && !done && started && <Badge tone="caution">Register due</Badge>}
           {!cancelled && s.trials > 0 && <Badge tone="info">{s.trials} trial{s.trials === 1 ? '' : 's'}</Badge>}
@@ -90,6 +120,15 @@ function TeachRow({ s, showDay }: { s: T.TeachSession; showDay?: boolean }) {
     </div>
   );
 
-  if (cancelled) return inner;
-  return <Link href={`/teach/register/?session=${s.id}`} className="block hover:bg-surface-2">{inner}</Link>;
+  if (cancelled || coveredByOther) return inner;
+  return (
+    <div className="flex items-center">
+      <Link href={`/teach/register/?session=${s.id}`} className="block min-w-0 flex-1 hover:bg-surface-2">{inner}</Link>
+      {onAskCover && !started && !s.covering && !s.cover_requested && (
+        <Button size="sm" variant="ghost" className="mr-2 shrink-0" onClick={onAskCover} aria-label={`Ask for cover for ${s.name}`}>
+          <UserRoundX className="size-4" aria-hidden />
+        </Button>
+      )}
+    </div>
+  );
 }

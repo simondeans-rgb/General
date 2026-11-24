@@ -155,10 +155,11 @@ export type PendingRequest = {
   id: string; kind: string; status: string; subject: string; body: string; created_at: string;
   student_id: string | null; student_name: string | null; family_id: string | null; family_name: string | null;
   guardian_name: string | null; children: { id: string; name: string }[];
+  session_id: string | null;
 };
 
 export const PENDING_REQUESTS = `
-select r.id, r.kind, r.status, r.subject, r.body, r.created_at,
+select r.id, r.kind, r.status, r.subject, r.body, r.created_at, r.session_id,
        r.student_id, s.first_name || ' ' || s.last_name as student_name,
        r.family_id, f.name as family_name,
        coalesce(u.full_name, (select g.full_name from guardian g where g.family_id = r.family_id

@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Inbox, Check, X, MessageSquare, Trophy, CheckCircle2, HeartPulse, ClipboardPlus, CornerDownLeft } from 'lucide-react';
+import { Inbox, Check, X, MessageSquare, Trophy, CheckCircle2, HeartPulse, ClipboardPlus, CornerDownLeft, UserRoundCheck } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { RecordSheet } from '@/components/app/record-sheet';
 import * as P from '@/lib/repos/people';
@@ -14,6 +14,9 @@ import {
   Badge, Button, Card, CardHeader, EmptyState, ErrorState, Field, Select, Skeleton, type Tone,
 } from '@/components/ui';
 import * as H from '@/lib/repos/hub';
+import * as D from '@/lib/repos/dashboard';
+import { SessionSheet } from '@/components/app/session-sheet';
+import { readAs } from '@/lib/db/client';
 import { relativeDay, time, dateLong } from '@/lib/format';
 
 const KIND_LABEL: Record<string, string> = {
@@ -34,6 +37,11 @@ export default function RequestsPage() {
   const [answering, setAnswering] = React.useState<any>(null);
   const [recording, setRecording] = React.useState<H.PendingRequest | null>(null);
   const [acked, setAcked] = React.useState<string | null>(null);
+  const [covering, setCovering] = React.useState<D.SessionRow | null>(null);
+  const openCover = useMutation({
+    mutationFn: async (id: string) => (await readAs<D.SessionRow>(session, D.SESSION_BY_ID, [id]))[0],
+    onSuccess: s => s && setCovering(s),
+  });
 
   // One tap: the parent gets a standard acknowledgement; the record is untouched.
   const ack = useMutation({
@@ -100,6 +108,16 @@ export default function RequestsPage() {
                           <MessageSquare className="size-4" aria-hidden /> Reply
                         </Button>
                       </>
+                    ) : r.session_id ? (
+                      <>
+                        <Button size="sm" variant="primary" loading={openCover.isPending && openCover.variables === r.session_id}
+                                onClick={() => openCover.mutate(r.session_id!)}>
+                          <UserRoundCheck className="size-4" aria-hidden /> Arrange cover
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setAnswering(r)}>
+                          <MessageSquare className="size-4" aria-hidden /> Reply
+                        </Button>
+                      </>
                     ) : (
                       <Button size="sm" onClick={() => setAnswering(r)}>
                         <MessageSquare className="size-4" aria-hidden /> Reply
@@ -146,6 +164,7 @@ export default function RequestsPage() {
 
       </div>
 
+      {covering && <SessionSheet session={covering} initial="cover" onClose={() => setCovering(null)} />}
       {answering && <AnswerDialog request={answering} onClose={() => setAnswering(null)} />}
       {recording && <RecordUpdateSheet request={recording} onClose={() => setRecording(null)}
                       onDone={msg => { setRecording(null); setAcked(msg); }} />}
