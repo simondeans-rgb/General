@@ -22,3 +22,4 @@ Where this build departs from the brief, or interprets it, and why.
 | Suspended and cancelled schools stay readable, with export, for 30 days | Locking everyone out | Families mid-term are not punished for the studio's billing, and a leaving school can take its data. |
 | Plan limits stop additions, never delete | Enforcing by removal | Downgrading must never cost a school its records. |
 | Platform staff see counts by role, not names, of a school's people | A full member list | Names of parents and children are the school's data, not Barre's. |
+| Teachers see a child's allergies, conditions, medication and emergency plan, with a marker for any recorded need (red for urgent, amber otherwise) | Only the allergy line, only for children flagged urgent | Owner's request: a teacher needs the asthma and the inhaler as much as the allergy. GP details still stay with the office. |

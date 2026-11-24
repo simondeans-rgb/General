@@ -38,16 +38,26 @@ each separately; a user with none sees nothing at all.
 
 ## Data minimisation in practice
 
-A teacher genuinely needs to know that a child in the room carries an EpiPen.
-They do not need the diagnosis, the medication list or the family doctor.
+A teacher in the room needs to know what a child's medical need is and what
+to do about it. They do not need the family doctor, and they do not need
+anything about children they do not teach.
 
 So `medical_record` is closed to teachers entirely — no policy grants them
 `select`. What they get instead is `student_safety_brief`, a `SECURITY DEFINER`
-view exposing exactly seven columns: name, allergies, action plan, an alert
-flag and one emergency contact — and only for children in classes they teach.
+view, and only for children in classes they teach (or trial in, or take to
+an event): allergies, conditions, medication, the emergency plan, an urgent
+flag, a "need recorded" flag for the marker beside the name, every emergency
+contact, and photo consent. GP details are not in it.
 
-This is tested by asserting the view's column list, so widening it later fails
-the suite rather than quietly leaking.
+*This was widened by the studio owner's decision (migration 0020).* The first
+version gave teachers only the allergy line and the plan, and only flagged
+children marked urgent. In practice a teacher needs the asthma and the
+inhaler as much as the allergy. The office's medical form says plainly what
+teachers will see.
+
+The view's column list is asserted in the test suite, so any further
+widening fails the suite until it is a deliberate decision. Barre support
+staff get no rows from the view at all.
 
 ## The audit trail
 

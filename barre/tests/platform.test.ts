@@ -386,3 +386,14 @@ describe('the console and account screens’ queries', () => {
     });
   });
 });
+
+describe('support never sees health information by any route', () => {
+  it('the teachers’ safety brief is empty for a support viewer', async () => {
+    await commitAs(USERS.owner, `select app.grant_support_access($1, 2, 'Check the safety brief')`, [STUDIO_ID]);
+    await commitAs(PLATFORM_ADMIN, `select app.start_support_session($1)`, [STUDIO_ID]);
+    await asReader(PLATFORM_ADMIN, async q => {
+      expect((await q(`select id from family`)).length).toBeGreaterThan(0);   // the view is open…
+      expect(await q(`select * from student_safety_brief`)).toHaveLength(0);  // …but not this
+    });
+  });
+});

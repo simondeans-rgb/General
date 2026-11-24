@@ -36,13 +36,19 @@ export function RecordSheet({
   // Escape closes, and focus starts inside — a sheet that traps neither is a
   // sheet a keyboard user cannot leave.
   const ref = React.useRef<HTMLDivElement>(null);
+  // Callers pass onClose inline, so it is a new function on every render of
+  // the screen behind. Keyed on it, this effect re-ran whenever that screen
+  // refreshed — and yanked focus (and, on a phone, the scroll position and
+  // keyboard) back to the first field mid-edit. Focus once, on open.
+  const close = React.useRef(onClose);
+  close.current = onClose;
   React.useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close.current(); };
     document.addEventListener('keydown', onKey);
     ref.current?.querySelector<HTMLElement>(
       'input, select, textarea, button:not([aria-label="Close"])')?.focus();
     return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, []);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 sm:items-center"

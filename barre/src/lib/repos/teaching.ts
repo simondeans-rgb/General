@@ -32,10 +32,23 @@ select cs.id, cs.class_id, c.name, cs.starts_at, cs.ends_at, cs.status,
 export type RegisterEntry = {
   student_id: string; first_name: string; last_name: string; preferred_name: string | null;
   date_of_birth: Stamp; status: string | null; reason: string | null;
-  requires_alert: boolean; allergies: string | null; action_plan: string | null;
-  emergency_contact_name: string | null; emergency_contact_phone: string | null;
   is_trial: boolean; attendance_pct: number | null;
+} & Brief;
+
+/** What a teacher may know about a child's safety (migration 0020). */
+export type Brief = {
+  requires_alert: boolean; has_medical_need: boolean;
+  allergies: string | null; conditions: string | null; medications: string | null; action_plan: string | null;
+  emergency_contact_name: string | null; emergency_contact_phone: string | null;
+  emergency_contacts: { name: string; relationship: string | null; phone: string | null }[];
+  photo_consent: boolean | null;
 };
+
+const BRIEF_COLUMNS = `coalesce(b.requires_alert, false) as requires_alert,
+       coalesce(b.has_medical_need, false) as has_medical_need,
+       b.allergies, b.conditions, b.medications, b.action_plan,
+       b.emergency_contact_name, b.emergency_contact_phone,
+       coalesce(b.emergency_contacts, '[]'::jsonb) as emergency_contacts, b.photo_consent`;
 
 /**
  * The register for one session: everyone enrolled, plus anyone trialling.
@@ -58,8 +71,7 @@ with roll as (
 select roll.id as student_id, roll.first_name, roll.last_name, roll.preferred_name,
        roll.date_of_birth, roll.is_trial,
        ar.status, ar.reason,
-       coalesce(b.requires_alert, false) as requires_alert,
-       b.allergies, b.action_plan, b.emergency_contact_name, b.emergency_contact_phone,
+       ${BRIEF_COLUMNS},
        (select round(100.0 * count(*) filter (where a2.status in ('present','late'))
                      / nullif(count(*),0))::int
           from attendance_record a2 where a2.student_id = roll.id and a2.deleted_at is null) as attendance_pct
@@ -87,8 +99,8 @@ returning id, status`;
 
 /** Everyone a teacher may see, which is everyone in their own classes. */
 export const MY_STUDENTS = `
-select s.id, s.first_name, s.last_name, s.date_of_birth,
-       coalesce(b.requires_alert, false) as requires_alert, b.allergies,
+select s.id, s.first_name, s.last_name, s.preferred_name, s.date_of_birth,
+       ${BRIEF_COLUMNS},
        (select string_agg(distinct c.name, ', ') from enrolment e
           join class c on c.id = e.class_id
          where e.student_id = s.id and e.status = 'active' and e.deleted_at is null

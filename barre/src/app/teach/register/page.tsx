@@ -5,6 +5,7 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { MedicalBrief, MedicalMarker } from '@/components/app/medical-brief';
 import { AttendanceQueue, localQueueStorage, isOfflineError } from '@/lib/offline/attendance-queue';
 import { ArrowLeft, AlertTriangle, Check, Phone, CheckCheck, Lock, LockOpen,
          NotebookPen, FolderOpen, ChevronRight, MessageSquarePlus, CloudOff } from 'lucide-react';
@@ -122,6 +123,7 @@ function Register() {
   const list = rows.data ?? [];
   const marked = list.filter(r => r.status).length;
   const alerts = list.filter(r => r.requires_alert);
+  const needs = list.filter(r => r.has_medical_need && !r.requires_alert);
   const closed = !!m?.register_closed_at;
   const complete = list.length > 0 && marked === list.length;
 
@@ -187,13 +189,17 @@ function Register() {
         )}
         {closeRegister.isError && <ErrorState error={closeRegister.error} />}
 
-        {alerts.length > 0 && (
-          <div role="note" className="rounded-[var(--radius-lg)] border border-caution/30 bg-caution-soft p-3">
-            <p className="flex items-center gap-1.5 text-sm font-semibold text-caution">
+        {(alerts.length > 0 || needs.length > 0) && (
+          <div role="note" className={cn('rounded-[var(--radius-lg)] border p-3',
+            alerts.length ? 'border-critical/30 bg-critical-soft' : 'border-caution/30 bg-caution-soft')}>
+            <p className={cn('flex items-center gap-1.5 text-sm font-semibold', alerts.length ? 'text-critical' : 'text-caution')}>
               <AlertTriangle className="size-4" aria-hidden />
-              {alerts.length} child{alerts.length === 1 ? '' : 'ren'} in this class need{alerts.length === 1 ? 's' : ''} attention
+              {[alerts.length && `${alerts.length} urgent medical alert${alerts.length === 1 ? '' : 's'}`,
+                needs.length && `${needs.length} with medical information`].filter(Boolean).join(' · ')}
             </p>
-            <p className="mt-0.5 text-[13px] text-ink-2">Tap a name to see what to do.</p>
+            <p className="mt-0.5 text-[13px] text-ink-2">
+              {[...alerts, ...needs].map(r => r.preferred_name ?? r.first_name).join(', ')} — tap a name to see what to do.
+            </p>
           </div>
         )}
 
@@ -322,7 +328,7 @@ function RegisterLine({ entry: r, onMark, onReason, disabled, saving }: {
           <span className="min-w-0">
             <span className="flex items-center gap-1.5">
               <span className="truncate font-medium">{name}</span>
-              {r.requires_alert && <AlertTriangle className="size-3.5 shrink-0 text-critical" aria-label="Medical alert" />}
+              <MedicalMarker brief={r} className="size-3.5" />
               {r.is_trial && <Badge tone="info">Trial</Badge>}
             </span>
             <span className="block text-[12px] text-ink-3">
@@ -373,29 +379,11 @@ function RegisterLine({ entry: r, onMark, onReason, disabled, saving }: {
       )}
 
       {open && (
-        <div className="mb-1 ml-1 mt-2 rounded-[var(--radius-md)] bg-surface-2 p-3 text-[13px]">
-          {r.requires_alert ? (
-            <>
-              {r.allergies && <p><span className="font-semibold text-critical">Allergies:</span> {r.allergies}</p>}
-              {r.action_plan && <p className="mt-1">{r.action_plan}</p>}
-            </>
-          ) : (
-            <p className="text-ink-2">No medical alerts recorded.</p>
-          )}
-          {r.emergency_contact_phone && (
-            <p className="mt-2">
-              <a href={`tel:${r.emergency_contact_phone}`}
-                 className="inline-flex items-center gap-1.5 font-medium text-accent hover:underline">
-                <Phone className="size-3.5" aria-hidden />
-                {r.emergency_contact_name ?? 'Emergency contact'} · {r.emergency_contact_phone}
-              </a>
-            </p>
-          )}
-          {/* What a teacher can see is limited by the database, not by this
-              screen — the full medical record is not readable by them at all. */}
-          <p className="mt-2 text-[12px] text-ink-3">
-            Studio staff hold the full medical record. This is the part you need in the room.
-          </p>
+        <div className="mb-1 mt-2">
+          <MedicalBrief brief={r} />
+          {/* What a teacher can see is set by the database (student_safety_brief),
+              not by this screen. The family doctor stays with the office. */}
+          <p className="mt-2 text-[12px] text-ink-3">GP details and the full record stay with the office.</p>
         </div>
       )}
     </div>
