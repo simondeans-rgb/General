@@ -3,20 +3,20 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, ArrowRight } from 'lucide-react';
-import { PERSONAS, useSession, type Persona } from '@/lib/auth/session';
+import { PERSONA_GROUPS, useSession, type Persona } from '@/lib/auth/session';
 import { ROLE_HOME } from '@/components/app/shell';
 import { BarreMark } from '@/components/app/database-gate';
 import { Badge } from '@/components/ui';
 
-const TONE = { owner: 'accent', admin: 'info', teacher: 'teal', guardian: 'rose', student: 'amber' } as const;
+const TONE = { owner: 'accent', admin: 'info', teacher: 'teal', guardian: 'rose', student: 'amber', platform: 'neutral' } as const;
 
 export default function SignIn() {
   const { signIn, session, loaded } = useSession();
   const router = useRouter();
 
-  React.useEffect(() => {
-    if (loaded && session) router.replace(ROLE_HOME[session.role]);
-  }, [loaded, session, router]);
+  // Signed in already? Offer to carry on, but still show everyone — this page
+  // used to bounce straight to the home screen, which hid the other people
+  // (including the Barre platform admin) unless you found the avatar menu.
 
   const choose = (p: Persona) => { signIn(p); router.push(ROLE_HOME[p.role]); };
 
@@ -30,12 +30,26 @@ export default function SignIn() {
         <p className="mt-1 text-ink-2">The operating system for running a dance studio.</p>
       </div>
 
-      <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-[0.06em] text-ink-3">
-        Choose who to sign in as
-      </h2>
+      {loaded && session && (
+        <button onClick={() => router.push(session.platform && !session.support ? '/platform' : ROLE_HOME[session.role])}
+          className="mb-6 flex w-full items-center gap-3 rounded-[var(--radius-lg)] border border-accent/40 bg-accent-soft/50 p-3.5 text-left hover:bg-accent-soft">
+          <span className="min-w-0 flex-1">
+            <span className="block font-medium">Continue as {session.name}</span>
+            <span className="block text-[13px] text-ink-2">Or choose someone else below.</span>
+          </span>
+          <ArrowRight className="size-4 shrink-0 text-accent" aria-hidden />
+        </button>
+      )}
 
-      <ul className="space-y-2.5">
-        {PERSONAS.map(p => (
+      <h2 className="mb-1 text-[19px] font-semibold tracking-tight">Choose who to sign in as</h2>
+      <p className="mb-5 text-sm text-ink-2">No password in the demo — pick a person and you see exactly what they would.</p>
+
+      {PERSONA_GROUPS().map(g => (
+        <section key={g.title} className="mb-6" aria-labelledby={`grp-${g.title}`}>
+          <h3 id={`grp-${g.title}`} className="text-[13px] font-semibold uppercase tracking-[0.06em] text-ink-3">{g.title}</h3>
+          <p className="mb-2.5 text-[13px] text-ink-3">{g.blurb}</p>
+          <ul className="space-y-2.5">
+            {g.people.map(p => (
           <li key={p.userId}>
             <button
               onClick={() => choose(p)}
@@ -57,8 +71,10 @@ export default function SignIn() {
               <ArrowRight className="size-4 shrink-0 text-ink-3 transition-transform group-hover:translate-x-0.5" aria-hidden />
             </button>
           </li>
-        ))}
-      </ul>
+            ))}
+          </ul>
+        </section>
+      ))}
 
       {/* Being straight about what this is. The permissions are real; the
           password check is the part that is missing, and pretending otherwise

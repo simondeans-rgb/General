@@ -15,7 +15,7 @@ import { uid, NS } from '@/lib/db/seed/data';
  * Moving to Supabase Auth replaces this file and nothing else: the rest of the
  * app only ever asks for `session.userId`.
  */
-export type Role = 'owner' | 'admin' | 'teacher' | 'guardian' | 'student';
+export type Role = 'owner' | 'admin' | 'teacher' | 'guardian' | 'student' | 'platform';
 
 export type Persona = {
   userId: string;
@@ -24,6 +24,14 @@ export type Persona = {
   title: string;
   blurb: string;
 };
+
+/** Grouped for the sign-in page and the switcher: the operator first. */
+export const PERSONA_GROUPS = () => [
+  { title: 'You, running Barre', blurb: 'The platform console: every school, its plan, status and owner.',
+    people: PERSONAS.filter(p => p.role === 'platform') },
+  { title: 'Northstar Dance Academy', blurb: 'A school using Barre, seen by each of its people.',
+    people: PERSONAS.filter(p => p.role !== 'platform') },
+];
 
 export const PERSONAS: Persona[] = [
   { userId: uid(NS.user, 1), name: 'Freya Lindqvist', role: 'owner', title: 'Studio owner',
@@ -36,14 +44,29 @@ export const PERSONAS: Persona[] = [
     blurb: 'Three children at the studio. Sees her family and nobody else’s.' },
   { userId: uid(NS.user, 40), name: 'Amir Wright', role: 'student', title: 'Student',
     blurb: 'Fifteen, and old enough for his own login — which his mum approved.' },
+  { userId: uid(NS.user, 190), name: 'Jordan Ellis', role: 'platform', title: 'Barre platform admin',
+    blurb: 'Runs Barre itself: every school’s account, plan and owner — but no child’s records.' },
 ];
 
-export type Session = { userId: string; role: Role; name: string } | null;
+/** Barre support looking at one school, read-only, under its owner's grant. */
+export type SupportView = { studioId: string; studioName: string; until: string };
+
+type Stored = { userId: string; role: Role; name: string; support?: SupportView };
+
+/**
+ * `session.role` is the role the app should behave as. For Barre staff
+ * viewing a school that is 'admin' — so every office screen works as it
+ * would for the school — while `platform` stays true and the database keeps
+ * the view read-only (migration 0019).
+ */
+export type Session = { userId: string; role: Role; name: string; platform: boolean; support?: SupportView } | null;
 
 type Ctx = {
   session: Session;
-  signIn: (p: Persona) => void;
+  signIn: (p: { userId: string; role: Role; name: string }) => void;
   signOut: () => void;
+  enterSupport: (v: SupportView) => void;
+  exitSupport: () => void;
   loaded: boolean;
 };
 
@@ -51,30 +74,39 @@ const SessionContext = React.createContext<Ctx | null>(null);
 const KEY = 'barre.session.v1';
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = React.useState<Session>(null);
+  const [stored, setStored] = React.useState<Stored | null>(null);
   const [loaded, setLoaded] = React.useState(false);
 
   React.useEffect(() => {
     try {
       const raw = localStorage.getItem(KEY);
-      if (raw) setSession(JSON.parse(raw) as Session);
+      if (raw) setStored(JSON.parse(raw) as Stored);
     } catch { /* private mode — the app still works, it just will not remember */ }
     setLoaded(true);
   }, []);
 
-  const value = React.useMemo<Ctx>(() => ({
-    session,
-    loaded,
-    signIn: (p) => {
-      const next = { userId: p.userId, role: p.role, name: p.name };
-      setSession(next);
-      try { localStorage.setItem(KEY, JSON.stringify(next)); } catch {}
-    },
-    signOut: () => {
-      setSession(null);
-      try { localStorage.removeItem(KEY); } catch {}
-    },
-  }), [session, loaded]);
+  const save = (next: Stored | null) => {
+    setStored(next);
+    try { next ? localStorage.setItem(KEY, JSON.stringify(next)) : localStorage.removeItem(KEY); } catch {}
+  };
+
+  const value = React.useMemo<Ctx>(() => {
+    const live = stored?.support && new Date(stored.support.until) > new Date() ? stored.support : undefined;
+    const session: Session = stored ? {
+      userId: stored.userId, name: stored.name,
+      platform: stored.role === 'platform',
+      role: stored.role === 'platform' && live ? 'admin' : stored.role,
+      support: stored.role === 'platform' ? live : undefined,
+    } : null;
+    return {
+      session,
+      loaded,
+      signIn: p => save({ userId: p.userId, role: p.role, name: p.name }),
+      signOut: () => save(null),
+      enterSupport: v => stored && save({ ...stored, support: v }),
+      exitSupport: () => stored && save({ ...stored, support: undefined }),
+    };
+  }, [stored, loaded]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

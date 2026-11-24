@@ -104,16 +104,50 @@ client writes the row. The counting functions are `SECURITY DEFINER` so that a
 reader who cannot see every enrolment still cannot squeeze a child into a full
 class.
 
-## Deferred, and where the seams are
+## Money adds up in the database
 
-- **Billing.** The full ledger exists — invoices, items, payments, credits,
-  refunds, family balance — and is seeded, so the money figures on the
-  dashboard are real sums. What is not built is Stripe. `payment.provider` and
-  `provider_ref` are the only fields a provider ever writes to; no card data is
-  stored anywhere, by design rather than by omission.
-- **Communications.** Messages are stored and read. Composing, templates and
-  delivery over email/SMS/push are not built; `comm_channel` already carries
-  the channel so a sender can be added without a migration.
-- **Progression, shows, shop, AI assistant, Studio Pulse.** Not built and not
-  faked. There are no placeholder screens for these: a control that does
-  nothing is worse than an absent one.
+Invoice totals, amounts paid, invoice status and family balance are derived
+by triggers (migration 0016) from the rows that justify them: items,
+payments, refunds. Nothing writes those figures directly, so they cannot
+disagree. Credit is money held on account and drawn down by `account`
+allocation rows, oldest invoice first — every movement is a row, nothing is
+edited to make a sum work. Bank transfers, cash, credits, refunds and voids
+are `app.*` functions that check the caller is the office.
+
+## Things that happen without anyone pressing a button
+
+- **Notifications** (0017) are written by triggers when the event happens —
+  a family message, a failed card, a trial booked, a waiting-list offer —
+  never to the person who caused it, and not while a seed or import runs
+  (`app.quiet`).
+- **Automations** (0018) are rules: an event the studio cannot change and a
+  template it can. One idempotent runner (`app.run_automations`) evaluates
+  them; `automation_run` is unique per rule and subject, so a scheduler can
+  call it every few minutes and nothing goes twice. A new automation is one
+  enum value and one branch in `app.automation_candidates`.
+- **Waiting-list offers expire** in the same runner and pass the place on.
+
+## Offline registers
+
+`attendance_record.client_marked_at` is the moment the teacher tapped, and a
+conflicting write only lands if it is newer. `lib/offline/attendance-queue`
+holds marks that could not be sent (one per child, latest tap wins) and
+flushes them when the connection returns. The demo never goes offline — its
+database is in the tab — but the server deployment will, and the rule that
+makes late syncs safe is already in the SQL and tested.
+
+## Seams that are deliberately open
+
+| Seam | What exists | What plugs in |
+|---|---|---|
+| Card payments | `lib/payments/stripe.ts`: event mapping, signature check, Checkout params; `app.apply_provider_event` (service role only, idempotent) | Two server routes — see docs/PAYMENTS.md |
+| Email / SMS / push | `comm_channel` on every message; `outbound_message` queue for people without accounts | A delivery worker that sends `queued` rows |
+| Scheduler | `app.run_automations(studio)` | A cron calling it as `service_role` |
+| AI assistant | `lib/assistant`: the `AssistantBackend` contract; Cmd-K routes questions to saved views | A backend whose every query runs through the caller's session |
+| Studio Pulse | Five live component rates; `lib/pulse/score.ts` computes the composite and withholds it below 180 days of history | Nothing — it switches itself on |
+| Mobile apps | Queries are plain SQL over one adapter; business rules live in Postgres; the offline queue takes injected storage | An Expo app reuses `lib/repos`, `lib/payments`, `lib/offline` |
+
+Progression (`skill_assessment` with Not started / Developing / Secure /
+Mastered), events, resources and student logins are modelled and partly
+built (0003, 0010–0012). Shows-and-recitals entities beyond `studio_event`,
+and the shop, are not modelled yet: no placeholder screens exist for them.

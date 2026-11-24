@@ -241,8 +241,6 @@ export function MedicalSheet({ studentId, studentName, onClose }: {
 
   const save = useWrite(P.SAVE_MEDICAL, onClose);
 
-  // An action plan without the alert flag is a plan no teacher will ever see.
-  const planWithoutAlert = plan.trim().length > 0 && !alert;
 
   return (
     <RecordSheet title="Medical details" subtitle={studentName} onClose={onClose}
@@ -255,9 +253,10 @@ export function MedicalSheet({ studentId, studentName, onClose }: {
           <p className="flex gap-2 rounded-[var(--radius-md)] bg-surface-2 p-3 text-[12.5px] text-ink-2">
             <ShieldAlert className="mt-0.5 size-4 shrink-0 text-ink-3" aria-hidden />
             <span>
-              Health data. Teachers never see this table — they get only the allergy
-              line and the action plan, and only for children in their own classes.
-              Every change here is recorded against your name.
+              Health data. Teachers of this child’s classes see the allergies,
+              conditions, medication and emergency plan, with a marker beside the
+              child’s name. GP details stay with the office. Every change here is
+              recorded against your name.
             </span>
           </p>
 
@@ -265,22 +264,20 @@ export function MedicalSheet({ studentId, studentName, onClose }: {
             <input type="checkbox" checked={alert} className="mt-0.5 size-4 accent-[var(--accent)]"
                    onChange={e => setAlert(e.target.checked)} />
             <span>
-              <span className="font-medium">Flag this child to their teachers</span>
+              <span className="font-medium">Urgent — show a red alert</span>
               <span className="mt-0.5 block text-[12.5px] text-ink-2">
-                Puts a red alert on the register with the allergy line and the plan below.
+                For anything a teacher must act on quickly. Without it, teachers still see an amber
+                marker and every detail below.
               </span>
             </span>
           </label>
 
-          <Field label="Allergies" htmlFor="med-allergies"
-                 hint="Shown on the register when flagged.">
+          <Field label="Allergies" htmlFor="med-allergies">
             <textarea id="med-allergies" rows={2} value={allergies}
                       onChange={e => setAllergies(e.target.value)} className={textarea}
                       placeholder="Severe nut allergy — carries an EpiPen" />
           </Field>
-          <Field label="What to do in an emergency" htmlFor="med-plan"
-                 error={planWithoutAlert
-                   ? 'Tick the flag above, or no teacher will ever be shown this.' : undefined}>
+          <Field label="What to do in an emergency" htmlFor="med-plan">
             <textarea id="med-plan" rows={3} value={plan}
                       onChange={e => setPlan(e.target.value)} className={textarea}
                       placeholder="EpiPen is in the front pocket of her bag. Use it, then call 999." />
@@ -294,7 +291,7 @@ export function MedicalSheet({ studentId, studentName, onClose }: {
                       onChange={e => setMedications(e.target.value)} className={textarea} />
           </Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="GP" htmlFor="med-doctor">
+            <Field label="GP (office only)" htmlFor="med-doctor">
               <Input id="med-doctor" value={doctor} onChange={e => setDoctor(e.target.value)} />
             </Field>
             <Field label="GP phone" htmlFor="med-doctor-phone">

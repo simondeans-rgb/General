@@ -65,6 +65,11 @@ export async function closeDb(): Promise<void> {
  */
 export type Q = (sql: string, params?: unknown[]) => Promise<any[]>;
 
+/** As asUser, inside a READ ONLY transaction — how the app runs every read. */
+export async function asReader<T>(userId: string | null, fn: (q: Q, svc: Q) => Promise<T>): Promise<T> {
+  return asUser(userId, fn, true);
+}
+
 export async function asUser<T>(
   userId: string | null,
   /** `q` runs as the user; `svc` runs the same transaction with RLS bypassed,
@@ -72,9 +77,10 @@ export async function asUser<T>(
    *  inside asUser cannot work — both would begin and roll back the same
    *  connection, leaving no transaction for the savepoints to sit in. */
   fn: (q: Q, svc: Q) => Promise<T>,
+  readOnly = false,
 ): Promise<T> {
   const c = await db();
-  await c.query('begin');
+  await c.query(readOnly ? 'begin transaction read only' : 'begin');
   try {
     await c.query(`select set_config('request.jwt.claims', $1, true)`,
       [JSON.stringify(userId ? { sub: userId, role: 'authenticated' } : { role: 'anon' })]);
@@ -142,4 +148,30 @@ export async function expectRejected(fn: () => Promise<unknown>): Promise<string
   try { await fn(); }
   catch (e) { return (e as Error).message; }
   throw new Error('expected the database to reject this, but it succeeded');
+}
+
+/** Run one statement as a user and COMMIT it — for fixtures that later
+ *  transactions (often read-only ones) must see. Use only in files that
+ *  rebuild the database in beforeAll. */
+export async function commitAs(userId: string | null, sql: string, params: unknown[] = [],
+                               claims: Record<string, unknown> = {}): Promise<any[]> {
+  const c = await db();
+  await c.query('begin');
+  try {
+    await c.query(`select set_config('request.jwt.claims', $1, true)`,
+      [JSON.stringify(userId ? { sub: userId, role: 'authenticated', ...claims } : { role: 'anon' })]);
+    await c.query('set local role authenticated');
+    const r = await c.query(sql, params);
+    await c.query('commit');
+    return r.rows;
+  } catch (e) {
+    await c.query('rollback');
+    throw e;
+  }
+}
+
+/** Privileged fixture write, committed. */
+export async function commitService(sql: string, params: unknown[] = []): Promise<any[]> {
+  const c = await db();
+  return (await c.query(sql, params)).rows;
 }

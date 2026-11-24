@@ -28,7 +28,7 @@ select f.id, f.name, f.balance_minor,
 export type StudentRow = {
   id: string; first_name: string; last_name: string; preferred_name: string | null;
   date_of_birth: string; family_id: string; family_name: string;
-  classes: number; attendance_pct: number | null; has_alert: boolean;
+  classes: number; attendance_pct: number | null; has_alert: boolean; has_need: boolean;
   photo_consent: boolean | null;
 };
 
@@ -42,6 +42,7 @@ select s.id, s.first_name, s.last_name, s.preferred_name, s.date_of_birth,
           from attendance_record ar where ar.student_id = s.id and ar.deleted_at is null) as attendance_pct,
        coalesce((select m.requires_alert from medical_record m
                   where m.student_id = s.id and m.deleted_at is null), false) as has_alert,
+       coalesce((select b.has_medical_need from student_safety_brief b where b.student_id = s.id), false) as has_need,
        (select cr.granted from consent_record cr
          where cr.student_id = s.id and cr.kind = 'photography' and cr.deleted_at is null) as photo_consent
   from student s
@@ -81,8 +82,8 @@ select cm.id, cm.subject, cm.body, cm.sent_at, cm.kind
 
 /** Safety information a teacher is allowed to see, from the narrow view. */
 export const STUDENT_SAFETY = `
-select student_id, allergies, action_plan, requires_alert,
-       emergency_contact_name, emergency_contact_phone
+select student_id, allergies, conditions, medications, action_plan, requires_alert, has_medical_need,
+       emergency_contact_name, emergency_contact_phone, emergency_contacts, photo_consent
   from student_safety_brief where student_id = $1`;
 
 export const STAFF = `

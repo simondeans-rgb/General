@@ -126,9 +126,10 @@ export function buildSeedSql({ today = new Date() }: SeedOptions = {}): string {
     ${row([LEVEL.g3, STUDIO_ID, 'Grade 3', 5])},
     ${row([LEVEL.inter, STUDIO_ID, 'Intermediate', 6])};`);
 
-  return out.join('\n') + '\n' + buildClassesAndPeople({
+  // Loading a studio's history is not news: hold notifications while seeding.
+  return `select set_config('app.quiet', 'on', false);\n` + out.join('\n') + '\n' + buildClassesAndPeople({
     termId: TERM, base, LOC, ROOM, STAFF, STYLE, LEVEL, guardianUsers,
-  });
+  }) + '\n' + buildPlatform() + `\nselect set_config('app.quiet', 'off', false);\n`;
 }
 
 type Ctx = {
@@ -515,7 +516,7 @@ function buildMedicalBillingComms(ctx: ActivityCtx): string {
       addDays(base, -2).toISOString()])},
     ${row([uid(NS.comm, 3), STUDIO_ID, 'direct', 'in_app', uid(NS.family, 1), null,
       'Absence on Monday',
-      "Just to let you know Ava will miss Monday's class — she is on a school trip. Back the following week.",
+      "Just to let you know Clara will miss Monday's class — she is on a school trip. Back the following week.",
       addDays(base, -1).toISOString()])},
     ${row([uid(NS.comm, 4), STUDIO_ID, 'direct', 'in_app', uid(NS.family, 3), null,
       'Re: moving up a grade',
@@ -526,6 +527,39 @@ function buildMedicalBillingComms(ctx: ActivityCtx): string {
       'We start the new routine this week. Bring trainers with a clean sole, and a water bottle. It is a fast one.',
       addDays(base, -4).toISOString()])};`);
 
+  // Conversations go both ways. Who sent each message, and which way it
+  // travelled, is what the inbox threads on.
+  // Relative to the real clock, so nothing is ever seeded in the future.
+  const hoursAgo = (h: number) => new Date(Date.now() - h * 3600_000).toISOString();
+  const OFFICE = uid(NS.user, 5), FREYA = uid(NS.user, 1);
+  push(`update communication set inbound = true, sent_by = ${row([uid(NS.user, 11)])}
+         where id = ${row([uid(NS.comm, 3)])};
+        update communication set sent_by = ${row([FREYA])} where id = ${row([uid(NS.comm, 4)])};
+        update communication set sent_by = ${row([FREYA])} where kind <> 'direct' and sent_by is null;`);
+  push(`insert into communication (id,studio_id,kind,channel,family_id,subject,body,sent_by,inbound,sent_at) values
+    ${row([uid(NS.comm, 30), STUDIO_ID, 'direct', 'in_app', uid(NS.family, 1), null,
+      'Thanks for letting us know. Hope the trip is fun — we will save her spot at the barre.',
+      OFFICE, false, hoursAgo(20)])},
+    ${row([uid(NS.comm, 31), STUDIO_ID, 'direct', 'in_app', uid(NS.family, 2), 'Tap shoes',
+      'Hi — Idris has outgrown his tap shoes again. Do you sell them at the studio, or is there a shop you would recommend?',
+      uid(NS.user, 12), true, hoursAgo(3)])},
+    ${row([uid(NS.comm, 32), STUDIO_ID, 'direct', 'in_app', uid(NS.family, 3), null,
+      'That is wonderful, thank you. She is thrilled. Is there anything we should practise over the holidays?',
+      uid(NS.user, 13), true, hoursAgo(26)])},
+    ${row([uid(NS.comm, 33), STUDIO_ID, 'direct', 'in_app', uid(NS.family, 5), 'Show costume sizes',
+      'We missed the measuring session last week. Could Sofia be measured before Grade 3 on Saturday?',
+      null, true, hoursAgo(6)])},
+    ${row([uid(NS.comm, 34), STUDIO_ID, 'direct', 'in_app', uid(NS.family, 8), 'Parking at Blackheath',
+      'Is there anywhere to park near the Blackheath studio on a Saturday morning? We are new to the area.',
+      null, true, hoursAgo(50)])},
+    ${row([uid(NS.comm, 35), STUDIO_ID, 'direct', 'in_app', uid(NS.family, 8), null,
+      'Welcome! The church car park on Lee Road is free before 1pm on Saturdays, and only a two-minute walk.',
+      OFFICE, false, hoursAgo(47)])};`);
+  // The office has already read what it answered.
+  push(`insert into communication_read (communication_id, user_id)
+        select c.id, u.id from communication c cross join (values (${row([OFFICE])}::uuid), (${row([FREYA])}::uuid)) u(id)
+         where c.id in (${[3, 4, 30, 34, 35].map(n => row([uid(NS.comm, n)])).join(',')});`);
+
   push(`insert into communication_template (id,studio_id,name,subject,body) values
     ${row([uid(NS.comm, 20), STUDIO_ID, 'Trial confirmation', 'Your trial class is booked',
       'Hello {{guardian_name}},\n\nWe have booked {{child_name}} into {{class_name}} on {{session_date}} at {{session_time}}.\n\nPlease arrive five minutes early. Comfortable clothes and bare feet or socks are perfectly fine for a first class.\n\nSee you then,\nNorthstar Dance Academy'])},
@@ -534,7 +568,21 @@ function buildMedicalBillingComms(ctx: ActivityCtx): string {
     ${row([uid(NS.comm, 22), STUDIO_ID, 'Payment reminder', 'Invoice {{invoice_number}} is due',
       'Hello {{guardian_name}},\n\nInvoice {{invoice_number}} for {{amount}} was due on {{due_date}}. You can pay from the Payments tab.\n\nIf something has gone wrong with the payment, tell us and we will help.\n\nNorthstar Dance Academy'])},
     ${row([uid(NS.comm, 23), STUDIO_ID, 'Waiting list offer', 'A place has come up in {{class_name}}',
-      'Hello {{guardian_name}},\n\nA place has become available in {{class_name}}. We can hold it for {{child_name}} until {{expires_at}}.\n\nLet us know either way and we will pass it on if it is not right for you.\n\nNorthstar Dance Academy'])};`);
+      'Hello {{guardian_name}},\n\nA place has become available in {{class_name}}. We can hold it for {{child_name}} until {{expires_at}}.\n\nLet us know either way and we will pass it on if it is not right for you.\n\nNorthstar Dance Academy'])},
+    ${row([uid(NS.comm, 24), STUDIO_ID, 'Trial reminder', '{{child_name}}’s trial is on {{session_date}}',
+      'Hello {{guardian_name}},\n\nA reminder that {{child_name}} is trying {{class_name}} on {{session_date}} at {{session_time}}. Comfortable clothes are perfect, and please arrive five minutes early.\n\nIf you can no longer make it, just reply and we will find another date.\n\nNorthstar Dance Academy'])},
+    ${row([uid(NS.comm, 25), STUDIO_ID, 'Trial today', 'See you at {{session_time}}',
+      'Hello {{guardian_name}},\n\nWe are looking forward to meeting {{child_name}} at {{class_name}} today at {{session_time}}.\n\nNorthstar Dance Academy'])},
+    ${row([uid(NS.comm, 26), STUDIO_ID, 'Missed trial', 'We missed {{child_name}}',
+      'Hello {{guardian_name}},\n\nWe were sorry not to see {{child_name}} at {{class_name}}. Would another date suit better? Reply here and we will hold a place.\n\nNorthstar Dance Academy'])};`);
+  // Automations — each event points at the template it sends.
+  push(`insert into automation_rule (studio_id, event, template_id, enabled) values
+    ${row([STUDIO_ID, 'trial_booked', uid(NS.comm, 20), true])},
+    ${row([STUDIO_ID, 'trial_reminder_48h', uid(NS.comm, 24), true])},
+    ${row([STUDIO_ID, 'trial_reminder_same_day', uid(NS.comm, 25), true])},
+    ${row([STUDIO_ID, 'trial_attended', uid(NS.comm, 21), true])},
+    ${row([STUDIO_ID, 'trial_missed', uid(NS.comm, 26), false])},
+    ${row([STUDIO_ID, 'waitlist_offer', uid(NS.comm, 23), true])};`);
 
   push(`insert into notification (id,studio_id,user_id,kind,title,body,href) values
     ${row([uid(NS.notification, 1), STUDIO_ID, uid(NS.user, 1), 'payment_failed',
@@ -951,4 +999,63 @@ function termPlanPdf(): Uint8Array {
   const out = new Uint8Array(pdf.length);
   for (let i = 0; i < pdf.length; i++) out[i] = pdf.charCodeAt(i) & 0xff;
   return out;
+}
+
+/* ==========================================================================
+   The platform: Barre's own staff, and other schools on the service
+   ========================================================================== */
+export const PLATFORM_ADMIN = uid(NS.user, 190);
+export const OTHER_STUDIOS = { riverside: uid(NS.studio, 2), kestrel: uid(NS.studio, 3), pointe: uid(NS.studio, 4) };
+
+function buildPlatform(): string {
+  const q = (v: unknown) => (v === null ? 'null' : `'${String(v).replace(/'/g, "''")}'`);
+  const S = OTHER_STUDIOS;
+  return `
+-- Northstar is a paying customer on the Studio plan.
+update studio set plan_id = (select id from plan where code = 'studio'), status = 'active',
+                  created_at = now() - interval '2 years 3 months'
+ where id = ${q(STUDIO_ID)};
+
+insert into user_account (id, email, full_name) values
+  (${q(PLATFORM_ADMIN)}, 'jordan@barre.example', 'Jordan Ellis'),
+  (${q(uid(NS.user, 191))}, 'elena@kestrelballet.example', 'Elena Marsh'),
+  (${q(uid(NS.user, 192))}, 'tom@pointeandflex.example', 'Tom Hadley');
+insert into platform_admin (user_id, role) values (${q(PLATFORM_ADMIN)}, 'super_admin');
+
+insert into studio (id, name, slug, contact_email, plan_id, status, trial_ends_on, status_reason, suspended_at, created_at) values
+  (${q(S.riverside)}, 'Riverside School of Dance', 'riverside-school-of-dance', 'hello@riversidedance.example',
+     (select id from plan where code = 'trial'), 'trialling', current_date + 9, null, null, now() - interval '21 days'),
+  (${q(S.kestrel)}, 'Kestrel Ballet School', 'kestrel-ballet-school', 'elena@kestrelballet.example',
+     (select id from plan where code = 'starter'), 'active', null, null, null, now() - interval '8 months'),
+  (${q(S.pointe)}, 'Pointe & Flex Dance Co', 'pointe-and-flex', 'tom@pointeandflex.example',
+     (select id from plan where code = 'starter'), 'suspended', null,
+     'Subscription unpaid since September — two reminders sent', now() - interval '6 days', now() - interval '14 months');
+
+insert into membership (user_id, studio_id, role) values
+  (${q(uid(NS.user, 191))}, ${q(S.kestrel)}, 'owner'),
+  (${q(uid(NS.user, 192))}, ${q(S.pointe)}, 'owner');
+
+-- Riverside's owner has been invited but has not accepted yet.
+insert into studio_invitation (studio_id, email, full_name, role, token_hash, invited_by, created_at, expires_at) values
+  (${q(S.riverside)}, 'amy@riversidedance.example', 'Amy Chen', 'owner',
+   app.hash_token(gen_random_uuid()::text), ${q(PLATFORM_ADMIN)}, now() - interval '3 days', now() + interval '11 days');
+
+-- A little of Kestrel's own school, so the console's counts are not all zero.
+insert into location (id, studio_id, name, city) values (${q(uid(NS.location, 190))}, ${q(S.kestrel)}, 'Kestrel Hall', 'Lewes');
+insert into family (id, studio_id, name) values
+  (${q(uid(NS.family, 190))}, ${q(S.kestrel)}, 'Abbott family'),
+  (${q(uid(NS.family, 191))}, ${q(S.kestrel)}, 'Brennan family');
+insert into student (studio_id, family_id, first_name, last_name, date_of_birth) values
+  (${q(S.kestrel)}, ${q(uid(NS.family, 190))}, 'Martha', 'Abbott', current_date - interval '9 years'),
+  (${q(S.kestrel)}, ${q(uid(NS.family, 190))}, 'Jude', 'Abbott', current_date - interval '6 years'),
+  (${q(S.kestrel)}, ${q(uid(NS.family, 191))}, 'Orla', 'Brennan', current_date - interval '11 years');
+insert into location (studio_id, name, city) values (${q(S.pointe)}, 'The Mill', 'Brighton');
+
+-- Freya has let Barre support look at Northstar while they help with invoices.
+insert into support_access_grant (studio_id, granted_by, reason, expires_at, created_at) values
+  (${q(STUDIO_ID)}, ${q(uid(NS.user, 1))}, 'Help setting up this term''s invoices', now() + interval '2 days', now() - interval '2 hours');
+insert into audit_log (studio_id, actor_id, action, entity, summary, at) values
+  (${q(STUDIO_ID)}, ${q(uid(NS.user, 1))}, 'grant', 'support_access_grant',
+   'Barre support may view the account, read-only, for 48 hours: Help setting up this term''s invoices', now() - interval '2 hours');
+`;
 }

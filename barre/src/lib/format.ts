@@ -81,3 +81,11 @@ export const greeting = (): string => {
   const h = new Date().getHours();
   return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
 };
+
+/** Pounds as a person types them → pence. Rejects anything ambiguous
+ *  ("12.345", "1e3", "-5") rather than guessing. */
+export function toMinor(v: string): number | null {
+  const s = v.trim().replace(/^£/, '').replace(/,/g, '');
+  if (!/^\d+(\.\d{1,2})?$/.test(s)) return null;
+  return Math.round(Number(s) * 100);
+}

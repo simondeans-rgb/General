@@ -89,12 +89,15 @@ describe('medical data is minimised, not merely gated', () => {
     await asUser(MARCUS, async q => {
       const cols = await q(`select column_name from information_schema.columns
                              where table_name = 'student_safety_brief' order by column_name`);
+      // Widened deliberately (migration 0020): teachers see the whole medical
+      // need. Anything added here must be a decision, not an accident.
       expect(cols.map((c: any) => c.column_name)).toEqual([
-        'action_plan', 'allergies', 'emergency_contact_name', 'emergency_contact_phone',
-        'first_name', 'last_name', 'requires_alert', 'student_id', 'studio_id',
+        'action_plan', 'allergies', 'conditions', 'emergency_contact_name', 'emergency_contact_phone',
+        'emergency_contacts', 'first_name', 'has_medical_need', 'last_name', 'medications',
+        'photo_consent', 'requires_alert', 'student_id', 'studio_id',
       ]);
-      // Diagnoses, medication lists and the family doctor are not in there.
-      const leaked = ['conditions', 'medications', 'doctor_name', 'doctor_phone'];
+      // The family doctor stays with the office.
+      const leaked = ['doctor_name', 'doctor_phone'];
       expect(cols.map((c: any) => c.column_name).filter((c: string) => leaked.includes(c)))
         .toEqual([]);
     });
@@ -131,6 +134,48 @@ describe('registers', () => {
                                  join enrolment e on e.class_id = cs.class_id
                                 where cs.class_id = $1 limit 1`, [CLASS.streetSeniors]))[0];
       expect(target).toBeUndefined();   // he cannot even see it, which is the stronger result
+    });
+  });
+});
+
+describe('teachers see every recorded medical need in their own classes', () => {
+  it('flags a need that is not marked urgent, and shows its details and contacts', async () => {
+    await asUser(MARCUS, async (q, svc) => {
+      const [kid] = await q(`select student_id from student_safety_brief limit 1`);
+      await svc(`insert into medical_record (studio_id, student_id, conditions, medications, requires_alert, doctor_name)
+                 select studio_id, id, 'Mild asthma', 'Blue inhaler', false, 'Dr Shah' from student where id = $1
+                 on conflict (student_id) do update set conditions = excluded.conditions,
+                   medications = excluded.medications, requires_alert = false, allergies = null, action_plan = null`,
+        [kid.student_id]);
+      const [b] = await q(`select * from student_safety_brief where student_id = $1`, [kid.student_id]);
+      expect(b).toMatchObject({ has_medical_need: true, requires_alert: false,
+                                conditions: 'Mild asthma', medications: 'Blue inhaler' });
+      expect(Array.isArray(b.emergency_contacts)).toBe(true);
+      expect(JSON.stringify(b)).not.toMatch(/Dr Shah/);
+    });
+  });
+
+  it('a child with nothing recorded has no marker', async () => {
+    await asUser(MARCUS, async q => {
+      const rows = await q(`select has_medical_need, allergies, conditions, medications, action_plan
+                              from student_safety_brief`);
+      for (const r of rows) {
+        const anything = [r.allergies, r.conditions, r.medications, r.action_plan].some(v => v && v.trim());
+        expect(r.has_medical_need).toBe(anything || false);
+      }
+    });
+  });
+
+  it('never for a child outside their classes', async () => {
+    await asUser(MARCUS, async (q, svc) => {
+      const [outside] = await svc(`select s.id from student s join medical_record m on m.student_id = s.id
+                                    where m.requires_alert limit 1`);
+      const mine = (await q(`select student_id from student_safety_brief`)).map((r: any) => r.student_id);
+      const teaches = (await q(`select id from student`)).map((r: any) => r.id);
+      expect(mine.sort()).toEqual(teaches.sort());
+      if (!teaches.includes(outside.id)) {
+        expect(await q(`select 1 from student_safety_brief where student_id = $1`, [outside.id])).toHaveLength(0);
+      }
     });
   });
 });

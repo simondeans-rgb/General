@@ -8,6 +8,9 @@ import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection, KeyValue } from '@/components/app/detail-panel';
 import { useRows, useRow } from '@/lib/query';
 import { useSelection } from '@/lib/use-selection';
+import { MedicalBrief, MedicalMarker } from '@/components/app/medical-brief';
+import type { Brief } from '@/lib/repos/teaching';
+import { useSearchParams } from 'next/navigation';
 import { Badge, Card, Input, EmptyState, Skeleton, ErrorState, Button } from '@/components/ui';
 import * as P from '@/lib/repos/people';
 import {
@@ -23,7 +26,10 @@ export default function PeoplePage() {
 }
 
 function People() {
-  const [tab, setTab] = React.useState<Tab>('families');
+  // Links from elsewhere (a notification, the inbox) can open a tab directly.
+  const asked = useSearchParams().get('tab');
+  const [tab, setTab] = React.useState<Tab>(
+    asked === 'students' || asked === 'staff' ? asked : 'families');
   const [q, setQ] = React.useState('');
   const { selected, select } = useSelection();
 
@@ -265,7 +271,7 @@ function StudentList({ q, selected, onSelect }: { q: string; selected: string | 
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-2">
                   <span className="truncate font-medium">{s.preferred_name ?? s.first_name} {s.last_name}</span>
-                  {s.has_alert && <AlertTriangle className="size-3.5 shrink-0 text-critical" aria-label="Has a medical alert" />}
+                  <MedicalMarker brief={{ requires_alert: s.has_alert, has_medical_need: s.has_need }} className="size-3.5" />
                   {s.photo_consent === false && <CameraOff className="size-3.5 shrink-0 text-ink-3" aria-label="No photo consent" />}
                 </span>
                 <span className="block truncate text-[13px] text-ink-2">
@@ -291,9 +297,7 @@ function StudentDetail({ id, onClose }: { id: string; onClose: () => void }) {
   const [editing, setEditing] = React.useState(false);
   const [medical, setMedical] = React.useState(false);
   const s = rows.data?.find(r => r.id === id);
-  const safety = useRow<{ allergies: string | null; action_plan: string | null; requires_alert: boolean;
-                          emergency_contact_name: string | null; emergency_contact_phone: string | null }>(
-    ['safety', id], P.STUDENT_SAFETY, [id]);
+  const safety = useRow<Brief>(['safety', id], P.STUDENT_SAFETY, [id]);
 
   return (
     <DetailPanel open onClose={onClose}
@@ -301,15 +305,6 @@ function StudentDetail({ id, onClose }: { id: string; onClose: () => void }) {
       subtitle={s ? `${ageFrom(s.date_of_birth)} years old · ${s.family_name}` : undefined}>
       {s && (
         <>
-          {safety.data?.requires_alert && (
-            <div role="alert" className="mb-5 rounded-[var(--radius-md)] border border-critical/25 bg-critical-soft p-3">
-              <p className="flex items-center gap-1.5 text-sm font-semibold text-critical">
-                <AlertTriangle className="size-4" aria-hidden /> Medical alert
-              </p>
-              {safety.data.allergies && <p className="mt-1 text-sm"><strong>Allergies:</strong> {safety.data.allergies}</p>}
-              {safety.data.action_plan && <p className="mt-1 text-sm">{safety.data.action_plan}</p>}
-            </div>
-          )}
           <DetailSection title="Details">
             <KeyValue rows={[
               ['Date of birth', dateShort(s.date_of_birth)],
@@ -333,14 +328,9 @@ function StudentDetail({ id, onClose }: { id: string; onClose: () => void }) {
             </p>
           </DetailSection>
 
-          {safety.data?.emergency_contact_name && (
-            <DetailSection title="Emergency contact">
-              <KeyValue rows={[
-                ['Name', safety.data.emergency_contact_name],
-                ['Phone', safety.data.emergency_contact_phone
-                  ? <a className="text-accent hover:underline" href={`tel:${safety.data.emergency_contact_phone}`}>
-                      {safety.data.emergency_contact_phone}</a> : '—'],
-              ]} />
+          {safety.data && (
+            <DetailSection title="Safety — what this child’s teachers see">
+              <MedicalBrief brief={safety.data} layout="stack" />
             </DetailSection>
           )}
         </>

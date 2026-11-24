@@ -50,9 +50,9 @@ const STEPS: Step[] = [
   { key: 'families', title: 'Families', blurb: 'Invite them, or import a spreadsheet you already keep.',
     count: `select count(*)::int n from family where deleted_at is null`,
     href: '/people', cta: 'Add families' },
-  { key: 'payments', title: 'Payments', blurb: 'Connect Stripe so families can pay from the app.',
-    count: `select 0::int n`,
-    href: '/studio', cta: 'Not set up yet' },
+  { key: 'payments', title: 'Billing', blurb: 'Raise term invoices and record transfers and cash. Card payments start once Stripe is connected on a hosted deployment.',
+    count: `select count(*)::int n from invoice where deleted_at is null`,
+    href: '/billing', cta: 'Raise an invoice' },
 ];
 
 export default function Onboarding() {
@@ -102,11 +102,11 @@ export default function Onboarding() {
                       <span className="flex flex-wrap items-center gap-2">
                         <span className={cn('font-medium', complete && 'text-ink-2')}>{s.title}</span>
                         {complete && count > 0 && <Badge tone="positive">{count} added</Badge>}
-                        {s.key === 'payments' && <Badge tone="neutral">Coming soon</Badge>}
+                        {s.key === 'payments' && <Badge tone="neutral">Cards need Stripe</Badge>}
                       </span>
                       <span className="mt-0.5 block text-[13px] text-ink-2">{s.blurb}</span>
                     </span>
-                    {s.key !== 'payments' && (
+                    {(
                       <Link href={s.href}
                         className="mt-0.5 inline-flex shrink-0 items-center gap-0.5 text-[13px] font-medium text-accent hover:underline">
                         {complete ? 'Review' : s.cta}
