@@ -6,7 +6,7 @@ export type ClassRow = {
   day_of_week: number; start_time: string; duration_min: number;
   capacity: number; enrolled: number; waiting: number; pct: number | null;
   age_min: number | null; age_max: number | null; price_minor: number;
-  trials_enabled: boolean; sessions_left: number;
+  trials_enabled: boolean; sessions_left: number; term_id: string;
 };
 
 export const CLASSES = `
@@ -16,7 +16,7 @@ select c.id, c.name, ds.name as style, ds.colour, lv.name as level,
        app.class_enrolled_count(c.id) as enrolled,
        app.class_waitlist_count(c.id) as waiting,
        round(100.0 * app.class_enrolled_count(c.id) / nullif(c.capacity,0))::int as pct,
-       c.age_min, c.age_max, c.price_minor, c.trials_enabled,
+       c.age_min, c.age_max, c.price_minor, c.trials_enabled, c.term_id,
        (select count(*)::int from class_session cs
          where cs.class_id = c.id and cs.deleted_at is null
            and cs.starts_at > now() and cs.status = 'scheduled') as sessions_left
@@ -241,4 +241,25 @@ export const SET_ENQUIRY_STAGE = `
 update enquiry set stage = $2::enquiry_stage, updated_at = now(),
        next_action_on = $3::date
  where id = $1
+returning id`;
+
+/** Terms, newest first, with which one is running today. */
+export const TERM_TABS = `
+select t.id, t.name, t.starts_on, t.ends_on, current_date between t.starts_on and t.ends_on as current,
+       (select count(*)::int from class c where c.term_id = t.id and c.deleted_at is null) as classes
+  from term t where t.deleted_at is null and t.status <> 'archived' order by t.starts_on desc`;
+export type TermRow = { id: string; name: string; starts_on: string; ends_on: string; current: boolean; classes: number };
+
+/** Duplicate classes, or carry them into another term (migration 0025). */
+export const COPY_CLASSES = `select app.copy_classes($1::uuid[], $2, $3) as r`;
+export type CopyResult = { classes: number; sessions: number; enrolled: number; skipped: number;
+                           not_fitted: { student: string; class: string }[] };
+
+/** A phone call or walk-in, written down (R-014). Notifies the office as usual. */
+export const CREATE_ENQUIRY = `
+insert into enquiry (studio_id, contact_name, contact_phone, contact_email, child_name, child_dob,
+                     interest_class_id, source, next_action_on, created_by)
+select s.id, btrim($1), nullif(btrim($2), ''), nullif(lower(btrim($3)), ''), nullif(btrim($4), ''), $5::date,
+       $6::uuid, $7, coalesce($8::date, current_date + 2), auth.uid()
+  from studio s where s.deleted_at is null and app.is_admin(s.id) limit 1
 returning id`;

@@ -3,8 +3,9 @@
 import * as React from 'react';
 import { Suspense } from 'react';
 import { Search, AlertTriangle, CameraOff, Users, ChevronRight, Mail, Phone,
-         Plus, Pencil, HeartPulse, UserPlus } from 'lucide-react';
+         Plus, Pencil, HeartPulse, UserPlus, Upload } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
+import { ImportWizard } from '@/components/app/import-wizard';
 import { DetailPanel, DetailSection, KeyValue } from '@/components/app/detail-panel';
 import { useRows, useRow } from '@/lib/query';
 import { useSelection } from '@/lib/use-selection';
@@ -27,21 +28,29 @@ export default function PeoplePage() {
 
 function People() {
   // Links from elsewhere (a notification, the inbox) can open a tab directly.
-  const asked = useSearchParams().get('tab');
+  const params = useSearchParams();
+  const asked = params.get('tab');
   const [tab, setTab] = React.useState<Tab>(
     asked === 'students' || asked === 'staff' ? asked : 'families');
   const [q, setQ] = React.useState('');
   const { selected, select } = useSelection();
 
   const [adding, setAdding] = React.useState(false);
+  const [importing, setImporting] = React.useState(params.get('import') === '1');
   const ADD_LABEL: Record<Tab, string> = {
     families: 'New family', students: 'Add a child', staff: 'Add a teacher' };
 
   return (
     <Shell title="People" allow={['owner', 'admin']}
-      actions={<Button size="sm" variant="primary" onClick={() => setAdding(true)}>
-        <Plus className="size-4" aria-hidden /> {ADD_LABEL[tab]}
-      </Button>}>
+      actions={<div className="flex gap-2">
+        {tab !== 'staff' && <Button size="sm" onClick={() => setImporting(true)}>
+          <Upload className="size-4" aria-hidden /> <span className="hidden sm:inline">Import</span>
+        </Button>}
+        <Button size="sm" variant="primary" onClick={() => setAdding(true)}>
+          <Plus className="size-4" aria-hidden /> {ADD_LABEL[tab]}
+        </Button>
+      </div>}>
+      {importing && <ImportWizard onClose={() => setImporting(false)} />}
       <div className="mx-auto max-w-6xl">
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <div role="tablist" aria-label="People"

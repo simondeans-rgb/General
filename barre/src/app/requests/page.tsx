@@ -52,6 +52,23 @@ export default function RequestsPage() {
     },
   });
 
+  // One tap for what families asked for: a place, a new child, a trial.
+  const approve = useMutation({
+    mutationFn: async (r: H.PendingRequest) => {
+      const sql = r.action === 'join_class' ? H.APPROVE_PLACE : r.action === 'add_child' ? H.APPROVE_CHILD : H.APPROVE_TRIAL;
+      const rows = await runAs(session, q => q<{ outcome?: string }>(sql, r.action === 'join_class' ? [r.id, null] : [r.id]));
+      return { r, outcome: rows[0]?.outcome };
+    },
+    onSuccess: ({ r, outcome }) => {
+      setAcked(r.action === 'join_class'
+        ? (outcome === 'enrolled' ? `Done — enrolled in ${r.class_name}, and the family has been told.`
+                                  : `${r.class_name} is full, so they are on the waiting list. The family has been told.`)
+        : r.action === 'add_child' ? 'Added to the family, with the parent as emergency contact. They have been told.'
+        : 'Trial booked and the family told.');
+      qc.invalidateQueries({ queryKey: ['db'] });
+    },
+  });
+
   const decide = useMutation({
     mutationFn: async (v: { id: string; status: 'confirmed' | 'declined' }) =>
       runAs(session, q => q(H.DECIDE_ENTRY, [v.id, v.status])),
@@ -77,6 +94,7 @@ export default function RequestsPage() {
             </p>
           )}
           {ack.error != null && <div className="p-3"><ErrorState error={ack.error} /></div>}
+          {approve.error != null && <div className="p-3"><ErrorState error={approve.error} /></div>}
           <ul className="divide-y divide-line">
             {requests.data?.map(r => {
               const medical = r.kind === 'medical_update';
@@ -106,6 +124,17 @@ export default function RequestsPage() {
                         </Button>
                         <Button size="sm" variant="ghost" onClick={() => setAnswering(r)}>
                           <MessageSquare className="size-4" aria-hidden /> Reply
+                        </Button>
+                      </>
+                    ) : r.action ? (
+                      <>
+                        <Button size="sm" variant="primary" loading={approve.isPending && approve.variables?.id === r.id}
+                                onClick={() => approve.mutate(r)}>
+                          <Check className="size-4" aria-hidden />
+                          {r.action === 'join_class' ? 'Give them a place' : r.action === 'add_child' ? 'Add to the family' : 'Book the trial'}
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setAnswering(r)}>
+                          <MessageSquare className="size-4" aria-hidden /> Reply instead
                         </Button>
                       </>
                     ) : r.session_id ? (

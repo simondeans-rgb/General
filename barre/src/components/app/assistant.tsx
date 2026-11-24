@@ -3,7 +3,9 @@
 import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { Search, Sparkles, CornerDownLeft, ArrowRight } from 'lucide-react';
+import { Search, Sparkles, CornerDownLeft, ArrowRight, Users, User, GraduationCap, Receipt, BookOpen } from 'lucide-react';
+import { useRows } from '@/lib/query';
+import { SEARCH, type Hit } from '@/lib/repos/search';
 import { useSession } from '@/lib/auth/session';
 import { SAVED_VIEWS, assistant } from '@/lib/assistant';
 import { cn } from '@/lib/cn';
@@ -13,6 +15,9 @@ import { cn } from '@/lib/cn';
  * backend exists, free-text questions go to it. Nothing here pretends to be
  * an AI answer.
  */
+const HIT_LABEL: Record<Hit['kind'], string> = { family: 'Family', student: 'Student', staff: 'Staff', invoice: 'Invoice', class: 'Class' };
+const HIT_ICON: Record<Hit['kind'], React.ElementType> = { family: Users, student: User, staff: GraduationCap, invoice: Receipt, class: BookOpen };
+
 export function AssistantLauncher() {
   const { session } = useSession();
   const router = useRouter();
@@ -31,10 +36,21 @@ export function AssistantLauncher() {
   }, []);
   React.useEffect(() => { if (open) { setQ(''); setActive(0); setTimeout(() => input.current?.focus(), 0); } }, [open]);
 
+  // People and records, for the office. Debounced so each keystroke is not a query.
+  const office = session?.role === 'owner' || session?.role === 'admin';
+  const [term, setTerm] = React.useState('');
+  React.useEffect(() => { const t = setTimeout(() => setTerm(q.trim()), 150); return () => clearTimeout(t); }, [q]);
+  const found = useRows<Hit>(['search', term], SEARCH, [term], { enabled: open && office && term.length >= 2 });
+
   if (!session) return null;
   const words = q.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-  const views = SAVED_VIEWS.filter(v => v.roles.includes(session.role))
-    .filter(v => !words.length || words.some(w => `${v.question} ${v.keywords}`.toLowerCase().includes(w)));
+  const hits = term.length >= 2 ? (found.data ?? []) : [];
+  const views = [
+    ...hits.map(h => ({ question: h.title, answer: [HIT_LABEL[h.kind], h.detail].filter(Boolean).join(' · '), href: h.href, kind: h.kind })),
+    ...SAVED_VIEWS.filter(v => v.roles.includes(session.role))
+      .filter(v => !words.length || words.some(w => `${v.question} ${v.keywords}`.toLowerCase().includes(w)))
+      .map(v => ({ ...v, kind: undefined as Hit['kind'] | undefined })),
+  ];
 
   const go = (href: string) => { setOpen(false); router.push(href); };
 
@@ -58,7 +74,7 @@ export function AssistantLauncher() {
               <Search className="size-4 text-ink-3" aria-hidden />
               <input ref={input} value={q} onChange={e => { setQ(e.target.value); setActive(0); }}
                 role="combobox" aria-expanded="true" aria-controls="ask-list" aria-label="Ask a question about the studio"
-                placeholder="Who hasn’t paid? Which classes are full?"
+                placeholder={office ? 'A name, phone number, invoice — or a question' : 'Who hasn’t paid? Which classes are full?'}
                 onKeyDown={e => {
                   if (e.key === 'ArrowDown') { e.preventDefault(); setActive(a => Math.min(a + 1, views.length - 1)); }
                   if (e.key === 'ArrowUp') { e.preventDefault(); setActive(a => Math.max(a - 1, 0)); }
@@ -68,10 +84,11 @@ export function AssistantLauncher() {
             </div>
             <ul id="ask-list" role="listbox" className="max-h-[50dvh] overflow-y-auto p-1.5">
               {views.map((v, n) => (
-                <li key={v.question} role="option" aria-selected={n === active}>
+                <li key={v.href + v.question} role="option" aria-selected={n === active}>
                   <button onClick={() => go(v.href)} onMouseEnter={() => setActive(n)}
                     className={cn('flex w-full items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-left',
                       n === active && 'bg-surface-2')}>
+                    {v.kind && React.createElement(HIT_ICON[v.kind], { className: 'size-4 shrink-0 text-ink-3', 'aria-hidden': true })}
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm font-medium">{v.question}</span>
                       <span className="block text-[12.5px] text-ink-3">{v.answer}</span>

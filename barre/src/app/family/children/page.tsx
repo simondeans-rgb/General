@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, CameraOff, Camera, Check, CalendarOff, MessageSquareHeart, Trophy, HelpCircle, ChevronRight } from 'lucide-react';
+import { AlertTriangle, CameraOff, Camera, Check, CalendarOff, MessageSquareHeart, Trophy, HelpCircle, ChevronRight, Sparkles, UserPlus } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui';
 import * as F from '@/lib/repos/family';
 import { YourDetails, EmergencyContacts } from '@/components/app/family-details';
+import { ChildClassesSheet, AddChildSheet } from '@/components/app/family-classes';
 import { ageFrom, dateShort, initials, time, dateLong, dayRange } from '@/lib/format';
 
 type Child = {
@@ -24,6 +25,8 @@ type Child = {
 export default function FamilyChildren() {
   const children = useRows<Child>(['my-children'], F.MY_CHILDREN);
   const [reporting, setReporting] = React.useState<Child | null>(null);
+  const [browsing, setBrowsing] = React.useState<Child | null>(null);
+  const [adding, setAdding] = React.useState(false);
 
   return (
     <Shell title="Your family" allow={['guardian']}>
@@ -88,13 +91,20 @@ export default function FamilyChildren() {
               )}
             </dl>
             <EmergencyContacts studentId={c.id} name={c.first_name} />
-            <div className="border-t border-line p-3">
+            <div className="flex flex-wrap gap-2 border-t border-line p-3">
+              <Button size="sm" variant="primary" onClick={() => setBrowsing(c)}>
+                <Sparkles className="size-4" aria-hidden /> Classes and trials
+              </Button>
               <Button size="sm" onClick={() => setReporting(c)}>
                 <CalendarOff className="size-4" aria-hidden /> Report an absence
               </Button>
             </div>
           </Card>
         ))}
+
+        <Button className="w-full" onClick={() => setAdding(true)}>
+          <UserPlus className="size-4" aria-hidden /> Add another child
+        </Button>
 
         <YourDetails />
 
@@ -121,6 +131,8 @@ export default function FamilyChildren() {
       </div>
 
       {reporting && <AbsenceDialog child={reporting} onClose={() => setReporting(null)} />}
+      {browsing && <ChildClassesSheet child={browsing} onClose={() => setBrowsing(null)} />}
+      {adding && <AddChildSheet onClose={() => setAdding(false)} />}
     </Shell>
   );
 }

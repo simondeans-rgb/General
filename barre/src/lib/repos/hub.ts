@@ -155,11 +155,12 @@ export type PendingRequest = {
   id: string; kind: string; status: string; subject: string; body: string; created_at: string;
   student_id: string | null; student_name: string | null; family_id: string | null; family_name: string | null;
   guardian_name: string | null; children: { id: string; name: string }[];
-  session_id: string | null;
+  session_id: string | null; action: 'join_class' | 'add_child' | 'trial' | null; class_name: string | null;
 };
 
 export const PENDING_REQUESTS = `
-select r.id, r.kind, r.status, r.subject, r.body, r.created_at, r.session_id,
+select r.id, r.kind, r.status, r.subject, r.body, r.created_at, r.session_id, r.action,
+       (select name from class where id = r.class_id) as class_name,
        r.student_id, s.first_name || ' ' || s.last_name as student_name,
        r.family_id, f.name as family_name,
        coalesce(u.full_name, (select g.full_name from guardian g where g.family_id = r.family_id
@@ -282,3 +283,8 @@ select c.id, c.name, ds.name as style, ds.colour,
   left join dance_style ds on ds.id = c.dance_style_id
  where c.deleted_at is null and c.id in (select app.teacher_class_ids())
  order by c.day_of_week, c.start_time`;
+
+/* ── Approving what families asked for (migration 0026) ─────────────────── */
+export const APPROVE_PLACE = `select app.approve_class_request($1, $2) as outcome`;
+export const APPROVE_CHILD = `select app.approve_new_child($1) as id`;
+export const APPROVE_TRIAL = `select app.approve_trial_request($1) as id`;

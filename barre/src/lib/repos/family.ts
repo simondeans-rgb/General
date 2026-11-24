@@ -105,3 +105,17 @@ select s.studio_id, s.id, $2, nullif($3, ''), $4,
 export const UPDATE_CONTACT = `
 update emergency_contact set full_name = $2, relationship = nullif($3, ''), phone = $4, updated_at = now() where id = $1`;
 export const REMOVE_CONTACT = `select app.remove_emergency_contact($1)`;
+
+/* ── Self-service: classes, trials, waiting lists, a new child (R-014) ───── */
+export type ClassOption = {
+  class_id: string; name: string; style: string | null; day_of_week: number; start_time: string;
+  age_min: number | null; age_max: number | null; price_minor: number; pricing: string; trial_price_minor: number | null;
+  prerequisites: string | null; enrolled: boolean; waiting: boolean; asked: boolean; trial_booked: boolean;
+  full: boolean; waitlist_enabled: boolean; trials_enabled: boolean; age_fits: boolean;
+  trial_sessions: { id: string; starts_at: string }[];
+};
+export const CLASS_OPTIONS = `select * from app.class_options_for_child($1)`;
+export const REQUEST_PLACE = `select app.request_class_place($1, $2, $3) as id`;
+export const BOOK_TRIAL = `select app.parent_book_trial($1, $2) as result`;
+export const JOIN_WAITLIST = `select app.parent_join_waitlist($1, $2) as position`;
+export const REQUEST_CHILD = `select app.request_new_child($1::jsonb) as id`;
