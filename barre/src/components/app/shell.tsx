@@ -7,13 +7,14 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   CalendarDays, LayoutGrid, Users, GraduationCap, Route, ClipboardCheck,
   Home, Baby, MessageSquare, CreditCard, PlayCircle, Trophy, Inbox, Settings2, Rocket,
-  MoreHorizontal, FolderOpen, Receipt,
+  MoreHorizontal, FolderOpen, Receipt, BarChart3,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useSession, type Role } from '@/lib/auth/session';
 import { BarreMark } from './database-gate';
 import { EmptyState, Button } from '@/components/ui';
 import { PersonSwitcher } from './person-switcher';
+import { NotificationBell } from './notifications';
 
 type NavItem = {
   href: string; label: string; icon: React.ElementType;
@@ -26,27 +27,22 @@ type NavItem = {
 /* Each role gets the navigation for the job it actually does. A teacher has no
    use for an enrolment funnel, and showing it only to disable it is worse than
    not showing it. */
+const OFFICE_NAV: NavItem[] = [
+  { href: '/today', label: 'Today', icon: LayoutGrid, primary: true },
+  { href: '/schedule', label: 'Schedule', icon: CalendarDays, primary: true },
+  { href: '/people', label: 'People', icon: Users, primary: true },
+  { href: '/inbox', label: 'Inbox', icon: MessageSquare, primary: true },
+  { href: '/classes', label: 'Classes', icon: GraduationCap },
+  { href: '/enrolment', label: 'Enrolment', icon: Route },
+  { href: '/requests', label: 'Requests', icon: Inbox },
+  { href: '/billing', label: 'Billing', icon: Receipt },
+  { href: '/reports', label: 'Reports', icon: BarChart3 },
+  { href: '/studio', label: 'Studio', icon: Settings2 },
+];
+
 const NAV: Record<Role, NavItem[]> = {
-  owner: [
-    { href: '/today', label: 'Today', icon: LayoutGrid, primary: true },
-    { href: '/schedule', label: 'Schedule', icon: CalendarDays, primary: true },
-    { href: '/people', label: 'People', icon: Users, primary: true },
-    { href: '/requests', label: 'Requests', icon: Inbox, primary: true },
-    { href: '/classes', label: 'Classes', icon: GraduationCap },
-    { href: '/enrolment', label: 'Enrolment', icon: Route },
-    { href: '/billing', label: 'Billing', icon: Receipt },
-    { href: '/studio', label: 'Studio', icon: Settings2 },
-  ],
-  admin: [
-    { href: '/today', label: 'Today', icon: LayoutGrid, primary: true },
-    { href: '/schedule', label: 'Schedule', icon: CalendarDays, primary: true },
-    { href: '/people', label: 'People', icon: Users, primary: true },
-    { href: '/requests', label: 'Requests', icon: Inbox, primary: true },
-    { href: '/classes', label: 'Classes', icon: GraduationCap },
-    { href: '/enrolment', label: 'Enrolment', icon: Route },
-    { href: '/billing', label: 'Billing', icon: Receipt },
-    { href: '/studio', label: 'Studio', icon: Settings2 },
-  ],
+  owner: OFFICE_NAV,
+  admin: OFFICE_NAV,
   teacher: [
     { href: '/teach', label: 'Today', icon: ClipboardCheck },
     { href: '/teach/students', label: 'Students', icon: Users },
@@ -55,7 +51,7 @@ const NAV: Record<Role, NavItem[]> = {
   guardian: [
     { href: '/family', label: 'Home', icon: Home },
     { href: '/family/schedule', label: 'Schedule', icon: CalendarDays },
-    { href: '/family/feedback', label: 'Feedback', icon: MessageSquare },
+    { href: '/family/messages', label: 'Messages', icon: MessageSquare },
     { href: '/family/payments', label: 'Payments', icon: CreditCard },
     { href: '/family/children', label: 'Family', icon: Baby },
   ],
@@ -158,6 +154,7 @@ export function Shell({
               {subtitle && <div className="truncate text-[13px] text-ink-2">{subtitle}</div>}
             </div>
             {actions}
+            {session.role !== 'student' && <NotificationBell />}
             <PersonSwitcher className="lg:hidden" />
           </div>
         </header>

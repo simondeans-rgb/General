@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, CameraOff, Camera, Check, CalendarOff } from 'lucide-react';
+import { AlertTriangle, CameraOff, Camera, Check, CalendarOff, MessageSquareHeart, Trophy, HelpCircle, ChevronRight } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
@@ -93,6 +93,27 @@ export default function FamilyChildren() {
             </div>
           </Card>
         ))}
+
+        {/* Everything about the family that is not a child, one tap away. */}
+        <Card className="divide-y divide-line overflow-hidden">
+          {[
+            ['/family/feedback', MessageSquareHeart, 'Teacher feedback', 'Notes and progress from class'],
+            ['/family/events', Trophy, 'Shows and events', 'What is coming up, and entries'],
+            ['/family/enquiries', HelpCircle, 'Requests', 'Private lessons, questions, medical updates'],
+          ].map(([href, Icon, title, body]) => {
+            const I = Icon as React.ElementType;
+            return (
+              <Link key={href as string} href={href as string} className="flex min-h-[56px] items-center gap-3 px-4 py-3 hover:bg-surface-2">
+                <I className="size-[18px] shrink-0 text-accent" aria-hidden />
+                <span className="min-w-0 flex-1">
+                  <span className="block font-medium">{title as string}</span>
+                  <span className="block text-[13px] text-ink-2">{body as string}</span>
+                </span>
+                <ChevronRight className="size-4 text-ink-3" aria-hidden />
+              </Link>
+            );
+          })}
+        </Card>
       </div>
 
       {reporting && <AbsenceDialog child={reporting} onClose={() => setReporting(null)} />}

@@ -8,6 +8,7 @@ import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection, KeyValue } from '@/components/app/detail-panel';
 import { useRows, useRow } from '@/lib/query';
 import { useSelection } from '@/lib/use-selection';
+import { useSearchParams } from 'next/navigation';
 import { Badge, Card, Input, EmptyState, Skeleton, ErrorState, Button } from '@/components/ui';
 import * as P from '@/lib/repos/people';
 import {
@@ -23,7 +24,10 @@ export default function PeoplePage() {
 }
 
 function People() {
-  const [tab, setTab] = React.useState<Tab>('families');
+  // Links from elsewhere (a notification, the inbox) can open a tab directly.
+  const asked = useSearchParams().get('tab');
+  const [tab, setTab] = React.useState<Tab>(
+    asked === 'students' || asked === 'staff' ? asked : 'families');
   const [q, setQ] = React.useState('');
   const { selected, select } = useSelection();
 

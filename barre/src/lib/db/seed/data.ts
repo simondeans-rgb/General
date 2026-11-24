@@ -126,9 +126,10 @@ export function buildSeedSql({ today = new Date() }: SeedOptions = {}): string {
     ${row([LEVEL.g3, STUDIO_ID, 'Grade 3', 5])},
     ${row([LEVEL.inter, STUDIO_ID, 'Intermediate', 6])};`);
 
-  return out.join('\n') + '\n' + buildClassesAndPeople({
+  // Loading a studio's history is not news: hold notifications while seeding.
+  return `select set_config('app.quiet', 'on', false);\n` + out.join('\n') + '\n' + buildClassesAndPeople({
     termId: TERM, base, LOC, ROOM, STAFF, STYLE, LEVEL, guardianUsers,
-  });
+  }) + `\nselect set_config('app.quiet', 'off', false);\n`;
 }
 
 type Ctx = {
@@ -515,7 +516,7 @@ function buildMedicalBillingComms(ctx: ActivityCtx): string {
       addDays(base, -2).toISOString()])},
     ${row([uid(NS.comm, 3), STUDIO_ID, 'direct', 'in_app', uid(NS.family, 1), null,
       'Absence on Monday',
-      "Just to let you know Ava will miss Monday's class — she is on a school trip. Back the following week.",
+      "Just to let you know Clara will miss Monday's class — she is on a school trip. Back the following week.",
       addDays(base, -1).toISOString()])},
     ${row([uid(NS.comm, 4), STUDIO_ID, 'direct', 'in_app', uid(NS.family, 3), null,
       'Re: moving up a grade',
@@ -525,6 +526,38 @@ function buildMedicalBillingComms(ctx: ActivityCtx): string {
       'Street Seniors — new routine',
       'We start the new routine this week. Bring trainers with a clean sole, and a water bottle. It is a fast one.',
       addDays(base, -4).toISOString()])};`);
+
+  // Conversations go both ways. Who sent each message, and which way it
+  // travelled, is what the inbox threads on.
+  const hoursAgo = (h: number) => new Date(base.getTime() + 9 * 3600_000 - h * 3600_000).toISOString();
+  const OFFICE = uid(NS.user, 5), FREYA = uid(NS.user, 1);
+  push(`update communication set inbound = true, sent_by = ${row([uid(NS.user, 11)])}
+         where id = ${row([uid(NS.comm, 3)])};
+        update communication set sent_by = ${row([FREYA])} where id = ${row([uid(NS.comm, 4)])};
+        update communication set sent_by = ${row([FREYA])} where kind <> 'direct' and sent_by is null;`);
+  push(`insert into communication (id,studio_id,kind,channel,family_id,subject,body,sent_by,inbound,sent_at) values
+    ${row([uid(NS.comm, 30), STUDIO_ID, 'direct', 'in_app', uid(NS.family, 1), null,
+      'Thanks for letting us know. Hope the trip is fun — we will save her spot at the barre.',
+      OFFICE, false, hoursAgo(20)])},
+    ${row([uid(NS.comm, 31), STUDIO_ID, 'direct', 'in_app', uid(NS.family, 2), 'Tap shoes',
+      'Hi — Idris has outgrown his tap shoes again. Do you sell them at the studio, or is there a shop you would recommend?',
+      uid(NS.user, 12), true, hoursAgo(3)])},
+    ${row([uid(NS.comm, 32), STUDIO_ID, 'direct', 'in_app', uid(NS.family, 3), null,
+      'That is wonderful, thank you. She is thrilled. Is there anything we should practise over the holidays?',
+      uid(NS.user, 13), true, hoursAgo(26)])},
+    ${row([uid(NS.comm, 33), STUDIO_ID, 'direct', 'in_app', uid(NS.family, 5), 'Show costume sizes',
+      'We missed the measuring session last week. Could Sofia be measured before Grade 3 on Saturday?',
+      null, true, hoursAgo(6)])},
+    ${row([uid(NS.comm, 34), STUDIO_ID, 'direct', 'in_app', uid(NS.family, 8), 'Parking at Blackheath',
+      'Is there anywhere to park near the Blackheath studio on a Saturday morning? We are new to the area.',
+      null, true, hoursAgo(50)])},
+    ${row([uid(NS.comm, 35), STUDIO_ID, 'direct', 'in_app', uid(NS.family, 8), null,
+      'Welcome! The church car park on Lee Road is free before 1pm on Saturdays, and only a two-minute walk.',
+      OFFICE, false, hoursAgo(47)])};`);
+  // The office has already read what it answered.
+  push(`insert into communication_read (communication_id, user_id)
+        select c.id, u.id from communication c cross join (values (${row([OFFICE])}::uuid), (${row([FREYA])}::uuid)) u(id)
+         where c.id in (${[3, 4, 30, 34, 35].map(n => row([uid(NS.comm, n)])).join(',')});`);
 
   push(`insert into communication_template (id,studio_id,name,subject,body) values
     ${row([uid(NS.comm, 20), STUDIO_ID, 'Trial confirmation', 'Your trial class is booked',

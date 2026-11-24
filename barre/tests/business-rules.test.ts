@@ -400,7 +400,7 @@ describe('class notices go one way, and only to a teacher’s own classes', () =
       expect(await expectRejected(() => q(
         `insert into communication (studio_id, kind, channel, class_id, body, sent_by)
          values ($1,'class_broadcast','in_app',$2,'from Priya, apparently', $3) returning id`,
-        [STUDIO_ID, CLASS.juniorTap, USERS.teacherModern]))).toMatch(/row-level security/i);
+        [STUDIO_ID, CLASS.juniorTap, USERS.teacherModern]))).toMatch(/row-level security|sent as yourself/i);
     });
   });
 
