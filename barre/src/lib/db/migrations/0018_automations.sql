@@ -210,6 +210,7 @@ create or replace function app.run_automations(p_studio uuid, p_now timestamptz 
   returns integer
   language plpgsql security definer set search_path = public, app, pg_temp as $$
 declare c record; tpl record; tz text; cid uuid; oid uuid; sent integer := 0;
+        caller text := coalesce(current_setting('request.jwt.claims', true), '');
 begin
   if current_setting('role', true) is distinct from 'service_role' and not app.is_admin(p_studio) then
     raise exception 'FORBIDDEN: only the office runs automations' using errcode = 'insufficient_privilege';
@@ -225,14 +226,17 @@ begin
     continue when tpl.body is null;
 
     if c.family_id is not null then
-      perform set_config('app.sending_as_studio', 'on', true);
+      -- Sent by the studio, not by whoever pressed Run: drop the caller's
+      -- identity for this one insert. (Clearing claims can only ever take
+      -- privileges away, so this is not something a user could abuse.)
+      perform set_config('request.jwt.claims', '', true);
       insert into communication (studio_id, kind, channel, family_id, subject, body, inbound)
       values (p_studio, 'direct', 'in_app', c.family_id,
               app.render_template(tpl.subject, c.family_id, c.student_id, c.class_id, c.starts_at, c.expires_at, tz),
               app.render_template(tpl.body,    c.family_id, c.student_id, c.class_id, c.starts_at, c.expires_at, tz),
               false)
       returning id into cid;
-      perform set_config('app.sending_as_studio', 'off', true);
+      perform set_config('request.jwt.claims', caller, true);
       insert into automation_run (studio_id, rule_id, subject_id, family_id, communication_id, ran_at)
       values (p_studio, c.rule_id, c.subject_id, c.family_id, cid, p_now)
       on conflict (rule_id, subject_id) do nothing;

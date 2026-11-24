@@ -44,12 +44,11 @@ begin
   if new.family_id is not null then
     select studio_id into new.studio_id from family where id = new.family_id;
   end if;
-  -- The automation runner sends as the studio itself, not as whoever ran it.
-  if current_setting('app.sending_as_studio', true) = 'on' then
-    new.sent_by := null; new.inbound := false;
   -- service_role is a trusted server job (an import, a webhook) and may
-  -- write on someone's behalf. Everyone else writes as themselves.
-  elsif auth.uid() is not null and current_setting('role', true) is distinct from 'service_role' then
+  -- write on someone's behalf. Everyone else writes as themselves. (The
+  -- automation runner sends as the studio by running without a user — see
+  -- app.run_automations.)
+  if auth.uid() is not null and current_setting('role', true) is distinct from 'service_role' then
     if new.sent_by is not null and new.sent_by <> auth.uid() then
       raise exception 'FORBIDDEN: a message is sent as yourself' using errcode = 'insufficient_privilege';
     end if;
@@ -89,8 +88,10 @@ create or replace function app.notify_user(
 begin
   if p_user is null or p_user is not distinct from auth.uid() then return; end if;
   -- A bulk import or the demo seed sets app.quiet so that loading a studio's
-  -- history does not bury the owner in notifications about the past.
-  if current_setting('app.quiet', true) = 'on' then return; end if;
+  -- history does not bury the owner in notifications about the past. It is
+  -- honoured only without a signed-in user: anyone can set a session
+  -- setting, so a user must not be able to silence what they do.
+  if auth.uid() is null and current_setting('app.quiet', true) = 'on' then return; end if;
   insert into notification (studio_id, user_id, kind, title, body, href)
   values (p_studio, p_user, p_kind, p_title, p_body, p_href);
 end $$;

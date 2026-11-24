@@ -135,10 +135,15 @@ export async function runAs<T>(session: Session, fn: (q: Query) => Promise<T>): 
   }
 }
 
-/** Read-only convenience: one statement, rolled back so nothing can persist. */
+/** Reads: one statement in a READ ONLY transaction, then rolled back.
+ *
+ *  Read-only is not just tidiness. Two kinds of access exist only inside a
+ *  read-only transaction (migration 0019): Barre support viewing a school,
+ *  and the members of a suspended school. Postgres refuses any write in such a
+ *  transaction, so neither has a path to change anything. */
 export async function readAs<T = Row>(session: Session, sql: string, params?: unknown[]): Promise<T[]> {
   const db = await getDb();
-  await db.exec('begin');
+  await db.exec('begin transaction read only');
   try {
     await db.query(`select set_config('request.jwt.claims', $1, true)`, [
       JSON.stringify(session ? { sub: session.userId, role: 'authenticated' } : { role: 'anon' }),

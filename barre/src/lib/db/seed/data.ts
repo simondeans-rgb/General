@@ -129,7 +129,7 @@ export function buildSeedSql({ today = new Date() }: SeedOptions = {}): string {
   // Loading a studio's history is not news: hold notifications while seeding.
   return `select set_config('app.quiet', 'on', false);\n` + out.join('\n') + '\n' + buildClassesAndPeople({
     termId: TERM, base, LOC, ROOM, STAFF, STYLE, LEVEL, guardianUsers,
-  }) + `\nselect set_config('app.quiet', 'off', false);\n`;
+  }) + '\n' + buildPlatform() + `\nselect set_config('app.quiet', 'off', false);\n`;
 }
 
 type Ctx = {
@@ -999,4 +999,62 @@ function termPlanPdf(): Uint8Array {
   const out = new Uint8Array(pdf.length);
   for (let i = 0; i < pdf.length; i++) out[i] = pdf.charCodeAt(i) & 0xff;
   return out;
+}
+
+/* ==========================================================================
+   The platform: Barre's own staff, and other schools on the service
+   ========================================================================== */
+export const PLATFORM_ADMIN = uid(NS.user, 190);
+export const OTHER_STUDIOS = { riverside: uid(NS.studio, 2), kestrel: uid(NS.studio, 3), pointe: uid(NS.studio, 4) };
+
+function buildPlatform(): string {
+  const q = (v: unknown) => (v === null ? 'null' : `'${String(v).replace(/'/g, "''")}'`);
+  const S = OTHER_STUDIOS;
+  return `
+-- Northstar is a paying customer on the Studio plan.
+update studio set plan_id = (select id from plan where code = 'studio'), status = 'active'
+ where id = ${q(STUDIO_ID)};
+
+insert into user_account (id, email, full_name) values
+  (${q(PLATFORM_ADMIN)}, 'jordan@barre.example', 'Jordan Ellis'),
+  (${q(uid(NS.user, 191))}, 'elena@kestrelballet.example', 'Elena Marsh'),
+  (${q(uid(NS.user, 192))}, 'tom@pointeandflex.example', 'Tom Hadley');
+insert into platform_admin (user_id, role) values (${q(PLATFORM_ADMIN)}, 'super_admin');
+
+insert into studio (id, name, slug, contact_email, plan_id, status, trial_ends_on, status_reason, suspended_at, created_at) values
+  (${q(S.riverside)}, 'Riverside School of Dance', 'riverside-school-of-dance', 'hello@riversidedance.example',
+     (select id from plan where code = 'trial'), 'trialling', current_date + 9, null, null, now() - interval '21 days'),
+  (${q(S.kestrel)}, 'Kestrel Ballet School', 'kestrel-ballet-school', 'elena@kestrelballet.example',
+     (select id from plan where code = 'starter'), 'active', null, null, null, now() - interval '8 months'),
+  (${q(S.pointe)}, 'Pointe & Flex Dance Co', 'pointe-and-flex', 'tom@pointeandflex.example',
+     (select id from plan where code = 'starter'), 'suspended', null,
+     'Subscription unpaid since September — two reminders sent', now() - interval '6 days', now() - interval '14 months');
+
+insert into membership (user_id, studio_id, role) values
+  (${q(uid(NS.user, 191))}, ${q(S.kestrel)}, 'owner'),
+  (${q(uid(NS.user, 192))}, ${q(S.pointe)}, 'owner');
+
+-- Riverside's owner has been invited but has not accepted yet.
+insert into studio_invitation (studio_id, email, full_name, role, token_hash, invited_by, created_at, expires_at) values
+  (${q(S.riverside)}, 'amy@riversidedance.example', 'Amy Chen', 'owner',
+   app.hash_token(gen_random_uuid()::text), ${q(PLATFORM_ADMIN)}, now() - interval '3 days', now() + interval '11 days');
+
+-- A little of Kestrel's own school, so the console's counts are not all zero.
+insert into location (id, studio_id, name, city) values (${q(uid(NS.location, 190))}, ${q(S.kestrel)}, 'Kestrel Hall', 'Lewes');
+insert into family (id, studio_id, name) values
+  (${q(uid(NS.family, 190))}, ${q(S.kestrel)}, 'Abbott family'),
+  (${q(uid(NS.family, 191))}, ${q(S.kestrel)}, 'Brennan family');
+insert into student (studio_id, family_id, first_name, last_name, date_of_birth) values
+  (${q(S.kestrel)}, ${q(uid(NS.family, 190))}, 'Martha', 'Abbott', current_date - interval '9 years'),
+  (${q(S.kestrel)}, ${q(uid(NS.family, 190))}, 'Jude', 'Abbott', current_date - interval '6 years'),
+  (${q(S.kestrel)}, ${q(uid(NS.family, 191))}, 'Orla', 'Brennan', current_date - interval '11 years');
+insert into location (studio_id, name, city) values (${q(S.pointe)}, 'The Mill', 'Brighton');
+
+-- Freya has let Barre support look at Northstar while they help with invoices.
+insert into support_access_grant (studio_id, granted_by, reason, expires_at, created_at) values
+  (${q(STUDIO_ID)}, ${q(uid(NS.user, 1))}, 'Help setting up this term''s invoices', now() + interval '2 days', now() - interval '2 hours');
+insert into audit_log (studio_id, actor_id, action, entity, summary, at) values
+  (${q(STUDIO_ID)}, ${q(uid(NS.user, 1))}, 'grant', 'support_access_grant',
+   'Barre support may view the account, read-only, for 48 hours: Help setting up this term''s invoices', now() - interval '2 hours');
+`;
 }
