@@ -9,6 +9,7 @@ import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import * as I from '@/lib/repos/inbox';
+import { PushToggle } from '@/components/app/pwa';
 
 const CATEGORIES: { key: string; label: string; body: string; locked?: boolean; roles?: string[] }[] = [
   { key: 'schedule', label: 'Class changes', body: 'Cancellations, moves and cover', locked: true },
@@ -68,6 +69,7 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
         </tbody>
       </table>
       <p className="text-[12.5px] text-ink-3">Class changes and safety notices always reach you. Email starts once the school connects an email service.</p>
+      <PushToggle />
       <div className="grid grid-cols-2 gap-3">
         <Field label="Quiet from" htmlFor="qh-f"><Input id="qh-f" type="time" value={qFrom} onChange={e => setFrom(e.target.value)} /></Field>
         <Field label="Until" htmlFor="qh-t"><Input id="qh-t" type="time" value={qTo} onChange={e => setTo(e.target.value)} /></Field>

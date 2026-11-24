@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionProvider } from '@/lib/auth/session';
 import { DatabaseGate } from '@/components/app/database-gate';
 import { UndoToaster } from '@/components/app/undo';
+import { PwaSetup } from '@/components/app/pwa';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [client] = React.useState(() => new QueryClient({
@@ -15,7 +16,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={client}>
       <SessionProvider>
-        <DatabaseGate>{children}<UndoToaster /></DatabaseGate>
+        <DatabaseGate>{children}<UndoToaster /><PwaSetup /></DatabaseGate>
       </SessionProvider>
     </QueryClientProvider>
   );

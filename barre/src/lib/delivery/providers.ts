@@ -8,7 +8,7 @@
  *
  * Keys live in the server's environment only — never in the browser build.
  */
-export type Outbound = { id: string; channel: 'email' | 'sms'; to_name: string | null; to_address: string;
+export type Outbound = { id: string; channel: 'email' | 'sms' | 'push'; to_name: string | null; to_address: string;
   subject: string | null; body: string; studio_name?: string | null };
 export type Sent = { ok: true; ref: string } | { ok: false; error: string; permanent?: boolean };
 export type Provider = { name: string; send(m: Outbound): Promise<Sent> };
@@ -53,7 +53,23 @@ export function logOnly(print: (s: string) => void = console.log): Provider {
   return { name: 'log', async send(m) { print(`[${m.channel}] to ${m.to_address}: ${m.subject ?? ''} — ${m.body.slice(0, 80)}`); return { ok: true, ref: `log-${m.id}` }; } };
 }
 
-export function fromEnv(env: Record<string, string | undefined>, f: Fetch = fetch): { email: Provider; sms: Provider } {
+/** Web push (R-017). `send` is web-push's sendNotification, injected so tests need no network. */
+export type PushSend = (sub: { endpoint: string; keys: { p256dh: string; auth: string } }, payload: string) => Promise<{ statusCode: number }>;
+export function webPush(send: PushSend, keys: (endpoint: string) => Promise<{ p256dh: string; auth: string } | null>): Provider {
+  return { name: 'webpush', async send(m) {
+    const k = await keys(m.to_address);
+    if (!k) return { ok: false, error: 'subscription gone', permanent: true };
+    try {
+      const r = await send({ endpoint: m.to_address, keys: k }, m.body);
+      return { ok: true, ref: String(r.statusCode) };
+    } catch (e: any) {
+      const code = e?.statusCode as number | undefined;
+      return { ok: false, error: `${code ?? ''} ${String(e?.body ?? e).slice(0, 160)}`, permanent: code === 404 || code === 410 };
+    }
+  } };
+}
+
+export function fromEnv(env: Record<string, string | undefined>, f: Fetch = fetch): { email: Provider; sms: Provider; push?: Provider } {
   const from = env.DELIVERY_FROM ?? 'Barre <no-reply@barre.example>';
   const email = env.DELIVERY_EMAIL === 'postmark' && env.POSTMARK_TOKEN ? postmark(env.POSTMARK_TOKEN, from, f)
     : env.DELIVERY_EMAIL === 'resend' && env.RESEND_API_KEY ? resend(env.RESEND_API_KEY, from, f) : logOnly();
@@ -63,18 +79,21 @@ export function fromEnv(env: Record<string, string | undefined>, f: Fetch = fetc
 }
 
 /** One pass of the worker: claim, send, record. Pure apart from `q` and the providers. */
-export async function deliverBatch(q: (sql: string, p?: unknown[]) => Promise<any[]>, p: { email: Provider; sms: Provider }, limit = 50) {
+export async function deliverBatch(q: (sql: string, p?: unknown[]) => Promise<any[]>, p: { email: Provider; sms: Provider; push?: Provider }, limit = 50) {
   const batch = await q(`select * from app.claim_outbound($1)`, [limit]);
   let sent = 0, failed = 0;
   for (const m of batch as Outbound[]) {
     let res: Sent;
-    try { res = await (m.channel === 'sms' ? p.sms : p.email).send(m); }
+    const via = m.channel === 'sms' ? p.sms : m.channel === 'push' ? (p.push ?? logOnly()) : p.email;
+    try { res = await via.send(m); }
     catch (e) { res = { ok: false, error: String(e).slice(0, 200) }; }
     if (res.ok) { sent++; await q(`select app.outbound_result($1, true, $2, null)`, [m.id, res.ref]); }
     else {
       failed++;
       // A permanent refusal (bad address) is not retried.
       if (res.permanent) await q(`update outbound_message set attempts = 5 where id = $1`, [m.id]);
+      // A phone that has unsubscribed is forgotten, so it is not tried again.
+      if (res.permanent && m.channel === 'push') await q(`delete from push_subscription where endpoint = $1`, [m.to_address]);
       await q(`select app.outbound_result($1, false, null, $2)`, [m.id, res.error]);
     }
   }

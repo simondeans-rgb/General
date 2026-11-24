@@ -20,6 +20,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { dateShort, time } from '@/lib/format';
 import { PersonSwitcher } from './person-switcher';
 import { SchoolSwitcher } from './school-switcher';
+import { useBrandedManifest } from './pwa';
 import { NotificationBell } from './notifications';
 import { AssistantLauncher } from './assistant';
 
@@ -101,6 +102,7 @@ export function Shell({
     { enabled: !!session && (!session.platform || !!session.support), staleTime: 60_000 }).data?.[0];
   const branded = !!studio && (!session?.platform || !!session?.support);
   useBrandTheme(branded ? studio!.brand_colour : null);
+  useBrandedManifest(branded ? studio!.name : null, branded ? studio!.brand_colour : null);
   const router = useRouter();
   const pathname = usePathname();
 

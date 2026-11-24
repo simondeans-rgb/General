@@ -79,3 +79,28 @@ describe('the queue', () => {
     });
   });
 });
+
+describe('phone notifications (R-017)', () => {
+  it('a saved device gets a push for each notification; a gone device is forgotten', async () => {
+    const { webPush } = await import('../src/lib/delivery/providers');
+    await asUser(USERS.guardianA, async (q, svc) => {
+      await svc(`delete from outbound_message`);
+      await q(`select app.save_push_subscription('https://push.example/abc', 'p256', 'authk', 'test')`);
+      await svc(`select set_config('request.jwt.claims', $1, true)`, [JSON.stringify({ sub: USERS.admin, role: 'authenticated' })]);
+      await q(`insert into communication (studio_id, kind, family_id, subject, body) values ($1, 'direct', $2, 'Tap shoes', 'Bring them')`, [STUDIO_ID, FAMILY.a]);
+      const [p] = await svc(`select body from outbound_message where channel = 'push'`);
+      expect(JSON.parse(p.body)).toMatchObject({ title: 'Tap shoes', href: '/family/messages' });
+      const sent: any[] = [];
+      const push = webPush(async (sub, payload) => { sent.push({ sub, payload }); return { statusCode: 201 }; },
+        async e => (await svc(`select * from app.push_keys($1)`, [e]))[0] ?? null);
+      const log = { name: 'x', send: async () => ({ ok: true as const, ref: 'x' }) };
+      await deliverBatch(svc, { email: log, sms: log, push });
+      expect(sent[0].sub.keys).toEqual({ p256dh: 'p256', auth: 'authk' });
+      // The phone has since unsubscribed: 410 Gone.
+      await q(`insert into communication (studio_id, kind, family_id, subject, body) values ($1, 'direct', $2, 'Again', 'x')`, [STUDIO_ID, FAMILY.a]);
+      const gone = webPush(async () => { throw Object.assign(new Error('gone'), { statusCode: 410 }); }, async () => ({ p256dh: 'p', auth: 'a' }));
+      await deliverBatch(svc, { email: log, sms: log, push: gone });
+      expect(await svc(`select 1 from push_subscription where endpoint = 'https://push.example/abc'`)).toHaveLength(0);
+    });
+  });
+});

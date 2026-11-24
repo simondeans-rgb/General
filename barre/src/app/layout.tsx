@@ -5,6 +5,8 @@ import { Providers } from './providers';
 export const metadata: Metadata = {
   title: 'Barre — studio operations',
   description: 'The operating system for running a dance studio.',
+  appleWebApp: { capable: true, title: 'Barre', statusBarStyle: 'default' },
+  icons: { apple: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/icons/apple-touch-icon.png` },
 };
 
 export const viewport: Viewport = {
