@@ -1,0 +1,30 @@
+/**
+ * The hosted worker (R-002, R-003). Run it every minute from a scheduler
+ * (cron, a Supabase scheduled function, or a small always-on process):
+ *
+ *   DATABASE_URL=… DELIVERY_EMAIL=postmark POSTMARK_TOKEN=… npx tsx scripts/deliver.mts
+ *
+ * Each run calls app.tick() (automations, scheduled messages, staff-check
+ * reminders, milestones) and then drains the email/SMS queue. It connects as
+ * the service role; nothing here is shipped to browsers.
+ */
+import pg from 'pg';
+import { deliverBatch, fromEnv } from '../src/lib/delivery/providers';
+
+const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
+await client.connect();
+const q = async (sql: string, p?: unknown[]) => (await client.query(sql, p as any[])).rows;
+try {
+  await q(`set role service_role`);
+  const [{ tick }] = await q(`select app.tick() as tick`);
+  const providers = fromEnv(process.env);
+  let total = { claimed: 0, sent: 0, failed: 0 };
+  for (let i = 0; i < 20; i++) {
+    const r = await deliverBatch(q, providers);
+    total = { claimed: total.claimed + r.claimed, sent: total.sent + r.sent, failed: total.failed + r.failed };
+    if (r.claimed === 0) break;
+  }
+  console.log(JSON.stringify({ tick, delivery: { ...total, email: providers.email.name, sms: providers.sms.name } }));
+} finally {
+  await client.end();
+}
