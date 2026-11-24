@@ -155,7 +155,7 @@ function Compose({ classId, className, notice, onClose }: {
             <textarea id="notice-body" rows={5} value={body} onChange={e => setBody(e.target.value)}
               placeholder="Practise the first eight counts every day this week. Bring tap shoes and a water bottle."
               className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
-                         focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/12" />
+                         focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
           </Field>
           <p className="rounded-[var(--radius-md)] bg-surface-2 p-3 text-[12.5px] text-ink-2">
             Notices go one way. If a parent needs to reply they contact the studio, so

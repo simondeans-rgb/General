@@ -54,9 +54,9 @@ function Inbox() {
         {!!requests.data?.length && (
           <Link href="/requests"
             className="mb-4 flex items-center gap-3 rounded-[var(--radius-lg)] border border-line bg-surface px-4 py-3 text-sm hover:bg-surface-2">
-            <InboxIcon className="size-4 text-accent" aria-hidden />
+            <InboxIcon className="size-4 text-accent-text" aria-hidden />
             <span className="flex-1">{requests.data.length} request{requests.data.length === 1 ? '' : 's'} from families waiting for an answer</span>
-            <span className="text-accent">Open</span>
+            <span className="text-accent-text">Open</span>
           </Link>
         )}
 
@@ -180,7 +180,7 @@ function Conversation({ familyId, onBack }: { familyId: string; onBack: () => vo
           <p className="truncate font-semibold">{thread?.family_name ?? 'Conversation'}</p>
           {thread?.guardian && <p className="truncate text-[12.5px] text-ink-3">{thread.guardian}</p>}
         </div>
-        <Link href={`/people?id=${familyId}`} className="rounded-[var(--radius-md)] px-2.5 py-1.5 text-[13px] text-accent hover:bg-surface-2">
+        <Link href={`/people?id=${familyId}`} className="rounded-[var(--radius-md)] px-2.5 py-1.5 text-[13px] text-accent-text hover:bg-surface-2">
           Family record
         </Link>
       </div>
@@ -196,10 +196,10 @@ function Conversation({ familyId, onBack }: { familyId: string; onBack: () => vo
               {newDay && <p className="pt-2 text-center text-[11.5px] font-medium uppercase tracking-[0.06em] text-ink-3">{relativeDay(m.sent_at)}</p>}
               <div className={cn('flex', m.inbound ? 'justify-start' : 'justify-end')}>
                 <div className={cn('max-w-[85%] rounded-[var(--radius-lg)] px-3.5 py-2.5 text-sm shadow-xs',
-                  m.inbound ? 'rounded-bl-sm border border-line bg-surface' : 'rounded-br-sm bg-accent text-white')}>
+                  m.inbound ? 'rounded-bl-sm border border-line bg-surface' : 'rounded-br-sm bg-accent text-on-accent')}>
                   {m.subject && <p className="mb-1 font-medium">{m.subject}</p>}
                   <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                  <p className={cn('mt-1.5 text-[11.5px]', m.inbound ? 'text-ink-3' : 'text-white/75')}>
+                  <p className={cn('mt-1.5 text-[11.5px]', m.inbound ? 'text-ink-3' : 'text-on-accent opacity-80')}>
                     {m.sender ?? (m.inbound ? thread?.family_name : 'Studio')} · {time(m.sent_at)}
                   </p>
                 </div>
@@ -218,7 +218,7 @@ function Conversation({ familyId, onBack }: { familyId: string; onBack: () => vo
           placeholder="Write a reply…"
           onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && draft.trim() && !unfilled) send.mutate(); }}
           className="w-full resize-none rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
-                     focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/12" />
+                     focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
         <div className="mt-2 flex items-center gap-2">
           <Select aria-label="Start from a template" value="" onChange={e => useTemplate(e.target.value)} className="h-9 max-w-[200px] text-[13px]">
             <option value="">Use a template…</option>
@@ -318,7 +318,7 @@ function TemplateSheet({ template, onClose }: { template: I.Template | null; onC
       <Field label="Message" htmlFor="tp-b" required hint="Placeholders: {{guardian_name}}, {{child_name}}, {{class_name}}">
         <textarea id="tp-b" value={body} onChange={e => setBody(e.target.value)} rows={8}
           className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
-                     focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/12" />
+                     focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
       </Field>
     </RecordSheet>
   );
@@ -424,7 +424,7 @@ function Composer({ onClose, onSentDirect }: { onClose: () => void; onSentDirect
              error={unfilled ? 'Replace the {{…}} placeholders before sending.' : undefined}>
         <textarea id="cm-b" value={body} onChange={e => setBody(e.target.value)} rows={7}
           className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
-                     focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/12" />
+                     focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
       </Field>
       <p className="flex items-center gap-1.5 text-[12.5px] text-ink-3">
         <Mail className="size-3.5" aria-hidden /> Delivered in the app. Email and text delivery are not connected yet.

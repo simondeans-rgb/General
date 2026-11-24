@@ -53,7 +53,7 @@ export function BrandSettings({ canEdit }: { canEdit: boolean }) {
   const current = useRows<Brand>(['brand'], BRAND).data?.[0];
   const [name, setName] = React.useState('');
   const [colour, setColour] = React.useState(DEFAULT_BRAND);
-  const [hexInput, setHexInput] = React.useState(DEFAULT_BRAND);
+  const [hexInput, setHexInput] = React.useState(DEFAULT_BRAND.toUpperCase());
   const [logo, setLogo] = React.useState<string | null>(null);
   const [loaded, setLoaded] = React.useState(false);
   const [logoError, setLogoError] = React.useState<string | null>(null);
@@ -63,7 +63,7 @@ export function BrandSettings({ canEdit }: { canEdit: boolean }) {
   React.useEffect(() => {
     if (!current || loaded) return;
     setName(current.name); setColour(current.brand_colour ?? DEFAULT_BRAND);
-    setHexInput(current.brand_colour ?? DEFAULT_BRAND); setLogo(current.logo_url); setLoaded(true);
+    setHexInput((current.brand_colour ?? DEFAULT_BRAND).toUpperCase()); setLogo(current.logo_url); setLoaded(true);
   }, [current, loaded]);
 
   const palette = paletteFor(colour);
@@ -124,33 +124,50 @@ export function BrandSettings({ canEdit }: { canEdit: boolean }) {
 
           <fieldset disabled={!canEdit}>
             <legend className="mb-1.5 text-[13px] font-medium text-ink-2">Colour</legend>
-            <div role="radiogroup" aria-label="Brand colour" className="flex flex-wrap gap-2">
+            <p className="mb-2 text-[12.5px] text-ink-3">Pick a preset, or enter the exact colour from your brand guidelines.</p>
+            <div role="radiogroup" aria-label="Preset colours" className="flex flex-wrap gap-2">
               {PRESETS.map(p => (
-                <button key={p.hex} type="button" role="radio" aria-checked={colour === p.hex} aria-label={p.name} title={p.name}
-                  onClick={() => { setColour(p.hex); setHexInput(p.hex); }}
+                <button key={p.hex} type="button" role="radio" aria-checked={colour === p.hex}
+                  aria-label={`${p.name} ${p.hex.toUpperCase()}`} title={`${p.name} · ${p.hex.toUpperCase()}`}
+                  onClick={() => { setColour(p.hex); setHexInput(p.hex.toUpperCase()); }}
                   className={cn('grid size-10 place-items-center rounded-full ring-offset-2 transition-shadow',
                     colour === p.hex ? 'ring-2 ring-ink' : 'hover:ring-2 hover:ring-line-strong')}
                   style={{ background: p.hex }}>
-                  {colour === p.hex && <Check className="size-4 text-white" aria-hidden />}
+                  {colour === p.hex && <Check className="size-4" style={{ color: paletteFor(p.hex).onAccent }} aria-hidden />}
                 </button>
               ))}
             </div>
-            <div className="mt-3 flex items-center gap-2">
-              <input type="color" aria-label="Pick any colour" value={colour}
-                     onChange={e => { setColour(e.target.value); setHexInput(e.target.value); }}
-                     className="h-10 w-12 cursor-pointer rounded-[var(--radius-md)] border border-line-strong bg-surface p-1" />
-              <Input aria-label="Colour code" value={hexInput} className="tnum w-32"
-                     onChange={e => { setHexInput(e.target.value); const h = normaliseHex(e.target.value); if (h) setColour(h); }}
-                     aria-invalid={!normaliseHex(hexInput)} />
-              {!normaliseHex(hexInput) && <span className="text-[12.5px] text-critical">Use a code like #1e3a8a</span>}
+
+            <div className="mt-4 rounded-[var(--radius-md)] border border-line p-3">
+              <label htmlFor="br-hex" className="block text-[13px] font-medium text-ink-2">Your exact brand colour</label>
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                <span aria-hidden className="size-10 shrink-0 rounded-[var(--radius-md)] border border-line"
+                      style={{ background: normaliseHex(hexInput) ?? colour }} />
+                <Input id="br-hex" value={hexInput} className="tnum w-36 uppercase" placeholder="#1E3A8A"
+                       spellCheck={false} autoComplete="off" maxLength={7}
+                       onChange={e => { setHexInput(e.target.value); const h = normaliseHex(e.target.value); if (h) setColour(h); }}
+                       aria-invalid={!normaliseHex(hexInput)} aria-describedby="br-hex-help" />
+                <label className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-[var(--radius-md)] border border-line-strong bg-surface px-3 text-[13px] hover:bg-surface-2">
+                  <input type="color" value={colour} className="sr-only"
+                         onChange={e => { setColour(e.target.value); setHexInput(e.target.value.toUpperCase()); }} />
+                  Choose visually
+                </label>
+              </div>
+              <p id="br-hex-help" className="mt-1.5 text-[12.5px]">
+                {normaliseHex(hexInput)
+                  ? <span className="text-ink-3">Hex code, as in your brand guidelines — used exactly as entered.{!PRESETS.some(p => p.hex === colour) && ' Custom colour.'}</span>
+                  : <span role="alert" className="text-critical">Enter a 6-digit hex code like #1E3A8A (3 digits like #FA0 work too).</span>}
+              </p>
             </div>
-            {palette.adjusted && (
+
+            {(palette.darkText || palette.textDeepened) && (
               <p className="mt-2 flex items-start gap-1.5 text-[12.5px] text-ink-2">
                 <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
                 <span>
-                  That colour is too light for white text on buttons, so the app uses a deeper shade
-                  <span className="mx-1 inline-block size-3 rounded-sm align-[-2px]" style={{ background: palette.accent }} aria-hidden />
-                  <span className="tnum">{palette.accent}</span> — everything stays readable.
+                  Your colour is used exactly{palette.darkText ? '; it is light, so text on your buttons will be black to stay readable' : ''}.
+                  {palette.textDeepened && <> Links and outlines drawn in your colour on white use a deeper shade
+                    <span className="mx-1 inline-block size-3 rounded-sm align-[-2px]" style={{ background: palette.text }} aria-hidden />
+                    <span className="tnum uppercase">{palette.text}</span> so they can be read.</>}
                 </span>
               </p>
             )}
@@ -162,7 +179,7 @@ export function BrandSettings({ canEdit }: { canEdit: boolean }) {
               <Button variant="primary" loading={save.isPending} disabled={!dirty || name.trim().length < 2}
                       onClick={() => save.mutate()}>Save brand</Button>
               {colour !== DEFAULT_BRAND && (
-                <Button variant="ghost" onClick={() => { setColour(DEFAULT_BRAND); setHexInput(DEFAULT_BRAND); }}>
+                <Button variant="ghost" onClick={() => { setColour(DEFAULT_BRAND); setHexInput(DEFAULT_BRAND.toUpperCase()); }}>
                   Use Barre’s colours
                 </Button>
               )}
@@ -188,12 +205,12 @@ export function BrandSettings({ canEdit }: { canEdit: boolean }) {
               <p className="text-[11.5px] text-ink-2">Monday · 17:30 · Studio One</p>
               <span className="mt-1.5 inline-block rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-accent-ink">Booked</span>
             </div>
-            <span className="block rounded-[var(--radius-md)] bg-accent py-2 text-center text-[12.5px] font-medium text-white">Report an absence</span>
+            <span className="block rounded-[var(--radius-md)] bg-accent py-2 text-center text-[12.5px] font-medium text-on-accent">Report an absence</span>
           </div>
           <div className="flex border-t border-line bg-surface">
             {[[Home, 'Home', true], [CalendarDays, 'Schedule', false], [MessageSquare, 'Messages', false]].map(([I, l, on]) => {
               const Icon = I as React.ElementType;
-              return <span key={l as string} className={cn('flex flex-1 flex-col items-center gap-0.5 py-1.5 text-[10px]', on ? 'text-accent' : 'text-ink-3')}>
+              return <span key={l as string} className={cn('flex flex-1 flex-col items-center gap-0.5 py-1.5 text-[10px]', on ? 'text-accent-text' : 'text-ink-3')}>
                 <Icon className="size-4" aria-hidden />{l as string}</span>;
             })}
           </div>

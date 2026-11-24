@@ -263,7 +263,7 @@ function SessionNotes({ sessionId, saved }: { sessionId: string; saved: string }
         onChange={e => { setText(e.target.value); setTouched(true); }}
         placeholder="Covered the first sixteen counts. Nadia to chase the missing exam forms."
         className="mt-2 w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
-                   focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/12" />
+                   focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
       <div className="mt-2 flex items-center gap-2">
         <p className="flex-1 text-[12.5px] text-ink-3">
           Seen by you and the office. Not shared with families.

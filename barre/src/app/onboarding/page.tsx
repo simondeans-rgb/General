@@ -111,7 +111,7 @@ export default function Onboarding() {
                     </span>
                     {(
                       <Link href={s.href}
-                        className="mt-0.5 inline-flex shrink-0 items-center gap-0.5 text-[13px] font-medium text-accent hover:underline">
+                        className="mt-0.5 inline-flex shrink-0 items-center gap-0.5 text-[13px] font-medium text-accent-text hover:underline">
                         {complete ? 'Review' : s.cta}
                         <ChevronRight className="size-3.5" aria-hidden />
                       </Link>

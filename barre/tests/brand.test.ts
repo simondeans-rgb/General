@@ -1,35 +1,45 @@
 import { describe, expect, it } from 'vitest';
 import { contrast, monogram, normaliseHex, paletteFor, PRESETS } from '../src/lib/brand';
 
-describe('a school’s colour, made readable', () => {
-  const awkward = ['#facc15', '#ffffff', '#a3e635', '#38bdf8', '#f9a8d4', '#000000', '#ff0000', '#777777'];
+const awkward = ['#facc15', '#ffffff', '#a3e635', '#38bdf8', '#f9a8d4', '#000000', '#ff0000', '#777777', '#7a7a7a', '#1e3a8a'];
 
-  it('always gives white button text and readable tinted text', () => {
+describe('a school’s exact colour, kept readable', () => {
+  it('uses the exact hex for every surface — never a substitute', () => {
+    for (const c of [...awkward, ...PRESETS.map(p => p.hex)]) expect(paletteFor(c).accent).toBe(c);
+    expect(paletteFor('#FACC15').accent).toBe('#facc15');
+  });
+
+  it('puts white or black on it, whichever is readable', () => {
     for (const c of [...awkward, ...PRESETS.map(p => p.hex)]) {
       const p = paletteFor(c);
-      expect(contrast(p.accent, '#ffffff'), c).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(p.onAccent, p.accent), c).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(p.onAccent, p.hover), `${c} hover`).toBeGreaterThanOrEqual(4.5);
+    }
+    expect(paletteFor('#facc15')).toMatchObject({ onAccent: '#000000', darkText: true });
+    expect(paletteFor('#1e3a8a')).toMatchObject({ onAccent: '#ffffff', darkText: false });
+  });
+
+  it('keeps text and outlines in the brand colour readable on white', () => {
+    for (const c of awkward) {
+      const p = paletteFor(c);
+      expect(contrast(p.text, '#ffffff'), c).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(p.line, '#ffffff'), c).toBeGreaterThanOrEqual(3);
       expect(contrast(p.ink, p.soft), c).toBeGreaterThanOrEqual(4.5);
-      expect(contrast(p.hover, '#ffffff'), c).toBeGreaterThanOrEqual(4.5);
     }
   });
 
-  it('leaves a colour that already works alone, and says when it changed one', () => {
-    for (const p of PRESETS) {
-      expect(paletteFor(p.hex)).toMatchObject({ accent: p.hex, adjusted: false });
-    }
-    expect(paletteFor('#facc15').adjusted).toBe(true);
-  });
-
-  it('keeps the hue of a pale colour when deepening it', () => {
-    const p = paletteFor('#facc15');   // pale yellow becomes a gold, not a grey
-    const [r, g, b] = [1, 3, 5].map(i => parseInt(p.accent.slice(i, i + 2), 16));
+  it('only deepens text when the exact colour would be too faint, keeping its hue', () => {
+    for (const p of PRESETS) expect(paletteFor(p.hex)).toMatchObject({ text: p.hex, textDeepened: false });
+    const y = paletteFor('#facc15');
+    expect(y.textDeepened).toBe(true);
+    const [r, g, b] = [1, 3, 5].map(i => parseInt(y.text.slice(i, i + 2), 16));
     expect(r!).toBeGreaterThan(b!);
     expect(g!).toBeGreaterThan(b!);
   });
 
   it('accepts the forms people type, refuses the rest', () => {
     expect(normaliseHex('0F766E')).toBe('#0f766e');
-    expect(normaliseHex('#abc')).toBe('#aabbcc');
+    expect(normaliseHex(' #abc ')).toBe('#aabbcc');
     expect(normaliseHex('teal')).toBeNull();
     expect(normaliseHex('#12345')).toBeNull();
     expect(paletteFor('nonsense').accent).toBe('#5b46d9');

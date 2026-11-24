@@ -14,7 +14,7 @@ export function SchoolMark({ name, logo, className }: { name: string; logo: stri
     );
   }
   return (
-    <span aria-hidden className={cn('grid shrink-0 place-items-center rounded-lg bg-accent text-[13px] font-semibold text-white', className)}>
+    <span aria-hidden className={cn('grid shrink-0 place-items-center rounded-lg bg-accent text-[13px] font-semibold text-on-accent', className)}>
       {monogram(name)}
     </span>
   );

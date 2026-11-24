@@ -65,7 +65,7 @@ function Invite() {
   return (
     <main className="grid min-h-dvh place-items-center bg-surface-2 p-4">
       <Card className="w-full max-w-md p-6">
-        <span className="mb-4 grid size-10 place-items-center rounded-lg bg-accent text-white" aria-hidden>
+        <span className="mb-4 grid size-10 place-items-center rounded-lg bg-accent text-on-accent" aria-hidden>
           <BarreMark className="size-5" />
         </span>
         {!token && <Problem text="This link is missing its invitation code. Open the link exactly as it was sent." />}

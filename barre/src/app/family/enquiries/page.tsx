@@ -145,7 +145,7 @@ function AskDialog({ onClose }: { onClose: () => void }) {
                 <textarea id="ask-body" value={body} onChange={e => setBody(e.target.value)} rows={4}
                   placeholder="As much or as little as you like."
                   className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
-                             focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/12" />
+                             focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
               </Field>
             </div>
             {send.isError && <div className="mt-3"><ErrorState error={send.error} /></div>}

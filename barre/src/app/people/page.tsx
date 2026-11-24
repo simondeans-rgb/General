@@ -384,7 +384,7 @@ function StaffList({ q }: { q: string }) {
             </button>
             {s.bio && <p className="mt-3 text-[13px] text-ink-2">{s.bio}</p>}
             {s.email && <a href={`mailto:${s.email}`}
-              className="mt-2 block truncate text-[13px] text-accent hover:underline">{s.email}</a>}
+              className="mt-2 block truncate text-[13px] text-accent-text hover:underline">{s.email}</a>}
           </Card>
         ))}
       </div>

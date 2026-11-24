@@ -29,10 +29,13 @@ name in the sidebar; at the foot of each page on a phone). Barre's own
 console keeps Barre's colours. The owner sets it under **Account → Your
 brand**, with a live preview; it is also a step in Setup.
 
-- **One colour.** The school picks a preset or any colour; every shade the
-  interface needs is derived from it (`lib/brand.ts`). A colour too pale for
-  white text is deepened — keeping its hue — so buttons and tinted text
-  always meet WCAG AA contrast, and the owner is told when that happened.
+- **One colour, used exactly.** The school picks a preset or enters the exact
+  hex code from its brand guidelines (with or without `#`, 3 or 6 digits), or
+  chooses visually. That exact colour is used for every coloured surface. To
+  keep it readable, the text on it is white or black, whichever passes WCAG AA
+  — one always does — and the thin details drawn in the brand colour on white
+  (links, focus outlines) use a deeper shade of it only if the exact colour
+  would be too faint. The owner is told when either applies.
 - **Logo upload.** Any PNG, JPG, WebP or SVG up to 5 MB. It is redrawn in the
   browser to a PNG no larger than 256 px before it is saved, so scripts in an
   SVG, photo metadata and huge originals never reach the database. The

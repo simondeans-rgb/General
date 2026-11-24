@@ -77,19 +77,19 @@ export function FeedbackComposer({
                 <textarea id="fb-well" rows={3} value={goingWell} onChange={e => setGoingWell(e.target.value)}
                   placeholder="Be specific — it means more than 'good work'."
                   className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
-                             focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/12" />
+                             focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
               </Field>
               <Field label="To work on" htmlFor="fb-work">
                 <textarea id="fb-work" rows={3} value={workOn} onChange={e => setWorkOn(e.target.value)}
                   placeholder="One thing to practise before next week."
                   className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
-                             focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/12" />
+                             focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
               </Field>
               <Field label="Private note" htmlFor="fb-priv"
                      hint="Studio staff only. Never shown to the family, whatever you choose below.">
                 <textarea id="fb-priv" rows={2} value={privateNote} onChange={e => setPrivateNote(e.target.value)}
                   className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface-2 p-3 text-sm
-                             focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/12" />
+                             focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
               </Field>
 
               <label className="flex cursor-pointer items-start gap-3 rounded-[var(--radius-md)] border border-line p-3">

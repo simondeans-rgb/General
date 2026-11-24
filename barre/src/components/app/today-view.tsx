@@ -35,7 +35,7 @@ export function TodayView() {
           <Card>
             <CardHeader
               title="Today's timetable"
-              action={<Link href="/schedule" className="text-[13px] font-medium text-accent hover:underline">
+              action={<Link href="/schedule" className="text-[13px] font-medium text-accent-text hover:underline">
                 Full schedule
               </Link>} />
             {sessions.isLoading && <div className="space-y-3 p-4">{[0,1,2].map(i => <Skeleton key={i} className="h-14" />)}</div>}
@@ -205,7 +205,7 @@ function MiniList<T>({ title, rows, empty, render, href, linkLabel }: {
   return (
     <Card>
       <CardHeader title={title} action={href && (
-        <Link href={href} className="text-[13px] font-medium text-accent hover:underline">{linkLabel}</Link>)} />
+        <Link href={href} className="text-[13px] font-medium text-accent-text hover:underline">{linkLabel}</Link>)} />
       {rows.isLoading && <div className="space-y-2.5 p-4">{[0,1,2].map(i => <Skeleton key={i} className="h-8" />)}</div>}
       {rows.error && <div className="p-4"><ErrorState error={rows.error} /></div>}
       {rows.data && rows.data.length === 0 && <p className="px-4 py-6 text-center text-sm text-ink-3">{empty}</p>}

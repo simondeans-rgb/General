@@ -546,7 +546,7 @@ function ReminderSheet({ invoice, failed, onClose }: {
           <Field label="Message" htmlFor="rem-b">
             <textarea id="rem-b" value={body} onChange={e => setBody(e.target.value)} rows={8}
               className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
-                         focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/12" />
+                         focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
           </Field>
         </>
       )}
@@ -634,7 +634,7 @@ function NewInvoiceSheet({ onClose, onCreated, familyId }: {
           {family && termCount > 0 && (
             <button onClick={addTermFees}
               className="flex w-full items-center gap-3 rounded-[var(--radius-md)] border border-dashed border-line-strong p-3 text-left text-sm hover:bg-surface-2">
-              <Wallet className="size-4 shrink-0 text-accent" aria-hidden />
+              <Wallet className="size-4 shrink-0 text-accent-text" aria-hidden />
               <span className="flex-1">Add term fees for {termCount} enrolled class{termCount === 1 ? '' : 'es'}</span>
             </button>
           )}

@@ -21,7 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* First stop for a keyboard or screen-reader user on every page. */}
         <a href="#main"
            className="sr-only focus:not-sr-only focus:fixed focus:z-50 focus:left-3 focus:top-3
-                      focus:rounded-md focus:bg-accent focus:px-3 focus:py-2 focus:text-white">
+                      focus:rounded-md focus:bg-accent focus:px-3 focus:py-2 focus:text-on-accent">
           Skip to content
         </a>
         <Providers>{children}</Providers>

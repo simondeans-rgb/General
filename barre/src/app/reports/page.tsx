@@ -206,7 +206,7 @@ function Pulse({ d }: { d: R.Headline }) {
   return (
     <Card className="overflow-hidden">
       <div className="flex flex-wrap items-start gap-4 border-b border-line p-4">
-        <span aria-hidden className="grid size-10 place-items-center rounded-full bg-accent-soft text-accent">
+        <span aria-hidden className="grid size-10 place-items-center rounded-full bg-accent-soft text-accent-text">
           <HeartPulse className="size-5" />
         </span>
         <div className="min-w-0 flex-1">

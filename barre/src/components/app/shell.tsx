@@ -148,7 +148,7 @@ export function Shell({
             </div>
           ) : (
             <div className="flex items-center gap-2.5">
-              <span className="grid size-9 place-items-center rounded-lg bg-accent text-white" aria-hidden>
+              <span className="grid size-9 place-items-center rounded-lg bg-accent text-on-accent" aria-hidden>
                 <BarreMark className="size-5" />
               </span>
               <span className="min-w-0">
@@ -181,7 +181,7 @@ export function Shell({
           <div className="flex min-h-14 items-center gap-3 px-4 py-2.5 lg:px-6">
             {branded
               ? <SchoolMark name={studio!.name} logo={studio!.logo_url} className="size-8 lg:hidden" />
-              : <span className="grid size-7 shrink-0 place-items-center rounded-md bg-accent text-white lg:hidden" aria-hidden>
+              : <span className="grid size-7 shrink-0 place-items-center rounded-md bg-accent text-on-accent lg:hidden" aria-hidden>
                   <BarreMark className="size-4" />
                 </span>}
             <div className="min-w-0 flex-1">
@@ -264,7 +264,7 @@ function MobileTabs({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
         {rest.length > 0 && (
           <button onClick={() => setOpen(true)} aria-haspopup="dialog" aria-label="More sections"
             className={cn('flex min-h-[52px] flex-1 flex-col items-center justify-center gap-1 pt-1.5 text-[11px]',
-              rest.some(i => isActive(pathname, i.href)) ? 'text-accent' : 'text-ink-3')}>
+              rest.some(i => isActive(pathname, i.href)) ? 'text-accent-text' : 'text-ink-3')}>
             <MoreHorizontal className="size-[19px]" aria-hidden />
             <span>More</span>
           </button>
@@ -307,7 +307,7 @@ function TabLink({ item, pathname }: { item: NavItem; pathname: string }) {
   return (
     <Link href={item.href} aria-current={active ? 'page' : undefined}
       className={cn('flex min-h-[52px] flex-1 flex-col items-center justify-center gap-1 pt-1.5 text-[11px]',
-        active ? 'text-accent' : 'text-ink-3')}>
+        active ? 'text-accent-text' : 'text-ink-3')}>
       <Icon className="size-[19px]" aria-hidden strokeWidth={active ? 2.4 : 1.9} />
       <span className={active ? 'font-medium' : undefined}>{item.label}</span>
     </Link>

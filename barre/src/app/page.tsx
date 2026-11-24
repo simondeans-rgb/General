@@ -23,7 +23,7 @@ export default function SignIn() {
   return (
     <div className="mx-auto flex min-h-dvh max-w-2xl flex-col justify-center px-5 py-10">
       <div className="mb-8">
-        <span className="mb-5 grid size-11 place-items-center rounded-[var(--radius-lg)] bg-accent text-white shadow-sm" aria-hidden>
+        <span className="mb-5 grid size-11 place-items-center rounded-[var(--radius-lg)] bg-accent text-on-accent shadow-sm" aria-hidden>
           <BarreMark className="size-6" />
         </span>
         <h1 className="text-[27px] font-semibold tracking-[-0.022em]">Barre</h1>
@@ -32,12 +32,12 @@ export default function SignIn() {
 
       {loaded && session && (
         <button onClick={() => router.push(session.platform && !session.support ? '/platform' : ROLE_HOME[session.role])}
-          className="mb-6 flex w-full items-center gap-3 rounded-[var(--radius-lg)] border border-accent/40 bg-accent-soft/50 p-3.5 text-left hover:bg-accent-soft">
+          className="mb-6 flex w-full items-center gap-3 rounded-[var(--radius-lg)] border border-accent-line/40 bg-accent-soft/50 p-3.5 text-left hover:bg-accent-soft">
           <span className="min-w-0 flex-1">
             <span className="block font-medium">Continue as {session.name}</span>
             <span className="block text-[13px] text-ink-2">Or choose someone else below.</span>
           </span>
-          <ArrowRight className="size-4 shrink-0 text-accent" aria-hidden />
+          <ArrowRight className="size-4 shrink-0 text-accent-text" aria-hidden />
         </button>
       )}
 
@@ -55,7 +55,7 @@ export default function SignIn() {
               onClick={() => choose(p)}
               className="group flex w-full items-center gap-3.5 rounded-[var(--radius-lg)] border border-line
                          bg-surface p-3.5 text-left shadow-xs transition-[border-color,box-shadow]
-                         hover:border-line-strong hover:shadow-sm focus-visible:border-accent">
+                         hover:border-line-strong hover:shadow-sm focus-visible:border-accent-line">
               <span aria-hidden
                     className="grid size-10 shrink-0 place-items-center rounded-full bg-surface-2
                                text-[15px] font-semibold text-ink-2">

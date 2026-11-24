@@ -33,7 +33,7 @@ export function Button({
         size === 'sm' && 'h-8 px-2.5 text-[13px]',
         size === 'md' && 'h-10 px-3.5 text-sm min-h-[40px]',
         size === 'lg' && 'h-12 px-5 text-[15px]',
-        variant === 'primary' && 'bg-accent text-white hover:bg-accent-hover shadow-xs',
+        variant === 'primary' && 'bg-accent text-on-accent hover:bg-accent-hover shadow-xs',
         variant === 'secondary' && 'bg-surface text-ink border border-line-strong hover:bg-surface-2 shadow-xs',
         variant === 'ghost' && 'text-ink-2 hover:bg-surface-2 hover:text-ink',
         variant === 'danger' && 'bg-surface text-critical border border-line-strong hover:bg-critical-soft',
@@ -114,7 +114,7 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
         className={cn(
           'h-10 w-full rounded-[var(--radius-md)] border border-line-strong bg-surface px-3 text-sm',
           'placeholder:text-ink-3 transition-shadow',
-          'focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/12',
+          'focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12',
           'aria-[invalid=true]:border-critical aria-[invalid=true]:ring-critical/12',
           className,
         )}
@@ -130,7 +130,7 @@ export const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttrib
         {...rest}
         className={cn(
           'h-10 w-full appearance-none rounded-[var(--radius-md)] border border-line-strong bg-surface',
-          'px-3 pr-8 text-sm focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/12',
+          'px-3 pr-8 text-sm focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12',
           "bg-[url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a8a9c' stroke-width='2'><path d='m6 9 6 6 6-6'/></svg>\")]",
           'bg-[length:16px] bg-[right_0.6rem_center] bg-no-repeat',
           className,

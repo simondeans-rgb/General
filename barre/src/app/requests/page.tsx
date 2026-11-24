@@ -186,7 +186,7 @@ function AnswerDialog({ request, onClose }: { request: any; onClose: () => void 
             <textarea value={answer} onChange={e => setAnswer(e.target.value)} rows={4}
               aria-label="Your reply" placeholder="Write your reply…"
               className="mt-3 w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
-                         focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/12" />
+                         focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
             {send.isError && <div className="mt-3"><ErrorState error={send.error} /></div>}
             <div className="mt-4 flex gap-2">
               <Button className="flex-1" onClick={onClose}>Cancel</Button>
@@ -280,9 +280,9 @@ function RecordUpdateSheet({ request: r, onClose, onDone }: {
               <textarea id={`ru-${k}`} rows={2} value={fields[k] ?? ''} placeholder={ph}
                 onChange={e => setFields(f => ({ ...f, [k]: e.target.value }))}
                 className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
-                           focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/12" />
+                           focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
               <button type="button" onClick={() => take(k)}
-                className="mt-1 inline-flex min-h-[32px] items-center gap-1 rounded-full px-2 text-[12.5px] font-medium text-accent hover:bg-accent-soft">
+                className="mt-1 inline-flex min-h-[32px] items-center gap-1 rounded-full px-2 text-[12.5px] font-medium text-accent-text hover:bg-accent-soft">
                 <CornerDownLeft className="size-3.5" aria-hidden /> Add the parent’s words here
               </button>
             </Field>
@@ -297,7 +297,7 @@ function RecordUpdateSheet({ request: r, onClose, onDone }: {
           <Field label="Message to the parent" htmlFor="ru-msg" required>
             <textarea id="ru-msg" rows={3} value={message} onChange={e => setMessage(e.target.value)}
               className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
-                         focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/12" />
+                         focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
           </Field>
           {!changed && <p className="text-[12.5px] text-ink-3">Change the record above to save — or use Acknowledge if nothing needs changing.</p>}
         </>

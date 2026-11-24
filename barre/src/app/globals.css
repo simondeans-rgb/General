@@ -25,6 +25,12 @@
   --color-accent-hover:#4d3ac4;
   --color-accent-soft: #efecfe;
   --color-accent-ink:  #4130a8;
+  /* A school's brand replaces the accent at runtime (lib/brand.ts). These
+     three keep it readable whatever colour it is: text ON the accent, the
+     accent AS text on white, and the accent as a line or outline. */
+  --color-on-accent:   #ffffff;
+  --color-accent-text: #5b46d9;
+  --color-accent-line: #5b46d9;
 
   --color-positive:      #0b7a55;
   --color-positive-soft: #e3f6ee;
@@ -77,7 +83,7 @@
 
   /* One focus treatment everywhere, visible against every surface. */
   :where(a, button, input, select, textarea, [tabindex]):focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--color-accent-line);
     outline-offset: 2px;
     border-radius: var(--radius-sm);
   }

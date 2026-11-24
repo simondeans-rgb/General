@@ -79,7 +79,7 @@ export default function FamilyChildren() {
                     <p className="mt-1 text-[12.5px] text-ink-3">
                       Teachers see allergies and the emergency plan only — never the full record.
                       To change any of it,{' '}
-                      <Link href="/family/enquiries" className="text-accent hover:underline">
+                      <Link href="/family/enquiries" className="text-accent-text hover:underline">
                         tell the studio</Link>, so there is a record of who changed what.
                     </p>
                   </dd>
@@ -104,7 +104,7 @@ export default function FamilyChildren() {
             const I = Icon as React.ElementType;
             return (
               <Link key={href as string} href={href as string} className="flex min-h-[56px] items-center gap-3 px-4 py-3 hover:bg-surface-2">
-                <I className="size-[18px] shrink-0 text-accent" aria-hidden />
+                <I className="size-[18px] shrink-0 text-accent-text" aria-hidden />
                 <span className="min-w-0 flex-1">
                   <span className="block font-medium">{title as string}</span>
                   <span className="block text-[13px] text-ink-2">{body as string}</span>

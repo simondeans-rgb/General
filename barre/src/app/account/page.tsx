@@ -251,7 +251,7 @@ function InviteSheet({ studioId, isOwner, onClose }: { studioId: string; isOwner
         <div className="space-y-1.5">
           {roles.map(r => (
             <label key={r} className={cn('flex cursor-pointer items-start gap-3 rounded-[var(--radius-md)] border p-2.5',
-              role === r ? 'border-accent bg-accent-soft/50' : 'border-line hover:bg-surface-2')}>
+              role === r ? 'border-accent-line bg-accent-soft/50' : 'border-line hover:bg-surface-2')}>
               <input type="radio" name="role" value={r} checked={role === r} onChange={() => setRole(r)} className="mt-1 accent-[var(--color-accent)]" />
               <span>
                 <span className="block text-sm font-medium">{ROLE[r]!.label}</span>

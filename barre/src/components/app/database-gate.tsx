@@ -47,7 +47,7 @@ export function DatabaseGate({ children }: { children: React.ReactNode }) {
       <div className="grid min-h-dvh place-items-center p-6">
         <div className="w-full max-w-xs text-center">
           <div className="mx-auto mb-5 grid size-12 place-items-center rounded-[var(--radius-lg)]
-                          bg-accent text-white shadow-md" aria-hidden>
+                          bg-accent text-on-accent shadow-md" aria-hidden>
             <BarreMark />
           </div>
           <p className="font-medium">Barre</p>

@@ -84,7 +84,7 @@ export function AssistantLauncher() {
             {/* Honest about the gap: no generated answers without a backend. */}
             {!assistant.available && (
               <div className="flex items-start gap-2.5 border-t border-line bg-surface-2 px-4 py-3">
-                <Sparkles className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden />
+                <Sparkles className="mt-0.5 size-4 shrink-0 text-accent-text" aria-hidden />
                 <p className="text-[12.5px] text-ink-2">
                   {q && !views.length ? 'No saved view answers that yet. ' : ''}
                   The studio assistant is not connected. When it is, it will answer free-text questions from your

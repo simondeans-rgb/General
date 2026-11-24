@@ -1,16 +1,27 @@
 /**
- * A school's brand, made safe to use.
+ * A school's brand, made safe to use — without changing it.
  *
- * A school picks one colour. Everything the interface needs is derived from
- * it — button, hover, soft tint, and text on that tint — and adjusted where
- * necessary so text stays readable (WCAG AA, 4.5:1). A school that picks
- * a pale yellow gets a deeper gold that still looks like theirs, not
- * unreadable white-on-yellow buttons.
+ * The school's exact colour is used for every coloured surface: buttons,
+ * active tabs, badges. What changes to keep things readable is what sits ON
+ * that colour (white or black text, whichever reads better — one of the two
+ * always reaches WCAG AA), and the thin details drawn in the brand colour on
+ * white (links, focus outlines), which are deepened only if the exact colour
+ * would be too faint to read.
  */
 export type Palette = {
-  accent: string; hover: string; soft: string; ink: string;
-  /** True when the chosen colour had to be deepened for contrast. */
-  adjusted: boolean;
+  /** The school's exact colour. Surfaces. */
+  accent: string;
+  /** Text and icons on the brand colour: white or black. */
+  onAccent: string;
+  hover: string;
+  /** A light tint for backgrounds, and readable text on that tint. */
+  soft: string; ink: string;
+  /** The brand colour as text on white (4.5:1) and as a line or outline (3:1). */
+  text: string; line: string;
+  /** True when text on the brand colour is dark rather than white. */
+  darkText: boolean;
+  /** True when links and outlines use a deeper shade than the exact colour. */
+  textDeepened: boolean;
 };
 
 export const DEFAULT_BRAND = '#5b46d9';
@@ -84,19 +95,24 @@ const mix = (a: string, b: string, t: number) => {
 };
 
 export function paletteFor(input: string | null | undefined): Palette {
-  const base = normaliseHex(input) ?? DEFAULT_BRAND;
-  const accent = deepen(base, '#ffffff', 4.5);              // white button text
+  const accent = normaliseHex(input) ?? DEFAULT_BRAND;
+  const darkText = contrast(accent, '#ffffff') < 4.5;
+  const onAccent = darkText ? '#000000' : '#ffffff';
+  // Hover moves away from the text colour, so it only ever gets more readable.
   const [h, s, l] = toHsl(toRgb(accent));
-  const hover = fromHsl([h, s, Math.max(0, l - 0.07)]);
+  const hover = fromHsl([h, s, darkText ? Math.min(1, l + 0.08) : Math.max(0, l - 0.07)]);
   const soft = mix(accent, '#ffffff', 0.9);
-  const ink = deepen(accent, soft, 4.5);                    // text on the soft tint
-  return { accent, hover, soft, ink, adjusted: accent !== base };
+  const ink = deepen(accent, soft, 4.5);
+  const text = deepen(accent, '#ffffff', 4.5);
+  const line = deepen(accent, '#ffffff', 3);
+  return { accent, onAccent, hover, soft, ink, text, line, darkText, textDeepened: text !== accent };
 }
 
 /** CSS custom properties the whole interface reads its accent from. */
 export const cssVars = (p: Palette): Record<string, string> => ({
-  '--color-accent': p.accent, '--color-accent-hover': p.hover,
+  '--color-accent': p.accent, '--color-accent-hover': p.hover, '--color-on-accent': p.onAccent,
   '--color-accent-soft': p.soft, '--color-accent-ink': p.ink,
+  '--color-accent-text': p.text, '--color-accent-line': p.line,
 });
 
 /** Two letters for a school without a logo: "Northstar Dance Academy" → "ND". */

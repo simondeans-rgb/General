@@ -51,7 +51,7 @@ export function FeedbackView({ allow, title, showStudent }: {
               )}
               {n.work_on && (
                 <p className="mt-2 flex gap-2 rounded-[var(--radius-md)] bg-surface-2 p-3 text-sm">
-                  <Target className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden />
+                  <Target className="mt-0.5 size-4 shrink-0 text-accent-text" aria-hidden />
                   <span><span className="font-medium">To work on: </span>{n.work_on}</span>
                 </p>
               )}

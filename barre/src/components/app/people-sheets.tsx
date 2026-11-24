@@ -24,7 +24,7 @@ function useWrite(sql: string, onDone?: () => void) {
 
 const textarea =
   'w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm ' +
-  'focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/12';
+  'focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12';
 
 /* ── Family ─────────────────────────────────────────────────────────────── */
 export function FamilySheet({ row, onClose }: {
