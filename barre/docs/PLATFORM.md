@@ -21,6 +21,25 @@ schools up, manage plans and status, and help when asked.
 | Export all the school's data | | ✓ | | | |
 | See inside a school | only with the owner's grant, read-only, no health records | ✓ | ✓ | own classes | own family |
 
+## Each school's brand
+
+Every school shows its own **name, logo and colour** to its owner, staff,
+parents and students, with a small "powered by Barre" credit (under the
+name in the sidebar; at the foot of each page on a phone). Barre's own
+console keeps Barre's colours. The owner sets it under **Account → Your
+brand**, with a live preview; it is also a step in Setup.
+
+- **One colour.** The school picks a preset or any colour; every shade the
+  interface needs is derived from it (`lib/brand.ts`). A colour too pale for
+  white text is deepened — keeping its hue — so buttons and tinted text
+  always meet WCAG AA contrast, and the owner is told when that happened.
+- **Logo upload.** Any PNG, JPG, WebP or SVG up to 5 MB. It is redrawn in the
+  browser to a PNG no larger than 256 px before it is saved, so scripts in an
+  SVG, photo metadata and huge originals never reach the database. The
+  database also refuses anything but a PNG/JPEG/WebP data URL (the demo) or an
+  https link (file storage, in production).
+- Only the owner can change the brand, and not while the account is paused.
+
 ## The console (`/platform`)
 
 - **Schools** — every school with its owner, plan, status and usage against

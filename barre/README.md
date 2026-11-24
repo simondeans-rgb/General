@@ -33,6 +33,9 @@ Worth doing in this order:
    - **Requests**: Hannah has sent a medical update about Nia. **Acknowledge**
      tells her it arrived; **Acknowledge & add to record** puts her words on
      Nia's record and tells her, in one step — and Nia's teachers see it.
+   - **Account → Your brand**: Northstar's navy and star logo are what every
+     parent sees, "powered by Barre". Try another colour or upload a logo —
+     the preview updates before anyone else sees it.
    - Press **⌘K** for the questions the assistant will answer, and the screens
      that answer them today.
 2. **Marcus (teacher)** — open a class and take the register. Four taps per

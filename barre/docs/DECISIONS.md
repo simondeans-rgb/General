@@ -23,3 +23,5 @@ Where this build departs from the brief, or interprets it, and why.
 | Plan limits stop additions, never delete | Enforcing by removal | Downgrading must never cost a school its records. |
 | Platform staff see counts by role, not names, of a school's people | A full member list | Names of parents and children are the school's data, not Barre's. |
 | Teachers see a child's allergies, conditions, medication and emergency plan, with a marker for any recorded need (red for urgent, amber otherwise) | Only the allergy line, only for children flagged urgent | Owner's request: a teacher needs the asthma and the inhaler as much as the allergy. GP details still stay with the office. |
+| One brand colour per school, with every shade derived and contrast enforced | Full theme control | Schools look like themselves without being able to make the app unreadable. |
+| Logos are redrawn to a 256px PNG before saving | Storing the uploaded file as-is | Removes SVG scripts and photo metadata, keeps every page fast. |

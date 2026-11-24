@@ -1,3 +1,4 @@
+import { NORTHSTAR_LOGO } from './logos';
 /**
  * Demo data for Northstar Dance Academy.
  *
@@ -1013,6 +1014,7 @@ function buildPlatform(): string {
   return `
 -- Northstar is a paying customer on the Studio plan.
 update studio set plan_id = (select id from plan where code = 'studio'), status = 'active',
+                  brand_colour = '#1e3a8a', logo_url = ${q(NORTHSTAR_LOGO)},
                   created_at = now() - interval '2 years 3 months'
  where id = ${q(STUDIO_ID)};
 
@@ -1031,6 +1033,7 @@ insert into studio (id, name, slug, contact_email, plan_id, status, trial_ends_o
      (select id from plan where code = 'starter'), 'suspended', null,
      'Subscription unpaid since September — two reminders sent', now() - interval '6 days', now() - interval '14 months');
 
+update studio set brand_colour = '#be123c' where id = ${q(S.kestrel)};
 insert into membership (user_id, studio_id, role) values
   (${q(uid(NS.user, 191))}, ${q(S.kestrel)}, 'owner'),
   (${q(uid(NS.user, 192))}, ${q(S.pointe)}, 'owner');

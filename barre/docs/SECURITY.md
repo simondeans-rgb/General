@@ -166,6 +166,15 @@ connection previously let a background read's ROLLBACK cut across a write in
 progress, which then ran without the user's identity (and was refused).
 Transactions are now serialised.
 
+## School logos
+
+A logo is user-supplied content shown to every family, so it is treated as
+hostile: redrawn to PNG pixels on a canvas before saving (an SVG's scripts
+cannot survive that), shown only in `<img>` (which never runs script), and
+constrained in the database to raster data URLs or https links. Tested with
+an SVG carrying both an `onload` handler and a `<script>` element: neither
+ran, and what was stored was a PNG.
+
 ## What is NOT protected in this build
 
 Being plain about it:

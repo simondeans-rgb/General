@@ -12,6 +12,7 @@ import {
 import { cn } from '@/lib/cn';
 import { useSession, type Role } from '@/lib/auth/session';
 import { BarreMark } from './database-gate';
+import { SchoolMark, PoweredBy, useBrandTheme } from './brand';
 import { EmptyState, Button } from '@/components/ui';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
@@ -90,9 +91,12 @@ export function Shell({
 }) {
   const { session, signOut, loaded } = useSession();
   // The school this person is in (or, for Barre support, viewing).
-  const studio = useRows<{ name: string; status: string; data_deletion_due_on: string | null }>(
-    ['shell-studio'], `select name, status, data_deletion_due_on from studio order by created_at limit 1`, [],
+  const studio = useRows<{ name: string; status: string; data_deletion_due_on: string | null;
+                           brand_colour: string | null; logo_url: string | null }>(
+    ['shell-studio'], `select name, status, data_deletion_due_on, brand_colour, logo_url from studio order by created_at limit 1`, [],
     { enabled: !!session && (!session.platform || !!session.support), staleTime: 60_000 }).data?.[0];
+  const branded = !!studio && (!session?.platform || !!session?.support);
+  useBrandTheme(branded ? studio!.brand_colour : null);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -132,15 +136,29 @@ export function Shell({
     <div className="min-h-dvh lg:flex">
       {/* Desktop rail */}
       <aside className="hidden lg:flex w-[236px] shrink-0 flex-col border-r border-line bg-surface">
-        <div className="flex items-center gap-2.5 px-4 h-14 border-b border-line">
-          <span className="grid size-7 place-items-center rounded-md bg-accent text-white" aria-hidden>
-            <BarreMark className="size-4" />
-          </span>
-          <span className="font-semibold tracking-tight">Barre</span>
+        {/* The school's own name and logo; Barre steps back to a credit. */}
+        <div className="border-b border-line px-4 py-3.5">
+          {branded ? (
+            <div className="flex items-center gap-2.5">
+              <SchoolMark name={studio!.name} logo={studio!.logo_url} className="size-9" />
+              <span className="min-w-0 flex-1">
+                <span className="line-clamp-2 text-[14px] font-semibold leading-tight tracking-tight">{studio!.name}</span>
+                <PoweredBy />
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2.5">
+              <span className="grid size-9 place-items-center rounded-lg bg-accent text-white" aria-hidden>
+                <BarreMark className="size-5" />
+              </span>
+              <span className="min-w-0">
+                <span className="block font-semibold tracking-tight">Barre</span>
+                {session.platform && !session.support && <span className="block text-[11.5px] text-ink-3">Platform</span>}
+              </span>
+            </div>
+          )}
         </div>
-        <p className="truncate px-4 pt-4 pb-2 text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-3">
-          {session.platform && !session.support ? 'Barre platform' : studio?.name ?? '\u00a0'}
-        </p>
+        <div className="pt-3" />
         <nav className="flex-1 px-2" aria-label="Main">
           {nav.map(item => <RailLink key={item.href} item={item} pathname={pathname} />)}
           {(session.role === 'owner' || session.role === 'admin') && (
@@ -161,9 +179,11 @@ export function Shell({
         <header className="sticky top-0 z-30 border-b border-line bg-surface/85 backdrop-blur
                            supports-[backdrop-filter]:bg-surface/70">
           <div className="flex min-h-14 items-center gap-3 px-4 py-2.5 lg:px-6">
-            <span className="grid size-7 shrink-0 place-items-center rounded-md bg-accent text-white lg:hidden" aria-hidden>
-              <BarreMark className="size-4" />
-            </span>
+            {branded
+              ? <SchoolMark name={studio!.name} logo={studio!.logo_url} className="size-8 lg:hidden" />
+              : <span className="grid size-7 shrink-0 place-items-center rounded-md bg-accent text-white lg:hidden" aria-hidden>
+                  <BarreMark className="size-4" />
+                </span>}
             <div className="min-w-0 flex-1">
               <h1 className="truncate text-[17px] font-semibold tracking-tight lg:text-[19px]">{title}</h1>
               {subtitle && <div className="truncate text-[13px] text-ink-2">{subtitle}</div>}
@@ -187,7 +207,16 @@ export function Shell({
             {(session.role === 'owner') && <> <Link href="/account" className="font-medium underline">Account</Link></>}
           </div>
         )}
-        <main id="main" className="flex-1 px-4 pb-24 pt-4 lg:px-6 lg:pb-10">{children}</main>
+        <main id="main" className="flex-1 px-4 pb-24 pt-4 lg:px-6 lg:pb-10">
+          {children}
+          {/* On a phone the sidebar's name and credit are not visible. */}
+          {branded && (
+            <p className="mt-8 flex flex-col items-center gap-0.5 text-center lg:hidden">
+              <span className="text-[12.5px] font-medium text-ink-2">{studio!.name}</span>
+              <PoweredBy className="mt-0" />
+            </p>
+          )}
+        </main>
       </div>
 
       <MobileTabs nav={nav} pathname={pathname} />
