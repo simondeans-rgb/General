@@ -67,7 +67,8 @@ export function ChildClassesSheet({ child, onClose }: { child: { id: string; fir
               </p>
               {o.prerequisites && <p className="text-[12.5px] text-ink-3">Before joining: {o.prerequisites}</p>}
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                {o.enrolled ? <Badge tone="positive">{child.first_name} is in this class</Badge>
+                {o.pricing === 'drop_in' ? <Badge tone="info">Pay as you go — book a date under Drop-in classes</Badge>
+                  : o.enrolled ? <Badge tone="positive">{child.first_name} is in this class</Badge>
                   : o.waiting ? <Badge tone="info">On the waiting list</Badge>
                   : o.asked ? <Badge tone="caution">Asked — the office will be in touch</Badge>
                   : (

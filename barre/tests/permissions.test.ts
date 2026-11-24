@@ -53,7 +53,7 @@ describe('owner and admin', () => {
     await asUser(USERS.owner, async q => {
       expect((await q('select id from student')).length).toBeGreaterThan(40);
       expect((await q('select id from family where not is_prospect')).length).toBe(30);
-      expect((await q('select id from class')).length).toBe(12);
+      expect((await q('select id from class')).length).toBe(13);   // 12 term classes + the adult drop-in
       expect((await q('select id from invoice')).length).toBe(30);
     });
   });

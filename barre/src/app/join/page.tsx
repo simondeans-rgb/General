@@ -130,8 +130,67 @@ function Join() {
             )}
           </>
         )}
+        {s?.open && !book.isSuccess && <AdultDropIn slug={slug} />}
         <PoweredBy className="justify-center" />
       </div>
     </main>
+  );
+}
+
+type DropIn = { session_id: string; class_name: string; starts_at: string; price_minor: number; places_left: number };
+
+/** Adults book a single class for themselves (R-034). */
+function AdultDropIn({ slug }: { slug: string }) {
+  const rows = useQuery({ queryKey: ['public-dropins', slug],
+    queryFn: () => readAs<DropIn>(null, `select * from app.public_drop_in_sessions($1)`, [slug]) });
+  const [pick, setPick] = React.useState<DropIn | null>(null);
+  const [f, setF] = React.useState({ name: '', email: '', phone: '', emergency_name: '', emergency_phone: '', website: '' });
+  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF(x => ({ ...x, [k]: e.target.value }));
+  const book = useMutation({
+    mutationFn: () => runAs(null, q => q(`select app.public_adult_drop_in($1, $2, $3::jsonb)`, [slug, pick!.session_id, JSON.stringify(f)])),
+  });
+  if (!rows.data?.length) return null;
+  if (book.isSuccess) return (
+    <Card className="p-6 text-center">
+      <CheckCircle2 className="mx-auto mb-2 size-8 text-positive" aria-hidden />
+      <h2 className="text-lg font-semibold">See you at {pick!.class_name}</h2>
+      <p className="mt-1 text-sm text-ink-2">{dateLong(pick!.starts_at)} at {time(pick!.starts_at)}. {money(pick!.price_minor)} — pay on the night or online once the school sends your invoice.</p>
+    </Card>
+  );
+  const ok = f.name.trim() && /@.+\./.test(f.email) && f.phone.trim() && f.emergency_phone.trim();
+  return (
+    <Card>
+      <div className="p-4 pb-2"><h2 className="font-semibold">Adults: drop in</h2><p className="text-[13px] text-ink-2">Book a single class for yourself. No commitment.</p></div>
+      <ul className="divide-y divide-line" aria-label="Drop-in classes">
+        {rows.data.map(x => (
+          <li key={x.session_id}>
+            <button onClick={() => setPick(x)} aria-pressed={pick?.session_id === x.session_id}
+              className={cn('flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-surface-2', pick?.session_id === x.session_id && 'bg-accent-soft')}>
+              <span className="min-w-0 flex-1"><span className="block font-medium">{x.class_name}</span>
+                <span className="block text-[13px] text-ink-2">{dateLong(x.starts_at)} · {time(x.starts_at)}</span></span>
+              <span className="text-[13px] font-medium">{money(x.price_minor)}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {pick && (
+        <div className="space-y-3 border-t border-line p-4">
+          <Field label="Your name" htmlFor="ad-n" required><Input id="ad-n" value={f.name} onChange={set('name')} autoComplete="name" /></Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Email" htmlFor="ad-e" required><Input id="ad-e" type="email" value={f.email} onChange={set('email')} autoComplete="email" /></Field>
+            <Field label="Mobile" htmlFor="ad-p" required><Input id="ad-p" type="tel" value={f.phone} onChange={set('phone')} autoComplete="tel" /></Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Emergency contact" htmlFor="ad-en"><Input id="ad-en" value={f.emergency_name} onChange={set('emergency_name')} /></Field>
+            <Field label="Their phone" htmlFor="ad-ep" required><Input id="ad-ep" type="tel" value={f.emergency_phone} onChange={set('emergency_phone')} /></Field>
+          </div>
+          <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden className="absolute -left-[9999px] size-px opacity-0" value={f.website} onChange={set('website')} />
+          {book.error != null && <ErrorState error={book.error} />}
+          <Button variant="primary" className="w-full" disabled={!ok} loading={book.isPending} onClick={() => book.mutate()}>
+            Book {pick.class_name}, {money(pick.price_minor)}
+          </Button>
+        </div>
+      )}
+    </Card>
   );
 }

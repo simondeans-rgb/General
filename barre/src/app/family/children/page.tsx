@@ -14,6 +14,7 @@ import {
 import * as F from '@/lib/repos/family';
 import { YourDetails, EmergencyContacts } from '@/components/app/family-details';
 import { ChildClassesSheet, AddChildSheet } from '@/components/app/family-classes';
+import { DropIns } from '@/components/app/drop-ins';
 import { ageFrom, dateShort, initials, time, dateLong, dayRange } from '@/lib/format';
 
 type Child = {
@@ -101,6 +102,8 @@ export default function FamilyChildren() {
             </div>
           </Card>
         ))}
+
+        {children.data && <DropIns children={children.data} />}
 
         <Button className="w-full" onClick={() => setAdding(true)}>
           <UserPlus className="size-4" aria-hidden /> Add another child

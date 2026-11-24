@@ -1059,6 +1059,19 @@ insert into student (studio_id, family_id, first_name, last_name, date_of_birth)
   (${q(S.kestrel)}, ${q(uid(NS.family, 191))}, 'Orla', 'Brennan', current_date - interval '11 years');
 insert into location (studio_id, name, city) values (${q(S.pointe)}, 'The Mill', 'Brighton');
 
+-- Adults drop in on Thursday evenings, by the class or with a pack (R-034).
+insert into class (id, studio_id, term_id, dance_style_id, location_id, teacher_id, name, day_of_week, start_time, duration_min,
+                   capacity, age_min, price_minor, pricing, trials_enabled, description)
+select ${q(uid(NS.class, 191))}, ${q(STUDIO_ID)}, (select id from term where studio_id = ${q(STUDIO_ID)} order by starts_on desc limit 1),
+       (select id from dance_style where studio_id = ${q(STUDIO_ID)} and name = 'Contemporary'),
+       (select id from location where studio_id = ${q(STUDIO_ID)} order by name limit 1),
+       (select id from staff_member where user_id = ${q(uid(NS.user, 3))} and studio_id = ${q(STUDIO_ID)}),
+       'Adult Contemporary (drop-in)', 4, '20:00', 60, 16, 18, 1200, 'drop_in', false,
+       'For adults, all levels. Come when you can: pay per class or buy a pack.';
+select app.generate_class_sessions(${q(uid(NS.class, 191))});
+insert into class_pack (studio_id, name, classes, price_minor, valid_days) values
+  (${q(STUDIO_ID)}, '5-class pack', 5, 5000, 90), (${q(STUDIO_ID)}, '10-class pack', 10, 9000, 180);
+
 -- Priya also teaches one class at Kestrel: one login, two schools (R-031).
 insert into membership (user_id, studio_id, role, created_at) values (${q(uid(NS.user, 3))}, ${q(S.kestrel)}, 'teacher', now() + interval '1 minute');
 insert into staff_member (id, studio_id, user_id, display_name) values (${q(uid(NS.staff, 190))}, ${q(S.kestrel)}, ${q(uid(NS.user, 3))}, 'Priya Raman');

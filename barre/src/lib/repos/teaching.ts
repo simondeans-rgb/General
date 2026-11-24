@@ -76,6 +76,12 @@ with roll as (
     from trial t
     join student s on s.id = t.student_id
    where t.session_id = $1 and t.status in ('booked','attended') and t.deleted_at is null
+  union all
+  -- Drop-ins (migration 0033) are marked like anyone in the class.
+  select s.id, s.first_name, s.last_name, s.preferred_name, s.date_of_birth, false
+    from drop_in_booking d
+    join student s on s.id = d.student_id
+   where d.session_id = $1 and d.status = 'booked'
 )
 select roll.id as student_id, roll.first_name, roll.last_name, roll.preferred_name,
        roll.date_of_birth, roll.is_trial,
