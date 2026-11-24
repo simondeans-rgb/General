@@ -36,4 +36,9 @@ Where this build departs from the brief, or interprets it, and why.
 | Choosing a school narrows every access helper; it never grants | Filtering on each screen | One school's data cannot leak into another's view whatever a query does. |
 | Retention defaults: medical deleted 12 months after leaving, child anonymised after 36, invoices kept 72 | No defaults | Working defaults the owner can change. **To confirm with the school's adviser.** |
 | Milestones count classes attended and shows done; absences never take anything away; no leaderboards | Streaks | Celebration without pressure. |
+| Credit for a class the school cancels is a setting, off by default; when on, each enrolled child's per-class value goes on account once | Automatic credit always, or none | Schools differ; the owner chooses. **To confirm with the owner.** |
+| Drop-ins use a pack first, else go on the family's account; cancelling 24h ahead costs nothing | Charging a card at booking | Works today without payments; card payment slots in when connected. |
+| Invoices the system raises (packs, drop-ins) go through an internal function, never by borrowing an office login | Impersonating the owner | The audit trail stays truthful. |
+| Notifications email only those who chose email, and wait for quiet hours — except same-day cancellations | Email everything | Respect people's evenings without missing what matters today. |
+| Pilot tracking shows counts only | Showing names to the platform team | A school's people stay the school's data. |
 

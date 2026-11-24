@@ -70,6 +70,7 @@ const NAV: Record<Role, NavItem[]> = {
   platform: [
     { href: '/platform', label: 'Schools', icon: Building2 },
     { href: '/platform/plans', label: 'Plans', icon: Layers },
+    { href: '/platform/pilot', label: 'Pilot', icon: Rocket },
   ],
   student: [
     { href: '/learn', label: 'Today', icon: Home },

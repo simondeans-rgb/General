@@ -137,9 +137,15 @@ progress timeline, goals, reflections and milestones (R-020 – R-026); shows
 and events with invitations, running order, rehearsals, chaperones and fees
 (R-015); a safeguarding concern log (R-033); staff DBS and training expiry
 (R-035); leaver data retention (R-041); and one login across several
-schools (R-031).
+schools (R-031). Then: drop-in classes, class packs and adults booking for
+themselves (R-034); optional credit when the school cancels a class; email,
+text and push delivery with a safe queue and a scheduler (R-003, R-017,
+docs/DELIVERY.md); an installable app; and pilot activation tracking in the
+platform console (R-040).
 
-**Built, waiting on a server:** card payments (Stripe module and webhook
+**Built, waiting on a server:** the delivery worker (`scripts/deliver.mts` —
+needs provider keys and a scheduler), phone notifications (need VAPID keys
+and HTTPS hosting), card payments (Stripe module and webhook
 entry point written and tested — docs/PAYMENTS.md), email/SMS delivery
 (messages queue for a provider), the automations scheduler (the runner is
 callable; nothing calls it on a timer yet), real sign-in (Supabase Auth
@@ -147,5 +153,4 @@ replaces the person picker; nothing else changes).
 
 **Designed, not built:** the AI assistant (interface and Cmd-K routing to
 saved views; no generated answers), Studio Pulse's composite score (computed
-once there are 180 days of history), adult drop-in booking with card payment
-(R-034, waits on payments), costume ordering and the shop.
+once there are 180 days of history), costume ordering and the shop.
