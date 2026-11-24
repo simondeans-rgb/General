@@ -4,7 +4,7 @@ import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { Check, LogOut, ArrowLeftRight } from 'lucide-react';
-import { PERSONAS, useSession, type Persona } from '@/lib/auth/session';
+import { PERSONA_GROUPS, useSession, type Persona } from '@/lib/auth/session';
 import { Badge, Button } from '@/components/ui';
 import { initials } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -27,7 +27,7 @@ const ROLE_HOME = { owner: '/today', admin: '/today', teacher: '/teach',
  * fixed-position descendants — so `fixed inset-0` inside it resolves to the
  * 56px header rather than the viewport, and the sheet renders off-screen.
  */
-export function PersonSwitcher({ className }: { className?: string }) {
+export function PersonSwitcher({ className, label }: { className?: string; label?: string }) {
   const { session, signIn, signOut } = useSession();
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
@@ -55,6 +55,12 @@ export function PersonSwitcher({ className }: { className?: string }) {
 
   return (
     <>
+      {label ? (
+        <button onClick={() => setOpen(true)} aria-haspopup="dialog"
+          className={cn('text-[12.5px] font-medium text-accent hover:underline', className)}>
+          {label}
+        </button>
+      ) : (
       <button
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
@@ -67,6 +73,7 @@ export function PersonSwitcher({ className }: { className?: string }) {
       >
         {initials(session.name)}
       </button>
+      )}
 
       {open && mounted && createPortal(
         <div className="fixed inset-0 z-[60] flex items-end justify-center bg-ink/30 sm:items-center"
@@ -84,12 +91,14 @@ export function PersonSwitcher({ className }: { className?: string }) {
               <h2 id="switch-title" className="text-[17px] font-semibold tracking-tight">Switch person</h2>
             </div>
             <p className="mb-3 text-[13px] text-ink-2">
-              The same studio, seen by someone else. What each person can read is
-              decided by the database, not by this menu.
+              What each person can read is decided by the database, not by this menu.
             </p>
 
+            {PERSONA_GROUPS().map(g => (
+            <section key={g.title} className="mb-3">
+            <h3 className="mb-1.5 text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-3">{g.title}</h3>
             <ul className="space-y-1.5">
-              {PERSONAS.map(p => {
+              {g.people.map(p => {
                 const current = p.userId === session.userId;
                 return (
                   <li key={p.userId}>
@@ -118,6 +127,8 @@ export function PersonSwitcher({ className }: { className?: string }) {
                 );
               })}
             </ul>
+            </section>
+            ))}
 
             <div className="mt-4 flex gap-2 border-t border-line pt-3">
               <Button className="flex-1" onClick={() => setOpen(false)}>Close</Button>

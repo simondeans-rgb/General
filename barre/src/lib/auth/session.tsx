@@ -25,6 +25,14 @@ export type Persona = {
   blurb: string;
 };
 
+/** Grouped for the sign-in page and the switcher: the operator first. */
+export const PERSONA_GROUPS = () => [
+  { title: 'You, running Barre', blurb: 'The platform console: every school, its plan, status and owner.',
+    people: PERSONAS.filter(p => p.role === 'platform') },
+  { title: 'Northstar Dance Academy', blurb: 'A school using Barre, seen by each of its people.',
+    people: PERSONAS.filter(p => p.role !== 'platform') },
+];
+
 export const PERSONAS: Persona[] = [
   { userId: uid(NS.user, 1), name: 'Freya Lindqvist', role: 'owner', title: 'Studio owner',
     blurb: 'Runs Northstar. Sees everything: people, money, the whole timetable.' },

@@ -151,14 +151,30 @@ select s.studio_id, s.id, $2,
   from student s where s.id = $1
 returning id`;
 
+export type PendingRequest = {
+  id: string; kind: string; status: string; subject: string; body: string; created_at: string;
+  student_id: string | null; student_name: string | null; family_id: string | null; family_name: string | null;
+  guardian_name: string | null; children: { id: string; name: string }[];
+};
+
 export const PENDING_REQUESTS = `
 select r.id, r.kind, r.status, r.subject, r.body, r.created_at,
-       s.first_name as student_name, f.name as family_name
+       r.student_id, s.first_name || ' ' || s.last_name as student_name,
+       r.family_id, f.name as family_name,
+       coalesce(u.full_name, (select g.full_name from guardian g where g.family_id = r.family_id
+                                and g.deleted_at is null order by g.is_primary desc limit 1)) as guardian_name,
+       coalesce((select jsonb_agg(jsonb_build_object('id', c.id, 'name', c.first_name || ' ' || c.last_name)
+                                  order by c.date_of_birth)
+                   from student c where c.family_id = r.family_id and c.deleted_at is null), '[]'::jsonb) as children
   from studio_request r
   left join student s on s.id = r.student_id
   left join family f on f.id = r.family_id
+  left join user_account u on u.id = r.raised_by
  where r.deleted_at is null and r.status in ('open','in_progress')
- order by r.created_at`;
+ order by (r.kind = 'medical_update') desc, r.created_at`;
+
+/** One step: tell the parent, and optionally put it on the record (migration 0021). */
+export const ACK_MEDICAL = `select app.acknowledge_medical_update($1, $2::jsonb, $3, $4)`;
 
 export const PENDING_ENTRIES = `
 select p.id, p.status, ev.title as event_title, ev.starts_at,

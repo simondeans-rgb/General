@@ -152,6 +152,7 @@ export function Shell({
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">{session.name}</p>
             <p className="text-[12.5px] capitalize text-ink-3">{session.support ? "Barre support" : session.platform ? "Barre platform" : session.role}</p>
+            <PersonSwitcher label="Switch person" />
           </div>
         </div>
       </aside>

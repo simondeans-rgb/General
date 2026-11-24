@@ -30,6 +30,9 @@ Worth doing in this order:
    - **Reports**: attendance by week, places filled, conversion — and Studio
      Pulse, which shows its parts but withholds the score until there is
      enough history to trust it.
+   - **Requests**: Hannah has sent a medical update about Nia. **Acknowledge**
+     tells her it arrived; **Acknowledge & add to record** puts her words on
+     Nia's record and tells her, in one step — and Nia's teachers see it.
    - Press **⌘K** for the questions the assistant will answer, and the screens
      that answer them today.
 2. **Marcus (teacher)** — open a class and take the register. Four taps per
@@ -40,8 +43,9 @@ Worth doing in this order:
    her conversation with the studio; tap an invoice in **Payments** to see its
    lines.
 
-4. **Jordan (Barre platform admin)** — every school on Barre: plans, status,
-   usage, revenue. **New school** creates an account and an owner invitation
+4. **Jordan (Barre platform admin)** — first on the sign-in page under "You,
+   running Barre", or via **Switch person** at the bottom of the sidebar.
+   Every school on Barre: plans, status, usage, revenue. **New school** creates an account and an owner invitation
    link; open it (signed out, or in a private window) to join as that owner.
    Northstar's owner has allowed support access: open its read-only view
    from Northstar's panel. Pointe & Flex is suspended — sign in as its owner

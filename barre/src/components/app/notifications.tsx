@@ -18,7 +18,7 @@ import { cn } from '@/lib/cn';
 const ICON: Record<string, React.ElementType> = {
   message: MessageSquare, payment_failed: CreditCard, new_enquiry: Sparkles, new_trial: Sparkles,
   new_enrolment: UserPlus, waitlist: ListOrdered, waitlist_offer: ListOrdered,
-  medical_updated: HeartPulse, request: Inbox, teacher_changed: GraduationCap,
+  medical_updated: HeartPulse, request: Inbox, request_answered: MessageSquare, teacher_changed: GraduationCap,
 };
 
 /**
