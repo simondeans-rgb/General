@@ -119,6 +119,26 @@ voids, reminders), the inbox (family conversations, class and studio
 broadcasts, templates), the notification centre, trial and waiting-list
 automations, and reports.
 
+**Added after the expert review** (the report's R-numbers in brackets):
+one-off changes to a single class — cancel, move, cover — with families told
+(R-004); every trial child on the register (R-005); teachers' fortnight and
+cover requests (R-030); class transfers (R-042); parents editing their own
+details and emergency contacts (R-016); class pricing models, trial prices and
+assistants (R-009); term billing runs with sibling and multi-class discounts
+(R-010, R-011); CSV exports (R-012); duplicating classes and rolling a term
+over (R-008); spreadsheet import (R-013); office enquiries, parent
+self-service and a public trial-booking page per school (R-014); ⌘K search
+across people and invoices (R-044); read receipts and reminders (R-018);
+notification preferences and quiet hours (R-019); teachers writing to
+families in the open, and requests in the family conversation (R-028);
+scheduled messages (R-037); calendar downloads (R-036); undo for removals
+(R-043); skill frameworks, class feedback in minutes, term reports, a
+progress timeline, goals, reflections and milestones (R-020 – R-026); shows
+and events with invitations, running order, rehearsals, chaperones and fees
+(R-015); a safeguarding concern log (R-033); staff DBS and training expiry
+(R-035); leaver data retention (R-041); and one login across several
+schools (R-031).
+
 **Built, waiting on a server:** card payments (Stripe module and webhook
 entry point written and tested — docs/PAYMENTS.md), email/SMS delivery
 (messages queue for a provider), the automations scheduler (the runner is
@@ -127,5 +147,5 @@ replaces the person picker; nothing else changes).
 
 **Designed, not built:** the AI assistant (interface and Cmd-K routing to
 saved views; no generated answers), Studio Pulse's composite score (computed
-once there are 180 days of history), shows and recitals beyond events,
-costumes and the shop.
+once there are 180 days of history), adult drop-in booking with card payment
+(R-034, waits on payments), costume ordering and the shop.

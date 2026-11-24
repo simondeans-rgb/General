@@ -25,3 +25,15 @@ Where this build departs from the brief, or interprets it, and why.
 | Teachers see a child's allergies, conditions, medication and emergency plan, with a marker for any recorded need (red for urgent, amber otherwise) | Only the allergy line, only for children flagged urgent | Owner's request: a teacher needs the asthma and the inhaler as much as the allergy. GP details still stay with the office. |
 | One brand colour per school, used exactly; readability comes from choosing white or black text on it, and deepening only links and outlines | Full theme control, or substituting a darker colour | The school's own hex appears exactly as in its guidelines, and the app still cannot be made unreadable. |
 | Logos are redrawn to a 256px PNG before saving | Storing the uploaded file as-is | Removes SVG scripts and photo metadata, keeps every page fast. |
+| A term billing run raises drafts first; nothing is sent until the office sends them all | Issuing straight away | Thirty invoices are checked before any family sees one. |
+| A child is never billed twice for a class in a term; late joiners pay pro rata by sessions left | Billing by enrolment date alone | A second run picks up only new joiners. |
+| Sibling and multi-class discounts do not stack — the larger applies; both start switched off | Stacking, or on by default | Predictable for families; no school discounts by accident. **To confirm with the owner.** |
+| Imports are checked row by row first, then applied all-or-nothing | Importing the good rows and skipping the bad | No half-imported school to untangle. |
+| Undo is a ten-second delay before a removal is written | Writing, then restoring | Nothing to roll back; closing the page keeps the item. |
+| Scheduled messages are hidden by a restrictive policy until their time, and released by the office's open app | A client-side timer only | No read path can reveal them early. With hosting, a scheduler calls the same function. |
+| Teachers may write to a child's family; it lands in the family's conversation, visible to the office | Private teacher–parent threads | No private channels between staff and children's families. |
+| Safeguarding tables have no read policy; reading goes through functions that log every view | Row-level read for owner and lead | The access log cannot be bypassed. |
+| Choosing a school narrows every access helper; it never grants | Filtering on each screen | One school's data cannot leak into another's view whatever a query does. |
+| Retention defaults: medical deleted 12 months after leaving, child anonymised after 36, invoices kept 72 | No defaults | Working defaults the owner can change. **To confirm with the school's adviser.** |
+| Milestones count classes attended and shows done; absences never take anything away; no leaderboards | Streaks | Celebration without pressure. |
+
