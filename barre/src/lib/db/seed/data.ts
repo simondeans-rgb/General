@@ -134,6 +134,9 @@ export function buildSeedSql({ today = new Date() }: SeedOptions = {}): string {
     + `\nupdate studio_event r set parent_event_id = sh.id from studio_event sh
          where r.kind = 'rehearsal' and sh.kind = 'show' and sh.studio_id = r.studio_id
            and split_part(r.title, ' — ', 1) = split_part(sh.title, ' — ', 1);`
+    + `\nupdate class_session cs set register_closed_at = cs.ends_at
+         where cs.ends_at < now() - interval '2 hours' and cs.register_closed_at is null
+           and exists (select 1 from attendance_record a where a.session_id = cs.id);`
     + `\nselect app.award_event_milestones(id) from studio;`
     + `\nselect set_config('app.quiet', 'off', false);\n`;
 }
