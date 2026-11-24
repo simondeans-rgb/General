@@ -187,6 +187,14 @@ function Register() {
             Register closed. Everyone is accounted for — reopen it if something needs changing.
           </p>
         )}
+        {closed && (
+          <Link href={`/teach/feedback/?session=${sessionId}`}
+            className="flex items-center justify-between rounded-[var(--radius-lg)] border border-accent-line bg-accent-soft px-4 py-3 hover:brightness-95">
+            <span><span className="block font-medium text-accent-ink">Give class feedback</span>
+              <span className="block text-[13px] text-ink-2">Tap a child, tap what fits. A whole class in a few minutes.</span></span>
+            <ChevronRight className="size-4 text-accent-ink" aria-hidden />
+          </Link>
+        )}
         {closed && <NextClass sessionId={sessionId} />}
         {closeRegister.isError && <ErrorState error={closeRegister.error} />}
 

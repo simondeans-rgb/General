@@ -7,7 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   CalendarDays, LayoutGrid, Users, GraduationCap, Route, ClipboardCheck,
   Home, Baby, MessageSquare, CreditCard, PlayCircle, Trophy, Inbox, Settings2, Rocket,
-  MoreHorizontal, FolderOpen, Receipt, BarChart3, Building2, Layers, KeyRound, ShieldCheck, LogOut,
+  MoreHorizontal, FolderOpen, Receipt, BarChart3, Building2, Layers, KeyRound, ShieldCheck, LogOut, FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useSession, type Role } from '@/lib/auth/session';
@@ -54,6 +54,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: '/teach', label: 'Today', icon: ClipboardCheck },
     { href: '/teach/students', label: 'Students', icon: Users },
     { href: '/teach/material', label: 'Material', icon: FolderOpen },
+    { href: '/teach/reports', label: 'Reports', icon: FileText },
   ],
   guardian: [
     { href: '/family', label: 'Home', icon: Home },

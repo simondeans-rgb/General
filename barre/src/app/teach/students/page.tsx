@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Suspense } from 'react';
 import { Users, MessageSquarePlus, HeartPulse, Mail } from 'lucide-react';
 import { TeacherMessageSheet } from '@/components/app/teacher-message';
+import { SkillsPanel, Goals, Reflections, Milestones, Timeline } from '@/components/app/progress';
 import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection, KeyValue } from '@/components/app/detail-panel';
 import { MedicalBrief, MedicalMarker } from '@/components/app/medical-brief';
@@ -112,6 +113,20 @@ function MyStudents() {
                       ['Attendance', current.attendance_pct != null ? `${current.attendance_pct}%` : null],
                     ]} />
                   </DetailSection>
+                  <DetailSection title="Skills">
+                    <SkillsPanel studentId={current.id} editable />
+                  </DetailSection>
+                  <DetailSection title="Goals this term">
+                    <Goals studentId={current.id} mode="teacher" />
+                  </DetailSection>
+                  {(ageFrom(current.date_of_birth) ?? 0) >= 13 && (
+                    <DetailSection title="Their reflections">
+                      <Reflections studentId={current.id} />
+                      <p className="mt-1.5 text-[12px] text-ink-3">Only you, their other teachers and the student see these. If one worries you, follow your safeguarding procedure.</p>
+                    </DetailSection>
+                  )}
+                  <DetailSection title="Milestones"><Milestones studentId={current.id} /></DetailSection>
+                  <DetailSection title="Timeline"><Timeline studentId={current.id} limit={8} /></DetailSection>
                   <Button className="w-full" onClick={() => setWriting(current)}>
                     <MessageSquarePlus className="size-4" aria-hidden /> Write feedback
                   </Button>

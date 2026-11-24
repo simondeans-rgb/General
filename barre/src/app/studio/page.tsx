@@ -7,6 +7,7 @@ import {
   DoorOpen, CalendarOff, Building2,
 } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
+import { FrameworkSettings, ChipSettings } from '@/components/app/progress-settings';
 import { RecordSheet } from '@/components/app/record-sheet';
 import { useRows, useRow } from '@/lib/query';
 import { resetDemo, runAs } from '@/lib/db/client';
@@ -46,6 +47,8 @@ export default function StudioSettings() {
           <Styles />
           <Levels />
         </div>
+        <FrameworkSettings />
+        <ChipSettings />
         <AboutDemo />
       </div>
     </Shell>

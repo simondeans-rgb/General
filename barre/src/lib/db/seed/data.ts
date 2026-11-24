@@ -130,7 +130,9 @@ export function buildSeedSql({ today = new Date() }: SeedOptions = {}): string {
   // Loading a studio's history is not news: hold notifications while seeding.
   return `select set_config('app.quiet', 'on', false);\n` + out.join('\n') + '\n' + buildClassesAndPeople({
     termId: TERM, base, LOC, ROOM, STAFF, STYLE, LEVEL, guardianUsers,
-  }) + '\n' + buildPlatform() + `\nselect set_config('app.quiet', 'off', false);\n`;
+  }) + '\n' + buildPlatform()
+    + `\nselect app.award_event_milestones(id) from studio;`
+    + `\nselect set_config('app.quiet', 'off', false);\n`;
 }
 
 type Ctx = {
