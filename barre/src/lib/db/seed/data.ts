@@ -529,7 +529,8 @@ function buildMedicalBillingComms(ctx: ActivityCtx): string {
 
   // Conversations go both ways. Who sent each message, and which way it
   // travelled, is what the inbox threads on.
-  const hoursAgo = (h: number) => new Date(base.getTime() + 9 * 3600_000 - h * 3600_000).toISOString();
+  // Relative to the real clock, so nothing is ever seeded in the future.
+  const hoursAgo = (h: number) => new Date(Date.now() - h * 3600_000).toISOString();
   const OFFICE = uid(NS.user, 5), FREYA = uid(NS.user, 1);
   push(`update communication set inbound = true, sent_by = ${row([uid(NS.user, 11)])}
          where id = ${row([uid(NS.comm, 3)])};

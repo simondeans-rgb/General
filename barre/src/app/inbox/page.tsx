@@ -14,6 +14,7 @@ import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import { useSelection } from '@/lib/use-selection';
+import { useSearchParams } from 'next/navigation';
 import {
   Badge, Button, Card, EmptyState, ErrorState, Field, Input, Select, Skeleton,
 } from '@/components/ui';
@@ -31,7 +32,10 @@ export default function InboxPage() {
 function Inbox() {
   const { selected: family, select } = useSelection('family');
   const [tab, setTab] = React.useState<Tab>('families');
+  // ?compose=class opens the composer — the assistant's "message a class" lands here.
   const [composing, setComposing] = React.useState(false);
+  const compose = useSearchParams().get('compose');
+  React.useEffect(() => { if (compose) setComposing(true); }, [compose]);
   const threads = useRows<I.Thread>(['threads'], I.THREADS);
   const requests = useRows<{ id: string }>(['pending-requests'], H.PENDING_REQUESTS);
   const unread = threads.data?.reduce((n, t) => n + t.unread, 0) ?? 0;

@@ -167,6 +167,17 @@ select cm.id, cm.kind, cm.subject, cm.body, cm.sent_at,
  order by cm.sent_at desc
  limit 5`;
 
+/** Families whose latest message is theirs: the studio owes them a reply. */
+export const ATTENTION_MESSAGES = `
+select count(*)::int as awaiting,
+       string_agg(name, ', ' order by last_at) filter (where rn <= 3) as names
+  from (select f.name, last.sent_at as last_at, row_number() over (order by last.sent_at) rn
+          from family f
+          join lateral (select inbound, sent_at from communication c
+                         where c.family_id = f.id and c.kind = 'direct' and c.deleted_at is null
+                         order by c.sent_at desc limit 1) last on last.inbound
+         where f.deleted_at is null) t`;
+
 /** Card 5 — families waiting on the studio to answer or confirm. */
 export const ATTENTION_REQUESTS = `
 select

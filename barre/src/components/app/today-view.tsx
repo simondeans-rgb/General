@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import {
-  AlertCircle, CreditCard, Users, UserPlus, TrendingDown, ChevronRight, CalendarX2, Inbox,
+  AlertCircle, CreditCard, Users, UserPlus, TrendingDown, ChevronRight, CalendarX2, Inbox, MessageSquare,
 } from 'lucide-react';
 import { Shell } from './shell';
 import { useRows, useRow } from '@/lib/query';
@@ -103,8 +103,9 @@ function NeedsAttention() {
     ['att-lapsed'], Q.ATTENTION_LAPSED);
   const reqs = useRow<{ open_requests: number; pending_entries: number; medical_updates: number }>(
     ['att-requests'], Q.ATTENTION_REQUESTS);
+  const msgs = useRow<{ awaiting: number; names: string | null }>(['att-messages'], Q.ATTENTION_MESSAGES);
 
-  const loading = pay.isLoading || cap.isLoading || trials.isLoading || lapsed.isLoading || reqs.isLoading;
+  const loading = pay.isLoading || cap.isLoading || trials.isLoading || lapsed.isLoading || reqs.isLoading || msgs.isLoading;
   if (loading) return <Card className="p-4"><Skeleton className="h-5 w-40" /><Skeleton className="mt-3 h-16" /></Card>;
 
   const cards: React.ReactNode[] = [];
@@ -128,9 +129,16 @@ function NeedsAttention() {
         detail={bits.join(' · ')} />);
   }
 
+  if (msgs.data && msgs.data.awaiting > 0) {
+    cards.push(
+      <AttentionCard key="msgs" href="/inbox" tone="info" icon={<MessageSquare className="size-4" />}
+        headline={`${msgs.data.awaiting} famil${msgs.data.awaiting === 1 ? 'y is' : 'ies are'} waiting for a reply`}
+        detail={(msgs.data.names ?? '') + (msgs.data.awaiting > 3 ? '…' : '')} />);
+  }
+
   if (pay.data && (pay.data.failed > 0 || Number(pay.data.outstanding_minor) > 0)) {
     cards.push(
-      <AttentionCard key="pay" href="/people?filter=owing" tone="critical" icon={<CreditCard className="size-4" />}
+      <AttentionCard key="pay" href="/billing" tone="critical" icon={<CreditCard className="size-4" />}
         headline={pay.data.failed > 0
           ? `${pay.data.failed} failed payment${pay.data.failed === 1 ? '' : 's'}`
           : `${pay.data.unpaid_invoices} unpaid invoices`}
@@ -244,7 +252,7 @@ function RecentMessages() {
     render={r => (
       <div>
         <div className="flex items-baseline justify-between gap-3">
-          <span className="min-w-0 truncate font-medium">{r.subject}</span>
+          <span className="min-w-0 truncate font-medium">{r.subject || r.body}</span>
           <span className="shrink-0 text-[12.5px] text-ink-3">{relativeDay(r.sent_at)}</span>
         </div>
         <span className="block truncate text-[13px] text-ink-2">{label(r)}</span>

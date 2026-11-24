@@ -15,6 +15,7 @@ import { BarreMark } from './database-gate';
 import { EmptyState, Button } from '@/components/ui';
 import { PersonSwitcher } from './person-switcher';
 import { NotificationBell } from './notifications';
+import { AssistantLauncher } from './assistant';
 
 type NavItem = {
   href: string; label: string; icon: React.ElementType;
@@ -154,6 +155,7 @@ export function Shell({
               {subtitle && <div className="truncate text-[13px] text-ink-2">{subtitle}</div>}
             </div>
             {actions}
+            {(session.role === 'owner' || session.role === 'admin') && <AssistantLauncher />}
             {session.role !== 'student' && <NotificationBell />}
             <PersonSwitcher className="lg:hidden" />
           </div>

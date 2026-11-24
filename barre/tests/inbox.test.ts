@@ -241,3 +241,18 @@ describe('the inbox screen’s queries', () => {
     });
   });
 });
+
+describe('the Today screen knows who is waiting for a reply', () => {
+  it('counts families whose latest message is theirs', async () => {
+    const D = await import('../src/lib/repos/dashboard');
+    const I = await import('../src/lib/repos/inbox');
+    await asUser(USERS.owner, async q => {
+      const [a] = await q(D.ATTENTION_MESSAGES);
+      const threads = await q(I.THREADS);
+      expect(a.awaiting).toBe(threads.filter((t: any) => t.last_inbound).length);
+      await q(I.SEND_DIRECT, [threads.find((t: any) => t.last_inbound).family_id, '', 'On it — thanks!']);
+      const [b] = await q(D.ATTENTION_MESSAGES);
+      expect(b.awaiting).toBe(a.awaiting - 1);
+    });
+  });
+});
