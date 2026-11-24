@@ -121,7 +121,7 @@ function Kpi({ label, value, note, change, loading, href }: {
     <>
       <p className="text-[12.5px] text-ink-3">{label}</p>
       {loading ? <Skeleton className="mt-2 h-7 w-20" /> : (
-        <p className="tnum mt-1 flex items-baseline gap-2 text-[22px] font-semibold leading-tight tracking-[-0.02em]">
+        <p className="stat-number tnum mt-1 flex items-baseline gap-2 text-[22px] font-semibold leading-tight tracking-[-0.02em]">
           {value ?? '—'}
           {typeof change === 'number' && (
             <span className={cn('inline-flex items-center gap-0.5 text-[13px] font-medium',

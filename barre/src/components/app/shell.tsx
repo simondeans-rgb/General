@@ -12,7 +12,7 @@ import {
 import { cn } from '@/lib/cn';
 import { useSession, type Role } from '@/lib/auth/session';
 import { BarreMark } from './database-gate';
-import { SchoolMark, PoweredBy, useBrandTheme } from './brand';
+import { SchoolMark, PoweredBy, useSchoolTheme } from './brand';
 import { EmptyState, Button } from '@/components/ui';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
@@ -98,11 +98,11 @@ export function Shell({
   const { session, signOut, loaded } = useSession();
   // The school this person is in (or, for Barre support, viewing).
   const studio = useRows<{ name: string; status: string; data_deletion_due_on: string | null;
-                           brand_colour: string | null; logo_url: string | null }>(
-    ['shell-studio'], `select name, status, data_deletion_due_on, brand_colour, logo_url from studio order by created_at limit 1`, [],
+                           brand_colour: string | null; logo_url: string | null; theme: string; brand_secondary: string | null }>(
+    ['shell-studio'], `select name, status, data_deletion_due_on, brand_colour, logo_url, theme, brand_secondary from studio order by created_at limit 1`, [],
     { enabled: !!session && (!session.platform || !!session.support), staleTime: 60_000 }).data?.[0];
   const branded = !!studio && (!session?.platform || !!session?.support);
-  useBrandTheme(branded ? studio!.brand_colour : null);
+  useSchoolTheme(branded ? studio! : null);
   useBrandedManifest(branded ? studio!.name : null, branded ? studio!.brand_colour : null);
   const router = useRouter();
   const pathname = usePathname();
@@ -184,16 +184,17 @@ export function Shell({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 border-b border-line bg-surface/85 backdrop-blur
+        <header className="sticky top-0 z-30 overflow-hidden border-b border-line bg-surface/85 backdrop-blur
                            supports-[backdrop-filter]:bg-surface/70">
-          <div className="flex min-h-14 items-center gap-3 px-4 py-2.5 lg:px-6">
+          {branded && <ThemeFlourish theme={studio!.theme} />}
+          <div className="relative flex min-h-14 items-center gap-3 px-4 py-2.5 lg:px-6">
             {branded
               ? <SchoolMark name={studio!.name} logo={studio!.logo_url} className="size-8 lg:hidden" />
               : <span className="grid size-7 shrink-0 place-items-center rounded-md bg-accent text-on-accent lg:hidden" aria-hidden>
                   <BarreMark className="size-4" />
                 </span>}
             <div className="min-w-0 flex-1">
-              <h1 className="truncate text-[17px] font-semibold tracking-tight lg:text-[19px]">{title}</h1>
+              <h1 className="page-title truncate tracking-tight">{title}</h1>
               {subtitle && <div className="truncate text-[13px] text-ink-2">{subtitle}</div>}
             </div>
             {actions}
@@ -347,5 +348,27 @@ function SupportBanner({ view }: { view: { studioId: string; studioName: string;
         <LogOut className="size-3.5" aria-hidden /> Leave
       </button>
     </div>
+  );
+}
+
+/** Each theme's signature, quietly behind the page title. Decorative only. */
+function ThemeFlourish({ theme }: { theme: string }) {
+  if (theme === 'urban') {
+    return (
+      <svg aria-hidden className="pointer-events-none absolute inset-y-0 right-0 h-full w-[420px] opacity-60" viewBox="0 0 420 80" preserveAspectRatio="xMaxYMid slice">
+        <defs><linearGradient id="streak" x1="0" x2="1"><stop offset="0" stopColor="var(--color-secondary)" stopOpacity="0" />
+          <stop offset="1" stopColor="var(--color-secondary)" stopOpacity=".55" /></linearGradient></defs>
+        <path d="M120 80 L250 0 L300 0 L170 80 Z" fill="url(#streak)" />
+        <path d="M200 80 C 280 40, 340 30, 420 10" stroke="var(--color-accent)" strokeWidth="1.5" fill="none" opacity=".7" />
+      </svg>
+    );
+  }
+  return (
+    <svg aria-hidden className="pointer-events-none absolute inset-y-0 right-0 h-full w-[460px] opacity-[.22]" viewBox="0 0 460 80" preserveAspectRatio="xMaxYMid slice">
+      <defs><linearGradient id="silk" x1="0" x2="1"><stop offset="0" stopColor="var(--color-accent)" stopOpacity="0" />
+        <stop offset=".6" stopColor="var(--color-accent)" /><stop offset="1" stopColor="var(--color-secondary)" /></linearGradient></defs>
+      <path d="M60 70 C 160 10, 240 90, 340 30 S 440 0, 470 20 L470 80 L60 80 Z" fill="url(#silk)" />
+      <path d="M100 60 C 200 0, 260 80, 360 22 S 440 -5, 470 8" stroke="var(--color-accent)" strokeWidth="1" fill="none" />
+    </svg>
   );
 }

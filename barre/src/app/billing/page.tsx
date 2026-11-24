@@ -272,7 +272,7 @@ function Stat({ label, value, note, tone, loading, onClick }: {
       <Tag onClick={onClick} className={cn('block w-full p-4 text-left', onClick && 'hover:bg-surface-2 rounded-[inherit]')}>
         <p className="text-[12.5px] text-ink-3">{label}</p>
         {loading ? <Skeleton className="mt-2 h-7 w-24" /> : (
-          <p className={cn('tnum mt-1 text-[22px] font-semibold leading-tight tracking-[-0.02em]',
+          <p className={cn('stat-number tnum mt-1 text-[22px] font-semibold leading-tight tracking-[-0.02em]',
             tone === 'caution' && 'text-caution', tone === 'critical' && 'text-critical')}>{value}</p>
         )}
         {note && <p className="mt-0.5 truncate text-[12.5px] text-ink-2">{note}</p>}
@@ -330,7 +330,7 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
               </span>
             </div>
             <p className="mt-3 text-[12.5px] text-ink-3">{isOpen(i.status) ? 'Still to pay' : 'Total'}</p>
-            <p className="tnum text-[28px] font-semibold leading-tight tracking-[-0.02em]">
+            <p className="stat-number tnum text-[28px] font-semibold leading-tight tracking-[-0.02em]">
               {money(isOpen(i.status) ? owed : i.total_minor)}
             </p>
             {isOpen(i.status) && Number(i.paid_minor) > 0 && (

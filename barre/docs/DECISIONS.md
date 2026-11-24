@@ -41,4 +41,7 @@ Where this build departs from the brief, or interprets it, and why.
 | Invoices the system raises (packs, drop-ins) go through an internal function, never by borrowing an office login | Impersonating the owner | The audit trail stays truthful. |
 | Notifications email only those who chose email, and wait for quiet hours — except same-day cancellations | Email everything | Respect people's evenings without missing what matters today. |
 | Pilot tracking shows counts only | Showing names to the platform team | A school's people stay the school's data. |
+| Two school styles, Classic and Urban, set the canvas (surfaces, type, corners, dark or light); the school's main and second colour go on top | Free-form theming | Every school looks like itself, and no combination can become unreadable: link and button text are fitted to the style's surface. |
+| Fonts are self-hosted (Inter, Cormorant Garamond, Archivo) | Loading from Google Fonts | No third-party requests from families' phones; works offline. |
+| Switching style keeps a school's own colours, and swaps only if it was using the old style's preset | Always resetting | A school's brand colour survives a change of style. |
 

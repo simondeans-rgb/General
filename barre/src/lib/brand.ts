@@ -94,17 +94,35 @@ const mix = (a: string, b: string, t: number) => {
   return toHex([0, 1, 2].map(i => x[i]! * (1 - t) + y[i]! * t) as RGB);
 };
 
-export function paletteFor(input: string | null | undefined): Palette {
+/** Lighten (keeping hue and saturation) until it reads at `ratio` against a dark `against`. */
+function lighten(hex: string, against: string, ratio: number): string {
+  let [h, s, l] = toHsl(toRgb(hex));
+  let out = hex;
+  while (contrast(out, against) < ratio && l < 1) { l = Math.min(1, l + 0.01); out = fromHsl([h, s, l]); }
+  return out;
+}
+
+export const isDark = (hex: string) => luminance(normaliseHex(hex) ?? '#ffffff') < 0.18;
+
+/**
+ * Everything the interface needs from one brand colour, for a given surface.
+ * On a light surface thin details are deepened; on a dark one (the Urban
+ * theme) they are lightened. The colour itself, on buttons and tabs, is
+ * always exact.
+ */
+export function paletteFor(input: string | null | undefined, surface = '#ffffff'): Palette {
   const accent = normaliseHex(input) ?? DEFAULT_BRAND;
+  const dark = isDark(surface);
   const darkText = contrast(accent, '#ffffff') < 4.5;
   const onAccent = darkText ? '#000000' : '#ffffff';
   // Hover moves away from the text colour, so it only ever gets more readable.
   const [h, s, l] = toHsl(toRgb(accent));
   const hover = fromHsl([h, s, darkText ? Math.min(1, l + 0.08) : Math.max(0, l - 0.07)]);
-  const soft = mix(accent, '#ffffff', 0.9);
-  const ink = deepen(accent, soft, 4.5);
-  const text = deepen(accent, '#ffffff', 4.5);
-  const line = deepen(accent, '#ffffff', 3);
+  const soft = mix(accent, surface, dark ? 0.82 : 0.9);
+  const fit = (c: string, against: string, r: number) => dark ? lighten(c, against, r) : deepen(c, against, r);
+  const ink = fit(accent, soft, 4.5);
+  const text = fit(accent, surface, 4.5);
+  const line = fit(accent, surface, 3);
   return { accent, onAccent, hover, soft, ink, text, line, darkText, textDeepened: text !== accent };
 }
 

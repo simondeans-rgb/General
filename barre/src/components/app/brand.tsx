@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { BarreMark } from './database-gate';
 import { cssVars, monogram, paletteFor } from '@/lib/brand';
+import { schoolColours } from '@/lib/theme';
 import { cn } from '@/lib/cn';
 
 /** The school's logo, or its monogram on its own colour when it has none. */
@@ -30,18 +31,28 @@ export function PoweredBy({ className }: { className?: string }) {
 }
 
 /**
- * Re-colours the whole interface from one brand colour. Every accent in the
- * app reads four CSS variables; this sets them on <html>, and removes them
- * again when there is no school brand to show (Barre's own console).
+ * Applies a school's theme and colours to the whole interface: the theme as
+ * <html data-theme>, the colours as CSS variables fitted to that theme's
+ * surface. With no school (Barre's own console) both are removed.
  */
-export function useBrandTheme(colour: string | null | undefined) {
+export function useSchoolTheme(school: { theme?: string | null; brand_colour?: string | null; brand_secondary?: string | null } | null) {
+  const theme = school?.theme ?? null, accent = school?.brand_colour ?? null, secondary = school?.brand_secondary ?? null;
+  const on = !!school;
   React.useEffect(() => {
     const root = document.documentElement;
-    const vars = cssVars(paletteFor(colour));
-    if (!colour) { Object.keys(vars).forEach(k => root.style.removeProperty(k)); return; }
-    Object.entries(vars).forEach(([k, v]) => root.style.setProperty(k, v));
+    const keys = [...Object.keys(cssVars(paletteFor(null))), '--color-secondary'];
+    if (!on) { keys.forEach(k => root.style.removeProperty(k)); delete root.dataset.theme; return; }
+    const c = schoolColours(theme, accent, secondary);
+    root.dataset.theme = c.theme.id;
+    Object.entries(cssVars(paletteFor(c.accent, c.theme.surface))).forEach(([k, v]) => root.style.setProperty(k, v));
+    root.style.setProperty('--color-secondary', c.secondary);
     const meta = document.querySelector('meta[name="theme-color"]') ?? Object.assign(document.createElement('meta'), { name: 'theme-color' });
-    meta.setAttribute('content', vars['--color-accent']!);
+    meta.setAttribute('content', c.theme.dark ? c.theme.canvas : c.theme.surface);
     if (!meta.parentNode) document.head.appendChild(meta);
-  }, [colour]);
+  }, [on, theme, accent, secondary]);
+}
+
+/** Kept for callers that only know a colour. */
+export function useBrandTheme(colour: string | null | undefined) {
+  useSchoolTheme(colour ? { brand_colour: colour } : null);
 }

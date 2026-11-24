@@ -6,12 +6,12 @@ import { useSearchParams } from 'next/navigation';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { CheckCircle2, MapPin } from 'lucide-react';
 import { readAs, runAs } from '@/lib/db/client';
-import { SchoolMark, PoweredBy, useBrandTheme } from '@/components/app/brand';
+import { SchoolMark, PoweredBy, useSchoolTheme } from '@/components/app/brand';
 import { Button, Card, EmptyState, ErrorState, Field, Input, Skeleton } from '@/components/ui';
 import { money, dateLong, time } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
-type School = { name: string; brand_colour: string | null; logo_url: string | null; open: boolean };
+type School = { name: string; brand_colour: string | null; logo_url: string | null; open: boolean; theme: string; brand_secondary: string | null };
 type Slot = { session_id: string; class_name: string; style: string | null; starts_at: string; ends_at: string;
   age_min: number | null; age_max: number | null; location: string | null; trial_price_minor: number | null; places_left: number };
 
@@ -31,7 +31,7 @@ function Join() {
     queryFn: async () => (await readAs<School>(null, `select * from app.public_school($1)`, [slug]))[0] ?? null });
   const slots = useQuery({ queryKey: ['public-slots', slug], enabled: !!school.data?.open,
     queryFn: () => readAs<Slot>(null, `select * from app.public_trial_sessions($1)`, [slug]) });
-  useBrandTheme(school.data?.brand_colour);
+  useSchoolTheme(school.data ?? null);
 
   const [age, setAge] = React.useState('');
   const [pick, setPick] = React.useState<Slot | null>(null);
