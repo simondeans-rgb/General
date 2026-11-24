@@ -1,4 +1,4 @@
-# Barre — security and privacy model
+# Sanaa — security and privacy model
 
 This platform holds data about children. The security model is therefore in the
 database, where it applies to every caller, rather than in the interface, where
@@ -56,7 +56,7 @@ inhaler as much as the allergy. The office's medical form says plainly what
 teachers will see.
 
 The view's column list is asserted in the test suite, so any further
-widening fails the suite until it is a deliberate decision. Barre support
+widening fails the suite until it is a deliberate decision. Sanaa support
 staff get no rows from the view at all.
 
 ## The audit trail
@@ -130,19 +130,19 @@ office holds conversations.
 - **The email outbox** (addresses of prospective families) is readable by the
   office only.
 
-## Barre staff and the schools they serve
+## Sanaa staff and the schools they serve
 
-Barre's own staff are **not** members of any school. Being a platform admin
+Sanaa's own staff are **not** members of any school. Being a platform admin
 grants no access to a single child. The console reads account facts — plan,
 status, owner contact, counts — through `app.platform_*` functions that
 return nothing to anyone else, and the test suite asserts a platform admin
 sees zero rows of every family-level table.
 
 **Support access** is how they help. Only a school's owner can grant it, for
-at most seven days, with a reason. While granted, a Barre admin may open a
+at most seven days, with a reason. While granted, a Sanaa admin may open a
 view of that one school as an administrator would see it, except:
 
-- **Read-only, enforced by Postgres.** Every read in Barre runs in a READ
+- **Read-only, enforced by Postgres.** Every read in Sanaa runs in a READ
   ONLY transaction, and the support membership exists only inside such a
   transaction. There is no write path for it to use.
 - **No health records**, grant or no grant — both medical policies exclude a

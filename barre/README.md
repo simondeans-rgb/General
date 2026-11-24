@@ -1,4 +1,4 @@
-# Barre
+# Sanaa
 
 **The operating system for running a dance studio.**
 
@@ -34,7 +34,7 @@ Worth doing in this order:
      tells her it arrived; **Acknowledge & add to record** puts her words on
      Nia's record and tells her, in one step — and Nia's teachers see it.
    - **Account → Your brand**: Northstar's navy and star logo are what every
-     parent sees, "powered by Barre". Try another colour or upload a logo —
+     parent sees, "powered by Sanaa". Try another colour or upload a logo —
      the preview updates before anyone else sees it.
    - Press **⌘K** for the questions the assistant will answer, and the screens
      that answer them today.
@@ -46,9 +46,9 @@ Worth doing in this order:
    her conversation with the studio; tap an invoice in **Payments** to see its
    lines.
 
-4. **Jordan (Barre platform admin)** — first on the sign-in page under "You,
-   running Barre", or via **Switch person** at the bottom of the sidebar.
-   Every school on Barre: plans, status, usage, revenue. **New school** creates an account and an owner invitation
+4. **Jordan (Sanaa platform admin)** — first on the sign-in page under "You,
+   running Sanaa", or via **Switch person** at the bottom of the sidebar.
+   Every school on Sanaa: plans, status, usage, revenue. **New school** creates an account and an owner invitation
    link; open it (signed out, or in a private window) to join as that owner.
    Northstar's owner has allowed support access: open its read-only view
    from Northstar's panel. Pointe & Flex is suspended — sign in as its owner
@@ -100,7 +100,7 @@ unchanged on Supabase, a plain server, or in the browser.
 - [docs/SECURITY.md](docs/SECURITY.md) — the permission model, why teachers
   cannot read the medical table or family conversations, and what is
   deliberately *not* protected in this build.
-- [docs/PLATFORM.md](docs/PLATFORM.md) — running Barre for many schools: the
+- [docs/PLATFORM.md](docs/PLATFORM.md) — running Sanaa for many schools: the
   console, plans, invitations, support access and an account's lifecycle.
 - [docs/DECISIONS.md](docs/DECISIONS.md) — where the build departs from the brief, and why.
 - [docs/PAYMENTS.md](docs/PAYMENTS.md) — the ledger, and the two server routes

@@ -4,12 +4,12 @@
  * then go on top (lib/brand.ts), so two schools on the same theme still look
  * like themselves.
  *
- *   classic — elegant: ivory, warm neutrals, a serif display face, soft
- *             corners. Ballet, contemporary, classical schools.
+ *   classic — Sanaa's own look and the default: eucalyptus, ivory and
+ *             terracotta, Fraunces headings, soft corners.
  *   urban   — street, commercial, contemporary: deep violet dark mode, a
  *             bold wide sans, a neon accent with a second colour for glow.
  *
- * Barre's own screens (the platform console) keep the neutral base theme.
+ * Sanaa's own screens (the platform console) keep the neutral base theme.
  */
 import { normaliseHex } from './brand';
 
@@ -26,14 +26,14 @@ export type Theme = {
 
 export const THEMES: Record<ThemeId, Theme> = {
   classic: {
-    id: 'classic', name: 'Classic', tagline: 'Elegant and warm — ivory, serif headings, soft edges',
-    surface: '#fffdf9', canvas: '#faf6ee', ink: '#1f1f1f', dark: false,
-    accent: '#c2563c', secondary: '#ff7a5c',
+    id: 'classic', name: 'Classic', tagline: 'Elegant and calm — ivory, serif headings, soft edges',
+    surface: '#fffdf8', canvas: '#f6f2ea', ink: '#14211e', dark: false,
+    accent: '#0b3b34', secondary: '#c86a4f',
     presets: [
-      { name: 'Terracotta', accent: '#c2563c', secondary: '#ff7a5c' },
+      { name: 'Sanaa', accent: '#0b3b34', secondary: '#c86a4f' },
+      { name: 'Terracotta', accent: '#c86a4f', secondary: '#0b3b34' },
       { name: 'Charcoal & blush', accent: '#2b2b2b', secondary: '#d9a89a' },
       { name: 'Midnight', accent: '#1e3a8a', secondary: '#c9a227' },
-      { name: 'Sage', accent: '#4d6b4a', secondary: '#c8a97e' },
       { name: 'Plum', accent: '#6b2155', secondary: '#e3a1b9' },
       { name: 'Rose', accent: '#b0304f', secondary: '#f2b5a7' },
     ],

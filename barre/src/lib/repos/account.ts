@@ -1,4 +1,4 @@
-/* A school's own account: its plan, who has access, Barre support, export. */
+/* A school's own account: its plan, who has access, Sanaa support, export. */
 
 export type AccountRow = {
   id: string; name: string; status: string; status_reason: string | null; trial_ends_on: string | null;

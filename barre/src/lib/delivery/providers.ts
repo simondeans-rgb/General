@@ -70,7 +70,7 @@ export function webPush(send: PushSend, keys: (endpoint: string) => Promise<{ p2
 }
 
 export function fromEnv(env: Record<string, string | undefined>, f: Fetch = fetch): { email: Provider; sms: Provider; push?: Provider } {
-  const from = env.DELIVERY_FROM ?? 'Barre <no-reply@barre.example>';
+  const from = env.DELIVERY_FROM ?? 'Sanaa <no-reply@sanaa.example>';
   const email = env.DELIVERY_EMAIL === 'postmark' && env.POSTMARK_TOKEN ? postmark(env.POSTMARK_TOKEN, from, f)
     : env.DELIVERY_EMAIL === 'resend' && env.RESEND_API_KEY ? resend(env.RESEND_API_KEY, from, f) : logOnly();
   const sms = env.DELIVERY_SMS === 'twilio' && env.TWILIO_SID && env.TWILIO_TOKEN && env.TWILIO_FROM

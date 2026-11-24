@@ -5,14 +5,14 @@ import { asUser, closeDb, rebuild, USERS, STUDIO_ID } from './helpers';
 
 // The text colours each theme defines in globals.css, against its surfaces.
 const TEXT = {
-  classic: { surface: '#fffdf9', canvas: '#faf6ee', s2: '#f6efe6', ink: '#1f1f1f', ink2: '#5a4e46', ink3: '#70625a' },
-  urban:   { surface: '#18122f', canvas: '#0d0a1c', s2: '#211a40', ink: '#f6f4ff', ink2: '#c3bce3', ink3: '#9a92c4' },
+  classic: { surface: '#fffdf8', canvas: '#f6f2ea', s2: '#efe9de', s3: '#e7dfd1', ink: '#14211e', ink2: '#4e5a55', ink3: '#5b645e' },
+  urban:   { surface: '#18122f', canvas: '#0d0a1c', s2: '#211a40', s3: '#2c2452', ink: '#f6f4ff', ink2: '#c3bce3', ink3: '#9a92c4' },
 };
 
 describe('themes stay readable', () => {
   for (const [id, t] of Object.entries(TEXT)) {
     it(`${id}: body and secondary text pass AA on every surface`, () => {
-      for (const bg of [t.surface, t.canvas, t.s2]) {
+      for (const bg of [t.surface, t.canvas, t.s2, t.s3]) {
         expect(contrast(t.ink, bg)).toBeGreaterThanOrEqual(7);
         expect(contrast(t.ink2, bg)).toBeGreaterThanOrEqual(4.5);
         expect(contrast(t.ink3, bg)).toBeGreaterThanOrEqual(4.5);
@@ -30,6 +30,10 @@ describe('themes stay readable', () => {
         expect(contrast(p.onAccent, p.accent)).toBeGreaterThanOrEqual(4.5);
       }
     }
+  });
+  it('Sanaa is the default: eucalyptus and terracotta on Classic', () => {
+    expect(schoolColours(null)).toMatchObject({ accent: '#0b3b34', secondary: '#c86a4f' });
+    expect(THEMES.classic.presets[0]!.name).toBe('Sanaa');
   });
   it('a school without its own colours gets its theme’s', () => {
     expect(schoolColours('urban')).toMatchObject({ accent: '#c6f432', secondary: '#8b5cf6' });

@@ -23,10 +23,10 @@ function fold(line: string): string {
 }
 
 export function toIcs(name: string, events: CalEvent[], now = new Date()): string {
-  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Barre//Classes//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Sanaa//Classes//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
     `X-WR-CALNAME:${esc(name)}`];
   for (const e of events) {
-    lines.push('BEGIN:VEVENT', `UID:${e.id}@barre.app`, `DTSTAMP:${stamp(now.toISOString())}`,
+    lines.push('BEGIN:VEVENT', `UID:${e.id}@sanaa.app`, `DTSTAMP:${stamp(now.toISOString())}`,
       `DTSTART:${stamp(e.starts_at)}`, `DTEND:${stamp(e.ends_at)}`, `SUMMARY:${esc(e.cancelled ? `Cancelled: ${e.title}` : e.title)}`,
       `STATUS:${e.cancelled ? 'CANCELLED' : 'CONFIRMED'}`);
     if (e.location) lines.push(`LOCATION:${esc(e.location)}`);

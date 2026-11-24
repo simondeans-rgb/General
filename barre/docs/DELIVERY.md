@@ -1,6 +1,6 @@
 # Email, text and the scheduler
 
-Barre queues every email and text in `outbound_message`. Nothing leaves the
+Sanaa queues every email and text in `outbound_message`. Nothing leaves the
 database until a worker sends it, so the app works the same with or without a
 provider connected.
 

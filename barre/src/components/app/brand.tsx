@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { BarreMark } from './database-gate';
+import { SanaaLogo } from './sanaa';
 import { cssVars, monogram, paletteFor } from '@/lib/brand';
 import { schoolColours } from '@/lib/theme';
 import { cn } from '@/lib/cn';
@@ -25,7 +25,10 @@ export function SchoolMark({ name, logo, className }: { name: string; logo: stri
 export function PoweredBy({ className }: { className?: string }) {
   return (
     <span className={cn('mt-0.5 flex items-center gap-1 text-[11px] text-ink-3', className)}>
-      powered by <BarreMark className="size-3" aria-hidden /> <span className="font-medium">Barre</span>
+      powered by
+      {/* Always Sanaa's own wordmark: eucalyptus on light styles, ivory on dark. */}
+      <SanaaLogo className="sanaa-on-light h-[0.95em] translate-y-[0.06em]" tone="ink" title="Sanaa" />
+      <SanaaLogo className="sanaa-on-dark h-[0.95em] translate-y-[0.06em]" tone="ivory" title={null} />
     </span>
   );
 }
@@ -33,7 +36,7 @@ export function PoweredBy({ className }: { className?: string }) {
 /**
  * Applies a school's theme and colours to the whole interface: the theme as
  * <html data-theme>, the colours as CSS variables fitted to that theme's
- * surface. With no school (Barre's own console) both are removed.
+ * surface. With no school (Sanaa's own console) both are removed.
  */
 export function useSchoolTheme(school: { theme?: string | null; brand_colour?: string | null; brand_secondary?: string | null } | null) {
   const theme = school?.theme ?? null, accent = school?.brand_colour ?? null, secondary = school?.brand_secondary ?? null;

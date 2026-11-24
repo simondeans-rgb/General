@@ -158,7 +158,7 @@ async function runAsNow<T>(db: PGlite, session: Session, fn: (q: Query) => Promi
 /** Reads: one statement in a READ ONLY transaction, then rolled back.
  *
  *  Read-only is not just tidiness. Two kinds of access exist only inside a
- *  read-only transaction (migration 0019): Barre support viewing a school,
+ *  read-only transaction (migration 0019): Sanaa support viewing a school,
  *  and the members of a suspended school. Postgres refuses any write in such a
  *  transaction, so neither has a path to change anything. */
 export async function readAs<T = Row>(session: Session, sql: string, params?: unknown[]): Promise<T[]> {

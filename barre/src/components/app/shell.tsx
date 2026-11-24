@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useSession, type Role } from '@/lib/auth/session';
-import { BarreMark } from './database-gate';
+import { SanaaLogo, SanaaMark } from './sanaa';
 import { SchoolMark, PoweredBy, useSchoolTheme } from './brand';
 import { EmptyState, Button } from '@/components/ui';
 import { useRows } from '@/lib/query';
@@ -96,7 +96,7 @@ export function Shell({
   allow: Role[];
 }) {
   const { session, signOut, loaded } = useSession();
-  // The school this person is in (or, for Barre support, viewing).
+  // The school this person is in (or, for Sanaa support, viewing).
   const studio = useRows<{ name: string; status: string; data_deletion_due_on: string | null;
                            brand_colour: string | null; logo_url: string | null; theme: string; brand_secondary: string | null }>(
     ['shell-studio'], `select name, status, data_deletion_due_on, brand_colour, logo_url, theme, brand_secondary from studio order by created_at limit 1`, [],
@@ -143,7 +143,7 @@ export function Shell({
     <div className="min-h-dvh lg:flex">
       {/* Desktop rail */}
       <aside className="hidden lg:flex w-[236px] shrink-0 flex-col border-r border-line bg-surface">
-        {/* The school's own name and logo; Barre steps back to a credit. */}
+        {/* The school's own name and logo; Sanaa steps back to a credit. */}
         <div className="border-b border-line px-4 py-3.5">
           {branded ? (
             <div className="flex items-center gap-2.5">
@@ -155,11 +155,9 @@ export function Shell({
             </div>
           ) : (
             <div className="flex items-center gap-2.5">
-              <span className="grid size-9 place-items-center rounded-lg bg-accent text-on-accent" aria-hidden>
-                <BarreMark className="size-5" />
-              </span>
+              <SanaaLogo className="h-6" />
               <span className="min-w-0">
-                <span className="block font-semibold tracking-tight">Barre</span>
+                <span className="sr-only">Sanaa</span>
                 {session.platform && !session.support && <span className="block text-[11.5px] text-ink-3">Platform</span>}
               </span>
             </div>
@@ -177,7 +175,7 @@ export function Shell({
           <PersonSwitcher />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">{session.name}</p>
-            <p className="text-[12.5px] capitalize text-ink-3">{session.support ? "Barre support" : session.platform ? "Barre platform" : session.role}</p>
+            <p className="text-[12.5px] capitalize text-ink-3">{session.support ? "Sanaa support" : session.platform ? "Sanaa platform" : session.role}</p>
             <PersonSwitcher label="Switch person" />
           </div>
         </div>
@@ -190,9 +188,7 @@ export function Shell({
           <div className="relative flex min-h-14 items-center gap-3 px-4 py-2.5 lg:px-6">
             {branded
               ? <SchoolMark name={studio!.name} logo={studio!.logo_url} className="size-8 lg:hidden" />
-              : <span className="grid size-7 shrink-0 place-items-center rounded-md bg-accent text-on-accent lg:hidden" aria-hidden>
-                  <BarreMark className="size-4" />
-                </span>}
+              : <SanaaMark className="size-8 lg:hidden" />}
             <div className="min-w-0 flex-1">
               <h1 className="page-title truncate tracking-tight">{title}</h1>
               {subtitle && <div className="truncate text-[13px] text-ink-2">{subtitle}</div>}
@@ -326,7 +322,7 @@ function TabLink({ item, pathname }: { item: NavItem; pathname: string }) {
 
 export { ROLE_HOME };
 
-/** Always on screen while Barre support is inside a school. */
+/** Always on screen while Sanaa support is inside a school. */
 function SupportBanner({ view }: { view: { studioId: string; studioName: string; until: string } }) {
   const { session, exitSupport } = useSession();
   const router = useRouter();
@@ -341,7 +337,7 @@ function SupportBanner({ view }: { view: { studioId: string; studioName: string;
     <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-ink/10 bg-ink px-4 py-2 text-[13px] text-surface lg:px-6">
       <ShieldCheck className="size-4 shrink-0" aria-hidden />
       <span className="min-w-0 flex-1">
-        <strong className="font-semibold">Viewing {view.studioName} as Barre support.</strong>{' '}
+        <strong className="font-semibold">Viewing {view.studioName} as Sanaa support.</strong>{' '}
         Read-only, with the owner’s permission, until {dateShort(view.until)} {time(view.until)}. Health records are not shown.
       </span>
       <button onClick={exit} className="inline-flex min-h-[32px] items-center gap-1.5 rounded-full bg-surface/15 px-3 font-medium hover:bg-surface/25">

@@ -9,7 +9,7 @@ describe('calendar file (R-036)', () => {
   ], new Date('2026-11-24T12:00:00Z'));
   it('is a valid calendar with stable ids and escaped text', () => {
     expect(ics.startsWith('BEGIN:VCALENDAR\r\n')).toBe(true);
-    expect(ics).toContain('UID:s1@barre.app');
+    expect(ics).toContain('UID:s1@sanaa.app');
     expect(ics).toContain('DTSTART:20261201T163000Z');
     expect(ics).toContain('LOCATION:Studio Two\\, Blackheath');
   });

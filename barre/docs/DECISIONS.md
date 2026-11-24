@@ -17,11 +17,11 @@ Where this build departs from the brief, or interprets it, and why.
 | Credit is applied to the oldest open invoice automatically | Manual allocation | Fewer steps for the office; every allocation is still a visible row. |
 | Notifications say *that* health details changed, never what | Including the detail | Notifications are shown on lock screens and in lists; health data is special-category. |
 | Reports are a handful of rates with their sample size, two small charts | A dashboard of charts | Owners steer by five numbers; each links to the rows behind it. |
-| Barre staff see account facts only; inside a school only with the owner's time-limited, read-only, logged grant, never health records | Unrestricted operator access | Under UK GDPR Barre is the schools' data processor. Schools can be told, truthfully, that Barre cannot browse their children's records. |
-| Barre creates schools and invites owners | Self-serve sign-up | Direct sales first; the invitation path already supports adding self-serve later. |
+| Sanaa staff see account facts only; inside a school only with the owner's time-limited, read-only, logged grant, never health records | Unrestricted operator access | Under UK GDPR Sanaa is the schools' data processor. Schools can be told, truthfully, that Sanaa cannot browse their children's records. |
+| Sanaa creates schools and invites owners | Self-serve sign-up | Direct sales first; the invitation path already supports adding self-serve later. |
 | Suspended and cancelled schools stay readable, with export, for 30 days | Locking everyone out | Families mid-term are not punished for the studio's billing, and a leaving school can take its data. |
 | Plan limits stop additions, never delete | Enforcing by removal | Downgrading must never cost a school its records. |
-| Platform staff see counts by role, not names, of a school's people | A full member list | Names of parents and children are the school's data, not Barre's. |
+| Platform staff see counts by role, not names, of a school's people | A full member list | Names of parents and children are the school's data, not Sanaa's. |
 | Teachers see a child's allergies, conditions, medication and emergency plan, with a marker for any recorded need (red for urgent, amber otherwise) | Only the allergy line, only for children flagged urgent | Owner's request: a teacher needs the asthma and the inhaler as much as the allergy. GP details still stay with the office. |
 | One brand colour per school, used exactly; readability comes from choosing white or black text on it, and deepening only links and outlines | Full theme control, or substituting a darker colour | The school's own hex appears exactly as in its guidelines, and the app still cannot be made unreadable. |
 | Logos are redrawn to a 256px PNG before saving | Storing the uploaded file as-is | Removes SVG scripts and photo metadata, keeps every page fast. |
@@ -44,4 +44,6 @@ Where this build departs from the brief, or interprets it, and why.
 | Two school styles, Classic and Urban, set the canvas (surfaces, type, corners, dark or light); the school's main and second colour go on top | Free-form theming | Every school looks like itself, and no combination can become unreadable: link and button text are fitted to the style's surface. |
 | Fonts are self-hosted (Inter, Cormorant Garamond, Archivo) | Loading from Google Fonts | No third-party requests from families' phones; works offline. |
 | Switching style keeps a school's own colours, and swaps only if it was using the old style's preset | Always resetting | A school's brand colour survives a change of style. |
+| The product is Sanaa; its wordmark is fixed outlines in Sanaa's own colours (eucalyptus or ivory, terracotta full stop) on every screen | Rendering the name in the school's colours or live font | The Sanaa logo looks the same whatever the school's theme; schools' own logo and colours sit alongside it. |
+| Sanaa's palette (eucalyptus #0B3B34, ivory #F6F2EA, terracotta #C86A4F) and Fraunces headings are the default Classic look | A neutral default | A school that changes nothing still looks finished. |
 

@@ -24,15 +24,8 @@ export type Palette = {
   textDeepened: boolean;
 };
 
-export const DEFAULT_BRAND = '#5b46d9';
+export const DEFAULT_BRAND = '#0b3b34';   // Sanaa eucalyptus
 
-/** Preset colours that already pass, for a one-tap choice. */
-export const PRESETS: { name: string; hex: string }[] = [
-  { name: 'Violet', hex: '#5b46d9' }, { name: 'Navy', hex: '#1e3a8a' },
-  { name: 'Teal', hex: '#0f766e' }, { name: 'Forest', hex: '#166534' },
-  { name: 'Plum', hex: '#86198f' }, { name: 'Rose', hex: '#be123c' },
-  { name: 'Burnt orange', hex: '#c2410c' }, { name: 'Charcoal', hex: '#334155' },
-];
 
 export function normaliseHex(v: string | null | undefined): string | null {
   if (!v) return null;

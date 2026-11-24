@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { contrast, monogram, normaliseHex, paletteFor, PRESETS } from '../src/lib/brand';
+import { contrast, monogram, normaliseHex, paletteFor } from '../src/lib/brand';
+import { THEMES } from '../src/lib/theme';
+const PRESETS = Object.values(THEMES).flatMap(t => t.presets.map(p => ({ hex: p.accent })));
 
 const awkward = ['#facc15', '#ffffff', '#a3e635', '#38bdf8', '#f9a8d4', '#000000', '#ff0000', '#777777', '#7a7a7a', '#1e3a8a'];
 
@@ -29,7 +31,8 @@ describe('a school’s exact colour, kept readable', () => {
   });
 
   it('only deepens text when the exact colour would be too faint, keeping its hue', () => {
-    for (const p of PRESETS) expect(paletteFor(p.hex)).toMatchObject({ text: p.hex, textDeepened: false });
+    for (const p of PRESETS.filter(x => contrast(x.hex, '#ffffff') >= 4.5)) expect(paletteFor(p.hex)).toMatchObject({ text: p.hex, textDeepened: false });
+    expect(paletteFor('#0b3b34')).toMatchObject({ text: '#0b3b34', textDeepened: false });   // Sanaa eucalyptus
     const y = paletteFor('#facc15');
     expect(y.textDeepened).toBe(true);
     const [r, g, b] = [1, 3, 5].map(i => parseInt(y.text.slice(i, i + 2), 16));
@@ -42,7 +45,7 @@ describe('a school’s exact colour, kept readable', () => {
     expect(normaliseHex(' #abc ')).toBe('#aabbcc');
     expect(normaliseHex('teal')).toBeNull();
     expect(normaliseHex('#12345')).toBeNull();
-    expect(paletteFor('nonsense').accent).toBe('#5b46d9');
+    expect(paletteFor('nonsense').accent).toBe('#0b3b34');   // falls back to Sanaa
   });
 
   it('makes a monogram from the distinctive words', () => {

@@ -54,7 +54,7 @@ begin
   urgent := new.kind in ('schedule_change', 'safeguarding') and new.title ~* '^(cancelled|urgent)';
   insert into outbound_message (studio_id, channel, to_name, to_address, subject, body, user_id, notification_id, not_before)
   values (new.studio_id, 'email', u.full_name, u.email, new.title,
-          coalesce(new.body, '') || E'\n\nOpen Barre to see more.', u.id, new.id,
+          coalesce(new.body, '') || E'\n\nOpen Sanaa to see more.', u.id, new.id,
           case when urgent then now() else app.after_quiet(u.id, new.studio_id) end);
   return null;
 end $$;

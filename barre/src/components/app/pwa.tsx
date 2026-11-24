@@ -26,7 +26,7 @@ export function useBrandedManifest(name: string | null | undefined, colour: stri
     const origin = location.origin;
     const manifest = {
       name, short_name: name.length > 12 ? name.split(' ')[0] : name, start_url: `${origin}${base}/`, scope: `${origin}${base}/`,
-      display: 'standalone', background_color: '#ffffff', theme_color: colour ?? '#5b46d9',
+      display: 'standalone', background_color: '#f6f2ea', theme_color: colour ?? '#0b3b34',
       icons: [192, 512].map(s => ({ src: `${origin}${base}/icons/icon-${s}.png`, sizes: `${s}x${s}`, type: 'image/png' })),
     };
     const url = URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' }));

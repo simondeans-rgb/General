@@ -13,7 +13,7 @@ import * as P from '@/lib/repos/progress';
 import * as H from '@/lib/repos/hub';
 
 /**
- * Term reports (R-022). Barre drafts one per child from the term's feedback,
+ * Term reports (R-022). Sanaa drafts one per child from the term's feedback,
  * attendance and skill changes; the teacher adds a sentence where they want
  * to, ticks, and shares the lot. Families can print or save them as PDF.
  */

@@ -66,7 +66,7 @@ export function pulseComponents(i: PulseInputs): PulseComponent[] {
 export function pulseScore(components: PulseComponent[], historyDays: number):
   { score: number; reason?: undefined } | { score: null; reason: string } {
   if (historyDays < MIN_HISTORY_DAYS) {
-    return { score: null, reason: `Needs ${MIN_HISTORY_DAYS} days of history to be meaningful. Barre has ${historyDays}.` };
+    return { score: null, reason: `Needs ${MIN_HISTORY_DAYS} days of history to be meaningful. Sanaa has ${historyDays}.` };
   }
   const missing = components.filter(c => c.value === null);
   if (missing.length) {

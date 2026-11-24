@@ -1,4 +1,4 @@
-/* Barre service worker (R-017).
+/* Sanaa service worker (R-017).
    - Keeps the app shell and the in-browser database files so the app opens
      with no signal (registers taken offline already queue — see
      lib/offline/attendance-queue).
