@@ -6,9 +6,10 @@ import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Bell, CreditCard, MessageSquare, UserPlus, Sparkles, HeartPulse, ListOrdered, Inbox, GraduationCap, CheckCheck,
-  CalendarClock, UserRoundCheck, Contact, Settings2, BellRing,
+  CalendarClock, UserRoundCheck, Contact, Settings2, BellRing, ShieldAlert, BadgeCheck, Award, MessageSquareHeart, FileText,
 } from 'lucide-react';
 import { NotificationSettings } from '@/components/app/notification-settings';
+import { REMIND_CHECKS } from '@/lib/repos/safeguarding';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
@@ -21,7 +22,7 @@ const ICON: Record<string, React.ElementType> = {
   message: MessageSquare, payment_failed: CreditCard, new_enquiry: Sparkles, new_trial: Sparkles,
   new_enrolment: UserPlus, waitlist: ListOrdered, waitlist_offer: ListOrdered,
   medical_updated: HeartPulse, request: Inbox, request_answered: MessageSquare, teacher_changed: GraduationCap,
-  schedule_change: CalendarClock, cover_assigned: UserRoundCheck, contact_updated: Contact, message_reminder: BellRing,
+  schedule_change: CalendarClock, cover_assigned: UserRoundCheck, contact_updated: Contact, message_reminder: BellRing, safeguarding: ShieldAlert, staff_check_due: BadgeCheck, milestone: Award, feedback_published: MessageSquareHeart, report_shared: FileText,
 };
 
 /**
@@ -46,9 +47,12 @@ export function NotificationBell() {
   const office = session?.role === 'owner' || session?.role === 'admin';
   React.useEffect(() => {
     if (!office || session?.support) return;
-    const tick = () => runAs(session, q => q(I.RELEASE_SCHEDULED)).then(r => {
-      if ((r[0] as { n?: number } | undefined)?.n) qc.invalidateQueries({ queryKey: ['db'] });
-    }).catch(() => undefined);
+    // …and staff checks nearing expiry are flagged to the owner (R-035).
+    const tick = () => runAs(session, async q => {
+      const [a] = await q<{ n: number }>(I.RELEASE_SCHEDULED);
+      const [b] = await q<{ n: number }>(REMIND_CHECKS);
+      return (a?.n ?? 0) + (b?.n ?? 0);
+    }).then(n => { if (n) qc.invalidateQueries({ queryKey: ['db'] }); }).catch(() => undefined);
     tick();
     const t = setInterval(tick, 60_000);
     return () => clearInterval(t);

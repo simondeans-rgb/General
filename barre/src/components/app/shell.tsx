@@ -7,7 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   CalendarDays, LayoutGrid, Users, GraduationCap, Route, ClipboardCheck,
   Home, Baby, MessageSquare, CreditCard, PlayCircle, Trophy, Inbox, Settings2, Rocket,
-  MoreHorizontal, FolderOpen, Receipt, BarChart3, Building2, Layers, KeyRound, ShieldCheck, LogOut, FileText,
+  MoreHorizontal, FolderOpen, Receipt, BarChart3, Building2, Layers, KeyRound, ShieldCheck, LogOut, FileText, ShieldAlert,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useSession, type Role } from '@/lib/auth/session';
@@ -19,6 +19,7 @@ import { runAs } from '@/lib/db/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { dateShort, time } from '@/lib/format';
 import { PersonSwitcher } from './person-switcher';
+import { SchoolSwitcher } from './school-switcher';
 import { NotificationBell } from './notifications';
 import { AssistantLauncher } from './assistant';
 
@@ -41,9 +42,11 @@ const OFFICE_NAV: NavItem[] = [
   { href: '/classes', label: 'Classes', icon: GraduationCap },
   { href: '/enrolment', label: 'Enrolment', icon: Route },
   { href: '/requests', label: 'Requests', icon: Inbox },
+  { href: '/events', label: 'Events', icon: Trophy },
   { href: '/billing', label: 'Billing', icon: Receipt },
   { href: '/reports', label: 'Reports', icon: BarChart3 },
   { href: '/studio', label: 'Studio', icon: Settings2 },
+  { href: '/safeguarding', label: 'Safeguarding', icon: ShieldAlert },
   { href: '/account', label: 'Account', icon: KeyRound },
 ];
 
@@ -159,6 +162,7 @@ export function Shell({
             </div>
           )}
         </div>
+        <SchoolSwitcher className="border-b border-line" />
         <div className="pt-3" />
         <nav className="flex-1 px-2" aria-label="Main">
           {nav.map(item => <RailLink key={item.href} item={item} pathname={pathname} />)}
@@ -194,6 +198,7 @@ export function Shell({
             {session.role !== 'student' && <NotificationBell />}
             <PersonSwitcher className="lg:hidden" />
           </div>
+          <SchoolSwitcher className="border-t border-line lg:hidden" />
         </header>
 
         {session.support && <SupportBanner view={session.support} />}

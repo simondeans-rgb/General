@@ -131,6 +131,9 @@ export function buildSeedSql({ today = new Date() }: SeedOptions = {}): string {
   return `select set_config('app.quiet', 'on', false);\n` + out.join('\n') + '\n' + buildClassesAndPeople({
     termId: TERM, base, LOC, ROOM, STAFF, STYLE, LEVEL, guardianUsers,
   }) + '\n' + buildPlatform()
+    + `\nupdate studio_event r set parent_event_id = sh.id from studio_event sh
+         where r.kind = 'rehearsal' and sh.kind = 'show' and sh.studio_id = r.studio_id
+           and split_part(r.title, ' — ', 1) = split_part(sh.title, ' — ', 1);`
     + `\nselect app.award_event_milestones(id) from studio;`
     + `\nselect set_config('app.quiet', 'off', false);\n`;
 }
@@ -1055,6 +1058,19 @@ insert into student (studio_id, family_id, first_name, last_name, date_of_birth)
   (${q(S.kestrel)}, ${q(uid(NS.family, 190))}, 'Jude', 'Abbott', current_date - interval '6 years'),
   (${q(S.kestrel)}, ${q(uid(NS.family, 191))}, 'Orla', 'Brennan', current_date - interval '11 years');
 insert into location (studio_id, name, city) values (${q(S.pointe)}, 'The Mill', 'Brighton');
+
+-- Priya also teaches one class at Kestrel: one login, two schools (R-031).
+insert into membership (user_id, studio_id, role, created_at) values (${q(uid(NS.user, 3))}, ${q(S.kestrel)}, 'teacher', now() + interval '1 minute');
+insert into staff_member (id, studio_id, user_id, display_name) values (${q(uid(NS.staff, 190))}, ${q(S.kestrel)}, ${q(uid(NS.user, 3))}, 'Priya Raman');
+insert into dance_style (id, studio_id, name, colour) values (${q(uid(NS.style, 190))}, ${q(S.kestrel)}, 'Contemporary', 'teal');
+insert into term (id, studio_id, name, starts_on, ends_on, status) values
+  (${q(uid(NS.term, 190))}, ${q(S.kestrel)}, 'Autumn', current_date - 40, current_date + 50, 'published');
+insert into class (id, studio_id, term_id, dance_style_id, location_id, teacher_id, name, day_of_week, start_time, duration_min, capacity, price_minor)
+  values (${q(uid(NS.class, 190))}, ${q(S.kestrel)}, ${q(uid(NS.term, 190))}, ${q(uid(NS.style, 190))}, ${q(uid(NS.location, 190))},
+          ${q(uid(NS.staff, 190))}, 'Kestrel Contemporary', 3, '18:00', 60, 12, 6000);
+select app.generate_class_sessions(${q(uid(NS.class, 190))});
+insert into enrolment (studio_id, class_id, student_id, status, started_on)
+  select ${q(S.kestrel)}, ${q(uid(NS.class, 190))}, id, 'active', current_date - 30 from student where studio_id = ${q(S.kestrel)} and first_name = 'Martha';
 
 -- Every trial gets a child record and emergency contact (migration 0023).
 do $$ declare t record; begin

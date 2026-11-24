@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 import { Suspense } from 'react';
-import { Users, MessageSquarePlus, HeartPulse, Mail } from 'lucide-react';
+import { Users, MessageSquarePlus, HeartPulse, Mail, ShieldAlert } from 'lucide-react';
+import { RaiseConcernSheet } from '@/components/app/safeguarding';
 import { TeacherMessageSheet } from '@/components/app/teacher-message';
 import { SkillsPanel, Goals, Reflections, Milestones, Timeline } from '@/components/app/progress';
 import { Shell } from '@/components/app/shell';
@@ -30,6 +31,7 @@ function MyStudents() {
   const [onlyNeeds, setOnlyNeeds] = React.useState(false);
   const [writing, setWriting] = React.useState<Row | null>(null);
   const [messaging, setMessaging] = React.useState<Row | null>(null);
+  const [concern, setConcern] = React.useState<Row | null>(null);
   const { selected, select } = useSelection();
   const rows = useRows<Row>(['my-students'], T.MY_STUDENTS);
   const withNeeds = rows.data?.filter(s => s.has_medical_need).length ?? 0;
@@ -133,12 +135,16 @@ function MyStudents() {
                   <Button className="mt-2 w-full" variant="ghost" onClick={() => setMessaging(current)}>
                     <Mail className="size-4" aria-hidden /> Message the family
                   </Button>
+                  <Button className="mt-2 w-full" variant="ghost" onClick={() => setConcern(current)}>
+                    <ShieldAlert className="size-4" aria-hidden /> Raise a safeguarding concern
+                  </Button>
                 </>
               )}
             </DetailPanel>
           )}
         </div>
       </div>
+      {concern && <RaiseConcernSheet student={concern} onClose={() => setConcern(null)} />}
       {messaging && <TeacherMessageSheet student={messaging} onClose={() => setMessaging(null)} />}
       {writing && <FeedbackComposer student={writing} onClose={() => setWriting(null)} />}
     </Shell>

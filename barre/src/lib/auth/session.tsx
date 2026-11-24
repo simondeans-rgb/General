@@ -51,7 +51,7 @@ export const PERSONAS: Persona[] = [
 /** Barre support looking at one school, read-only, under its owner's grant. */
 export type SupportView = { studioId: string; studioName: string; until: string };
 
-type Stored = { userId: string; role: Role; name: string; support?: SupportView };
+type Stored = { userId: string; role: Role; name: string; support?: SupportView; studio?: string };
 
 /**
  * `session.role` is the role the app should behave as. For Barre staff
@@ -59,7 +59,7 @@ type Stored = { userId: string; role: Role; name: string; support?: SupportView 
  * would for the school — while `platform` stays true and the database keeps
  * the view read-only (migration 0019).
  */
-export type Session = { userId: string; role: Role; name: string; platform: boolean; support?: SupportView } | null;
+export type Session = { userId: string; role: Role; name: string; platform: boolean; support?: SupportView; studio?: string } | null;
 
 type Ctx = {
   session: Session;
@@ -67,6 +67,8 @@ type Ctx = {
   signOut: () => void;
   enterSupport: (v: SupportView) => void;
   exitSupport: () => void;
+  /** People in several schools choose which one they are looking at (R-031). */
+  chooseSchool: (studioId: string, role?: Role) => void;
   loaded: boolean;
 };
 
@@ -97,6 +99,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       platform: stored.role === 'platform',
       role: stored.role === 'platform' && live ? 'admin' : stored.role,
       support: stored.role === 'platform' ? live : undefined,
+      studio: stored.role === 'platform' ? undefined : stored.studio,
     } : null;
     return {
       session,
@@ -105,6 +108,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       signOut: () => save(null),
       enterSupport: v => stored && save({ ...stored, support: v }),
       exitSupport: () => stored && save({ ...stored, support: undefined }),
+      chooseSchool: (studio, role) => stored && save({ ...stored, studio, role: role ?? stored.role }),
     };
   }, [stored, loaded]);
 

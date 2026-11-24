@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Download, MailPlus, ShieldCheck, ShieldOff, UserMinus, Users, CheckCircle2 } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
+import { RetentionCard } from '@/components/app/safeguarding';
 import { RecordSheet } from '@/components/app/record-sheet';
 import { InviteLink } from '@/components/app/invite-link';
 import { BrandSettings } from '@/components/app/brand-settings';
@@ -47,6 +48,7 @@ export default function AccountPage() {
         <PlanCard acct={acct} />
         <Team isOwner={isOwner} studioId={acct?.id} />
         {isOwner && !session?.platform && acct && <SupportCard studioId={acct.id} />}
+        {isOwner && !session?.platform && acct && <RetentionCard studioId={acct.id} />}
         {isOwner && !session?.platform && <ExportCard name={acct?.name} />}
       </div>
     </Shell>

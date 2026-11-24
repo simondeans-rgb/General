@@ -6,6 +6,7 @@ import { CalendarX2, ChevronRight, MapPin, User, CalendarPlus } from 'lucide-rea
 import { readAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import { downloadIcs } from '@/lib/ics';
+import { RehearsalList } from '@/components/app/rehearsals';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
 import { Badge, Button, Card, EmptyState, Skeleton, ErrorState, type Tone } from '@/components/ui';
@@ -33,6 +34,7 @@ export default function FamilySchedule() {
     <Shell title="Schedule" subtitle="The next four weeks" allow={['guardian']}
       actions={<CalendarButton />}>
       <div className="mx-auto max-w-lg space-y-4">
+        <RehearsalList />
         {rows.isLoading && <Card className="space-y-3 p-4">{[0,1,2].map(i => <Skeleton key={i} className="h-14" />)}</Card>}
         {rows.error && <ErrorState error={rows.error} onRetry={() => rows.refetch()} />}
         {byDay.length === 0 && !rows.isLoading && (

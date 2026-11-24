@@ -70,7 +70,10 @@ export type EventRow = {
   cost_minor: number | null; capacity: number | null; entries_close_on: string | null;
   requests_open: boolean; teacher: string | null; student_id: string | null;
   going: number; my_status: string | null; my_student: string | null;
+  my_invite?: string | null; rehearsals?: { title: string; starts_at: string }[];
+  routines?: { title: string; costume: string | null; position: number }[];
 };
+export const ANSWER_INVITE = `select app.answer_invitation($1, $2) as r`;
 
 export const EVENTS = `
 select ev.id, ev.kind, ev.title, ev.description, ev.starts_at, ev.ends_at, ev.venue,
@@ -81,10 +84,18 @@ select ev.id, ev.kind, ev.title, ev.description, ev.starts_at, ev.ends_at, ev.ve
        (select p.status::text from event_participant p
          where p.event_id = ev.id and p.deleted_at is null limit 1) as my_status,
        (select s.first_name from event_participant p join student s on s.id = p.student_id
-         where p.event_id = ev.id and p.deleted_at is null limit 1) as my_student
+         where p.event_id = ev.id and p.deleted_at is null limit 1) as my_student,
+       (select p.id from event_participant p where p.event_id = ev.id and p.deleted_at is null
+           and p.status = 'invited' limit 1) as my_invite,
+       coalesce((select jsonb_agg(jsonb_build_object('title', r.title, 'starts_at', r.starts_at) order by r.starts_at)
+                   from studio_event r where r.parent_event_id = ev.id and r.deleted_at is null and r.status = 'published'), '[]') as rehearsals,
+       coalesce((select jsonb_agg(jsonb_build_object('title', rt.title, 'costume', rt.costume, 'position', rt.position) order by rt.position)
+                   from event_routine rt where rt.event_id = ev.id and rt.deleted_at is null
+                    and (exists (select 1 from routine_dancer d where d.routine_id = rt.id)
+                         or rt.class_id in (select e.class_id from enrolment e where e.status = 'active' and e.deleted_at is null))), '[]') as routines
   from studio_event ev
   left join staff_member sm on sm.id = ev.teacher_id
- where ev.deleted_at is null and ev.starts_at > now() - interval '1 day'
+ where ev.deleted_at is null and ev.starts_at > now() - interval '1 day' and ev.parent_event_id is null
  order by ev.starts_at`;
 
 export const REQUEST_PLACE = `

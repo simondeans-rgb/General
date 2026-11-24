@@ -4,6 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { CalendarCheck2, ChevronRight, CheckCircle2, MapPin, Users, UserRoundX, CalendarPlus } from 'lucide-react';
 import { downloadIcs } from '@/lib/ics';
+import { RehearsalList } from '@/components/app/rehearsals';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
 import { useSession } from '@/lib/auth/session';
@@ -39,6 +40,7 @@ export default function TeachToday() {
              <CalendarPlus className="size-4" aria-hidden /> <span className="hidden sm:inline">Add to calendar</span>
            </Button>}>
       <div className="mx-auto max-w-2xl space-y-5">
+        <RehearsalList days={21} />
         {sessions.isLoading && <Card className="space-y-3 p-4">{[0,1].map(i => <Skeleton key={i} className="h-20" />)}</Card>}
         {sessions.error && <ErrorState error={sessions.error} onRetry={() => sessions.refetch()} />}
 
