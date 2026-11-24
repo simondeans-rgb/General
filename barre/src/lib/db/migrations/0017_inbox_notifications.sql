@@ -44,9 +44,12 @@ begin
   if new.family_id is not null then
     select studio_id into new.studio_id from family where id = new.family_id;
   end if;
+  -- The automation runner sends as the studio itself, not as whoever ran it.
+  if current_setting('app.sending_as_studio', true) = 'on' then
+    new.sent_by := null; new.inbound := false;
   -- service_role is a trusted server job (an import, a webhook) and may
   -- write on someone's behalf. Everyone else writes as themselves.
-  if auth.uid() is not null and current_setting('role', true) is distinct from 'service_role' then
+  elsif auth.uid() is not null and current_setting('role', true) is distinct from 'service_role' then
     if new.sent_by is not null and new.sent_by <> auth.uid() then
       raise exception 'FORBIDDEN: a message is sent as yourself' using errcode = 'insufficient_privilege';
     end if;

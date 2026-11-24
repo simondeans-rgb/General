@@ -568,7 +568,21 @@ function buildMedicalBillingComms(ctx: ActivityCtx): string {
     ${row([uid(NS.comm, 22), STUDIO_ID, 'Payment reminder', 'Invoice {{invoice_number}} is due',
       'Hello {{guardian_name}},\n\nInvoice {{invoice_number}} for {{amount}} was due on {{due_date}}. You can pay from the Payments tab.\n\nIf something has gone wrong with the payment, tell us and we will help.\n\nNorthstar Dance Academy'])},
     ${row([uid(NS.comm, 23), STUDIO_ID, 'Waiting list offer', 'A place has come up in {{class_name}}',
-      'Hello {{guardian_name}},\n\nA place has become available in {{class_name}}. We can hold it for {{child_name}} until {{expires_at}}.\n\nLet us know either way and we will pass it on if it is not right for you.\n\nNorthstar Dance Academy'])};`);
+      'Hello {{guardian_name}},\n\nA place has become available in {{class_name}}. We can hold it for {{child_name}} until {{expires_at}}.\n\nLet us know either way and we will pass it on if it is not right for you.\n\nNorthstar Dance Academy'])},
+    ${row([uid(NS.comm, 24), STUDIO_ID, 'Trial reminder', '{{child_name}}’s trial is on {{session_date}}',
+      'Hello {{guardian_name}},\n\nA reminder that {{child_name}} is trying {{class_name}} on {{session_date}} at {{session_time}}. Comfortable clothes are perfect, and please arrive five minutes early.\n\nIf you can no longer make it, just reply and we will find another date.\n\nNorthstar Dance Academy'])},
+    ${row([uid(NS.comm, 25), STUDIO_ID, 'Trial today', 'See you at {{session_time}}',
+      'Hello {{guardian_name}},\n\nWe are looking forward to meeting {{child_name}} at {{class_name}} today at {{session_time}}.\n\nNorthstar Dance Academy'])},
+    ${row([uid(NS.comm, 26), STUDIO_ID, 'Missed trial', 'We missed {{child_name}}',
+      'Hello {{guardian_name}},\n\nWe were sorry not to see {{child_name}} at {{class_name}}. Would another date suit better? Reply here and we will hold a place.\n\nNorthstar Dance Academy'])};`);
+  // Automations — each event points at the template it sends.
+  push(`insert into automation_rule (studio_id, event, template_id, enabled) values
+    ${row([STUDIO_ID, 'trial_booked', uid(NS.comm, 20), true])},
+    ${row([STUDIO_ID, 'trial_reminder_48h', uid(NS.comm, 24), true])},
+    ${row([STUDIO_ID, 'trial_reminder_same_day', uid(NS.comm, 25), true])},
+    ${row([STUDIO_ID, 'trial_attended', uid(NS.comm, 21), true])},
+    ${row([STUDIO_ID, 'trial_missed', uid(NS.comm, 26), false])},
+    ${row([STUDIO_ID, 'waitlist_offer', uid(NS.comm, 23), true])};`);
 
   push(`insert into notification (id,studio_id,user_id,kind,title,body,href) values
     ${row([uid(NS.notification, 1), STUDIO_ID, uid(NS.user, 1), 'payment_failed',

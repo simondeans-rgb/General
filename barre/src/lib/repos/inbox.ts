@@ -128,3 +128,26 @@ select id, kind, title, body, href, read_at, created_at from notification
 export const UNREAD_NOTIFICATIONS = `
 select count(*)::int as n from notification where deleted_at is null and read_at is null`;
 export const MARK_NOTIFICATIONS = `select app.mark_notifications_read($1::uuid[])`;
+
+// ── Automations ─────────────────────────────────────────────────────────
+export type Rule = { id: string; event: string; enabled: boolean; template_id: string | null;
+  template_name: string | null; sent: number; last_sent: string | null; due: number };
+export const RULES = `
+select r.id, r.event, r.enabled, r.template_id, t.name as template_name,
+       (select count(*)::int from automation_run x where x.rule_id = r.id) as sent,
+       (select max(ran_at) from automation_run x where x.rule_id = r.id) as last_sent,
+       coalesce((select d.due from app.automation_due(r.studio_id) d where d.rule_id = r.id), 0) as due
+  from automation_rule r
+  left join communication_template t on t.id = r.template_id and t.deleted_at is null
+ order by array_position(array['trial_booked','trial_reminder_48h','trial_reminder_same_day',
+                               'trial_attended','trial_missed','waitlist_offer'], r.event)`;
+export const SET_RULE = `update automation_rule set enabled = $2, template_id = $3 where id = $1 returning id`;
+export const RUN_AUTOMATIONS = `
+select app.run_automations(studio_id) as sent from membership
+ where user_id = auth.uid() and role in ('owner','admin') and deleted_at is null limit 1`;
+
+export type Outbound = { id: string; to_name: string | null; to_address: string; subject: string | null;
+  status: string; created_at: string };
+export const OUTBOX = `
+select id, to_name, to_address, subject, status, created_at from outbound_message
+ order by created_at desc limit 20`;

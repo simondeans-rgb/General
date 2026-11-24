@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { RecordSheet } from '@/components/app/record-sheet';
+import { Automations } from '@/components/app/automations';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
@@ -23,7 +24,7 @@ import * as H from '@/lib/repos/hub';
 import { relativeDay, time, initials } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
-type Tab = 'families' | 'broadcasts' | 'templates';
+type Tab = 'families' | 'broadcasts' | 'templates' | 'automations';
 
 export default function InboxPage() {
   return <Suspense fallback={<div className="min-h-dvh" />}><Inbox /></Suspense>;
@@ -62,10 +63,10 @@ function Inbox() {
         <div className="lg:grid lg:grid-cols-[360px_minmax(0,1fr)] lg:gap-5">
           {/* On a phone the list and the conversation are separate screens. */}
           <div className={cn('min-w-0', family && tab === 'families' && 'hidden lg:block')}>
-            <div role="tablist" aria-label="Inbox sections" className="mb-3 flex gap-1">
-              {([['families', 'Families'], ['broadcasts', 'Sent to groups'], ['templates', 'Templates']] as const).map(([k, l]) => (
+            <div role="tablist" aria-label="Inbox sections" className="-mx-1 mb-3 flex gap-1 overflow-x-auto px-1">
+              {([['families', 'Families'], ['broadcasts', 'Groups'], ['templates', 'Templates'], ['automations', 'Automations']] as const).map(([k, l]) => (
                 <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
-                  className={cn('h-9 rounded-full px-3 text-[13px]',
+                  className={cn('h-9 shrink-0 rounded-full px-3 text-[13px]',
                     tab === k ? 'bg-ink font-medium text-surface' : 'text-ink-2 hover:bg-surface-2')}>
                   {l}{k === 'families' && unread > 0 && <span className="tnum ml-1.5 opacity-70">{unread}</span>}
                 </button>
@@ -74,6 +75,7 @@ function Inbox() {
             {tab === 'families' && <ThreadList threads={threads} selected={family} onSelect={select} />}
             {tab === 'broadcasts' && <BroadcastList />}
             {tab === 'templates' && <TemplateList />}
+            {tab === 'automations' && <Automations />}
           </div>
 
           {tab === 'families' && (
