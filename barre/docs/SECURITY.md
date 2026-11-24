@@ -30,8 +30,8 @@ demonstrate nothing.
 |---|---|
 | `owner` | Everything in their own studio, including studio settings |
 | `admin` | Everything operational; not studio settings |
-| `teacher` | Their own classes, the students in them, and a narrow safety brief |
-| `guardian` | Their own family: their children, invoices, messages |
+| `teacher` | Their own classes, the students in them, a narrow safety brief, notices for their classes and studio announcements. Not family conversations, not money |
+| `guardian` | Their own family: their children, invoices, their conversation with the studio, notices for their children's classes |
 
 Cross-tenant isolation is absolute. A user with memberships in two studios sees
 each separately; a user with none sees nothing at all.
@@ -81,8 +81,44 @@ soft deletion impossible. This was established by experiment, not assumption.)
 ## Payments
 
 No card data is stored, ever. `payment` holds a provider name, a provider
-reference and a failure code. Stripe integration, when added, uses hosted
-checkout so a PAN never reaches this application.
+reference and a failure code. Card money can only enter the ledger through
+`app.apply_provider_event`, which is executable by `service_role` alone (a
+verified webhook), idempotent on the provider reference, and refuses
+anything without our own invoice id. Users — the owner included — cannot
+record a card payment by hand. Amounts for Checkout come from the database,
+never from the browser. See docs/PAYMENTS.md.
+
+Every billing change goes through an `app.*` function that checks the caller
+is the office; the derived figures (totals, paid, balance) are written only
+by triggers, and the recalculation functions are not callable by any user.
+
+## Messages and notifications
+
+**A leak that was closed.** The first communications policy let every member
+of staff read every message. A narrower teacher policy was added later, but
+the broad one stayed — and permissive policies are OR-ed, so teachers could
+still read every family's private conversation with the office, payment
+reminders included. Migration 0017 replaces it: direct conversations are
+readable by the office and that family only, and `tests/inbox.test.ts`
+asserts a teacher sees none.
+
+This is also a safeguarding position, not just a privacy one: one-to-one
+teacher–parent channels outside the office's view are what UK safeguarding
+guidance warns against. Teachers post notices to their own classes; the
+office holds conversations.
+
+- **Nobody can send as someone else.** `sent_by` is set from the session;
+  supplying another id is refused. The studio is taken from the family, so a
+  message cannot be pointed at another tenant.
+- **Names do not leak through the sender lookup.** `app.sender_name` returns
+  staff names to anyone in the studio, but a guardian's name only to the
+  office and their own family.
+- **Notifications carry no health data.** A medical update produces "medical
+  details updated", never the allergy. Tested.
+- **Notifications cannot be forged.** No user can insert one; only database
+  triggers write them, and the helpers are not executable by users.
+- **The email outbox** (addresses of prospective families) is readable by the
+  office only.
 
 ## What is NOT protected in this build
 
@@ -109,7 +145,7 @@ Being plain about it:
 
 ## Test coverage
 
-40 tests run against a real Postgres 16. They cover cross-studio isolation,
+Around 190 tests run against a real Postgres 16. They cover cross-studio isolation,
 unauthenticated access, guardian scoping, teacher scoping, the medical
 boundary and the exact columns of the safety brief, capacity enforcement
 including that it counts rows the caller cannot see, waitlist ordering,

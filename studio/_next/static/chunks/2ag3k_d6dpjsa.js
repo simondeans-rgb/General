@@ -1,0 +1,56 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,17068,e=>{"use strict";let s=(0,e.i(75254).default)("calendar-x-2",[["path",{d:"M8 2v4",key:"1cmpym"}],["path",{d:"M16 2v4",key:"4m81vk"}],["path",{d:"M21 13V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8",key:"3spt84"}],["path",{d:"M3 10h18",key:"8toen8"}],["path",{d:"m17 22 5-5",key:"1k6ppv"}],["path",{d:"m17 17 5 5",key:"p7ous7"}]]);e.s(["CalendarX2",0,s],17068)},63059,e=>{"use strict";let s=(0,e.i(75254).default)("chevron-right",[["path",{d:"m9 18 6-6-6-6",key:"mthhwq"}]]);e.s(["ChevronRight",0,s],63059)},46897,e=>{"use strict";let s=(0,e.i(75254).default)("map-pin",[["path",{d:"M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0",key:"1r0f0z"}],["circle",{cx:"12",cy:"10",r:"3",key:"ilqhr7"}]]);e.s(["MapPin",0,s],46897)},84614,e=>{"use strict";let s=(0,e.i(75254).default)("user",[["path",{d:"M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2",key:"975kel"}],["circle",{cx:"12",cy:"7",r:"4",key:"17ys0d"}]]);e.s(["User",0,s],84614)},81903,e=>{"use strict";var s=e.i(43476),t=e.i(71645),a=e.i(22016),i=e.i(17068),n=e.i(63059),l=e.i(46897),d=e.i(84614),r=e.i(77326),c=e.i(13927),o=e.i(17658),m=e.i(8199),u=e.i(75379),h=e.i(45060);let _={violet:"violet",amber:"amber",teal:"teal",rose:"rose",indigo:"indigo",lime:"lime"};e.s(["default",0,function(){let[e]=t.useMemo(()=>(0,u.dayRange)(0),[]),p=t.useMemo(()=>{let s=new Date(e);return s.setDate(s.getDate()+28),s.toISOString()},[e]),f=(0,c.useRows)(["family-schedule",e],m.MY_SCHEDULE,[e,p]),x=t.useMemo(()=>{let e=new Map;return(f.data??[]).forEach(s=>{let t=(0,u.isoDate)(s.starts_at);e.set(t,[...e.get(t)??[],s])}),[...e.entries()].sort()},[f.data]);return(0,s.jsx)(r.Shell,{title:"Schedule",subtitle:"The next four weeks",allow:["guardian"],children:(0,s.jsxs)("div",{className:"mx-auto max-w-lg space-y-4",children:[f.isLoading&&(0,s.jsx)(o.Card,{className:"space-y-3 p-4",children:[0,1,2].map(e=>(0,s.jsx)(o.Skeleton,{className:"h-14"},e))}),f.error&&(0,s.jsx)(o.ErrorState,{error:f.error,onRetry:()=>f.refetch()}),0===x.length&&!f.isLoading&&(0,s.jsx)(o.Card,{children:(0,s.jsx)(o.EmptyState,{icon:(0,s.jsx)(i.CalendarX2,{className:"size-5"}),title:"Nothing scheduled",body:"Classes appear here once your child is enrolled."})}),x.map(([e,t])=>(0,s.jsxs)(o.Card,{children:[(0,s.jsxs)("div",{className:"flex items-baseline gap-2 border-b border-line px-4 py-2.5",children:[(0,s.jsx)("h2",{className:"font-semibold",children:(0,u.relativeDay)(t[0].starts_at)}),(0,s.jsx)("span",{className:"text-[13px] text-ink-3",children:(0,u.dateLong)(t[0].starts_at)})]}),(0,s.jsx)("ul",{className:"divide-y divide-line",children:t.map(e=>{let t="cancelled"===e.status;return(0,s.jsx)("li",{className:(0,h.cn)(t&&"opacity-60"),children:(0,s.jsxs)(a.default,{href:`/class/?id=${e.class_id}`,"aria-label":`${e.name}, open class`,className:"flex items-start gap-3 px-4 py-3 hover:bg-surface-2",children:[(0,s.jsx)("span",{className:(0,h.cn)("tnum w-14 shrink-0 font-semibold",t&&"line-through"),children:(0,u.time)(e.starts_at)}),(0,s.jsxs)("span",{className:"min-w-0 flex-1",children:[(0,s.jsxs)("span",{className:"flex flex-wrap items-center gap-2",children:[(0,s.jsx)("span",{className:(0,h.cn)("font-medium",t&&"line-through"),children:e.name}),e.style&&(0,s.jsx)(o.Badge,{tone:_[e.colour??""]??"neutral",children:e.style}),t&&(0,s.jsx)(o.Badge,{tone:"critical",children:"Cancelled"})]}),(0,s.jsxs)("span",{className:"mt-0.5 flex flex-wrap items-center gap-x-3 text-[12.5px] text-ink-2",children:[(0,s.jsx)("span",{children:e.child}),e.teacher&&(0,s.jsxs)("span",{className:"inline-flex items-center gap-1",children:[(0,s.jsx)(d.User,{className:"size-3.5","aria-hidden":!0}),e.teacher]}),e.room&&(0,s.jsxs)("span",{className:"inline-flex items-center gap-1",children:[(0,s.jsx)(l.MapPin,{className:"size-3.5","aria-hidden":!0}),e.room]})]})]}),(0,s.jsx)(n.ChevronRight,{className:"size-4 shrink-0 self-center text-ink-3","aria-hidden":!0})]})},`${e.id}-${e.student_id}`)})})]},e))]})})}])},8199,e=>{"use strict";let s=`
+select cs.id, cs.class_id, c.name, cs.starts_at, cs.ends_at, cs.status,
+       ds.name as style, ds.colour,
+       coalesce(sr.name, r.name) as room, l.name as location,
+       coalesce(cover.display_name, st.display_name) as teacher,
+       s.first_name as child, s.id as student_id
+  from class_session cs
+  join class c on c.id = cs.class_id
+  join enrolment e on e.class_id = c.id and e.status = 'active' and e.deleted_at is null
+  join student s on s.id = e.student_id
+  left join dance_style ds on ds.id = c.dance_style_id
+  left join staff_member st on st.id = c.teacher_id
+  left join staff_member cover on cover.id = cs.teacher_id
+  left join room r on r.id = c.room_id
+  left join room sr on sr.id = cs.room_id
+  left join location l on l.id = c.location_id
+ where cs.deleted_at is null
+   and cs.starts_at >= $1::timestamptz and cs.starts_at < $2::timestamptz
+ order by cs.starts_at`,t=`
+select s.id, s.first_name, s.last_name, s.date_of_birth,
+       (select string_agg(c.name, ', ' order by c.name) from enrolment e
+          join class c on c.id = e.class_id
+         where e.student_id = s.id and e.status = 'active' and e.deleted_at is null) as class_names,
+       (select round(100.0 * count(*) filter (where ar.status in ('present','late'))
+                     / nullif(count(*),0))::int
+          from attendance_record ar where ar.student_id = s.id and ar.deleted_at is null) as attendance_pct,
+       coalesce((select m.requires_alert from medical_record m
+                  where m.student_id = s.id and m.deleted_at is null), false) as has_alert,
+       (select m.allergies from medical_record m
+         where m.student_id = s.id and m.deleted_at is null) as allergies,
+       (select cr.granted from consent_record cr
+         where cr.student_id = s.id and cr.kind = 'photography' and cr.deleted_at is null) as photo_consent
+  from student s
+ where s.deleted_at is null
+ order by s.date_of_birth`,a=`
+select f.id, f.name, f.balance_minor,
+       (select count(*)::int from invoice i
+         where i.family_id = f.id and i.deleted_at is null and i.status in ('issued','part_paid')) as unpaid,
+       (select count(*)::int from payment p
+         where p.family_id = f.id and p.deleted_at is null
+           and p.failure_code is not null and p.succeeded_at is null) as failed
+  from family f where f.deleted_at is null`,i=`
+select i.id, i.number, i.status, i.issued_on, i.due_on, i.total_minor, i.paid_minor
+  from invoice i where i.deleted_at is null
+ order by i.issued_on desc nulls last limit 8`,n=`
+select cm.id, cm.kind, cm.subject, cm.body, cm.sent_at, c.name as class_name
+  from communication cm
+  left join class c on c.id = cm.class_id
+ where cm.deleted_at is null
+ order by cm.sent_at desc limit 8`,l=`
+insert into communication (studio_id, kind, channel, family_id, subject, body, sent_by)
+select s.studio_id, 'direct', 'in_app', s.family_id,
+       'Absence: ' || s.first_name || ' — ' || to_char($2::timestamptz, 'FMDay DD Mon'),
+       $3, auth.uid()
+  from student s where s.id = $1
+returning id`;e.s(["MY_BALANCE",0,a,"MY_CHILDREN",0,t,"MY_INVOICES",0,i,"MY_MESSAGES",0,n,"MY_SCHEDULE",0,s,"REPORT_ABSENCE",0,l])}]);
