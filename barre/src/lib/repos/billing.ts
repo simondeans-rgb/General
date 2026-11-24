@@ -116,3 +116,40 @@ export const SEND_DIRECT = `
 insert into communication (studio_id, kind, channel, family_id, subject, body, sent_by)
 select studio_id, 'direct', 'in_app', id, $2, $3, auth.uid() from family where id = $1
 returning id`;
+
+/* ── Term billing runs and discount rules (migration 0024) ──────────────── */
+export type BillingLine = {
+  family_id: string; family_name: string; student_id: string; student_name: string;
+  class_id: string; class_name: string; description: string; quantity: string;
+  unit_minor: number; discount_minor: number; discount_reason: string | null;
+};
+export type DiscountRule = { id: string; kind: 'sibling' | 'multi_class'; from_nth: number; percent: number; enabled: boolean };
+export type BillingRun = { id: string; term_name: string; status: string; due_on: string; invoice_count: number; total_minor: string; created_at: string; issued_at: string | null };
+
+export const BILLING_TERMS = `select id, name, starts_on, ends_on from term where deleted_at is null order by starts_on desc`;
+export const BILLING_LINES = `select * from app.billing_lines($1)`;
+export const DISCOUNT_RULES = `select id, kind, from_nth, percent, enabled from discount_rule order by kind desc`;
+export const SET_DISCOUNT_RULE = `update discount_rule set enabled = $2, percent = $3, from_nth = $4 where id = $1 returning id`;
+export const BILLING_RUNS = `
+select r.id, t.name as term_name, r.status, r.due_on, r.invoice_count, r.total_minor, r.created_at, r.issued_at
+  from billing_run r join term t on t.id = r.term_id
+ where r.status <> 'discarded' order by r.created_at desc limit 10`;
+export const CREATE_BILLING_RUN = `select app.create_billing_run($1, $2::date) as id`;
+export const ISSUE_BILLING_RUN = `select app.issue_billing_run($1) as n`;
+export const DISCARD_BILLING_RUN = `select app.discard_billing_run($1)`;
+
+/** Every invoice, flat, for the accountant (R-012). */
+export const INVOICES_EXPORT = `
+select i.number, f.name as family, i.status::text as status, i.issued_on, i.due_on,
+       round(i.subtotal_minor / 100.0, 2) as subtotal, round(i.discount_minor / 100.0, 2) as discount,
+       round(i.total_minor / 100.0, 2) as total, round(i.paid_minor / 100.0, 2) as paid,
+       round((i.total_minor - i.paid_minor) / 100.0, 2) as outstanding, t.name as term
+  from invoice i join family f on f.id = i.family_id left join term t on t.id = i.term_id
+ where i.deleted_at is null order by i.number`;
+export const PAYMENTS_EXPORT = `
+select p.succeeded_at::date as date, f.name as family, i.number as invoice, p.method,
+       round(p.amount_minor / 100.0, 2) as amount,
+       case when p.failure_code is not null then 'failed' when p.succeeded_at is null then 'pending' else 'succeeded' end as status,
+       p.provider_ref as reference
+  from payment p join family f on f.id = p.family_id left join invoice i on i.id = p.invoice_id
+ where p.deleted_at is null order by p.created_at`;

@@ -4,13 +4,15 @@ import * as React from 'react';
 import { Suspense } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus, Receipt, AlertTriangle, Search, Send, Banknote, Ban, Undo2, CheckCircle2, Trash2, Wallet,
+  Plus, Receipt, AlertTriangle, Search, Send, Banknote, Ban, Undo2, CheckCircle2, Trash2, Wallet, CalendarRange, Download,
 } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection } from '@/components/app/detail-panel';
 import { RecordSheet } from '@/components/app/record-sheet';
 import { useRows, useRow } from '@/lib/query';
-import { runAs } from '@/lib/db/client';
+import { runAs, readAs } from '@/lib/db/client';
+import { downloadCsv } from '@/lib/csv';
+import { BillingRunPanel } from '@/components/app/billing-run';
 import { useSession } from '@/lib/auth/session';
 import { useSelection } from '@/lib/use-selection';
 import {
@@ -64,6 +66,7 @@ function Billing() {
   const [filter, setFilter] = React.useState<Filter>('attention');
   const [query, setQuery] = React.useState('');
   const [creating, setCreating] = React.useState(false);
+  const [running, setRunning] = React.useState(false);
 
   const counts = React.useMemo(() => {
     const d = invoices.data ?? [];
@@ -101,9 +104,15 @@ function Billing() {
   return (
     <Shell title="Billing" allow={['owner', 'admin']}
       subtitle={s ? `${money(s.outstanding_minor)} outstanding across ${s.owing_families} famil${s.owing_families === 1 ? 'y' : 'ies'}` : undefined}
-      actions={<Button size="sm" variant="primary" onClick={() => setCreating(true)}>
-        <Plus className="size-4" aria-hidden /> New invoice
-      </Button>}>
+      actions={<div className="flex gap-2">
+        <ExportButton />
+        <Button size="sm" onClick={() => setRunning(true)}>
+          <CalendarRange className="size-4" aria-hidden /> <span className="hidden sm:inline">Term billing</span>
+        </Button>
+        <Button size="sm" variant="primary" onClick={() => setCreating(true)}>
+          <Plus className="size-4" aria-hidden /> <span className="hidden sm:inline">New invoice</span>
+        </Button>
+      </div>}>
       <div className="mx-auto max-w-6xl space-y-5">
         {/* Four numbers that each lead somewhere — not a chart wall. */}
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -222,9 +231,34 @@ function Billing() {
         </div>
       </div>
 
+      {running && <BillingRunPanel onClose={() => setRunning(false)} />}
       {creating && <NewInvoiceSheet onClose={() => setCreating(false)}
                                     onCreated={id => { setCreating(false); select(id); }} />}
     </Shell>
+  );
+}
+
+/** Invoices and payments as spreadsheets, for the accountant (R-012). */
+function ExportButton() {
+  const { session } = useSession();
+  const [open, setOpen] = React.useState(false);
+  const go = async (what: 'invoices' | 'payments') => {
+    setOpen(false);
+    const rows = await readAs<Record<string, string>>(session, what === 'invoices' ? B.INVOICES_EXPORT : B.PAYMENTS_EXPORT);
+    downloadCsv(`${what}-${isoDate(new Date())}.csv`, rows);
+  };
+  return (
+    <div className="relative">
+      <Button size="sm" onClick={() => setOpen(o => !o)} aria-expanded={open} aria-haspopup="menu">
+        <Download className="size-4" aria-hidden /> <span className="hidden sm:inline">Export</span>
+      </Button>
+      {open && (
+        <div role="menu" className="absolute right-0 z-30 mt-1 w-48 overflow-hidden rounded-[var(--radius-md)] border border-line bg-surface shadow-lg">
+          <button role="menuitem" className="block w-full px-3 py-2.5 text-left text-sm hover:bg-surface-2" onClick={() => go('invoices')}>Invoices (CSV)</button>
+          <button role="menuitem" className="block w-full px-3 py-2.5 text-left text-sm hover:bg-surface-2" onClick={() => go('payments')}>Payments (CSV)</button>
+        </div>
+      )}
+    </div>
   );
 }
 

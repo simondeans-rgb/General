@@ -106,3 +106,43 @@ select to_char(m, 'YYYY-MM') as month,
                             and x.status = 'active' and x.deleted_at is null)) as left
   from generate_series(date_trunc('month', now()) - interval '5 months', date_trunc('month', now()), interval '1 month') m
  order by m`;
+
+/* ── Spreadsheets for the office (R-012) ────────────────────────────────── */
+// Medical details are deliberately not in any export: a spreadsheet leaves the
+// app's access rules behind the moment it is downloaded.
+export const EXPORTS = {
+  attendance: {
+    label: 'Attendance, this term', file: 'attendance',
+    sql: `
+select cs.starts_at::date as date, to_char(cs.starts_at, 'HH24:MI') as time, c.name as class,
+       s.first_name || ' ' || s.last_name as student, a.status::text as status, a.reason as note
+  from attendance_record a
+  join class_session cs on cs.id = a.session_id
+  join class c on c.id = cs.class_id
+  join term t on t.id = c.term_id and current_date between t.starts_on and t.ends_on
+  join student s on s.id = a.student_id
+ where a.deleted_at is null and cs.deleted_at is null
+ order by cs.starts_at, c.name, s.last_name, s.first_name`,
+  },
+  classLists: {
+    label: 'Class lists', file: 'class-lists',
+    sql: `
+select c.name as class, s.first_name, s.last_name, s.date_of_birth, e.started_on as joined,
+       f.name as family
+  from enrolment e join class c on c.id = e.class_id and c.deleted_at is null
+  join student s on s.id = e.student_id and s.deleted_at is null
+  join family f on f.id = s.family_id
+ where e.status = 'active' and e.deleted_at is null
+ order by c.name, s.last_name, s.first_name`,
+  },
+  contacts: {
+    label: 'Families and contacts', file: 'families',
+    sql: `
+select f.name as family, g.full_name as parent, g.relationship, g.phone, g.email, g.is_primary as main_contact,
+       (select string_agg(s.first_name || ' ' || s.last_name, '; ' order by s.date_of_birth)
+          from student s where s.family_id = f.id and s.deleted_at is null) as children
+  from family f join guardian g on g.family_id = f.id and g.deleted_at is null
+ where f.deleted_at is null and not f.is_prospect
+ order by f.name, g.is_primary desc, g.full_name`,
+  },
+} as const;
