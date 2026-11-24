@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { removeWithUndo, useRemoving } from '@/components/app/undo';
 import { Megaphone, Send, Trash2, X, Pencil } from 'lucide-react';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
@@ -74,10 +75,12 @@ function NoticeRow({ n, canManage, onEdit }: {
 }) {
   const { session } = useSession();
   const qc = useQueryClient();
-  const withdraw = useMutation({
-    mutationFn: async () => runAs(session, q => q(T.WITHDRAW_NOTICE, [n.id])),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['db'] }),
+  const withdraw = () => removeWithUndo(n.id, n.subject ? `“${n.subject}”` : 'Notice', async () => {
+    await runAs(session, q => q(T.WITHDRAW_NOTICE, [n.id]));
+    qc.invalidateQueries({ queryKey: ['db'] });
   });
+  const removing = useRemoving();
+  if (removing(n.id)) return null;
 
   return (
     <li className="px-4 py-3.5">
@@ -99,13 +102,12 @@ function NoticeRow({ n, canManage, onEdit }: {
               <Pencil className="size-4" aria-hidden />
             </Button>
             <Button size="sm" variant="ghost" aria-label={`Withdraw ${n.subject ?? 'notice'}`}
-                    loading={withdraw.isPending} onClick={() => withdraw.mutate()}>
+                    onClick={withdraw}>
               <Trash2 className="size-4" aria-hidden />
             </Button>
           </div>
         )}
       </div>
-      {withdraw.isError && <div className="mt-2"><ErrorState error={withdraw.error} /></div>}
     </li>
   );
 }

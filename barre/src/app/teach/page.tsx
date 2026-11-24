@@ -2,14 +2,15 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { CalendarCheck2, ChevronRight, CheckCircle2, MapPin, Users, UserRoundX } from 'lucide-react';
+import { CalendarCheck2, ChevronRight, CheckCircle2, MapPin, Users, UserRoundX, CalendarPlus } from 'lucide-react';
+import { downloadIcs } from '@/lib/ics';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
 import { useSession } from '@/lib/auth/session';
 import { Badge, Button, Card, CardHeader, EmptyState, Field, Input, Skeleton, ErrorState, type Tone } from '@/components/ui';
 import { RecordSheet } from '@/components/app/record-sheet';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { runAs } from '@/lib/db/client';
+import { runAs, readAs } from '@/lib/db/client';
 import * as T from '@/lib/repos/teaching';
 import { time, greeting, dateLong, dayRange, relativeDay } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -33,7 +34,10 @@ export default function TeachToday() {
 
   return (
     <Shell title={`${greeting()}, ${session?.name.split(' ')[0] ?? ''}`}
-           subtitle={dateLong(new Date())} allow={['owner','admin','teacher']}>
+           subtitle={dateLong(new Date())} allow={['owner','admin','teacher']}
+           actions={<Button size="sm" onClick={() => downloadTeaching(session)} aria-label="Add my classes to my calendar">
+             <CalendarPlus className="size-4" aria-hidden /> <span className="hidden sm:inline">Add to calendar</span>
+           </Button>}>
       <div className="mx-auto max-w-2xl space-y-5">
         {sessions.isLoading && <Card className="space-y-3 p-4">{[0,1].map(i => <Skeleton key={i} className="h-20" />)}</Card>}
         {sessions.error && <ErrorState error={sessions.error} onRetry={() => sessions.refetch()} />}
@@ -131,4 +135,15 @@ function TeachRow({ s, showDay, onAskCover }: { s: T.TeachSession; showDay?: boo
       )}
     </div>
   );
+}
+
+/** A teacher's classes for the coming term as a calendar file (R-036). */
+async function downloadTeaching(session: ReturnType<typeof useSession>['session']) {
+  const from = new Date(); from.setHours(0, 0, 0, 0);
+  const to = new Date(from.getTime() + 16 * 7 * 86400_000);
+  const rows = await readAs<T.TeachSession>(session, T.MY_SESSIONS, [from.toISOString(), to.toISOString()]);
+  downloadIcs('my-teaching.ics', 'Teaching', rows.filter(s => !s.covered_by).map(s => ({
+    id: s.id, title: s.covering ? `${s.name} (cover)` : s.name, starts_at: s.starts_at, ends_at: s.ends_at,
+    location: s.room ?? null, cancelled: s.status === 'cancelled',
+  })));
 }

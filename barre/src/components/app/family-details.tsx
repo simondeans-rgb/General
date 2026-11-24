@@ -9,6 +9,7 @@ import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import * as F from '@/lib/repos/family';
+import { removeWithUndo, useRemoving } from '@/components/app/undo';
 
 function useSave(after: () => void) {
   const { session } = useSession();
@@ -65,7 +66,8 @@ function GuardianSheet({ g, onClose }: { g: F.Guardian; onClose: () => void }) {
 /** Emergency contacts for one child — who to ring if you can't be reached. */
 export function EmergencyContacts({ studentId, name }: { studentId: string; name: string }) {
   const all = useRows<F.Contact>(['my-contacts'], F.MY_CONTACTS);
-  const list = (all.data ?? []).filter(c => c.student_id === studentId);
+  const removing = useRemoving();
+  const list = (all.data ?? []).filter(c => c.student_id === studentId && !removing(c.id));
   const [editing, setEditing] = React.useState<F.Contact | 'new' | null>(null);
   return (
     <div className="border-t border-line px-4 py-3">
@@ -101,11 +103,19 @@ function ContactSheet({ studentId, childName, c, canRemove, onClose }: {
   const [name, setName] = React.useState(c?.full_name ?? '');
   const [rel, setRel] = React.useState(c?.relationship ?? '');
   const [phone, setPhone] = React.useState(c?.phone ?? '');
+  const { session } = useSession();
+  const qc = useQueryClient();
   const save = useSave(onClose);
-  const remove = useSave(onClose);
+  const remove = () => {
+    removeWithUndo(c!.id, c!.full_name, async () => {
+      await runAs(session, q => q(F.REMOVE_CONTACT, [c!.id]));
+      qc.invalidateQueries({ queryKey: ['db'] });
+    });
+    onClose();
+  };
   return (
     <RecordSheet title={c ? 'Edit contact' : 'Add a contact'} subtitle={`For ${childName}`} onClose={onClose}
-      saving={save.isPending} error={save.error ?? remove.error}
+      saving={save.isPending} error={save.error}
       canSave={name.trim().length > 1 && phone.replace(/\D/g, '').length >= 6}
       onSave={() => save.mutate(c
         ? { sql: F.UPDATE_CONTACT, params: [c.id, name.trim(), rel.trim(), phone.trim()] }
@@ -114,8 +124,7 @@ function ContactSheet({ studentId, childName, c, canRemove, onClose }: {
       <Field label="Relationship" htmlFor="ec-r"><Input id="ec-r" value={rel} onChange={e => setRel(e.target.value)} placeholder="Grandmother" /></Field>
       <Field label="Phone" htmlFor="ec-p" required><Input id="ec-p" type="tel" value={phone} onChange={e => setPhone(e.target.value)} /></Field>
       {c && canRemove && (
-        <Button size="sm" variant="ghost" loading={remove.isPending}
-                onClick={() => remove.mutate({ sql: F.REMOVE_CONTACT, params: [c.id] })}>
+        <Button size="sm" variant="ghost" onClick={remove}>
           <Trash2 className="size-4" aria-hidden /> Remove this contact
         </Button>
       )}

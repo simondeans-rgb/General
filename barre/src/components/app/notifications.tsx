@@ -6,8 +6,9 @@ import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Bell, CreditCard, MessageSquare, UserPlus, Sparkles, HeartPulse, ListOrdered, Inbox, GraduationCap, CheckCheck,
-  CalendarClock, UserRoundCheck, Contact,
+  CalendarClock, UserRoundCheck, Contact, Settings2, BellRing,
 } from 'lucide-react';
+import { NotificationSettings } from '@/components/app/notification-settings';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
@@ -20,7 +21,7 @@ const ICON: Record<string, React.ElementType> = {
   message: MessageSquare, payment_failed: CreditCard, new_enquiry: Sparkles, new_trial: Sparkles,
   new_enrolment: UserPlus, waitlist: ListOrdered, waitlist_offer: ListOrdered,
   medical_updated: HeartPulse, request: Inbox, request_answered: MessageSquare, teacher_changed: GraduationCap,
-  schedule_change: CalendarClock, cover_assigned: UserRoundCheck, contact_updated: Contact,
+  schedule_change: CalendarClock, cover_assigned: UserRoundCheck, contact_updated: Contact, message_reminder: BellRing,
 };
 
 /**
@@ -38,6 +39,20 @@ export function NotificationBell() {
     { refetchInterval: 30_000 }).data?.[0]?.n ?? 0;
   const list = useRows<I.Note>(['notifications'], I.NOTIFICATIONS, [], { enabled: open });
   const button = React.useRef<HTMLButtonElement>(null);
+  const [settings, setSettings] = React.useState(false);
+
+  // Scheduled messages go out when their time comes. With no server clock in
+  // this build, the office's open app releases them (idempotent; R-037).
+  const office = session?.role === 'owner' || session?.role === 'admin';
+  React.useEffect(() => {
+    if (!office || session?.support) return;
+    const tick = () => runAs(session, q => q(I.RELEASE_SCHEDULED)).then(r => {
+      if ((r[0] as { n?: number } | undefined)?.n) qc.invalidateQueries({ queryKey: ['db'] });
+    }).catch(() => undefined);
+    tick();
+    const t = setInterval(tick, 60_000);
+    return () => clearInterval(t);
+  }, [office, session, qc]);
 
   React.useEffect(() => {
     if (!open) return;
@@ -71,6 +86,7 @@ export function NotificationBell() {
         )}
       </button>
 
+      {settings && createPortal(<NotificationSettings onClose={() => setSettings(false)} />, document.body)}
       {open && createPortal(
         <div className="fixed inset-0 z-[60] bg-ink/30 sm:bg-transparent" onClick={() => setOpen(false)}>
           <div role="dialog" aria-modal="true" aria-label="Notifications" onClick={e => e.stopPropagation()}
@@ -78,6 +94,9 @@ export function NotificationBell() {
                        bg-surface shadow-lg sm:inset-x-auto sm:bottom-auto sm:right-4 sm:top-14 sm:w-[380px] sm:rounded-[var(--radius-xl)]">
             <div className="flex items-center gap-2 border-b border-line px-4 py-3">
               <h2 className="flex-1 font-semibold">Notifications</h2>
+              <Button size="sm" variant="ghost" aria-label="Notification settings" onClick={() => { setOpen(false); setSettings(true); }}>
+                <Settings2 className="size-4" aria-hidden />
+              </Button>
               {unread > 0 && (
                 <Button size="sm" variant="ghost" onClick={() => markRead(null)}>
                   <CheckCheck className="size-4" aria-hidden /> Mark all read

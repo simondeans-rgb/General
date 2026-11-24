@@ -2,10 +2,13 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { CalendarX2, ChevronRight, MapPin, User } from 'lucide-react';
+import { CalendarX2, ChevronRight, MapPin, User, CalendarPlus } from 'lucide-react';
+import { readAs } from '@/lib/db/client';
+import { useSession } from '@/lib/auth/session';
+import { downloadIcs } from '@/lib/ics';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
-import { Badge, Card, EmptyState, Skeleton, ErrorState, type Tone } from '@/components/ui';
+import { Badge, Button, Card, EmptyState, Skeleton, ErrorState, type Tone } from '@/components/ui';
 import * as F from '@/lib/repos/family';
 import { time, relativeDay, dateLong, isoDate, dayRange } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -27,7 +30,8 @@ export default function FamilySchedule() {
   }, [rows.data]);
 
   return (
-    <Shell title="Schedule" subtitle="The next four weeks" allow={['guardian']}>
+    <Shell title="Schedule" subtitle="The next four weeks" allow={['guardian']}
+      actions={<CalendarButton />}>
       <div className="mx-auto max-w-lg space-y-4">
         {rows.isLoading && <Card className="space-y-3 p-4">{[0,1,2].map(i => <Skeleton key={i} className="h-14" />)}</Card>}
         {rows.error && <ErrorState error={rows.error} onRetry={() => rows.refetch()} />}
@@ -73,5 +77,27 @@ export default function FamilySchedule() {
         ))}
       </div>
     </Shell>
+  );
+}
+
+/** The term's classes as a calendar file, cancellations included (R-036). */
+function CalendarButton() {
+  const { session } = useSession();
+  const go = async () => {
+    const from = new Date(); from.setHours(0, 0, 0, 0);
+    const to = new Date(from.getTime() + 16 * 7 * 86400_000);
+    const rows = await readAs<F.NextClass>(session, F.MY_SCHEDULE, [from.toISOString(), to.toISOString()]);
+    const byId = new Map<string, { s: F.NextClass; kids: string[] }>();
+    rows.forEach(s => { const e = byId.get(s.id); if (e) e.kids.push(s.child); else byId.set(s.id, { s, kids: [s.child] }); });
+    downloadIcs('dance-classes.ics', 'Dance classes', [...byId.values()].map(({ s, kids }) => ({
+      id: s.id, title: `${s.name} (${kids.join(' & ')})`, starts_at: s.starts_at, ends_at: s.ends_at,
+      location: [s.room, s.location].filter(Boolean).join(', '), cancelled: s.status === 'cancelled',
+      description: s.teacher ? `With ${s.teacher}` : null,
+    })));
+  };
+  return (
+    <Button size="sm" onClick={go} aria-label="Add classes to my calendar">
+      <CalendarPlus className="size-4" aria-hidden /> <span className="hidden sm:inline">Add to calendar</span>
+    </Button>
   );
 }

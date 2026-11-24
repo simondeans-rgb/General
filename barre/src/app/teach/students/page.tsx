@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 import { Suspense } from 'react';
-import { Users, MessageSquarePlus, HeartPulse } from 'lucide-react';
+import { Users, MessageSquarePlus, HeartPulse, Mail } from 'lucide-react';
+import { TeacherMessageSheet } from '@/components/app/teacher-message';
 import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection, KeyValue } from '@/components/app/detail-panel';
 import { MedicalBrief, MedicalMarker } from '@/components/app/medical-brief';
@@ -27,6 +28,7 @@ function MyStudents() {
   const [q, setQ] = React.useState('');
   const [onlyNeeds, setOnlyNeeds] = React.useState(false);
   const [writing, setWriting] = React.useState<Row | null>(null);
+  const [messaging, setMessaging] = React.useState<Row | null>(null);
   const { selected, select } = useSelection();
   const rows = useRows<Row>(['my-students'], T.MY_STUDENTS);
   const withNeeds = rows.data?.filter(s => s.has_medical_need).length ?? 0;
@@ -113,12 +115,16 @@ function MyStudents() {
                   <Button className="w-full" onClick={() => setWriting(current)}>
                     <MessageSquarePlus className="size-4" aria-hidden /> Write feedback
                   </Button>
+                  <Button className="mt-2 w-full" variant="ghost" onClick={() => setMessaging(current)}>
+                    <Mail className="size-4" aria-hidden /> Message the family
+                  </Button>
                 </>
               )}
             </DetailPanel>
           )}
         </div>
       </div>
+      {messaging && <TeacherMessageSheet student={messaging} onClose={() => setMessaging(null)} />}
       {writing && <FeedbackComposer student={writing} onClose={() => setWriting(null)} />}
     </Shell>
   );

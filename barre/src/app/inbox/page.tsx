@@ -6,11 +6,12 @@ import Link from 'next/link';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, Megaphone, MessageSquare, PenSquare, Send, Users, FileText, Plus, Inbox as InboxIcon,
-  CheckCircle2, Mail,
+  CheckCircle2, Mail, Clock, ClipboardList,
 } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { RecordSheet } from '@/components/app/record-sheet';
 import { Automations } from '@/components/app/automations';
+import { removeWithUndo, useRemoving } from '@/components/app/undo';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
@@ -197,6 +198,12 @@ function Conversation({ familyId, onBack }: { familyId: string; onBack: () => vo
               <div className={cn('flex', m.inbound ? 'justify-start' : 'justify-end')}>
                 <div className={cn('max-w-[85%] rounded-[var(--radius-lg)] px-3.5 py-2.5 text-sm shadow-xs',
                   m.inbound ? 'rounded-bl-sm border border-line bg-surface' : 'rounded-br-sm bg-accent text-on-accent')}>
+                  {m.is_request && (
+                    <Link href="/requests" className={cn('mb-1 inline-flex items-center gap-1 text-[11.5px] font-medium underline-offset-2 hover:underline',
+                      m.inbound ? 'text-accent-text' : 'text-on-accent')}>
+                      <ClipboardList className="size-3" aria-hidden /> Request{m.inbound ? ' · handle in Requests' : ''}
+                    </Link>
+                  )}
                   {m.subject && <p className="mb-1 font-medium">{m.subject}</p>}
                   <p className="whitespace-pre-wrap break-words">{m.body}</p>
                   <p className={cn('mt-1.5 text-[11.5px]', m.inbound ? 'text-ink-3' : 'text-on-accent opacity-80')}>
@@ -237,31 +244,72 @@ function Conversation({ familyId, onBack }: { familyId: string; onBack: () => vo
 
 function BroadcastList() {
   const rows = useRows<I.Broadcast>(['broadcasts'], I.BROADCASTS);
+  const [open, setOpen] = React.useState<I.Broadcast | null>(null);
   return (
     <Card className="overflow-hidden">
       {rows.isLoading && <div className="space-y-2 p-3">{[0,1,2].map(i => <Skeleton key={i} className="h-16" />)}</div>}
       {rows.data?.length === 0 && <EmptyState icon={<Megaphone className="size-5" />} title="Nothing sent to groups yet" />}
       <ul className="divide-y divide-line">
         {rows.data?.map(b => (
-          <li key={b.id} className="px-4 py-3">
+          <li key={b.id}>
+           <button className="block w-full px-4 py-3 text-left hover:bg-surface-2" onClick={() => setOpen(b)}>
             <div className="flex items-center gap-2">
               {b.kind === 'studio_announcement'
                 ? <Badge tone="violet" icon={<Megaphone className="size-3" aria-hidden />}>Whole studio</Badge>
                 : <Badge tone="info" icon={<Users className="size-3" aria-hidden />}>{b.class_name}</Badge>}
+              {b.scheduled && <Badge tone="caution" icon={<Clock className="size-3" aria-hidden />}>Sends {relativeDay(b.sent_at)} {time(b.sent_at)}</Badge>}
               <span className="ml-auto text-[12px] text-ink-3">{relativeDay(b.sent_at)}</span>
             </div>
             {b.subject && <p className="mt-1.5 font-medium">{b.subject}</p>}
             <p className="mt-0.5 line-clamp-3 text-sm text-ink-2">{b.body}</p>
-            {b.sender && <p className="mt-1 text-[12px] text-ink-3">From {b.sender}</p>}
+            {b.sender && <p className="mt-1 text-[12px] text-ink-3">From {b.sender} · tap to see who has read it</p>}
+           </button>
           </li>
         ))}
       </ul>
+      {open && <ReachSheet message={open} onClose={() => setOpen(null)} />}
     </Card>
+  );
+}
+
+/** Who has seen a message, and a nudge for those who have not (R-018). */
+export function ReachSheet({ message, onClose }: { message: { id: string; subject: string | null; scheduled?: boolean }; onClose: () => void }) {
+  const { session } = useSession();
+  const qc = useQueryClient();
+  const reach = useRows<I.Reach>(['reach', message.id], I.REACH, [message.id]);
+  const [done, setDone] = React.useState<string | null>(null);
+  const remind = useMutation({
+    mutationFn: async () => (await runAs(session, q => q<{ n: number }>(I.REMIND_UNREAD, [message.id])))[0]!.n,
+    onSuccess: n => { setDone(`Reminded ${n} famil${n === 1 ? 'y' : 'ies'}.`); qc.invalidateQueries({ queryKey: ['db'] }); },
+  });
+  const rows = reach.data ?? [];
+  const seen = rows.filter(r => r.seen).length;
+  const waiting = rows.filter(r => !r.seen && r.has_login).length;
+  const noLogin = rows.filter(r => !r.has_login).length;
+  return (
+    <RecordSheet title={message.subject ?? 'Message'} subtitle={message.scheduled ? 'Scheduled — not sent yet'
+        : reach.data ? `${seen} of ${rows.length} famil${rows.length === 1 ? 'y has' : 'ies have'} seen this` : undefined}
+      onClose={onClose} onSave={() => remind.mutate()} saving={remind.isPending} error={remind.error}
+      canSave={!message.scheduled && waiting > 0 && !done} saveLabel={waiting ? `Remind the ${waiting} who haven’t` : 'Everyone has seen it'}>
+      {done && <p role="status" className="flex items-center gap-2 text-sm"><CheckCircle2 className="size-4 text-positive" aria-hidden /> {done}</p>}
+      {reach.isLoading && <Skeleton className="h-24" />}
+      {noLogin > 0 && <p className="text-[12.5px] text-ink-3">{noLogin} famil{noLogin === 1 ? 'y has' : 'ies have'} not signed up to the app, so cannot see messages yet.</p>}
+      <ul className="max-h-72 divide-y divide-line overflow-y-auto rounded-[var(--radius-md)] border border-line">
+        {rows.map(r => (
+          <li key={r.family_id} className="flex items-center justify-between px-3 py-2 text-sm">
+            <span>{r.family_name}</span>
+            {r.seen ? <Badge tone="positive">Seen {r.seen_at ? relativeDay(r.seen_at) : ''}</Badge>
+              : r.has_login ? <Badge tone="caution">Not yet</Badge> : <Badge tone="neutral">No app login</Badge>}
+          </li>
+        ))}
+      </ul>
+    </RecordSheet>
   );
 }
 
 function TemplateList() {
   const rows = useRows<I.Template>(['templates'], I.TEMPLATES);
+  const removing = useRemoving();
   const [editing, setEditing] = React.useState<I.Template | 'new' | null>(null);
   return (
     <Card className="overflow-hidden">
@@ -272,7 +320,7 @@ function TemplateList() {
       {rows.isLoading && <Skeleton className="m-3 h-16" />}
       {rows.data?.length === 0 && <EmptyState icon={<FileText className="size-5" />} title="No templates yet" />}
       <ul className="divide-y divide-line">
-        {rows.data?.map(t => (
+        {rows.data?.filter(t => !removing(t.id)).map(t => (
           <li key={t.id}>
             <button onClick={() => setEditing(t)} className="w-full px-4 py-3 text-left hover:bg-surface-2">
               <span className="block font-medium">{t.name}</span>
@@ -292,7 +340,6 @@ function TemplateSheet({ template, onClose }: { template: I.Template | null; onC
   const [name, setName] = React.useState(template?.name ?? '');
   const [subject, setSubject] = React.useState(template?.subject ?? '');
   const [body, setBody] = React.useState(template?.body ?? '');
-  const [confirm, setConfirm] = React.useState(false);
   const done = () => { qc.invalidateQueries({ queryKey: ['db'] }); onClose(); };
   const save = useMutation({
     mutationFn: () => runAs(session, q => template
@@ -300,15 +347,18 @@ function TemplateSheet({ template, onClose }: { template: I.Template | null; onC
       : q(I.CREATE_TEMPLATE, [name.trim(), subject, body.trim()])),
     onSuccess: done,
   });
-  const remove = useMutation({
-    mutationFn: () => runAs(session, q => q(I.REMOVE_TEMPLATE, [template!.id])), onSuccess: done,
-  });
+  const remove = () => {
+    removeWithUndo(template!.id, `“${template!.name}”`, async () => {
+      await runAs(session, q => q(I.REMOVE_TEMPLATE, [template!.id]));
+      qc.invalidateQueries({ queryKey: ['db'] });
+    });
+    onClose();
+  };
   return (
     <RecordSheet title={template ? 'Edit template' : 'New template'} onClose={onClose}
-      onSave={() => save.mutate()} saving={save.isPending} error={save.error ?? remove.error}
+      onSave={() => save.mutate()} saving={save.isPending} error={save.error}
       canSave={name.trim().length >= 2 && body.trim().length >= 5}
-      onRemove={template ? () => (confirm ? remove.mutate() : setConfirm(true)) : undefined}
-      removing={remove.isPending} removeLabel={confirm ? 'Tap again to remove' : 'Remove template'}>
+      onRemove={template ? remove : undefined} removeLabel="Remove template">
       <Field label="Name" htmlFor="tp-n" required>
         <Input id="tp-n" value={name} onChange={e => setName(e.target.value)} maxLength={80} />
       </Field>
@@ -336,6 +386,8 @@ function Composer({ onClose, onSentDirect }: { onClose: () => void; onSentDirect
   const [subject, setSubject] = React.useState('');
   const [body, setBody] = React.useState('');
   const [sent, setSent] = React.useState<string | null>(null);
+  const [later, setLater] = React.useState('');
+  const at = later ? new Date(later).toISOString() : null;
   const families = useRows<{ id: string; name: string; guardian: string | null }>(
     ['family-options'], `select f.id, f.name, (select g.full_name from guardian g where g.family_id = f.id
       and g.deleted_at is null order by g.is_primary desc limit 1) as guardian
@@ -357,11 +409,15 @@ function Composer({ onClose, onSentDirect }: { onClose: () => void; onSentDirect
 
   const send = useMutation({
     mutationFn: () => runAs(session, q =>
-      audience === 'family' ? q(I.SEND_DIRECT, [familyId, subject, body])
+      at ? (audience === 'family' ? q(I.SEND_DIRECT_AT, [familyId, subject, body, at])
+            : audience === 'class' ? q(I.SEND_CLASS_AT, [classId, subject, body, at])
+            : q(I.SEND_STUDIO_AT, [subject, body, at]))
+      : audience === 'family' ? q(I.SEND_DIRECT, [familyId, subject, body])
       : audience === 'class' ? q(I.SEND_CLASS, [classId, subject, body])
       : q(I.SEND_STUDIO, [subject, body])),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['db'] });
+      if (at) { setSent(`scheduled for ${relativeDay(at)} at ${time(at)}. Families see it then`); return; }
       if (audience === 'family') onSentDirect(familyId);
       else setSent(audience === 'class' ? `${cls?.name} — ${reach} famil${reach === 1 ? 'y' : 'ies'}` : `the whole studio — ${reach} families`);
     },
@@ -372,7 +428,7 @@ function Composer({ onClose, onSentDirect }: { onClose: () => void; onSentDirect
       <RecordSheet title="Sent" onClose={onClose} onSave={onClose} saveLabel="Done">
         <div className="flex items-start gap-3">
           <CheckCircle2 className="mt-0.5 size-5 text-positive" aria-hidden />
-          <p className="text-sm text-ink-2">Delivered in the app to {sent}, and kept in each family’s history.</p>
+          <p className="text-sm text-ink-2">{sent.startsWith('scheduled') ? `Message ${sent}.` : `Delivered in the app to ${sent}, and kept in each family’s history.`}</p>
         </div>
       </RecordSheet>
     );
@@ -381,7 +437,7 @@ function Composer({ onClose, onSentDirect }: { onClose: () => void; onSentDirect
   return (
     <RecordSheet title="New message" onClose={onClose} onSave={() => send.mutate()} saving={send.isPending}
       error={send.error} canSave={valid}
-      saveLabel={reach > 1 ? `Send to ${reach} families` : 'Send'}>
+      saveLabel={at ? 'Schedule' : reach > 1 ? `Send to ${reach} families` : 'Send'}>
       <div role="radiogroup" aria-label="Who to" className="grid grid-cols-3 gap-1 rounded-[var(--radius-md)] bg-surface-2 p-1">
         {([['family', 'A family'], ['class', 'A class'], ['studio', 'Everyone']] as const).map(([k, l]) => (
           <button key={k} role="radio" aria-checked={audience === k} onClick={() => setAudience(k)}
@@ -425,6 +481,10 @@ function Composer({ onClose, onSentDirect }: { onClose: () => void; onSentDirect
         <textarea id="cm-b" value={body} onChange={e => setBody(e.target.value)} rows={7}
           className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
                      focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
+      </Field>
+      <Field label="Send later" htmlFor="cm-at" hint="Leave empty to send now. Up to 60 days ahead.">
+        <Input id="cm-at" type="datetime-local" value={later} onChange={e => setLater(e.target.value)}
+               min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)} />
       </Field>
       <p className="flex items-center gap-1.5 text-[12.5px] text-ink-3">
         <Mail className="size-3.5" aria-hidden /> Delivered in the app. Email and text delivery are not connected yet.
