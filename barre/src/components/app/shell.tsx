@@ -7,7 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   CalendarDays, LayoutGrid, Users, GraduationCap, Route, ClipboardCheck,
   Home, Baby, MessageSquare, CreditCard, PlayCircle, Trophy, Inbox, Settings2, Rocket,
-  MoreHorizontal, FolderOpen,
+  MoreHorizontal, FolderOpen, Receipt,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useSession, type Role } from '@/lib/auth/session';
@@ -34,6 +34,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: '/requests', label: 'Requests', icon: Inbox, primary: true },
     { href: '/classes', label: 'Classes', icon: GraduationCap },
     { href: '/enrolment', label: 'Enrolment', icon: Route },
+    { href: '/billing', label: 'Billing', icon: Receipt },
     { href: '/studio', label: 'Studio', icon: Settings2 },
   ],
   admin: [
@@ -43,6 +44,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: '/requests', label: 'Requests', icon: Inbox, primary: true },
     { href: '/classes', label: 'Classes', icon: GraduationCap },
     { href: '/enrolment', label: 'Enrolment', icon: Route },
+    { href: '/billing', label: 'Billing', icon: Receipt },
     { href: '/studio', label: 'Studio', icon: Settings2 },
   ],
   teacher: [

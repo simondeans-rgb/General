@@ -176,7 +176,10 @@ export function Skeleton({ className }: { className?: string }) {
 }
 
 export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
-  const message = error instanceof Error ? error.message : String(error);
+  // Database rules raise "CODE: sentence". The sentence is written for people;
+  // the code is for tests and logs.
+  const message = (error instanceof Error ? error.message : String(error))
+    .replace(/^[A-Z_]{3,}:\s*/, '');
   return (
     <div role="alert" className="rounded-[var(--radius-lg)] border border-critical/25 bg-critical-soft p-4">
       <p className="font-medium text-critical">Something went wrong</p>
