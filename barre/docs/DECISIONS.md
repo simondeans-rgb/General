@@ -17,3 +17,8 @@ Where this build departs from the brief, or interprets it, and why.
 | Credit is applied to the oldest open invoice automatically | Manual allocation | Fewer steps for the office; every allocation is still a visible row. |
 | Notifications say *that* health details changed, never what | Including the detail | Notifications are shown on lock screens and in lists; health data is special-category. |
 | Reports are a handful of rates with their sample size, two small charts | A dashboard of charts | Owners steer by five numbers; each links to the rows behind it. |
+| Barre staff see account facts only; inside a school only with the owner's time-limited, read-only, logged grant, never health records | Unrestricted operator access | Under UK GDPR Barre is the schools' data processor. Schools can be told, truthfully, that Barre cannot browse their children's records. |
+| Barre creates schools and invites owners | Self-serve sign-up | Direct sales first; the invitation path already supports adding self-serve later. |
+| Suspended and cancelled schools stay readable, with export, for 30 days | Locking everyone out | Families mid-term are not punished for the studio's billing, and a leaving school can take its data. |
+| Plan limits stop additions, never delete | Enforcing by removal | Downgrading must never cost a school its records. |
+| Platform staff see counts by role, not names, of a school's people | A full member list | Names of parents and children are the school's data, not Barre's. |

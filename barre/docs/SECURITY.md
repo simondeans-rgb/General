@@ -120,6 +120,42 @@ office holds conversations.
 - **The email outbox** (addresses of prospective families) is readable by the
   office only.
 
+## Barre staff and the schools they serve
+
+Barre's own staff are **not** members of any school. Being a platform admin
+grants no access to a single child. The console reads account facts — plan,
+status, owner contact, counts — through `app.platform_*` functions that
+return nothing to anyone else, and the test suite asserts a platform admin
+sees zero rows of every family-level table.
+
+**Support access** is how they help. Only a school's owner can grant it, for
+at most seven days, with a reason. While granted, a Barre admin may open a
+view of that one school as an administrator would see it, except:
+
+- **Read-only, enforced by Postgres.** Every read in Barre runs in a READ
+  ONLY transaction, and the support membership exists only inside such a
+  transaction. There is no write path for it to use.
+- **No health records**, grant or no grant — both medical policies exclude a
+  support viewer.
+- **On the record.** Opening the view writes to the school's own audit log,
+  shown on its Account page.
+- **Ends instantly** when the owner revokes it or it expires.
+
+**Suspended and cancelled schools** are read-only by the same mechanism.
+
+**Invitation tokens** are stored only as SHA-256 hashes; links expire after 14
+days, work once, and can be withdrawn.
+
+**Session settings are not trusted.** Postgres lets any session set a custom
+setting, so none is used as a permission. (Three were, and were removed: one
+could have silenced the audit trail, one silenced notifications, one let a
+message pass as sent by "the studio".)
+
+**One transaction at a time in the browser.** The demo's single database
+connection previously let a background read's ROLLBACK cut across a write in
+progress, which then ran without the user's identity (and was refused).
+Transactions are now serialised.
+
 ## What is NOT protected in this build
 
 Being plain about it:
@@ -145,7 +181,7 @@ Being plain about it:
 
 ## Test coverage
 
-Around 190 tests run against a real Postgres 16. They cover cross-studio isolation,
+Over 200 tests run against a real Postgres 16. They cover cross-studio isolation,
 unauthenticated access, guardian scoping, teacher scoping, the medical
 boundary and the exact columns of the safety brief, capacity enforcement
 including that it counts rows the caller cannot see, waitlist ordering,

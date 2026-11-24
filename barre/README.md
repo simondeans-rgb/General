@@ -40,6 +40,13 @@ Worth doing in this order:
    her conversation with the studio; tap an invoice in **Payments** to see its
    lines.
 
+4. **Jordan (Barre platform admin)** — every school on Barre: plans, status,
+   usage, revenue. **New school** creates an account and an owner invitation
+   link; open it (signed out, or in a private window) to join as that owner.
+   Northstar's owner has allowed support access: open its read-only view
+   from Northstar's panel. Pointe & Flex is suspended — sign in as its owner
+   from the switcher to see what that means.
+
 ## The demo runs a real database
 
 Postgres is compiled to WebAssembly and runs in the browser tab, created from
@@ -86,13 +93,17 @@ unchanged on Supabase, a plain server, or in the browser.
 - [docs/SECURITY.md](docs/SECURITY.md) — the permission model, why teachers
   cannot read the medical table or family conversations, and what is
   deliberately *not* protected in this build.
+- [docs/PLATFORM.md](docs/PLATFORM.md) — running Barre for many schools: the
+  console, plans, invitations, support access and an account's lifecycle.
 - [docs/DECISIONS.md](docs/DECISIONS.md) — where the build departs from the brief, and why.
 - [docs/PAYMENTS.md](docs/PAYMENTS.md) — the ledger, and the two server routes
   that switch on card payments with Stripe.
 
 ## What is built, and what is not
 
-**Built and working:** schema (42 tables, 115 policies), role routing, studio
+**Built and working:** the platform console (schools, plans, status,
+invitations, read-only support access), each school's Account page (access by
+role, invitations, support, export), schema, role routing, studio
 setup, locations, terms, styles and levels, staff, families and students,
 classes with roster and waiting list, the timetable in four views, the
 enquiry funnel, the teacher register (with an offline queue), the parent app,

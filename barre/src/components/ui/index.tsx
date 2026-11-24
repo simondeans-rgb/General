@@ -178,8 +178,12 @@ export function Skeleton({ className }: { className?: string }) {
 export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   // Database rules raise "CODE: sentence". The sentence is written for people;
   // the code is for tests and logs.
-  const message = (error instanceof Error ? error.message : String(error))
+  let message = (error instanceof Error ? error.message : String(error))
     .replace(/^[A-Z_]{3,}:\s*/, '');
+  // Refusals from row level security are correct but unreadable.
+  if (/row-level security|read-only transaction|permission denied/i.test(message)) {
+    message = 'You don’t have permission to change this. If the account is read-only, nothing here can be changed.';
+  }
   return (
     <div role="alert" className="rounded-[var(--radius-lg)] border border-critical/25 bg-critical-soft p-4">
       <p className="font-medium text-critical">Something went wrong</p>

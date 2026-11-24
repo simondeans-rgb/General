@@ -106,10 +106,26 @@ async function install(db: PGlite, version: string): Promise<void> {
   await db.exec('reset role');
 }
 
+/**
+ * One connection, one transaction at a time.
+ *
+ * The browser has a single PGlite connection. Without this, a background read
+ * (the notification bell's refresh, say) could BEGIN while a write was in the
+ * middle of its transaction — and that read's ROLLBACK would discard the
+ * write's claims and role, so the rest of the write ran as nobody and was
+ * refused. A server deployment gets this for free from a connection pool.
+ */
+let queue: Promise<unknown> = Promise.resolve();
+function exclusive<T>(work: () => Promise<T>): Promise<T> {
+  const run = queue.then(work, work);
+  queue = run.catch(() => undefined);
+  return run;
+}
+
 /** Wipe and rebuild — the demo's "start again" button. */
 export async function resetDemo(): Promise<void> {
   const db = await getDb();
-  await install(db, fingerprint());
+  await exclusive(() => install(db, fingerprint()));
 }
 
 /**
@@ -118,6 +134,10 @@ export async function resetDemo(): Promise<void> {
  */
 export async function runAs<T>(session: Session, fn: (q: Query) => Promise<T>): Promise<T> {
   const db = await getDb();
+  return exclusive(() => runAsNow(db, session, fn));
+}
+
+async function runAsNow<T>(db: PGlite, session: Session, fn: (q: Query) => Promise<T>): Promise<T> {
   await db.exec('begin');
   try {
     await db.query(`select set_config('request.jwt.claims', $1, true)`, [
@@ -143,6 +163,10 @@ export async function runAs<T>(session: Session, fn: (q: Query) => Promise<T>): 
  *  transaction, so neither has a path to change anything. */
 export async function readAs<T = Row>(session: Session, sql: string, params?: unknown[]): Promise<T[]> {
   const db = await getDb();
+  return exclusive(() => readAsNow<T>(db, session, sql, params));
+}
+
+async function readAsNow<T>(db: PGlite, session: Session, sql: string, params?: unknown[]): Promise<T[]> {
   await db.exec('begin transaction read only');
   try {
     await db.query(`select set_config('request.jwt.claims', $1, true)`, [

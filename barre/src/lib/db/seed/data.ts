@@ -1012,7 +1012,8 @@ function buildPlatform(): string {
   const S = OTHER_STUDIOS;
   return `
 -- Northstar is a paying customer on the Studio plan.
-update studio set plan_id = (select id from plan where code = 'studio'), status = 'active'
+update studio set plan_id = (select id from plan where code = 'studio'), status = 'active',
+                  created_at = now() - interval '2 years 3 months'
  where id = ${q(STUDIO_ID)};
 
 insert into user_account (id, email, full_name) values

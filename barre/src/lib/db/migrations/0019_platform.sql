@@ -332,6 +332,8 @@ create or replace function app.platform_events(p_studio uuid)
   select a.at, a.action, a.summary, u.full_name
     from audit_log a left join user_account u on u.id = a.actor_id
    where a.studio_id = p_studio and a.entity in ('studio', 'studio_invitation', 'support_access_grant', 'support_session', 'membership')
+     -- Decisions about the account, not the row-level trail every insert leaves.
+     and a.action not in ('insert', 'update', 'delete')
      and app.is_platform_admin()
    order by a.at desc limit 30
 $$;

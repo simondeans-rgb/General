@@ -350,3 +350,39 @@ describe('session settings are not a way around the rules', () => {
     });
   });
 });
+
+describe('the console and account screens’ queries', () => {
+  it('run for Barre staff', async () => {
+    const P = await import('../src/lib/repos/platform');
+    await asReader(PLATFORM_ADMIN, async q => {
+      expect((await q(P.SCHOOLS)).length).toBeGreaterThanOrEqual(3);
+      expect((await q(P.PLANS))).toHaveLength(4);
+      expect((await q(P.AM_SUPER))[0].yes).toBe(true);
+      await q(P.EVENTS, [STUDIO_ID]);
+      expect((await q(P.INVITES, [OTHER_STUDIOS.riverside])).length).toBe(1);
+    });
+  });
+
+  it('run for an owner, who sees their own people and nobody else’s', async () => {
+    const A = await import('../src/lib/repos/account');
+    await asReader(USERS.owner, async q => {
+      const [acct] = await q(A.ACCOUNT);
+      expect(acct.id).toBe(STUDIO_ID);
+      const members = await q(A.MEMBERS);
+      expect(members.some((m: any) => m.is_me && m.role === 'owner')).toBe(true);
+      expect(members.every((m: any) => m.email)).toBe(true);
+      expect(members.some((m: any) => m.full_name === 'Elena Marsh')).toBe(false);
+      await q(A.INVITATIONS); await q(A.FAMILIES); await q(A.STUDENTS); await q(A.GRANTS); await q(A.SUPPORT_VISITS);
+      for (const t of A.EXPORT_TABLES) await q(`select * from ${t}`);
+      expect((await q(`select * from student`)).every((s: any) => s.studio_id === STUDIO_ID)).toBe(true);
+    });
+  });
+
+  it('give a teacher nothing about the account', async () => {
+    const A = await import('../src/lib/repos/account');
+    await asReader(USERS.teacherTap, async q => {
+      expect(await q(A.INVITATIONS)).toHaveLength(0);
+      expect(await q(A.GRANTS)).toHaveLength(0);
+    });
+  });
+});

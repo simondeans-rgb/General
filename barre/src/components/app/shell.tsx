@@ -7,12 +7,16 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   CalendarDays, LayoutGrid, Users, GraduationCap, Route, ClipboardCheck,
   Home, Baby, MessageSquare, CreditCard, PlayCircle, Trophy, Inbox, Settings2, Rocket,
-  MoreHorizontal, FolderOpen, Receipt, BarChart3,
+  MoreHorizontal, FolderOpen, Receipt, BarChart3, Building2, Layers, KeyRound, ShieldCheck, LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useSession, type Role } from '@/lib/auth/session';
 import { BarreMark } from './database-gate';
 import { EmptyState, Button } from '@/components/ui';
+import { useRows } from '@/lib/query';
+import { runAs } from '@/lib/db/client';
+import { useQueryClient } from '@tanstack/react-query';
+import { dateShort, time } from '@/lib/format';
 import { PersonSwitcher } from './person-switcher';
 import { NotificationBell } from './notifications';
 import { AssistantLauncher } from './assistant';
@@ -39,6 +43,7 @@ const OFFICE_NAV: NavItem[] = [
   { href: '/billing', label: 'Billing', icon: Receipt },
   { href: '/reports', label: 'Reports', icon: BarChart3 },
   { href: '/studio', label: 'Studio', icon: Settings2 },
+  { href: '/account', label: 'Account', icon: KeyRound },
 ];
 
 const NAV: Record<Role, NavItem[]> = {
@@ -56,6 +61,10 @@ const NAV: Record<Role, NavItem[]> = {
     { href: '/family/payments', label: 'Payments', icon: CreditCard },
     { href: '/family/children', label: 'Family', icon: Baby },
   ],
+  platform: [
+    { href: '/platform', label: 'Schools', icon: Building2 },
+    { href: '/platform/plans', label: 'Plans', icon: Layers },
+  ],
   student: [
     { href: '/learn', label: 'Today', icon: Home },
     { href: '/learn/timetable', label: 'Timetable', icon: CalendarDays },
@@ -67,7 +76,7 @@ const NAV: Record<Role, NavItem[]> = {
 
 const ROLE_HOME: Record<Role, string> = {
   owner: '/today', admin: '/today', teacher: '/teach',
-  guardian: '/family', student: '/learn',
+  guardian: '/family', student: '/learn', platform: '/platform',
 };
 
 export function Shell({
@@ -80,6 +89,10 @@ export function Shell({
   allow: Role[];
 }) {
   const { session, signOut, loaded } = useSession();
+  // The school this person is in (or, for Barre support, viewing).
+  const studio = useRows<{ name: string; status: string; data_deletion_due_on: string | null }>(
+    ['shell-studio'], `select name, status, data_deletion_due_on from studio order by created_at limit 1`, [],
+    { enabled: !!session && (!session.platform || !!session.support), staleTime: 60_000 }).data?.[0];
   const router = useRouter();
   const pathname = usePathname();
 
@@ -125,8 +138,8 @@ export function Shell({
           </span>
           <span className="font-semibold tracking-tight">Barre</span>
         </div>
-        <p className="px-4 pt-4 pb-2 text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-3">
-          Northstar Dance
+        <p className="truncate px-4 pt-4 pb-2 text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-3">
+          {session.platform && !session.support ? 'Barre platform' : studio?.name ?? '\u00a0'}
         </p>
         <nav className="flex-1 px-2" aria-label="Main">
           {nav.map(item => <RailLink key={item.href} item={item} pathname={pathname} />)}
@@ -138,7 +151,7 @@ export function Shell({
           <PersonSwitcher />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">{session.name}</p>
-            <p className="text-[12.5px] capitalize text-ink-3">{session.role}</p>
+            <p className="text-[12.5px] capitalize text-ink-3">{session.support ? "Barre support" : session.platform ? "Barre platform" : session.role}</p>
           </div>
         </div>
       </aside>
@@ -161,6 +174,18 @@ export function Shell({
           </div>
         </header>
 
+        {session.support && <SupportBanner view={session.support} />}
+        {!session.platform && studio && (studio.status === 'suspended' || studio.status === 'cancelled') && (
+          <div role="status" className="border-b border-caution/30 bg-caution-soft px-4 py-2.5 text-[13px] lg:px-6">
+            <strong className="font-semibold">
+              {studio.status === 'suspended' ? 'This account is paused and read-only.' : 'This account has been closed and is read-only.'}
+            </strong>{' '}
+            {studio.status === 'cancelled' && studio.data_deletion_due_on
+              ? `Everything can still be viewed and exported until ${dateShort(studio.data_deletion_due_on)}, when it will be deleted.`
+              : 'Everything can still be viewed, but nothing can be changed.'}
+            {(session.role === 'owner') && <> <Link href="/account" className="font-medium underline">Account</Link></>}
+          </div>
+        )}
         <main id="main" className="flex-1 px-4 pb-24 pt-4 lg:px-6 lg:pb-10">{children}</main>
       </div>
 
@@ -171,7 +196,7 @@ export function Shell({
 
 function isActive(pathname: string, href: string) {
   const clean = pathname.replace(/\/$/, '');
-  return clean === href || (!['/teach','/family','/learn'].includes(href) && clean.startsWith(href + '/'));
+  return clean === href || (!['/teach','/family','/learn','/platform'].includes(href) && clean.startsWith(href + '/'));
 }
 
 function RailLink({ item, pathname }: { item: NavItem; pathname: string }) {
@@ -260,3 +285,28 @@ function TabLink({ item, pathname }: { item: NavItem; pathname: string }) {
 }
 
 export { ROLE_HOME };
+
+/** Always on screen while Barre support is inside a school. */
+function SupportBanner({ view }: { view: { studioId: string; studioName: string; until: string } }) {
+  const { session, exitSupport } = useSession();
+  const router = useRouter();
+  const qc = useQueryClient();
+  const exit = async () => {
+    try { await runAs(session, q => q('select app.end_support_session()')); } catch { /* ends on expiry anyway */ }
+    exitSupport();
+    qc.clear();
+    router.push('/platform');
+  };
+  return (
+    <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-ink/10 bg-ink px-4 py-2 text-[13px] text-surface lg:px-6">
+      <ShieldCheck className="size-4 shrink-0" aria-hidden />
+      <span className="min-w-0 flex-1">
+        <strong className="font-semibold">Viewing {view.studioName} as Barre support.</strong>{' '}
+        Read-only, with the owner’s permission, until {dateShort(view.until)} {time(view.until)}. Health records are not shown.
+      </span>
+      <button onClick={exit} className="inline-flex min-h-[32px] items-center gap-1.5 rounded-full bg-surface/15 px-3 font-medium hover:bg-surface/25">
+        <LogOut className="size-3.5" aria-hidden /> Leave
+      </button>
+    </div>
+  );
+}

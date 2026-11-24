@@ -9,9 +9,9 @@ import { Badge, Button } from '@/components/ui';
 import { initials } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
-const TONE = { owner: 'accent', admin: 'info', teacher: 'teal', guardian: 'rose', student: 'amber' } as const;
+const TONE = { owner: 'accent', admin: 'info', teacher: 'teal', guardian: 'rose', student: 'amber', platform: 'neutral' } as const;
 const ROLE_HOME = { owner: '/today', admin: '/today', teacher: '/teach',
-                    guardian: '/family', student: '/learn' } as const;
+                    guardian: '/family', student: '/learn', platform: '/platform' } as const;
 
 /**
  * Switching between the demo people.
