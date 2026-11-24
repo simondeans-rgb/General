@@ -5,8 +5,9 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { AttendanceQueue, localQueueStorage, isOfflineError } from '@/lib/offline/attendance-queue';
 import { ArrowLeft, AlertTriangle, Check, Phone, CheckCheck, Lock, LockOpen,
-         NotebookPen, FolderOpen, ChevronRight, MessageSquarePlus } from 'lucide-react';
+         NotebookPen, FolderOpen, ChevronRight, MessageSquarePlus, CloudOff } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
@@ -48,9 +49,35 @@ function Register() {
        left join location l on l.id = c.location_id
       where cs.id = $1`, [sessionId], { enabled: !!sessionId });
 
+  // Marks that cannot reach the server wait on the device (lib/offline).
+  const queue = React.useMemo(() => new AttendanceQueue(localQueueStorage()), []);
+  const [waiting, setWaiting] = React.useState(0);
+  const sync = React.useCallback(async () => {
+    if (!queue.pending.length) return;
+    await queue.flush(m => runAs(session, q => q(T.MARK_ATTENDANCE,
+      [m.sessionId, m.studentId, m.status, m.reason, m.clientMarkedAt])).then(() => undefined));
+    setWaiting(queue.pending.length);
+    qc.invalidateQueries({ queryKey: ['db'] });
+  }, [queue, session, qc]);
+  React.useEffect(() => {
+    setWaiting(queue.pending.length);
+    sync();
+    window.addEventListener('online', sync);
+    return () => window.removeEventListener('online', sync);
+  }, [queue, sync]);
+
   const mark = useMutation({
-    mutationFn: async (v: { studentId: string; status: Status }) =>
-      runAs(session, q => q(T.MARK_ATTENDANCE, [sessionId, v.studentId, v.status, null])),
+    mutationFn: async (v: { studentId: string; status: Status }) => {
+      const at = new Date().toISOString();
+      try {
+        return await runAs(session, q => q(T.MARK_ATTENDANCE, [sessionId, v.studentId, v.status, null, at]));
+      } catch (e) {
+        if (!isOfflineError(e)) throw e;
+        queue.add({ sessionId: sessionId!, studentId: v.studentId, status: v.status, reason: null, clientMarkedAt: at });
+        setWaiting(queue.pending.length);
+        return [];
+      }
+    },
     // Optimistic: a register must feel instant, and the write is local anyway.
     onMutate: async v => {
       const key = ['db', session?.userId ?? 'anon', 'register', sessionId ?? ''];
@@ -69,7 +96,7 @@ function Register() {
       const unmarked = (rows.data ?? []).filter(r => !r.status);
       await runAs(session, async q => {
         for (const r of unmarked) {
-          await q(T.MARK_ATTENDANCE, [sessionId, r.student_id, r.is_trial ? 'trial' : 'present', null]);
+          await q(T.MARK_ATTENDANCE, [sessionId, r.student_id, r.is_trial ? 'trial' : 'present', null, new Date().toISOString()]);
         }
       });
     },
@@ -142,6 +169,14 @@ function Register() {
             </Button>
           )}
         </div>
+
+        {waiting > 0 && (
+          <p role="status" className="flex items-center gap-2 rounded-[var(--radius-md)] border border-caution/30
+                        bg-caution-soft px-3 py-2 text-[13px] text-ink-2">
+            <CloudOff className="size-3.5 shrink-0 text-caution" aria-hidden />
+            {waiting} mark{waiting === 1 ? '' : 's'} saved on this device — they send when the connection is back.
+          </p>
+        )}
 
         {closed && (
           <p className="flex items-center gap-2 rounded-[var(--radius-md)] border border-positive/30

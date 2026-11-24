@@ -68,15 +68,20 @@ select roll.id as student_id, roll.first_name, roll.last_name, roll.preferred_na
   left join student_safety_brief b on b.student_id = roll.id
  order by roll.last_name, roll.first_name`;
 
+/* $5 is when the teacher tapped, by the device's clock. A mark taken offline
+   and synced an hour later must not overwrite a correction made since, so
+   the newer tap wins — not the later arrival. */
 export const MARK_ATTENDANCE = `
 insert into attendance_record (studio_id, session_id, student_id, status, reason, marked_by, client_marked_at)
-select c.studio_id, $1, $2, $3::attendance_status, $4, auth.uid(), now()
+select c.studio_id, $1, $2, $3::attendance_status, $4, auth.uid(), coalesce($5::timestamptz, now())
   from class_session cs join class c on c.id = cs.class_id
  where cs.id = $1
 on conflict (session_id, student_id) do update
   set status = excluded.status, reason = excluded.reason,
       marked_by = excluded.marked_by, marked_at = now(),
       client_marked_at = excluded.client_marked_at
+  where attendance_record.client_marked_at is null
+     or excluded.client_marked_at >= attendance_record.client_marked_at
 returning id, status`;
 
 
