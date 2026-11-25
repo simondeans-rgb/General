@@ -8,6 +8,7 @@ import {
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
 import { useSession } from '@/lib/auth/session';
+import { PracticeLog } from '@/components/app/practice';
 import { Badge, Card, CardHeader, EmptyState, Skeleton, ErrorState, type Tone } from '@/components/ui';
 import * as H from '@/lib/repos/hub';
 import { time, greeting, relativeDay, dateLong, dayRange, money } from '@/lib/format';
@@ -30,6 +31,7 @@ export default function LearnHome() {
   const feedback = useRows<H.Feedback>(['learn-feedback'], H.STUDENT_FEEDBACK);
   const events = useRows<H.EventRow>(['learn-events'], H.EVENTS);
   const resources = useRows<H.Resource>(['learn-resources'], H.RESOURCES);
+  const me = useRows<{ id: string }>(['student-self'], `select app.student_self_id() as id`);
 
   const upcoming = (timetable.data ?? []).filter(s => s.status !== 'cancelled');
   const next = upcoming[0];
@@ -93,6 +95,8 @@ export default function LearnHome() {
             </div>
           </Card>
         )}
+
+        {me.data?.[0]?.id && <PracticeLog studentId={me.data[0].id} />}
 
         <div className="grid grid-cols-2 gap-3">
           <TileLink href="/learn/library" icon={<PlayCircle className="size-5" />}

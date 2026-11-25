@@ -11,6 +11,7 @@ import {
   Badge, Button, Card, EmptyState, ErrorState, Field, Input, Select, Skeleton, type Tone,
 } from '@/components/ui';
 import * as H from '@/lib/repos/hub';
+import { BuyTickets, MyCostumes } from '@/components/app/show-tools';
 import { money, time, relativeDay, dateLong, dateShort } from '@/lib/format';
 
 const KIND_TONE: Record<string, Tone> = {
@@ -126,6 +127,10 @@ export function EventsView({ allow, title }: { allow: Role[]; title: string }) {
                   ))}
                 </div>
               ) : null}
+              {allow.includes('guardian') && e.my_status === 'confirmed' && <MyCostumes eventId={e.id} />}
+              {allow.includes('guardian') && (e.kind === 'show' || e.kind === 'competition') && new Date(e.starts_at) > new Date() && (
+                <div className="px-4 pb-3"><BuyTickets eventId={e.id} /></div>
+              )}
               {mine?.tone === 'caution' && e.my_status === 'requested' && (
                 <p className="border-t border-line px-4 py-2.5 text-[12.5px] text-ink-3">
                   The studio has your request{e.my_student ? ` for ${e.my_student}` : ''} and will confirm.

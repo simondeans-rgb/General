@@ -10,6 +10,8 @@ export const LEVELS: { key: Level; label: string; short: string }[] = [
   { key: 'mastered', label: 'Mastered', short: 'M' },
 ];
 export const STUDENT_SKILLS = `select * from app.student_skills($1)`;
+export const SKILL_DEMOS = `select id, demo_url from framework_skill where demo_url is not null and deleted_at is null`;
+export const SET_SKILL_DEMO = `select app.set_skill_demo($1, nullif(btrim($2), ''))`;
 export const RECORD_SKILL = `select app.record_skill($1, $2, $3::assessment_level, $4) as id`;
 
 export type Chip = { id: string; kind: 'going_well' | 'work_on'; label: string; position: number };

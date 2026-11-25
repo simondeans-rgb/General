@@ -14,6 +14,8 @@ import { useSession } from '@/lib/auth/session';
 import { useSelection } from '@/lib/use-selection';
 import * as E from '@/lib/repos/events';
 import * as C from '@/lib/repos/classes';
+import { CostumeSection, ProgrammeButton, RehearsalRegisterButton, TicketSection } from '@/components/app/show-tools';
+import { ExamsCard } from '@/components/app/exams';
 import { dateLong, money, time } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
@@ -66,6 +68,7 @@ function Events() {
               ))}
             </ul>
           </Card>
+          {!selected && <ExamsCard />}
           {selected && current && <EventDetail e={current} onEdit={() => setEditing(current)} onClose={() => select(null)} />}
         </div>
       </div>
@@ -187,8 +190,14 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
         </div>
       </DetailSection>
 
+      {routines.data && routines.data.length > 0 && <ProgrammeButton event={e} />}
+
+      <CostumeSection eventId={e.id} routines={routines.data ?? []} />
+
       <DetailSection title="Rehearsals">
-        <ul className="space-y-1 text-sm">{rehearsals.data?.map(r => <li key={r.id}><b>{r.title}</b> · {dateLong(r.starts_at)}, {time(r.starts_at)}</li>)}</ul>
+        <ul className="space-y-1 text-sm">{rehearsals.data?.map(r => (
+          <li key={r.id} className="flex items-center gap-2"><span className="min-w-0 flex-1"><b>{r.title}</b> · {dateLong(r.starts_at)}, {time(r.starts_at)}</span>
+            <RehearsalRegisterButton rehearsal={r} /></li>))}</ul>
         <div className="mt-2 grid grid-cols-2 gap-1.5">
           <Input aria-label="Rehearsal name" value={rh.title} onChange={x => setRh({ ...rh, title: x.target.value })} />
           <Input aria-label="Rehearsal starts" type="datetime-local" value={rh.starts} onChange={x => setRh({ ...rh, starts: x.target.value })} />
@@ -196,6 +205,8 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
         <Button size="sm" className="mt-1.5" disabled={!rh.starts} onClick={() => { go(E.ADD_REHEARSAL, [e.id, rh.title, new Date(rh.starts).toISOString(), null, null],
           () => 'Rehearsal added to dancers’ and teachers’ diaries.'); setRh({ title: 'Rehearsal', starts: '', ends: '' }); }}>Add rehearsal</Button>
       </DetailSection>
+
+      {(e.kind === 'show' || e.kind === 'competition') && <TicketSection eventId={e.id} />}
 
       <DetailSection title="Chaperones">
         <ul className="space-y-1 text-sm">
