@@ -105,6 +105,8 @@ unchanged on Supabase, a plain server, or in the browser.
 - [docs/DECISIONS.md](docs/DECISIONS.md) — where the build departs from the brief, and why.
 - [docs/PAYMENTS.md](docs/PAYMENTS.md) — the ledger, and the two server routes
   that switch on card payments with Stripe.
+- [docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md) — the automated checks
+  (`npm run a11y`) and the manual screen-reader review still to do.
 
 ## What is built, and what is not
 
@@ -143,14 +145,36 @@ text and push delivery with a safe queue and a scheduler (R-003, R-017,
 docs/DELIVERY.md); an installable app; and pilot activation tracking in the
 platform console (R-040).
 
+**Added after the second review:** monthly billing runs alongside term runs
+(R-050); per-family discounts such as bursaries and staff rates, shown to
+families only as "Discount" (R-056); an aged-debt report and a Xero
+sales-invoice export (R-055); an optional pay-before-use rule for packs and
+drop-ins, with an on-account limit, and public bookings held until paid
+(R-049); a privacy notice, consent and rate limits on the public pages
+(R-048); retention for stale enquiries, old families' invoices and closed
+concerns (R-052); teacher–family reply threads the office can read (R-054);
+notifications that follow the chosen school (R-051); a daily email digest
+(R-037); private calendar subscription links (R-036); exam sessions, entries
+and results that become milestones (R-058); costume sizes, rehearsal
+registers, a consent-aware programme and audience tickets (R-057); a
+practice log and demonstration links on skills (R-059); five-area office
+navigation and settings in tabs (R-027, R-053); a refreshed Setup and
+in-screen help (R-061); a week grid by room with clashes (R-029); an
+enrolment board (R-032); a school hero photo and light logo (R-060);
+automated accessibility checks with every serious finding fixed (R-039); and
+a lighter first load (R-062).
+
 **Built, waiting on a server:** the delivery worker (`scripts/deliver.mts` —
 needs provider keys and a scheduler), phone notifications (need VAPID keys
 and HTTPS hosting), card payments (Stripe module and webhook
 entry point written and tested — docs/PAYMENTS.md), email/SMS delivery
 (messages queue for a provider), the automations scheduler (the runner is
 callable; nothing calls it on a timer yet), real sign-in (Supabase Auth
-replaces the person picker; nothing else changes).
+replaces the person picker; nothing else changes), the calendar feed
+(`scripts/calendar-feed.mts`), per-address rate limits on the public pages
+(the server passes the caller's address), and card payment for held
+bookings and tickets.
 
 **Designed, not built:** the AI assistant (interface and Cmd-K routing to
 saved views; no generated answers), Studio Pulse's composite score (computed
-once there are 180 days of history), costume ordering and the shop.
+once there are 180 days of history), ordering costumes from suppliers, and the shop.

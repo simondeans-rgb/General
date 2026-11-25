@@ -46,4 +46,23 @@ Where this build departs from the brief, or interprets it, and why.
 | Switching style keeps a school's own colours, and swaps only if it was using the old style's preset | Always resetting | A school's brand colour survives a change of style. |
 | The product is Sanaa; its wordmark is fixed outlines in Sanaa's own colours (eucalyptus or ivory, terracotta full stop) on every screen | Rendering the name in the school's colours or live font | The Sanaa logo looks the same whatever the school's theme; schools' own logo and colours sit alongside it. |
 | Sanaa's palette (eucalyptus #0B3B34, ivory #F6F2EA, terracotta #C86A4F) and Fraunces headings are the default Classic look | A neutral default | A school that changes nothing still looks finished. |
+| Monthly-priced classes are billed by month runs only; term runs bill term and course fees | One run billing everything, months × price | Schools on monthly fees expect a monthly invoice (and, later, a monthly Direct Debit). Each month is billed once. |
+| A family's own discount is applied after the school rule (sibling or multi-class), not instead of it | Taking the larger | A bursary is agreed for a family's circumstances and should not disappear because a sibling rule also applies. **To confirm with the owner.** |
+| Families see a bursary only as "Discount" | Showing the reason | Discretion: the reason is the office's business. |
+| Pay before use is a school setting, off by default, with an on-account limit | Always requiring payment | Payments are not connected yet, and many schools trust known families. Public bookings are held 30 minutes rather than refused. |
+| Public forms require reading the privacy notice; news by email is a separate, unticked choice | One combined tick | UK GDPR: transparency at collection, and marketing consent must be separate and freely given. |
+| Rate limits live in the database (5 an hour per email or address, 100 per school) | Only at the edge | Works in the demo and cannot be bypassed by calling the function directly; the hosted edge can add more. |
+| Enquiries with no activity are removed after 90 days (adjustable) | Keeping prospects indefinitely | Data minimisation; the figure is the school's to change. |
+| Closed safeguarding concerns are kept until the school sets a period | A default deletion period | Safeguarding record periods are a matter for the school's policy and legal advice (often until the child is 25). |
+| Old families are anonymised, not deleted, once the financial period passes | Deleting invoices | Totals and numbering stay intact for the accounts. |
+| A family's reply to a teacher is visible to that teacher and to the office; there is still no private channel | Office-only replies (forwarded by hand) | Removes forwarding without creating a channel the school cannot see. |
+| Notifications show for the chosen school only, with a count for the other | Mixing schools in one bell | Matches "choosing a school narrows everything". |
+| The digest is daily at 5pm school time; urgent notices still go at once | Weekly, or digest everything | A day is the longest a parent should wait; cancellations today cannot wait. |
+| Calendar links carry a random token, one per person per school; a new link retires the old | Signed URLs naming the person | A leaked link reveals a timetable, not an identity, and is easy to replace. |
+| Exam grades are typed by the school; no syllabus text is held | Bundled RAD/ISTD syllabi | Avoids licensing syllabus content; every school's grade names work. |
+| The programme names a child only with photography consent | Naming everyone | Being named at a public performance identifies a child as much as a photo does. **To confirm with the safeguarding lead.** |
+| Tickets are booked by families of the school onto their account | Public ticket sales | Needs card payment (R-006) to sell to the public safely. |
+| Students log practice; they never upload video; teachers attach demonstration links | Student video uploads | No student-uploaded video of children. |
+| Office navigation is five areas plus Settings, each with its screens as tabs | Fourteen flat items | Findability; every screen is two taps away on a phone. |
+| The demo loads its schema and sample school only when it builds the database | Bundling them with every page | Cuts each page's first download by about a third; irrelevant once hosted. |
 
