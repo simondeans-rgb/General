@@ -140,6 +140,7 @@ select cm.id, cm.kind, cm.subject, cm.body, cm.sent_at, c.name as class_name
   from communication cm
   left join class c on c.id = cm.class_id
  where cm.deleted_at is null
+   and not cm.inbound          -- only what the studio sent, never the family's own messages (R-047)
  order by cm.sent_at desc limit 8`,r=`
 insert into communication (studio_id, kind, channel, family_id, subject, body, sent_by)
 select s.studio_id, 'direct', 'in_app', s.family_id,
