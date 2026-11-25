@@ -59,7 +59,7 @@ export default function FamilyMessages() {
               className={cn('flex min-h-[40px] items-center justify-center gap-1.5 rounded-[calc(var(--radius-md)-2px)] text-sm',
                 tab === k ? 'bg-surface font-medium shadow-xs' : 'text-ink-2')}>
               {l}
-              {n > 0 && <span className="tnum rounded-full bg-accent px-1.5 text-[11px] font-semibold text-white">
+              {n > 0 && <span className="tnum rounded-full bg-accent px-1.5 text-[11px] font-semibold text-on-accent">
                 {n}<span className="sr-only"> unread</span></span>}
             </button>
           ))}
@@ -84,10 +84,10 @@ export default function FamilyMessages() {
                     {newDay && <p className="pt-1 text-center text-[11.5px] font-medium uppercase tracking-[0.06em] text-ink-3">{relativeDay(m.sent_at)}</p>}
                     <div className={cn('flex', mine ? 'justify-end' : 'justify-start')}>
                       <div className={cn('max-w-[85%] rounded-[var(--radius-lg)] px-3.5 py-2.5 text-[15px] shadow-xs',
-                        mine ? 'rounded-br-sm bg-accent text-white' : 'rounded-bl-sm border border-line bg-surface')}>
+                        mine ? 'rounded-br-sm bg-accent text-on-accent' : 'rounded-bl-sm border border-line bg-surface')}>
                         {m.subject && <p className="mb-1 font-medium">{m.subject}</p>}
                         <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                        <p className={cn('mt-1.5 text-[11.5px]', mine ? 'text-white/75' : 'text-ink-3')}>
+                        <p className={cn('mt-1.5 text-[11.5px]', mine ? 'text-on-accent opacity-80' : 'text-ink-3')}>
                           {mine ? (m.sender ?? 'You') : (m.sender ?? 'Northstar Dance')} · {time(m.sent_at)}
                         </p>
                       </div>
@@ -105,7 +105,7 @@ export default function FamilyMessages() {
                 <textarea id="to-studio" value={draft} onChange={e => setDraft(e.target.value)} rows={1}
                   placeholder="Message the studio…"
                   className="max-h-40 min-h-[44px] flex-1 resize-none rounded-[22px] border border-line-strong bg-surface px-4 py-2.5 text-[15px]
-                             focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/12"
+                             focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12"
                   style={{ fieldSizing: 'content' } as React.CSSProperties} />
                 <Button type="submit" variant="primary" className="size-11 shrink-0 rounded-full p-0"
                         aria-label="Send" loading={send.isPending} disabled={!draft.trim()}>

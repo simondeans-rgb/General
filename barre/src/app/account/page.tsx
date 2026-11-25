@@ -4,8 +4,10 @@ import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Download, MailPlus, ShieldCheck, ShieldOff, UserMinus, Users, CheckCircle2 } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
+import { RetentionCard } from '@/components/app/safeguarding';
 import { RecordSheet } from '@/components/app/record-sheet';
 import { InviteLink } from '@/components/app/invite-link';
+import { BrandSettings } from '@/components/app/brand-settings';
 import { useRows } from '@/lib/query';
 import { runAs, readAs } from '@/lib/db/client';
 import { useSession, type Role } from '@/lib/auth/session';
@@ -30,7 +32,7 @@ const STATUS: Record<string, string> = {
 };
 
 /**
- * The school's own account: what it is on, who can get in, whether Barre
+ * The school's own account: what it is on, who can get in, whether Sanaa
  * support may look, and its data to take away. Owners and administrators.
  */
 export default function AccountPage() {
@@ -42,9 +44,11 @@ export default function AccountPage() {
     <Shell title="Account" subtitle={acct ? `${acct.name} · ${STATUS[acct.status] ?? acct.status}` : undefined}
       allow={['owner', 'admin']}>
       <div className="mx-auto max-w-3xl space-y-5">
+        <BrandSettings canEdit={isOwner && !session?.platform} />
         <PlanCard acct={acct} />
         <Team isOwner={isOwner} studioId={acct?.id} />
         {isOwner && !session?.platform && acct && <SupportCard studioId={acct.id} />}
+        {isOwner && !session?.platform && acct && <RetentionCard studioId={acct.id} />}
         {isOwner && !session?.platform && <ExportCard name={acct?.name} />}
       </div>
     </Shell>
@@ -83,7 +87,7 @@ function PlanCard({ acct }: { acct?: A.AccountRow }) {
             </div>
           );
         })}
-        <p className="text-[12.5px] text-ink-3">To change plan, contact Barre. Nothing is ever deleted for being over a limit — you just cannot add more.</p>
+        <p className="text-[12.5px] text-ink-3">To change plan, contact Sanaa. Nothing is ever deleted for being over a limit — you just cannot add more.</p>
       </div>
     </Card>
   );
@@ -249,7 +253,7 @@ function InviteSheet({ studioId, isOwner, onClose }: { studioId: string; isOwner
         <div className="space-y-1.5">
           {roles.map(r => (
             <label key={r} className={cn('flex cursor-pointer items-start gap-3 rounded-[var(--radius-md)] border p-2.5',
-              role === r ? 'border-accent bg-accent-soft/50' : 'border-line hover:bg-surface-2')}>
+              role === r ? 'border-accent-line bg-accent-soft/50' : 'border-line hover:bg-surface-2')}>
               <input type="radio" name="role" value={r} checked={role === r} onChange={() => setRole(r)} className="mt-1 accent-[var(--color-accent)]" />
               <span>
                 <span className="block text-sm font-medium">{ROLE[r]!.label}</span>
@@ -283,7 +287,7 @@ function InviteSheet({ studioId, isOwner, onClose }: { studioId: string; isOwner
   );
 }
 
-// ── Barre support ────────────────────────────────────────────────────────
+// ── Sanaa support ────────────────────────────────────────────────────────
 function SupportCard({ studioId }: { studioId: string }) {
   const { session } = useSession();
   const qc = useQueryClient();
@@ -303,10 +307,10 @@ function SupportCard({ studioId }: { studioId: string }) {
 
   return (
     <Card>
-      <CardHeader title="Barre support" subtitle="Let Barre’s team see your account when you need help" />
+      <CardHeader title="Sanaa support" subtitle="Let Sanaa’s team see your account when you need help" />
       <div className="space-y-3 p-4">
         <p className="text-sm text-ink-2">
-          Barre cannot see your families, children or money unless you allow it here. Access is read-only, ends when
+          Sanaa cannot see your families, children or money unless you allow it here. Access is read-only, ends when
           you say, and never includes health records. Every time support opens your account it is listed below.
         </p>
         {live ? (
@@ -370,7 +374,7 @@ function ExportCard({ name }: { name?: string }) {
   };
   return (
     <Card>
-      <CardHeader title="Your data" subtitle="Everything your school holds in Barre, in one file" />
+      <CardHeader title="Your data" subtitle="Everything your school holds in Sanaa, in one file" />
       <div className="flex flex-wrap items-center gap-3 p-4">
         <p className="min-w-0 flex-1 text-sm text-ink-2">
           Families, children, health and consent records, classes, registers, invoices, payments and messages — as JSON.

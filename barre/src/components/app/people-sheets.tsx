@@ -1,4 +1,5 @@
 'use client';
+import { StaffChecks } from '@/components/app/safeguarding';
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -24,7 +25,7 @@ function useWrite(sql: string, onDone?: () => void) {
 
 const textarea =
   'w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm ' +
-  'focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/12';
+  'focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12';
 
 /* ── Family ─────────────────────────────────────────────────────────────── */
 export function FamilySheet({ row, onClose }: {
@@ -390,6 +391,7 @@ export function StaffSheet({ row, onClose }: { row: P.StaffRow | null; onClose: 
   const [bio, setBio] = React.useState(row?.bio ?? '');
   const save = useWrite(row ? P.UPDATE_STAFF : P.CREATE_STAFF, onClose);
   const remove = useWrite(P.REMOVE_STAFF, onClose);
+  const isOwner = useSession().session?.role === 'owner';
 
   return (
     <RecordSheet title={row ? 'Edit teacher' : 'Add a teacher'} onClose={onClose}
@@ -436,6 +438,12 @@ export function StaffSheet({ row, onClose }: { row: P.StaffRow | null; onClose: 
           ? 'This teacher has a login and can take their own registers.'
           : 'They will appear on the timetable straight away. Giving them a login to take registers is a separate step, and only the owner can do it.'}
       </p>
+      {row && isOwner && (
+        <div className="border-t border-line pt-3">
+          <p className="mb-2 text-sm font-semibold">Checks and training</p>
+          <StaffChecks staffId={row.id} />
+        </div>
+      )}
     </RecordSheet>
   );
 }

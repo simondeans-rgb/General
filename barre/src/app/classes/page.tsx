@@ -4,7 +4,7 @@ import * as React from 'react';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { GraduationCap, AlertTriangle, Users, Clock, FolderOpen, ChevronRight,
-         Plus, Pencil, UserPlus, UserMinus, Sparkles } from 'lucide-react';
+         Plus, Pencil, UserPlus, UserMinus, Sparkles, Copy, CalendarPlus } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection, KeyValue } from '@/components/app/detail-panel';
 import { useRows } from '@/lib/query';
@@ -12,6 +12,7 @@ import { useSelection } from '@/lib/use-selection';
 import { Badge, Button, Card, EmptyState, Skeleton, ErrorState, type Tone } from '@/components/ui';
 import * as C from '@/lib/repos/classes';
 import { ClassForm } from '@/components/app/class-form';
+import { TermRollover, DuplicateClass } from '@/components/app/term-rollover';
 import {
   EnrolSheet, WithdrawSheet, WaitlistActions, BookTrialSheet,
 } from '@/components/app/enrolment-actions';
@@ -26,9 +27,15 @@ export default function ClassesPage() {
 }
 
 function Classes() {
-  const rows = useRows<C.ClassRow>(['classes'], C.CLASSES);
+  const all = useRows<C.ClassRow>(['classes'], C.CLASSES);
+  const terms = useRows<C.TermRow>(['term-tabs'], C.TERM_TABS);
   const { selected, select } = useSelection();
   const [adding, setAdding] = React.useState(false);
+  const [rolling, setRolling] = React.useState(false);
+  const [termPick, setTermPick] = React.useState('');
+  const termList = (terms.data ?? []).filter(t => t.classes > 0 || t.current);
+  const term = termList.find(t => t.id === termPick) ?? termList.find(t => t.current) ?? termList[0];
+  const rows = { ...all, data: all.data?.filter(c => !term || c.term_id === term.id) };
 
   const byDay = React.useMemo(() => {
     const map = new Map<number, C.ClassRow[]>();
@@ -47,10 +54,25 @@ function Classes() {
     <Shell title="Classes"
       subtitle={rows.data ? `${totals.classes} classes · ${totals.taken} of ${totals.places} places filled (${totals.pct}%)` : undefined}
       allow={['owner', 'admin']}
-      actions={<Button size="sm" variant="primary" onClick={() => setAdding(true)}>
-        <Plus className="size-4" aria-hidden /> New class
-      </Button>}>
+      actions={<div className="flex gap-2">
+        {term && <Button size="sm" onClick={() => setRolling(true)}>
+          <CalendarPlus className="size-4" aria-hidden /> <span className="hidden sm:inline">Start next term</span>
+        </Button>}
+        <Button size="sm" variant="primary" onClick={() => setAdding(true)}>
+          <Plus className="size-4" aria-hidden /> New class
+        </Button>
+      </div>}>
       <div className="mx-auto max-w-6xl">
+        {termList.length > 1 && (
+          <div role="tablist" aria-label="Term" className="mb-4 flex gap-1 overflow-x-auto">
+            {termList.map(t => (
+              <button key={t.id} role="tab" aria-selected={t.id === term?.id} onClick={() => { setTermPick(t.id); select(null); }}
+                className={cn('shrink-0 rounded-full px-3 py-1.5 text-sm', t.id === term?.id ? 'bg-ink text-surface' : 'bg-surface-2 text-ink-2 hover:bg-surface-3')}>
+                {t.name}{t.current ? ' · now' : ''}
+              </button>
+            ))}
+          </div>
+        )}
         <div className={cn('gap-5', selected ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,400px)]' : 'block')}>
           <div className="min-w-0 space-y-4">
             {rows.isLoading && [0,1].map(i => <Card key={i} className="p-4"><Skeleton className="h-24" /></Card>)}
@@ -73,6 +95,7 @@ function Classes() {
         </div>
       </div>
       {adding && <ClassForm onClose={() => setAdding(false)} />}
+      {rolling && term && <TermRollover fromTerm={term} classes={rows.data ?? []} onClose={() => setRolling(false)} />}
     </Shell>
   );
 }
@@ -114,6 +137,7 @@ function ClassLine({ c, active, onSelect }: { c: C.ClassRow; active: boolean; on
 function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; onClose: () => void }) {
   const c = rows.find(r => r.id === id);
   const [editing, setEditing] = React.useState(false);
+  const [duplicating, setDuplicating] = React.useState(false);
   const [enrolling, setEnrolling] = React.useState(false);
   const [trialling, setTrialling] = React.useState(false);
   const [withdrawing, setWithdrawing] = React.useState<
@@ -146,6 +170,9 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
           <DetailSection title="Setup">
             <Button className="w-full" onClick={() => setEditing(true)}>
               <Pencil className="size-4" aria-hidden /> Edit this class
+            </Button>
+            <Button className="mt-2 w-full" variant="ghost" onClick={() => setDuplicating(true)}>
+              <Copy className="size-4" aria-hidden /> Duplicate
             </Button>
             <p className="mt-1.5 text-[12.5px] text-ink-3">
               Day, time, room, teacher, places and price. Moving the class rebuilds
@@ -232,6 +259,7 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
         </>
       )}
       {editing && <ClassForm classId={id} onClose={() => setEditing(false)} />}
+      {duplicating && c && <DuplicateClass c={c} onClose={() => setDuplicating(false)} />}
       {enrolling && c && (
         <EnrolSheet classId={id} className={c.name} full={full} onClose={() => setEnrolling(false)} />
       )}

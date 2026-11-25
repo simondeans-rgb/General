@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, CameraOff, Camera, Check, CalendarOff, MessageSquareHeart, Trophy, HelpCircle, ChevronRight } from 'lucide-react';
+import { AlertTriangle, CameraOff, Camera, Check, CalendarOff, MessageSquareHeart, Trophy, HelpCircle, ChevronRight, Sparkles, UserPlus } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
@@ -12,6 +12,9 @@ import {
   Badge, Button, Card, CardHeader, EmptyState, Field, Input, Select, Skeleton, ErrorState,
 } from '@/components/ui';
 import * as F from '@/lib/repos/family';
+import { YourDetails, EmergencyContacts } from '@/components/app/family-details';
+import { ChildClassesSheet, AddChildSheet } from '@/components/app/family-classes';
+import { DropIns } from '@/components/app/drop-ins';
 import { ageFrom, dateShort, initials, time, dateLong, dayRange } from '@/lib/format';
 
 type Child = {
@@ -23,6 +26,8 @@ type Child = {
 export default function FamilyChildren() {
   const children = useRows<Child>(['my-children'], F.MY_CHILDREN);
   const [reporting, setReporting] = React.useState<Child | null>(null);
+  const [browsing, setBrowsing] = React.useState<Child | null>(null);
+  const [adding, setAdding] = React.useState(false);
 
   return (
     <Shell title="Your family" allow={['guardian']}>
@@ -79,20 +84,32 @@ export default function FamilyChildren() {
                     <p className="mt-1 text-[12.5px] text-ink-3">
                       Teachers see allergies and the emergency plan only — never the full record.
                       To change any of it,{' '}
-                      <Link href="/family/enquiries" className="text-accent hover:underline">
+                      <Link href="/family/enquiries" className="text-accent-text hover:underline">
                         tell the studio</Link>, so there is a record of who changed what.
                     </p>
                   </dd>
                 </div>
               )}
             </dl>
-            <div className="border-t border-line p-3">
+            <EmergencyContacts studentId={c.id} name={c.first_name} />
+            <div className="flex flex-wrap gap-2 border-t border-line p-3">
+              <Button size="sm" variant="primary" onClick={() => setBrowsing(c)}>
+                <Sparkles className="size-4" aria-hidden /> Classes and trials
+              </Button>
               <Button size="sm" onClick={() => setReporting(c)}>
                 <CalendarOff className="size-4" aria-hidden /> Report an absence
               </Button>
             </div>
           </Card>
         ))}
+
+        {children.data && <DropIns children={children.data} />}
+
+        <Button className="w-full" onClick={() => setAdding(true)}>
+          <UserPlus className="size-4" aria-hidden /> Add another child
+        </Button>
+
+        <YourDetails />
 
         {/* Everything about the family that is not a child, one tap away. */}
         <Card className="divide-y divide-line overflow-hidden">
@@ -104,7 +121,7 @@ export default function FamilyChildren() {
             const I = Icon as React.ElementType;
             return (
               <Link key={href as string} href={href as string} className="flex min-h-[56px] items-center gap-3 px-4 py-3 hover:bg-surface-2">
-                <I className="size-[18px] shrink-0 text-accent" aria-hidden />
+                <I className="size-[18px] shrink-0 text-accent-text" aria-hidden />
                 <span className="min-w-0 flex-1">
                   <span className="block font-medium">{title as string}</span>
                   <span className="block text-[13px] text-ink-2">{body as string}</span>
@@ -117,6 +134,8 @@ export default function FamilyChildren() {
       </div>
 
       {reporting && <AbsenceDialog child={reporting} onClose={() => setReporting(null)} />}
+      {browsing && <ChildClassesSheet child={browsing} onClose={() => setBrowsing(null)} />}
+      {adding && <AddChildSheet onClose={() => setAdding(false)} />}
     </Shell>
   );
 }

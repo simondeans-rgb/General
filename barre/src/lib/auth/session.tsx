@@ -27,9 +27,9 @@ export type Persona = {
 
 /** Grouped for the sign-in page and the switcher: the operator first. */
 export const PERSONA_GROUPS = () => [
-  { title: 'You, running Barre', blurb: 'The platform console: every school, its plan, status and owner.',
+  { title: 'You, running Sanaa', blurb: 'The platform console: every school, its plan, status and owner.',
     people: PERSONAS.filter(p => p.role === 'platform') },
-  { title: 'Northstar Dance Academy', blurb: 'A school using Barre, seen by each of its people.',
+  { title: 'Northstar Dance Academy', blurb: 'A school using Sanaa, seen by each of its people.',
     people: PERSONAS.filter(p => p.role !== 'platform') },
 ];
 
@@ -44,22 +44,22 @@ export const PERSONAS: Persona[] = [
     blurb: 'Three children at the studio. Sees her family and nobody else’s.' },
   { userId: uid(NS.user, 40), name: 'Amir Wright', role: 'student', title: 'Student',
     blurb: 'Fifteen, and old enough for his own login — which his mum approved.' },
-  { userId: uid(NS.user, 190), name: 'Jordan Ellis', role: 'platform', title: 'Barre platform admin',
-    blurb: 'Runs Barre itself: every school’s account, plan and owner — but no child’s records.' },
+  { userId: uid(NS.user, 190), name: 'Jordan Ellis', role: 'platform', title: 'Sanaa platform admin',
+    blurb: 'Runs Sanaa itself: every school’s account, plan and owner — but no child’s records.' },
 ];
 
-/** Barre support looking at one school, read-only, under its owner's grant. */
+/** Sanaa support looking at one school, read-only, under its owner's grant. */
 export type SupportView = { studioId: string; studioName: string; until: string };
 
-type Stored = { userId: string; role: Role; name: string; support?: SupportView };
+type Stored = { userId: string; role: Role; name: string; support?: SupportView; studio?: string };
 
 /**
- * `session.role` is the role the app should behave as. For Barre staff
+ * `session.role` is the role the app should behave as. For Sanaa staff
  * viewing a school that is 'admin' — so every office screen works as it
  * would for the school — while `platform` stays true and the database keeps
  * the view read-only (migration 0019).
  */
-export type Session = { userId: string; role: Role; name: string; platform: boolean; support?: SupportView } | null;
+export type Session = { userId: string; role: Role; name: string; platform: boolean; support?: SupportView; studio?: string } | null;
 
 type Ctx = {
   session: Session;
@@ -67,6 +67,8 @@ type Ctx = {
   signOut: () => void;
   enterSupport: (v: SupportView) => void;
   exitSupport: () => void;
+  /** People in several schools choose which one they are looking at (R-031). */
+  chooseSchool: (studioId: string, role?: Role) => void;
   loaded: boolean;
 };
 
@@ -97,6 +99,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       platform: stored.role === 'platform',
       role: stored.role === 'platform' && live ? 'admin' : stored.role,
       support: stored.role === 'platform' ? live : undefined,
+      studio: stored.role === 'platform' ? undefined : stored.studio,
     } : null;
     return {
       session,
@@ -105,6 +108,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       signOut: () => save(null),
       enterSupport: v => stored && save({ ...stored, support: v }),
       exitSupport: () => stored && save({ ...stored, support: undefined }),
+      chooseSchool: (studio, role) => stored && save({ ...stored, studio, role: role ?? stored.role }),
     };
   }, [stored, loaded]);
 

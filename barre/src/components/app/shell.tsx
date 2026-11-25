@@ -7,17 +7,20 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   CalendarDays, LayoutGrid, Users, GraduationCap, Route, ClipboardCheck,
   Home, Baby, MessageSquare, CreditCard, PlayCircle, Trophy, Inbox, Settings2, Rocket,
-  MoreHorizontal, FolderOpen, Receipt, BarChart3, Building2, Layers, KeyRound, ShieldCheck, LogOut,
+  MoreHorizontal, FolderOpen, Receipt, BarChart3, Building2, Layers, KeyRound, ShieldCheck, LogOut, FileText, ShieldAlert,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useSession, type Role } from '@/lib/auth/session';
-import { BarreMark } from './database-gate';
+import { SanaaLogo, SanaaMark } from './sanaa';
+import { SchoolMark, PoweredBy, useSchoolTheme } from './brand';
 import { EmptyState, Button } from '@/components/ui';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { dateShort, time } from '@/lib/format';
 import { PersonSwitcher } from './person-switcher';
+import { SchoolSwitcher } from './school-switcher';
+import { useBrandedManifest } from './pwa';
 import { NotificationBell } from './notifications';
 import { AssistantLauncher } from './assistant';
 
@@ -40,9 +43,11 @@ const OFFICE_NAV: NavItem[] = [
   { href: '/classes', label: 'Classes', icon: GraduationCap },
   { href: '/enrolment', label: 'Enrolment', icon: Route },
   { href: '/requests', label: 'Requests', icon: Inbox },
+  { href: '/events', label: 'Events', icon: Trophy },
   { href: '/billing', label: 'Billing', icon: Receipt },
   { href: '/reports', label: 'Reports', icon: BarChart3 },
   { href: '/studio', label: 'Studio', icon: Settings2 },
+  { href: '/safeguarding', label: 'Safeguarding', icon: ShieldAlert },
   { href: '/account', label: 'Account', icon: KeyRound },
 ];
 
@@ -53,6 +58,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: '/teach', label: 'Today', icon: ClipboardCheck },
     { href: '/teach/students', label: 'Students', icon: Users },
     { href: '/teach/material', label: 'Material', icon: FolderOpen },
+    { href: '/teach/reports', label: 'Reports', icon: FileText },
   ],
   guardian: [
     { href: '/family', label: 'Home', icon: Home },
@@ -64,6 +70,7 @@ const NAV: Record<Role, NavItem[]> = {
   platform: [
     { href: '/platform', label: 'Schools', icon: Building2 },
     { href: '/platform/plans', label: 'Plans', icon: Layers },
+    { href: '/platform/pilot', label: 'Pilot', icon: Rocket },
   ],
   student: [
     { href: '/learn', label: 'Today', icon: Home },
@@ -89,10 +96,14 @@ export function Shell({
   allow: Role[];
 }) {
   const { session, signOut, loaded } = useSession();
-  // The school this person is in (or, for Barre support, viewing).
-  const studio = useRows<{ name: string; status: string; data_deletion_due_on: string | null }>(
-    ['shell-studio'], `select name, status, data_deletion_due_on from studio order by created_at limit 1`, [],
+  // The school this person is in (or, for Sanaa support, viewing).
+  const studio = useRows<{ name: string; status: string; data_deletion_due_on: string | null;
+                           brand_colour: string | null; logo_url: string | null; theme: string; brand_secondary: string | null }>(
+    ['shell-studio'], `select name, status, data_deletion_due_on, brand_colour, logo_url, theme, brand_secondary from studio order by created_at limit 1`, [],
     { enabled: !!session && (!session.platform || !!session.support), staleTime: 60_000 }).data?.[0];
+  const branded = !!studio && (!session?.platform || !!session?.support);
+  useSchoolTheme(branded ? studio! : null);
+  useBrandedManifest(branded ? studio!.name : null, branded ? studio!.brand_colour : null);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -132,15 +143,28 @@ export function Shell({
     <div className="min-h-dvh lg:flex">
       {/* Desktop rail */}
       <aside className="hidden lg:flex w-[236px] shrink-0 flex-col border-r border-line bg-surface">
-        <div className="flex items-center gap-2.5 px-4 h-14 border-b border-line">
-          <span className="grid size-7 place-items-center rounded-md bg-accent text-white" aria-hidden>
-            <BarreMark className="size-4" />
-          </span>
-          <span className="font-semibold tracking-tight">Barre</span>
+        {/* The school's own name and logo; Sanaa steps back to a credit. */}
+        <div className="border-b border-line px-4 py-3.5">
+          {branded ? (
+            <div className="flex items-center gap-2.5">
+              <SchoolMark name={studio!.name} logo={studio!.logo_url} className="size-9" />
+              <span className="min-w-0 flex-1">
+                <span className="line-clamp-2 text-[14px] font-semibold leading-tight tracking-tight">{studio!.name}</span>
+                <PoweredBy />
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2.5">
+              <SanaaLogo className="h-6" />
+              <span className="min-w-0">
+                <span className="sr-only">Sanaa</span>
+                {session.platform && !session.support && <span className="block text-[11.5px] text-ink-3">Platform</span>}
+              </span>
+            </div>
+          )}
         </div>
-        <p className="truncate px-4 pt-4 pb-2 text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-3">
-          {session.platform && !session.support ? 'Barre platform' : studio?.name ?? '\u00a0'}
-        </p>
+        <SchoolSwitcher className="border-b border-line" />
+        <div className="pt-3" />
         <nav className="flex-1 px-2" aria-label="Main">
           {nav.map(item => <RailLink key={item.href} item={item} pathname={pathname} />)}
           {(session.role === 'owner' || session.role === 'admin') && (
@@ -151,21 +175,22 @@ export function Shell({
           <PersonSwitcher />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">{session.name}</p>
-            <p className="text-[12.5px] capitalize text-ink-3">{session.support ? "Barre support" : session.platform ? "Barre platform" : session.role}</p>
+            <p className="text-[12.5px] capitalize text-ink-3">{session.support ? "Sanaa support" : session.platform ? "Sanaa platform" : session.role}</p>
             <PersonSwitcher label="Switch person" />
           </div>
         </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 border-b border-line bg-surface/85 backdrop-blur
+        <header className="sticky top-0 z-30 overflow-hidden border-b border-line bg-surface/85 backdrop-blur
                            supports-[backdrop-filter]:bg-surface/70">
-          <div className="flex min-h-14 items-center gap-3 px-4 py-2.5 lg:px-6">
-            <span className="grid size-7 shrink-0 place-items-center rounded-md bg-accent text-white lg:hidden" aria-hidden>
-              <BarreMark className="size-4" />
-            </span>
+          {branded && <ThemeFlourish theme={studio!.theme} />}
+          <div className="relative flex min-h-14 items-center gap-3 px-4 py-2.5 lg:px-6">
+            {branded
+              ? <SchoolMark name={studio!.name} logo={studio!.logo_url} className="size-8 lg:hidden" />
+              : <SanaaMark className="size-8 lg:hidden" />}
             <div className="min-w-0 flex-1">
-              <h1 className="truncate text-[17px] font-semibold tracking-tight lg:text-[19px]">{title}</h1>
+              <h1 className="page-title truncate tracking-tight">{title}</h1>
               {subtitle && <div className="truncate text-[13px] text-ink-2">{subtitle}</div>}
             </div>
             {actions}
@@ -173,6 +198,7 @@ export function Shell({
             {session.role !== 'student' && <NotificationBell />}
             <PersonSwitcher className="lg:hidden" />
           </div>
+          <SchoolSwitcher className="border-t border-line lg:hidden" />
         </header>
 
         {session.support && <SupportBanner view={session.support} />}
@@ -187,7 +213,16 @@ export function Shell({
             {(session.role === 'owner') && <> <Link href="/account" className="font-medium underline">Account</Link></>}
           </div>
         )}
-        <main id="main" className="flex-1 px-4 pb-24 pt-4 lg:px-6 lg:pb-10">{children}</main>
+        <main id="main" className="flex-1 px-4 pb-24 pt-4 lg:px-6 lg:pb-10">
+          {children}
+          {/* On a phone the sidebar's name and credit are not visible. */}
+          {branded && (
+            <p className="mt-8 flex flex-col items-center gap-0.5 text-center lg:hidden">
+              <span className="text-[12.5px] font-medium text-ink-2">{studio!.name}</span>
+              <PoweredBy className="mt-0" />
+            </p>
+          )}
+        </main>
       </div>
 
       <MobileTabs nav={nav} pathname={pathname} />
@@ -235,7 +270,7 @@ function MobileTabs({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
         {rest.length > 0 && (
           <button onClick={() => setOpen(true)} aria-haspopup="dialog" aria-label="More sections"
             className={cn('flex min-h-[52px] flex-1 flex-col items-center justify-center gap-1 pt-1.5 text-[11px]',
-              rest.some(i => isActive(pathname, i.href)) ? 'text-accent' : 'text-ink-3')}>
+              rest.some(i => isActive(pathname, i.href)) ? 'text-accent-text' : 'text-ink-3')}>
             <MoreHorizontal className="size-[19px]" aria-hidden />
             <span>More</span>
           </button>
@@ -278,7 +313,7 @@ function TabLink({ item, pathname }: { item: NavItem; pathname: string }) {
   return (
     <Link href={item.href} aria-current={active ? 'page' : undefined}
       className={cn('flex min-h-[52px] flex-1 flex-col items-center justify-center gap-1 pt-1.5 text-[11px]',
-        active ? 'text-accent' : 'text-ink-3')}>
+        active ? 'text-accent-text' : 'text-ink-3')}>
       <Icon className="size-[19px]" aria-hidden strokeWidth={active ? 2.4 : 1.9} />
       <span className={active ? 'font-medium' : undefined}>{item.label}</span>
     </Link>
@@ -287,7 +322,7 @@ function TabLink({ item, pathname }: { item: NavItem; pathname: string }) {
 
 export { ROLE_HOME };
 
-/** Always on screen while Barre support is inside a school. */
+/** Always on screen while Sanaa support is inside a school. */
 function SupportBanner({ view }: { view: { studioId: string; studioName: string; until: string } }) {
   const { session, exitSupport } = useSession();
   const router = useRouter();
@@ -302,12 +337,34 @@ function SupportBanner({ view }: { view: { studioId: string; studioName: string;
     <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-ink/10 bg-ink px-4 py-2 text-[13px] text-surface lg:px-6">
       <ShieldCheck className="size-4 shrink-0" aria-hidden />
       <span className="min-w-0 flex-1">
-        <strong className="font-semibold">Viewing {view.studioName} as Barre support.</strong>{' '}
+        <strong className="font-semibold">Viewing {view.studioName} as Sanaa support.</strong>{' '}
         Read-only, with the owner’s permission, until {dateShort(view.until)} {time(view.until)}. Health records are not shown.
       </span>
       <button onClick={exit} className="inline-flex min-h-[32px] items-center gap-1.5 rounded-full bg-surface/15 px-3 font-medium hover:bg-surface/25">
         <LogOut className="size-3.5" aria-hidden /> Leave
       </button>
     </div>
+  );
+}
+
+/** Each theme's signature, quietly behind the page title. Decorative only. */
+function ThemeFlourish({ theme }: { theme: string }) {
+  if (theme === 'urban') {
+    return (
+      <svg aria-hidden className="pointer-events-none absolute inset-y-0 right-0 h-full w-[420px] opacity-60" viewBox="0 0 420 80" preserveAspectRatio="xMaxYMid slice">
+        <defs><linearGradient id="streak" x1="0" x2="1"><stop offset="0" stopColor="var(--color-secondary)" stopOpacity="0" />
+          <stop offset="1" stopColor="var(--color-secondary)" stopOpacity=".55" /></linearGradient></defs>
+        <path d="M120 80 L250 0 L300 0 L170 80 Z" fill="url(#streak)" />
+        <path d="M200 80 C 280 40, 340 30, 420 10" stroke="var(--color-accent)" strokeWidth="1.5" fill="none" opacity=".7" />
+      </svg>
+    );
+  }
+  return (
+    <svg aria-hidden className="pointer-events-none absolute inset-y-0 right-0 h-full w-[460px] opacity-[.22]" viewBox="0 0 460 80" preserveAspectRatio="xMaxYMid slice">
+      <defs><linearGradient id="silk" x1="0" x2="1"><stop offset="0" stopColor="var(--color-accent)" stopOpacity="0" />
+        <stop offset=".6" stopColor="var(--color-accent)" /><stop offset="1" stopColor="var(--color-secondary)" /></linearGradient></defs>
+      <path d="M60 70 C 160 10, 240 90, 340 30 S 440 0, 470 20 L470 80 L60 80 Z" fill="url(#silk)" />
+      <path d="M100 60 C 200 0, 260 80, 360 22 S 440 -5, 470 8" stroke="var(--color-accent)" strokeWidth="1" fill="none" />
+    </svg>
   );
 }

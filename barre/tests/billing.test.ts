@@ -234,7 +234,7 @@ describe('the billing screen’s queries', () => {
       expect(Number(d.family_balance_minor)).toBe(9000);
       expect(await q(B.INVOICE_ITEMS, [inv.id])).toHaveLength(1);
       await q(B.INVOICE_PAYMENTS, [inv.id]);
-      expect((await q(B.FAMILY_OPTIONS)).length).toBe(30);
+      expect((await q(B.FAMILY_OPTIONS)).length).toBe((await q('select id from family')).length);
       expect((await q(B.FAMILY_BILLABLE, [FAMILY.a])).length).toBeGreaterThan(0);
       expect(await q(B.REMINDER_TEMPLATE)).toHaveLength(1);
       expect(await q(B.PRIMARY_GUARDIAN, [OWES])).toHaveLength(1);

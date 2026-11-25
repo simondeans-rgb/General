@@ -1,21 +1,21 @@
 -- ============================================================================
 -- 0019 · The platform: many dance schools, one operator
 -- ----------------------------------------------------------------------------
--- Barre is sold to many schools. This adds the layer above them:
+-- Sanaa is sold to many schools. This adds the layer above them:
 --
---   platform_admin   people who run Barre itself
+--   platform_admin   people who run Sanaa itself
 --   plan             what a school pays for, and its limits
 --   studio.status    trialling · active · past_due · suspended · cancelled
 --   studio_invitation  how anyone joins a school — owner, admin, teacher,
 --                    parent or student — by a single-use link
 --   support_access_grant / support_session
---                    how Barre staff see inside a school: only when its owner
+--                    how Sanaa staff see inside a school: only when its owner
 --                    has granted it, only for a limited time, only read-only,
 --                    never health records, and always on the school's record
 --
 -- Two principles carry the design:
 --
--- 1. Barre staff are not studio members. Being a platform admin grants no
+-- 1. Sanaa staff are not studio members. Being a platform admin grants no
 --    access to any school's families or children. The console reads
 --    account-level facts through app.platform_* functions, which return
 --    counts, plan and owner contact — never a child.
@@ -27,7 +27,7 @@
 --    even if the application tried.
 -- ============================================================================
 
--- ── Who runs Barre ─────────────────────────────────────────────────────────
+-- ── Who runs Sanaa ─────────────────────────────────────────────────────────
 create table platform_admin (
   user_id     uuid primary key references user_account(id) on delete cascade,
   role        text not null default 'support' check (role in ('super_admin', 'support')),
@@ -100,7 +100,7 @@ create table support_access_grant (
 );
 create index support_grant_live on support_access_grant (studio_id, expires_at) where revoked_at is null;
 
--- Which school a Barre admin is currently looking at. One at a time, so the
+-- Which school a Sanaa admin is currently looking at. One at a time, so the
 -- app's queries — which rely on RLS, not on a studio filter — never mix two.
 create table support_session (
   user_id     uuid primary key references user_account(id) on delete cascade,
@@ -133,7 +133,7 @@ create or replace function app.memberships()
     from membership m
    where m.user_id = auth.uid() and m.deleted_at is null and app.studio_writable(m.studio_id)
   union
-  -- Barre support sees a school as an administrator would, read-only.
+  -- Sanaa support sees a school as an administrator would, read-only.
   select app.support_studio_id(), 'admin'::app_role
    where app.support_studio_id() is not null
 $$;
@@ -212,7 +212,7 @@ begin
       select count(*) into used from staff_member where studio_id = new.studio_id and deleted_at is null;
   end case;
   if cap is not null and used >= cap then
-    raise exception 'PLAN_LIMIT: The % plan includes up to % %. Ask Barre to move you to a larger plan.',
+    raise exception 'PLAN_LIMIT: The % plan includes up to % %. Ask Sanaa to move you to a larger plan.',
       p.name, cap, what using errcode = 'check_violation';
   end if;
   return new;
@@ -272,7 +272,7 @@ create policy platform_admin_read on platform_admin for select using (app.is_pla
 create policy plan_read on plan for select using (auth.uid() is not null);
 create policy plan_write on plan for update using (app.is_platform_super()) with check (app.is_platform_super());
 
--- A school sees its own grants; Barre sees every grant (that one exists is
+-- A school sees its own grants; Sanaa sees every grant (that one exists is
 -- account-level information — it is what lets support open the view).
 create policy support_grant_read on support_access_grant for select
   using (app.has_role(studio_id, 'owner', 'admin') or app.is_platform_admin());
@@ -281,7 +281,7 @@ create policy support_session_own on support_session for select using (user_id =
 create policy invitation_read on studio_invitation for select
   using (app.is_admin(studio_id) or app.is_platform_admin());
 
--- Barre sees the account row of every school (name, status, plan, contact),
+-- Sanaa sees the account row of every school (name, status, plan, contact),
 -- which is what the console lists. Nothing below the studio row.
 create policy studio_platform_read on studio for select using (app.is_platform_admin());
 
@@ -354,7 +354,7 @@ create or replace function app.require_platform_admin() returns void
   language plpgsql stable security definer set search_path = public, app, pg_temp as $$
 begin
   if not app.is_platform_admin() then
-    raise exception 'FORBIDDEN: only Barre platform staff can do this' using errcode = 'insufficient_privilege';
+    raise exception 'FORBIDDEN: only Sanaa platform staff can do this' using errcode = 'insufficient_privilege';
   end if;
 end $$;
 
@@ -405,7 +405,7 @@ begin
   insert into studio_invitation (studio_id, email, full_name, role, token_hash, invited_by)
   values (sid, lower(btrim(p_owner_email)), btrim(p_owner_name), 'owner', app.hash_token(tok), auth.uid());
 
-  perform app.platform_log(sid, 'create', 'studio', sid, 'School created by Barre; owner invited: ' || lower(btrim(p_owner_email)));
+  perform app.platform_log(sid, 'create', 'studio', sid, 'School created by Sanaa; owner invited: ' || lower(btrim(p_owner_email)));
   return query select sid, tok;
 end $$;
 
@@ -472,7 +472,7 @@ create or replace function app.platform_purge_studio(p_studio uuid, p_confirm_na
 declare s studio;
 begin
   if not app.is_platform_super() then
-    raise exception 'FORBIDDEN: only a Barre super admin can erase a school' using errcode = 'insufficient_privilege';
+    raise exception 'FORBIDDEN: only a Sanaa super admin can erase a school' using errcode = 'insufficient_privilege';
   end if;
   select * into s from studio where id = p_studio;
   if s.id is null then raise exception 'NOT_FOUND: school' using errcode = 'no_data_found'; end if;
@@ -505,7 +505,7 @@ create or replace function app.platform_set_plan_limits(
   language plpgsql security definer set search_path = public, app, pg_temp as $$
 begin
   if not app.is_platform_super() then
-    raise exception 'FORBIDDEN: only a Barre super admin can change plans' using errcode = 'insufficient_privilege';
+    raise exception 'FORBIDDEN: only a Sanaa super admin can change plans' using errcode = 'insufficient_privilege';
   end if;
   update plan set name = btrim(p_name), price_minor = p_price_minor, max_students = p_students,
                   max_locations = p_locations, max_staff = p_staff
@@ -515,7 +515,7 @@ end $$;
 
 -- ── Inviting people into a school ──────────────────────────────────────────
 -- Owners invite anyone. Admins invite teachers, parents and students, not
--- other admins or owners. Barre invites owners (and admins) when setting a
+-- other admins or owners. Sanaa invites owners (and admins) when setting a
 -- school up.
 create or replace function app.create_invitation(
   p_studio uuid, p_email text, p_role app_role, p_full_name text default null,
@@ -724,7 +724,7 @@ create or replace function app.grant_support_access(p_studio uuid, p_hours integ
 declare gid uuid;
 begin
   if not app.has_role(p_studio, 'owner') then
-    raise exception 'FORBIDDEN: only the school''s owner can let Barre support in' using errcode = 'insufficient_privilege';
+    raise exception 'FORBIDDEN: only the school''s owner can let Sanaa support in' using errcode = 'insufficient_privilege';
   end if;
   if p_hours not between 1 and 168 then
     raise exception 'INVALID: access lasts between 1 hour and 7 days' using errcode = 'check_violation';
@@ -735,7 +735,7 @@ begin
   values (p_studio, auth.uid(), btrim(p_reason), now() + make_interval(hours => p_hours))
   returning id into gid;
   perform app.platform_log(p_studio, 'grant', 'support_access_grant', gid,
-    format('Barre support may view the account, read-only, for %s hours: %s', p_hours, btrim(p_reason)));
+    format('Sanaa support may view the account, read-only, for %s hours: %s', p_hours, btrim(p_reason)));
   return gid;
 end $$;
 
@@ -765,7 +765,7 @@ begin
   insert into support_session (user_id, studio_id, grant_id) values (auth.uid(), p_studio, g.id)
   on conflict (user_id) do update set studio_id = excluded.studio_id, grant_id = excluded.grant_id, started_at = now();
   -- On the school's own record, where its owner can see it.
-  perform app.platform_log(p_studio, 'view', 'support_session', g.id, 'Barre support opened a read-only view');
+  perform app.platform_log(p_studio, 'view', 'support_session', g.id, 'Sanaa support opened a read-only view');
   return g.expires_at;
 end $$;
 

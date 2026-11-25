@@ -32,7 +32,22 @@ select cs.id, cs.class_id, c.name, cs.starts_at, cs.ends_at, cs.status,
   left join location l on l.id = c.location_id
  where cs.deleted_at is null
    and cs.starts_at >= $1::timestamptz and cs.starts_at < $2::timestamptz
- order by cs.starts_at`;
+union all
+select cs.id, cs.class_id, c.name, cs.starts_at, cs.ends_at, cs.status,
+       ds.name, ds.colour, coalesce(sr.name, r.name), l.name, coalesce(cover.display_name, st.display_name),
+       s.first_name, s.id
+  from drop_in_booking d
+  join class_session cs on cs.id = d.session_id
+  join class c on c.id = cs.class_id
+  join student s on s.id = d.student_id
+  left join dance_style ds on ds.id = c.dance_style_id
+  left join staff_member st on st.id = c.teacher_id
+  left join staff_member cover on cover.id = cs.teacher_id
+  left join room r on r.id = c.room_id
+  left join room sr on sr.id = cs.room_id
+  left join location l on l.id = c.location_id
+ where d.status = 'booked' and cs.starts_at >= $1::timestamptz and cs.starts_at < $2::timestamptz
+ order by 4`;
 
 export const MY_CHILDREN = `
 select s.id, s.first_name, s.last_name, s.date_of_birth,
@@ -82,3 +97,60 @@ select s.studio_id, 'direct', 'in_app', s.family_id,
        $3, auth.uid()
   from student s where s.id = $1
 returning id`;
+
+/* ── Parents keep their own details current (R-016, migration 0023) ─────── */
+export type Guardian = { id: string; full_name: string; email: string | null; phone: string | null; relationship: string | null; is_me: boolean };
+export const MY_GUARDIANS = `
+select g.id, g.full_name, g.email, g.phone, g.relationship, g.user_id = auth.uid() as is_me
+  from guardian g where g.deleted_at is null and g.family_id in (select app.guardian_family_ids())
+ order by (g.user_id = auth.uid()) desc nulls last, g.is_primary desc, g.full_name`;
+export const UPDATE_GUARDIAN = `
+update guardian set full_name = $2, email = nullif($3, ''), phone = nullif($4, ''), updated_at = now() where id = $1`;
+
+export type Contact = { id: string; student_id: string; full_name: string; relationship: string | null; phone: string };
+export const MY_CONTACTS = `
+select ec.id, ec.student_id, ec.full_name, ec.relationship, ec.phone from emergency_contact ec
+ where ec.deleted_at is null and ec.student_id in (select app.guardian_student_ids())
+ order by ec.priority, ec.created_at`;
+export const ADD_CONTACT = `
+insert into emergency_contact (studio_id, student_id, full_name, relationship, phone, priority)
+select s.studio_id, s.id, $2, nullif($3, ''), $4,
+       coalesce((select max(priority) + 1 from emergency_contact where student_id = s.id and deleted_at is null), 1)
+  from student s where s.id = $1`;
+export const UPDATE_CONTACT = `
+update emergency_contact set full_name = $2, relationship = nullif($3, ''), phone = $4, updated_at = now() where id = $1`;
+export const REMOVE_CONTACT = `select app.remove_emergency_contact($1)`;
+
+/* ── Self-service: classes, trials, waiting lists, a new child (R-014) ───── */
+export type ClassOption = {
+  class_id: string; name: string; style: string | null; day_of_week: number; start_time: string;
+  age_min: number | null; age_max: number | null; price_minor: number; pricing: string; trial_price_minor: number | null;
+  prerequisites: string | null; enrolled: boolean; waiting: boolean; asked: boolean; trial_booked: boolean;
+  full: boolean; waitlist_enabled: boolean; trials_enabled: boolean; age_fits: boolean;
+  trial_sessions: { id: string; starts_at: string }[];
+};
+export const CLASS_OPTIONS = `select * from app.class_options_for_child($1)`;
+export const REQUEST_PLACE = `select app.request_class_place($1, $2, $3) as id`;
+export const BOOK_TRIAL = `select app.parent_book_trial($1, $2) as result`;
+export const JOIN_WAITLIST = `select app.parent_join_waitlist($1, $2) as position`;
+export const REQUEST_CHILD = `select app.request_new_child($1::jsonb) as id`;
+
+/* ── Drop-ins and packs (migration 0033) ────────────────────────────────── */
+export type DropInSession = { session_id: string; class_name: string; style: string | null; starts_at: string; ends_at: string;
+  price_minor: number; places_left: number; age_min: number | null; age_max: number | null };
+export const DROP_IN_SESSIONS = `select d.* from studio s, app.drop_in_sessions(s.id) d where s.id in (select app.studio_ids()) order by d.starts_at`;
+export const BOOK_DROP_IN = `select app.book_drop_in($1, $2) as r`;
+export const CANCEL_DROP_IN = `select app.cancel_drop_in($1) as r`;
+export type MyDropIn = { id: string; student_id: string; first_name: string; class_name: string; starts_at: string; paid_with: string };
+export const MY_DROP_INS = `
+select d.id, d.student_id, s.first_name, c.name as class_name, cs.starts_at,
+       case when d.pack_purchase_id is not null then 'pack' when d.invoice_id is not null then 'invoice' else 'free' end as paid_with
+  from drop_in_booking d join student s on s.id = d.student_id join class_session cs on cs.id = d.session_id join class c on c.id = cs.class_id
+ where d.status = 'booked' and cs.starts_at > now() order by cs.starts_at`;
+export type Pack = { id: string; name: string; classes: number; price_minor: number; valid_days: number };
+export const PACKS = `select id, name, classes, price_minor, valid_days from class_pack where active order by classes`;
+export const BUY_PACK = `select app.buy_pack($1, $2) as id`;
+export type MyPack = { id: string; first_name: string; name: string; remaining: number; expires_on: string };
+export const MY_PACKS = `select p.id, s.first_name, k.name, p.remaining, p.expires_on from pack_purchase p
+  join student s on s.id = p.student_id join class_pack k on k.id = p.pack_id
+ where p.remaining > 0 and p.expires_on >= current_date order by p.expires_on`;

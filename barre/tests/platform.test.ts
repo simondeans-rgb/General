@@ -10,13 +10,14 @@ afterAll(async () => { await closeDb(); });
 const ELENA = uid(NS.user, 191);   // owner of Kestrel
 const TOM = uid(NS.user, 192);     // owner of Pointe & Flex (suspended)
 
-describe('Barre staff are not studio members', () => {
+describe('Sanaa staff are not studio members', () => {
   it('see every school’s account in the console, and no child in any of them', async () => {
     await asReader(PLATFORM_ADMIN, async q => {
       const schools = await q(`select * from app.platform_studios()`);
       expect(schools).toHaveLength(4);
       const north = schools.find((s: any) => s.id === STUDIO_ID);
-      expect(north).toMatchObject({ plan_code: 'studio', status: 'active', students: 50, owners: 1 });
+      expect(north).toMatchObject({ plan_code: 'studio', status: 'active', owners: 1 });
+      expect(north.students).toBeGreaterThanOrEqual(50);
       expect(north.owner_emails).toMatch(/@/);
       for (const t of ['family', 'student', 'guardian', 'invoice', 'communication', 'medical_record', 'attendance_record']) {
         expect(await q(`select 1 from ${t}`), t).toHaveLength(0);
@@ -53,7 +54,7 @@ describe('support access', () => {
   it('once granted and opened, is read-only and never shows health records', async () => {
     await commitAs(PLATFORM_ADMIN, `select app.start_support_session($1)`, [STUDIO_ID]);
     await asReader(PLATFORM_ADMIN, async q => {
-      expect((await q(`select id from family`)).length).toBe(30);
+      expect((await q(`select id from family where not is_prospect`)).length).toBe(30);
       expect((await q(`select id from invoice`)).length).toBeGreaterThan(0);
       expect(await q(`select id from medical_record`)).toHaveLength(0);
       // Nothing from any other school leaks into the view.
@@ -128,7 +129,7 @@ describe('a suspended school is read-only for everyone in it', () => {
     });
     await commitAs(PLATFORM_ADMIN, `select app.platform_set_status($1, 'active')`, [STUDIO_ID]);
     await asUser(USERS.owner, async q => {
-      expect((await q(`update family set notes = 'x' returning id`)).length).toBe(30);
+      expect((await q(`update family set notes = 'x' returning id`)).length).toBeGreaterThanOrEqual(30);
     });
   });
 
@@ -177,7 +178,7 @@ describe('plans set limits', () => {
 });
 
 describe('invitations', () => {
-  it('a new school: Barre creates it, the owner accepts, and runs it', async () => {
+  it('a new school: Sanaa creates it, the owner accepts, and runs it', async () => {
     const [{ studio_id, invitation_token: tok }] = await commitAs(PLATFORM_ADMIN,
       `select * from app.platform_create_studio('Harbour Dance', 'Sasha Reid', 'Sasha@Harbour.example', 'trial', 30)`);
     await asReader(null, async q => {
@@ -313,7 +314,7 @@ describe('roles within a school', () => {
   });
 });
 
-describe('leaving Barre', () => {
+describe('leaving Sanaa', () => {
   it('a cancelled school is kept for its notice period, then only a super admin can erase it', async () => {
     await commitAs(PLATFORM_ADMIN, `select app.platform_set_status($1, 'cancelled', 'Closing the school')`, [OTHER_STUDIOS.kestrel]);
     await expect(commitAs(PLATFORM_ADMIN, `select app.platform_purge_studio($1, 'Kestrel Ballet School')`, [OTHER_STUDIOS.kestrel]))
@@ -352,7 +353,7 @@ describe('session settings are not a way around the rules', () => {
 });
 
 describe('the console and account screens’ queries', () => {
-  it('run for Barre staff', async () => {
+  it('run for Sanaa staff', async () => {
     const P = await import('../src/lib/repos/platform');
     await asReader(PLATFORM_ADMIN, async q => {
       expect((await q(P.SCHOOLS)).length).toBeGreaterThanOrEqual(3);

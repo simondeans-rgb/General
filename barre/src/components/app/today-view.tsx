@@ -35,7 +35,7 @@ export function TodayView() {
           <Card>
             <CardHeader
               title="Today's timetable"
-              action={<Link href="/schedule" className="text-[13px] font-medium text-accent hover:underline">
+              action={<Link href="/schedule" className="text-[13px] font-medium text-accent-text hover:underline">
                 Full schedule
               </Link>} />
             {sessions.isLoading && <div className="space-y-3 p-4">{[0,1,2].map(i => <Skeleton key={i} className="h-14" />)}</div>}
@@ -80,7 +80,7 @@ function TodayStrip({ counts, loading }: { counts?: Q.TodayCounts; loading: bool
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       {items.map(([n, label, tone], i) => (
         <Card key={i} className="p-4">
-          <p className={`tnum text-[26px] font-semibold leading-none tracking-[-0.02em] ${
+          <p className={`stat-number tnum text-[26px] font-semibold leading-none tracking-[-0.02em] ${
             tone === 'critical' ? 'text-critical' : tone === 'caution' ? 'text-caution' : ''}`}>{n}</p>
           <p className="mt-1.5 text-[13px] text-ink-2">{label}</p>
         </Card>
@@ -205,7 +205,7 @@ function MiniList<T>({ title, rows, empty, render, href, linkLabel }: {
   return (
     <Card>
       <CardHeader title={title} action={href && (
-        <Link href={href} className="text-[13px] font-medium text-accent hover:underline">{linkLabel}</Link>)} />
+        <Link href={href} className="text-[13px] font-medium text-accent-text hover:underline">{linkLabel}</Link>)} />
       {rows.isLoading && <div className="space-y-2.5 p-4">{[0,1,2].map(i => <Skeleton key={i} className="h-8" />)}</div>}
       {rows.error && <div className="p-4"><ErrorState error={rows.error} /></div>}
       {rows.data && rows.data.length === 0 && <p className="px-4 py-6 text-center text-sm text-ink-3">{empty}</p>}

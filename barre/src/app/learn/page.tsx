@@ -45,12 +45,12 @@ export default function LearnHome() {
 
         {next && (
           <Card className="overflow-hidden">
-            <div className="bg-accent px-4 py-3 text-white">
-              <p className="text-[12px] font-medium uppercase tracking-[0.06em] text-white/75">
+            <div className="bg-accent px-4 py-3 text-on-accent">
+              <p className="text-[12px] font-medium uppercase tracking-[0.06em] text-on-accent opacity-80">
                 {relativeDay(next.starts_at) === 'Today' ? 'Next up today' : 'Next'}
               </p>
               <p className="mt-0.5 text-[19px] font-semibold tracking-tight">{next.name}</p>
-              <p className="mt-0.5 text-white/85">{relativeDay(next.starts_at)} at {time(next.starts_at)}</p>
+              <p className="mt-0.5 text-on-accent opacity-85">{relativeDay(next.starts_at)} at {time(next.starts_at)}</p>
             </div>
             <div className="flex flex-wrap gap-x-5 gap-y-1 p-4 text-sm text-ink-2">
               {next.teacher && <span className="inline-flex items-center gap-1.5">
@@ -76,10 +76,10 @@ export default function LearnHome() {
         {latest && (
           <Card>
             <CardHeader title="Latest feedback"
-              action={<Link href="/learn/feedback" className="text-[13px] font-medium text-accent hover:underline">All</Link>} />
+              action={<Link href="/learn/feedback" className="text-[13px] font-medium text-accent-text hover:underline">All</Link>} />
             <div className="p-4">
               <p className="flex items-center gap-1.5 font-medium">
-                <Sparkles className="size-4 text-accent" aria-hidden />{latest.headline}
+                <Sparkles className="size-4 text-accent-text" aria-hidden />{latest.headline}
               </p>
               {latest.going_well && <p className="mt-1.5 text-sm text-ink-2">{latest.going_well}</p>}
               {latest.work_on && (

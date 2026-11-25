@@ -32,6 +32,9 @@ const STEPS: Step[] = [
   { key: 'studio', title: 'Studio details', blurb: 'Name, timezone and how families reach you.',
     count: `select count(*)::int n from studio where contact_email is not null and deleted_at is null`,
     href: '/studio', cta: 'Studio settings' },
+  { key: 'brand', title: 'Your brand', blurb: 'Your logo and colour, so the app looks like yours to every parent.',
+    count: `select (brand_colour is not null or logo_url is not null)::int n from studio`,
+    href: '/account#brand', cta: 'Add your logo' },
   { key: 'locations', title: 'Locations and rooms', blurb: 'Where classes happen, and which room each uses.',
     count: `select count(*)::int n from location where deleted_at is null`,
     href: '/studio', cta: 'Add a location' },
@@ -47,9 +50,9 @@ const STEPS: Step[] = [
   { key: 'classes', title: 'Classes', blurb: 'Day, time, capacity and price. Sessions are generated for you.',
     count: `select count(*)::int n from class where deleted_at is null`,
     href: '/classes', cta: 'Create a class' },
-  { key: 'families', title: 'Families', blurb: 'Invite them, or import a spreadsheet you already keep.',
+  { key: 'families', title: 'Families', blurb: 'Import a spreadsheet you already keep, or add families one by one. Then invite them to the app.',
     count: `select count(*)::int n from family where deleted_at is null`,
-    href: '/people', cta: 'Add families' },
+    href: '/people?import=1', cta: 'Import or add families' },
   { key: 'payments', title: 'Billing', blurb: 'Raise term invoices and record transfers and cash. Card payments start once Stripe is connected on a hosted deployment.',
     count: `select count(*)::int n from invoice where deleted_at is null`,
     href: '/billing', cta: 'Raise an invoice' },
@@ -108,7 +111,7 @@ export default function Onboarding() {
                     </span>
                     {(
                       <Link href={s.href}
-                        className="mt-0.5 inline-flex shrink-0 items-center gap-0.5 text-[13px] font-medium text-accent hover:underline">
+                        className="mt-0.5 inline-flex shrink-0 items-center gap-0.5 text-[13px] font-medium text-accent-text hover:underline">
                         {complete ? 'Review' : s.cta}
                         <ChevronRight className="size-3.5" aria-hidden />
                       </Link>

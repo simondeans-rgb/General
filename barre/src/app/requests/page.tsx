@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Inbox, Check, X, MessageSquare, Trophy, CheckCircle2, HeartPulse, ClipboardPlus, CornerDownLeft } from 'lucide-react';
+import { Inbox, Check, X, MessageSquare, Trophy, CheckCircle2, HeartPulse, ClipboardPlus, CornerDownLeft, UserRoundCheck } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { RecordSheet } from '@/components/app/record-sheet';
 import * as P from '@/lib/repos/people';
@@ -14,6 +14,9 @@ import {
   Badge, Button, Card, CardHeader, EmptyState, ErrorState, Field, Select, Skeleton, type Tone,
 } from '@/components/ui';
 import * as H from '@/lib/repos/hub';
+import * as D from '@/lib/repos/dashboard';
+import { SessionSheet } from '@/components/app/session-sheet';
+import { readAs } from '@/lib/db/client';
 import { relativeDay, time, dateLong } from '@/lib/format';
 
 const KIND_LABEL: Record<string, string> = {
@@ -34,12 +37,34 @@ export default function RequestsPage() {
   const [answering, setAnswering] = React.useState<any>(null);
   const [recording, setRecording] = React.useState<H.PendingRequest | null>(null);
   const [acked, setAcked] = React.useState<string | null>(null);
+  const [covering, setCovering] = React.useState<D.SessionRow | null>(null);
+  const openCover = useMutation({
+    mutationFn: async (id: string) => (await readAs<D.SessionRow>(session, D.SESSION_BY_ID, [id]))[0],
+    onSuccess: s => s && setCovering(s),
+  });
 
   // One tap: the parent gets a standard acknowledgement; the record is untouched.
   const ack = useMutation({
     mutationFn: async (r: H.PendingRequest) => runAs(session, q => q(H.ACK_MEDICAL, [r.id, null, null, null])),
     onSuccess: (_d, r) => {
       setAcked(`${r.guardian_name ?? r.family_name} has been told you received it. It is still to be added to ${r.student_name ?? 'the child'}’s record.`);
+      qc.invalidateQueries({ queryKey: ['db'] });
+    },
+  });
+
+  // One tap for what families asked for: a place, a new child, a trial.
+  const approve = useMutation({
+    mutationFn: async (r: H.PendingRequest) => {
+      const sql = r.action === 'join_class' ? H.APPROVE_PLACE : r.action === 'add_child' ? H.APPROVE_CHILD : H.APPROVE_TRIAL;
+      const rows = await runAs(session, q => q<{ outcome?: string }>(sql, r.action === 'join_class' ? [r.id, null] : [r.id]));
+      return { r, outcome: rows[0]?.outcome };
+    },
+    onSuccess: ({ r, outcome }) => {
+      setAcked(r.action === 'join_class'
+        ? (outcome === 'enrolled' ? `Done — enrolled in ${r.class_name}, and the family has been told.`
+                                  : `${r.class_name} is full, so they are on the waiting list. The family has been told.`)
+        : r.action === 'add_child' ? 'Added to the family, with the parent as emergency contact. They have been told.'
+        : 'Trial booked and the family told.');
       qc.invalidateQueries({ queryKey: ['db'] });
     },
   });
@@ -69,6 +94,7 @@ export default function RequestsPage() {
             </p>
           )}
           {ack.error != null && <div className="p-3"><ErrorState error={ack.error} /></div>}
+          {approve.error != null && <div className="p-3"><ErrorState error={approve.error} /></div>}
           <ul className="divide-y divide-line">
             {requests.data?.map(r => {
               const medical = r.kind === 'medical_update';
@@ -95,6 +121,27 @@ export default function RequestsPage() {
                         <Button size="sm" loading={ack.isPending && ack.variables?.id === r.id}
                                 onClick={() => ack.mutate(r)}>
                           <Check className="size-4" aria-hidden /> Acknowledge
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setAnswering(r)}>
+                          <MessageSquare className="size-4" aria-hidden /> Reply
+                        </Button>
+                      </>
+                    ) : r.action ? (
+                      <>
+                        <Button size="sm" variant="primary" loading={approve.isPending && approve.variables?.id === r.id}
+                                onClick={() => approve.mutate(r)}>
+                          <Check className="size-4" aria-hidden />
+                          {r.action === 'join_class' ? 'Give them a place' : r.action === 'add_child' ? 'Add to the family' : 'Book the trial'}
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setAnswering(r)}>
+                          <MessageSquare className="size-4" aria-hidden /> Reply instead
+                        </Button>
+                      </>
+                    ) : r.session_id ? (
+                      <>
+                        <Button size="sm" variant="primary" loading={openCover.isPending && openCover.variables === r.session_id}
+                                onClick={() => openCover.mutate(r.session_id!)}>
+                          <UserRoundCheck className="size-4" aria-hidden /> Arrange cover
                         </Button>
                         <Button size="sm" variant="ghost" onClick={() => setAnswering(r)}>
                           <MessageSquare className="size-4" aria-hidden /> Reply
@@ -146,6 +193,7 @@ export default function RequestsPage() {
 
       </div>
 
+      {covering && <SessionSheet session={covering} initial="cover" onClose={() => setCovering(null)} />}
       {answering && <AnswerDialog request={answering} onClose={() => setAnswering(null)} />}
       {recording && <RecordUpdateSheet request={recording} onClose={() => setRecording(null)}
                       onDone={msg => { setRecording(null); setAcked(msg); }} />}
@@ -186,7 +234,7 @@ function AnswerDialog({ request, onClose }: { request: any; onClose: () => void 
             <textarea value={answer} onChange={e => setAnswer(e.target.value)} rows={4}
               aria-label="Your reply" placeholder="Write your reply…"
               className="mt-3 w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
-                         focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/12" />
+                         focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
             {send.isError && <div className="mt-3"><ErrorState error={send.error} /></div>}
             <div className="mt-4 flex gap-2">
               <Button className="flex-1" onClick={onClose}>Cancel</Button>
@@ -280,9 +328,9 @@ function RecordUpdateSheet({ request: r, onClose, onDone }: {
               <textarea id={`ru-${k}`} rows={2} value={fields[k] ?? ''} placeholder={ph}
                 onChange={e => setFields(f => ({ ...f, [k]: e.target.value }))}
                 className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
-                           focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/12" />
+                           focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
               <button type="button" onClick={() => take(k)}
-                className="mt-1 inline-flex min-h-[32px] items-center gap-1 rounded-full px-2 text-[12.5px] font-medium text-accent hover:bg-accent-soft">
+                className="mt-1 inline-flex min-h-[32px] items-center gap-1 rounded-full px-2 text-[12.5px] font-medium text-accent-text hover:bg-accent-soft">
                 <CornerDownLeft className="size-3.5" aria-hidden /> Add the parent’s words here
               </button>
             </Field>
@@ -297,7 +345,7 @@ function RecordUpdateSheet({ request: r, onClose, onDone }: {
           <Field label="Message to the parent" htmlFor="ru-msg" required>
             <textarea id="ru-msg" rows={3} value={message} onChange={e => setMessage(e.target.value)}
               className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
-                         focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/12" />
+                         focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
           </Field>
           {!changed && <p className="text-[12.5px] text-ink-3">Change the record above to save — or use Acknowledge if nothing needs changing.</p>}
         </>

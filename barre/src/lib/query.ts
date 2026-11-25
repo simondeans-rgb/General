@@ -17,7 +17,8 @@ export function useRows<T>(
 ) {
   const { session } = useSession();
   return useQuery<T[]>({
-    queryKey: ['db', session?.userId ?? 'anon', ...key],
+    // The chosen school is part of the key: switching school can never show the last one's rows.
+    queryKey: ['db', session?.userId ?? 'anon', session?.studio ?? '', ...key],
     queryFn: () => readAs<T>(session, sql, params),
     staleTime: 15_000,
     ...options,

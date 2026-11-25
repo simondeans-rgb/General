@@ -1,5 +1,6 @@
 'use client';
 
+import { SanaaLogo } from './sanaa';
 import * as React from 'react';
 import { getDb, onBootPhase, type BootPhase } from '@/lib/db/client';
 import { ErrorState, Spinner } from '@/components/ui';
@@ -35,7 +36,7 @@ export function DatabaseGate({ children }: { children: React.ReactNode }) {
       <div className="mx-auto max-w-lg p-6">
         <ErrorState error={error} onRetry={() => location.reload()} />
         <p className="mt-4 text-sm text-ink-2">
-          Barre runs Postgres inside your browser for this demo. If it cannot start,
+          Sanaa runs Postgres inside your browser for this demo. If it cannot start,
           it is usually private browsing or a browser that blocks storage.
         </p>
       </div>
@@ -46,11 +47,7 @@ export function DatabaseGate({ children }: { children: React.ReactNode }) {
     return (
       <div className="grid min-h-dvh place-items-center p-6">
         <div className="w-full max-w-xs text-center">
-          <div className="mx-auto mb-5 grid size-12 place-items-center rounded-[var(--radius-lg)]
-                          bg-accent text-white shadow-md" aria-hidden>
-            <BarreMark />
-          </div>
-          <p className="font-medium">Barre</p>
+          <SanaaLogo className="mx-auto mb-4 h-9" />
           <p className="mt-1 flex items-center justify-center gap-2 text-sm text-ink-2">
             <Spinner className="size-3.5" /> {COPY[phase]}…
           </p>
@@ -63,15 +60,4 @@ export function DatabaseGate({ children }: { children: React.ReactNode }) {
   }
 
   return <>{children}</>;
-}
-
-export function BarreMark({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className ?? 'size-6'} fill="none" aria-hidden>
-      {/* A barre and its two brackets. */}
-      <path d="M3 9h18" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" />
-      <path d="M6 9v10M18 9v10" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" opacity=".55" />
-      <circle cx="12" cy="5" r="2.1" fill="currentColor" />
-    </svg>
-  );
 }

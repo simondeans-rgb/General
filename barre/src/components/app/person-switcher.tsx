@@ -57,7 +57,7 @@ export function PersonSwitcher({ className, label }: { className?: string; label
     <>
       {label ? (
         <button onClick={() => setOpen(true)} aria-haspopup="dialog"
-          className={cn('text-[12.5px] font-medium text-accent hover:underline', className)}>
+          className={cn('text-[12.5px] font-medium text-accent-text hover:underline', className)}>
           {label}
         </button>
       ) : (
@@ -107,12 +107,12 @@ export function PersonSwitcher({ className, label }: { className?: string; label
                       aria-current={current ? 'true' : undefined}
                       className={cn(
                         'flex w-full items-center gap-3 rounded-[var(--radius-lg)] border p-3 text-left transition-colors',
-                        current ? 'border-accent bg-accent-soft/60' : 'border-line hover:bg-surface-2',
+                        current ? 'border-accent-line bg-accent-soft/60' : 'border-line hover:bg-surface-2',
                       )}
                     >
                       <span aria-hidden className={cn(
                         'grid size-9 shrink-0 place-items-center rounded-full text-[13px] font-semibold',
-                        current ? 'bg-accent text-white' : 'bg-surface-2 text-ink-2')}>
+                        current ? 'bg-accent text-on-accent' : 'bg-surface-2 text-ink-2')}>
                         {current ? <Check className="size-4" /> : initials(p.name)}
                       </span>
                       <span className="min-w-0 flex-1">

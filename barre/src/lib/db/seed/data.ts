@@ -1,3 +1,4 @@
+import { NORTHSTAR_LOGO } from './logos';
 /**
  * Demo data for Northstar Dance Academy.
  *
@@ -129,7 +130,15 @@ export function buildSeedSql({ today = new Date() }: SeedOptions = {}): string {
   // Loading a studio's history is not news: hold notifications while seeding.
   return `select set_config('app.quiet', 'on', false);\n` + out.join('\n') + '\n' + buildClassesAndPeople({
     termId: TERM, base, LOC, ROOM, STAFF, STYLE, LEVEL, guardianUsers,
-  }) + '\n' + buildPlatform() + `\nselect set_config('app.quiet', 'off', false);\n`;
+  }) + '\n' + buildPlatform()
+    + `\nupdate studio_event r set parent_event_id = sh.id from studio_event sh
+         where r.kind = 'rehearsal' and sh.kind = 'show' and sh.studio_id = r.studio_id
+           and split_part(r.title, ' — ', 1) = split_part(sh.title, ' — ', 1);`
+    + `\nupdate class_session cs set register_closed_at = cs.ends_at
+         where cs.ends_at < now() - interval '2 hours' and cs.register_closed_at is null
+           and exists (select 1 from attendance_record a where a.session_id = cs.id);`
+    + `\nselect app.award_event_milestones(id) from studio;`
+    + `\nselect set_config('app.quiet', 'off', false);\n`;
 }
 
 type Ctx = {
@@ -1002,7 +1011,7 @@ function termPlanPdf(): Uint8Array {
 }
 
 /* ==========================================================================
-   The platform: Barre's own staff, and other schools on the service
+   The platform: Sanaa's own staff, and other schools on the service
    ========================================================================== */
 export const PLATFORM_ADMIN = uid(NS.user, 190);
 export const OTHER_STUDIOS = { riverside: uid(NS.studio, 2), kestrel: uid(NS.studio, 3), pointe: uid(NS.studio, 4) };
@@ -1013,11 +1022,12 @@ function buildPlatform(): string {
   return `
 -- Northstar is a paying customer on the Studio plan.
 update studio set plan_id = (select id from plan where code = 'studio'), status = 'active',
+                  brand_colour = '#1e3a8a', logo_url = ${q(NORTHSTAR_LOGO)},
                   created_at = now() - interval '2 years 3 months'
  where id = ${q(STUDIO_ID)};
 
 insert into user_account (id, email, full_name) values
-  (${q(PLATFORM_ADMIN)}, 'jordan@barre.example', 'Jordan Ellis'),
+  (${q(PLATFORM_ADMIN)}, 'jordan@sanaa.example', 'Jordan Ellis'),
   (${q(uid(NS.user, 191))}, 'elena@kestrelballet.example', 'Elena Marsh'),
   (${q(uid(NS.user, 192))}, 'tom@pointeandflex.example', 'Tom Hadley');
 insert into platform_admin (user_id, role) values (${q(PLATFORM_ADMIN)}, 'super_admin');
@@ -1031,6 +1041,7 @@ insert into studio (id, name, slug, contact_email, plan_id, status, trial_ends_o
      (select id from plan where code = 'starter'), 'suspended', null,
      'Subscription unpaid since September — two reminders sent', now() - interval '6 days', now() - interval '14 months');
 
+update studio set theme = 'urban', brand_colour = '#c6f432', brand_secondary = '#8b5cf6' where id = ${q(S.kestrel)};
 insert into membership (user_id, studio_id, role) values
   (${q(uid(NS.user, 191))}, ${q(S.kestrel)}, 'owner'),
   (${q(uid(NS.user, 192))}, ${q(S.pointe)}, 'owner');
@@ -1051,11 +1062,44 @@ insert into student (studio_id, family_id, first_name, last_name, date_of_birth)
   (${q(S.kestrel)}, ${q(uid(NS.family, 191))}, 'Orla', 'Brennan', current_date - interval '11 years');
 insert into location (studio_id, name, city) values (${q(S.pointe)}, 'The Mill', 'Brighton');
 
--- Freya has let Barre support look at Northstar while they help with invoices.
+-- Adults drop in on Thursday evenings, by the class or with a pack (R-034).
+insert into class (id, studio_id, term_id, dance_style_id, location_id, teacher_id, name, day_of_week, start_time, duration_min,
+                   capacity, age_min, price_minor, pricing, trials_enabled, description)
+select ${q(uid(NS.class, 191))}, ${q(STUDIO_ID)}, (select id from term where studio_id = ${q(STUDIO_ID)} order by starts_on desc limit 1),
+       (select id from dance_style where studio_id = ${q(STUDIO_ID)} and name = 'Contemporary'),
+       (select id from location where studio_id = ${q(STUDIO_ID)} order by name limit 1),
+       (select id from staff_member where user_id = ${q(uid(NS.user, 3))} and studio_id = ${q(STUDIO_ID)}),
+       'Adult Contemporary (drop-in)', 4, '20:00', 60, 16, 18, 1200, 'drop_in', false,
+       'For adults, all levels. Come when you can: pay per class or buy a pack.';
+select app.generate_class_sessions(${q(uid(NS.class, 191))});
+insert into class_pack (studio_id, name, classes, price_minor, valid_days) values
+  (${q(STUDIO_ID)}, '5-class pack', 5, 5000, 90), (${q(STUDIO_ID)}, '10-class pack', 10, 9000, 180);
+
+-- Priya also teaches one class at Kestrel: one login, two schools (R-031).
+insert into membership (user_id, studio_id, role, created_at) values (${q(uid(NS.user, 3))}, ${q(S.kestrel)}, 'teacher', now() + interval '1 minute');
+insert into staff_member (id, studio_id, user_id, display_name) values (${q(uid(NS.staff, 190))}, ${q(S.kestrel)}, ${q(uid(NS.user, 3))}, 'Priya Raman');
+insert into dance_style (id, studio_id, name, colour) values (${q(uid(NS.style, 190))}, ${q(S.kestrel)}, 'Contemporary', 'teal');
+insert into term (id, studio_id, name, starts_on, ends_on, status) values
+  (${q(uid(NS.term, 190))}, ${q(S.kestrel)}, 'Autumn', current_date - 40, current_date + 50, 'published');
+insert into class (id, studio_id, term_id, dance_style_id, location_id, teacher_id, name, day_of_week, start_time, duration_min, capacity, price_minor)
+  values (${q(uid(NS.class, 190))}, ${q(S.kestrel)}, ${q(uid(NS.term, 190))}, ${q(uid(NS.style, 190))}, ${q(uid(NS.location, 190))},
+          ${q(uid(NS.staff, 190))}, 'Kestrel Contemporary', 3, '18:00', 60, 12, 6000);
+select app.generate_class_sessions(${q(uid(NS.class, 190))});
+insert into enrolment (studio_id, class_id, student_id, status, started_on)
+  select ${q(S.kestrel)}, ${q(uid(NS.class, 190))}, id, 'active', current_date - 30 from student where studio_id = ${q(S.kestrel)} and first_name = 'Martha';
+
+-- Every trial gets a child record and emergency contact (migration 0023).
+do $$ declare t record; begin
+  for t in select id from trial where student_id is null and deleted_at is null loop
+    perform app.ensure_trial_student(t.id);
+  end loop;
+end $$;
+
+-- Freya has let Sanaa support look at Northstar while they help with invoices.
 insert into support_access_grant (studio_id, granted_by, reason, expires_at, created_at) values
   (${q(STUDIO_ID)}, ${q(uid(NS.user, 1))}, 'Help setting up this term''s invoices', now() + interval '2 days', now() - interval '2 hours');
 insert into audit_log (studio_id, actor_id, action, entity, summary, at) values
   (${q(STUDIO_ID)}, ${q(uid(NS.user, 1))}, 'grant', 'support_access_grant',
-   'Barre support may view the account, read-only, for 48 hours: Help setting up this term''s invoices', now() - interval '2 hours');
+   'Sanaa support may view the account, read-only, for 48 hours: Help setting up this term''s invoices', now() - interval '2 hours');
 `;
 }

@@ -49,7 +49,7 @@ export function Automations() {
     <div className="space-y-3">
       <Card className="overflow-hidden">
         <div className="flex items-center gap-3 border-b border-line px-4 py-3">
-          <Zap className="size-4 text-accent" aria-hidden />
+          <Zap className="size-4 text-accent-text" aria-hidden />
           <p className="flex-1 text-[13px] text-ink-2">
             {due ? `${due} message${due === 1 ? '' : 's'} due to go` : 'Nothing due right now'}
           </p>

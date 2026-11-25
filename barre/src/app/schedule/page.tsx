@@ -4,6 +4,7 @@ import * as React from 'react';
 import { ChevronLeft, ChevronRight, CalendarX2, Plus } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { SessionRow } from '@/components/app/session-row';
+import { SessionSheet } from '@/components/app/session-sheet';
 import { ClassForm } from '@/components/app/class-form';
 import { useRows } from '@/lib/query';
 import { Button, Card, EmptyState, Skeleton, ErrorState, Badge } from '@/components/ui';
@@ -77,6 +78,7 @@ export default function SchedulePage() {
 
 /** One grouping component for all four views: the axis changes, not the rows. */
 function Grouped({ sessions, view }: { sessions: Q.SessionRow[]; view: View }) {
+  const [open, setOpen] = React.useState<Q.SessionRow | null>(null);
   const groups = React.useMemo(() => {
     const map = new Map<string, Q.SessionRow[]>();
     const keyOf = (s: Q.SessionRow) =>
@@ -98,6 +100,7 @@ function Grouped({ sessions, view }: { sessions: Q.SessionRow[]; view: View }) {
 
   return (
     <div className="space-y-4">
+      {open && <SessionSheet session={open} onClose={() => setOpen(null)} />}
       {groups.map(([key, rows]) => {
         const label = key.includes('|') ? key.split('|')[1]! : key;
         const date = key.includes('|') ? key.split('|')[0]! : null;
@@ -112,7 +115,7 @@ function Grouped({ sessions, view }: { sessions: Q.SessionRow[]; view: View }) {
               </span>
             </div>
             <ul className="divide-y divide-line">
-              {rows.map(s => <li key={s.id}><SessionRow session={s} /></li>)}
+              {rows.map(s => <li key={s.id}><SessionRow session={s} onSelect={() => setOpen(s)} /></li>)}
             </ul>
           </Card>
         );

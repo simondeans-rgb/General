@@ -42,6 +42,10 @@ export function EventsView({ allow, title }: { allow: Role[]; title: string }) {
   const children = useRows<{ id: string; first_name: string; last_name: string }>(
     ['event-children'], `select id, first_name, last_name from student where deleted_at is null order by date_of_birth`);
   const [asking, setAsking] = React.useState<H.EventRow | null>(null);
+  const answer = useMutation({
+    mutationFn: (v: { id: string; yes: boolean }) => runAs(session, q => q(H.ANSWER_INVITE, [v.id, v.yes])),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['db'] }),
+  });
 
   return (
     <Shell title={title} subtitle="Competitions, shows, exams and private lessons" allow={allow}>
@@ -94,6 +98,7 @@ export function EventsView({ allow, title }: { allow: Role[]; title: string }) {
                 </dl>
               </div>
 
+              {answer.error != null && <div className="px-4 pb-3"><ErrorState error={answer.error} /></div>}
               {e.kind !== 'private_lesson' && !mine && (
                 <div className="border-t border-line p-3">
                   {!e.requests_open || closed || full ? (
@@ -106,6 +111,21 @@ export function EventsView({ allow, title }: { allow: Role[]; title: string }) {
                   )}
                 </div>
               )}
+              {e.my_invite && allow.includes('guardian') && (
+                <div className="flex flex-wrap items-center gap-2 border-t border-line p-3">
+                  <span className="text-[13px] text-ink-2">{e.my_student ?? 'Your child'} is invited.</span>
+                  <Button size="sm" variant="primary" onClick={() => answer.mutate({ id: e.my_invite!, yes: true })}>We’ll be there</Button>
+                  <Button size="sm" variant="ghost" onClick={() => answer.mutate({ id: e.my_invite!, yes: false })}>Not this time</Button>
+                </div>
+              )}
+              {(e.rehearsals?.length || (e.my_status === 'confirmed' && e.routines?.length)) ? (
+                <div className="space-y-1 border-t border-line px-4 py-3 text-[13px]">
+                  {e.rehearsals?.map((r, i) => <p key={i}><b>{r.title}</b> · {dateLong(r.starts_at)}, {time(r.starts_at)}</p>)}
+                  {e.my_status === 'confirmed' && e.routines?.map((r, i) => (
+                    <p key={i}>Dance {r.position}: <b>{r.title}</b>{r.costume ? ` — costume: ${r.costume}` : ''}</p>
+                  ))}
+                </div>
+              ) : null}
               {mine?.tone === 'caution' && e.my_status === 'requested' && (
                 <p className="border-t border-line px-4 py-2.5 text-[12.5px] text-ink-3">
                   The studio has your request{e.my_student ? ` for ${e.my_student}` : ''} and will confirm.

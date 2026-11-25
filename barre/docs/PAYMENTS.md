@@ -13,8 +13,8 @@
 
 ## What needs a server: card payments with Stripe
 
-No card data ever touches Barre. Parents pay on Stripe's hosted Checkout;
-Stripe reports back; Barre records a provider reference.
+No card data ever touches Sanaa. Parents pay on Stripe's hosted Checkout;
+Stripe reports back; Sanaa records a provider reference.
 
 The pure parts are written and tested (`src/lib/payments/stripe.ts`,
 `tests/stripe.test.ts`). The static demo cannot host the two routes that
@@ -61,5 +61,5 @@ as the cumulative refunded amount, so replays change nothing.
 
 - **Direct debit / recurring billing.** Monthly pricing exists on classes;
   automatic monthly invoicing is the next step and belongs in the scheduler.
-- **Card refunds from Barre.** They are made in Stripe, and arrive here via
+- **Card refunds from Sanaa.** They are made in Stripe, and arrive here via
   the webhook, so the ledger can never claim a refund the bank has not made.

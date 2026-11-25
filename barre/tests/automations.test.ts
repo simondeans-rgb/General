@@ -39,7 +39,8 @@ describe('automations', () => {
         expect(m.to_address).toMatch(/@/);
         expect(m.subject + m.body).not.toMatch(/\{\{/);
       }
-      expect(inApp.length + queued.length).toBe(n);
+      // A family without a login gets the in-app message AND an email.
+      expect((await q(`select count(*)::int c from automation_run`))[0].c).toBe(n);
       expect(queued.length).toBeGreaterThan(0);
     });
   });

@@ -702,16 +702,15 @@ describe('enrolling and withdrawing', () => {
 });
 
 describe('trials', () => {
-  it('converting an enquiry trial creates the family, the child and the place', async () => {
+  it('converting an enquiry trial keeps the trial’s child record and makes the family real', async () => {
     await asUser(USERS.admin, async q => {
-      // Every seeded trial comes from an enquiry: the studio knows a name and
-      // a date of birth, and nothing else. This is the common case.
+      // Since 0023 every trial has a child record (a prospect family) from the
+      // moment it is booked, so the child was on the register for the trial.
       const [t] = await q(
-        `select t.id, t.class_id, t.enquiry_id, e.child_name, e.contact_name
+        `select t.id, t.class_id, t.enquiry_id, t.student_id, e.child_name, e.contact_name
            from trial t join enquiry e on e.id = t.enquiry_id
-          where t.deleted_at is null and t.student_id is null
+          where t.deleted_at is null and t.student_id is not null
             and t.status in ('booked','attended')
-            and e.child_name is not null and e.child_dob is not null
           limit 1`);
       expect(t).toBeTruthy();
 
@@ -720,7 +719,10 @@ describe('trials', () => {
       expect(res.id).toBeTruthy();
 
       const after = await q(`select count(*)::int n from student`);
-      expect(after[0].n).toBe(before[0].n + 1);
+      expect(after[0].n).toBe(before[0].n);
+      const [same] = await q(`select student_id, (select is_prospect from family f join student s on s.family_id = f.id where s.id = $2) p
+                                from enrolment where id = $1`, [res.id, t.student_id]);
+      expect(same).toEqual({ student_id: t.student_id, p: false });
 
       const [e] = await q(
         `select e.status, e.class_id, e.note, s.first_name, f.name as family_name,

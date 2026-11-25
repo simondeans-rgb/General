@@ -121,10 +121,24 @@ export function EnrolSheet({ classId, className, full, onClose }: {
 export function WithdrawSheet({ enrolmentId, name, onClose }: {
   enrolmentId: string; name: string; onClose: () => void;
 }) {
+  const [mode, setMode] = React.useState<'leave' | 'move'>('leave');
   const [reason, setReason] = React.useState('');
+  const [toClass, setToClass] = React.useState('');
   const [offered, setOffered] = React.useState<string | null | undefined>(undefined);
+  const [moved, setMoved] = React.useState<string | null>(null);
+  const classes = useRows<{ id: string; name: string; enrolled: number; capacity: number }>(
+    ['class-options'], C.CLASS_OPTIONS, [], { enabled: mode === 'move' });
   const withdraw = usePipeline(C.WITHDRAW, rows => setOffered(rows?.[0]?.offered ?? null));
+  const transfer = usePipeline(C.TRANSFER, () => setMoved(classes.data?.find(c => c.id === toClass)?.name ?? 'the new class'));
 
+  if (moved) {
+    return (
+      <RecordSheet title="Moved" subtitle={name} onClose={onClose} onSave={onClose} saveLabel="Done" canSave>
+        <p className="text-sm text-ink-2">{name} is now in {moved}. Their history comes with them, and the place they left
+          has been offered to the waiting list if anyone is waiting.</p>
+      </RecordSheet>
+    );
+  }
   if (offered !== undefined) {
     return (
       <RecordSheet title="Place given up" subtitle={name} onClose={onClose}
@@ -139,16 +153,33 @@ export function WithdrawSheet({ enrolmentId, name, onClose }: {
   }
 
   return (
-    <RecordSheet title="Withdraw from the class" subtitle={name} onClose={onClose}
-      error={withdraw.error} saving={withdraw.isPending} canSave
-      saveLabel="Withdraw" onSave={() => withdraw.mutate([enrolmentId, reason])}>
+    <RecordSheet title={mode === 'move' ? 'Move to another class' : 'Withdraw from the class'} subtitle={name} onClose={onClose}
+      error={withdraw.error ?? transfer.error} saving={withdraw.isPending || transfer.isPending}
+      canSave={mode === 'leave' || !!toClass}
+      saveLabel={mode === 'move' ? 'Move' : 'Withdraw'}
+      onSave={() => mode === 'move' ? transfer.mutate([enrolmentId, toClass, reason || null]) : withdraw.mutate([enrolmentId, reason])}>
+      <div role="radiogroup" aria-label="What is happening" className="grid grid-cols-2 gap-1 rounded-[var(--radius-md)] bg-surface-2 p-1">
+        {([['leave', 'Leaving this class'], ['move', 'Moving to another']] as const).map(([k, l]) => (
+          <button key={k} role="radio" aria-checked={mode === k} onClick={() => setMode(k)}
+            className={`h-9 rounded-[calc(var(--radius-md)-2px)] text-[13px] ${mode === k ? 'bg-surface font-medium shadow-xs' : 'text-ink-2'}`}>{l}</button>
+        ))}
+      </div>
+      {mode === 'move' && (
+        <Field label="New class" htmlFor="wd-to" required hint="If it is full, nothing changes.">
+          <Select id="wd-to" value={toClass} onChange={e => setToClass(e.target.value)}>
+            <option value="">Choose a class…</option>
+            {classes.data?.map(c => <option key={c.id} value={c.id} disabled={c.enrolled >= c.capacity}>
+              {c.name} — {c.enrolled}/{c.capacity}{c.enrolled >= c.capacity ? ' (full)' : ''}</option>)}
+          </Select>
+        </Field>
+      )}
       <p className="text-[13px] text-ink-2">
-        Their attendance history stays. The place is offered straight away to
+        Their attendance and feedback history stays with them. The place they leave is offered straight away to
         whoever has waited longest for this class.
       </p>
-      <Field label="Reason" htmlFor="wd-reason" hint="Optional. Kept on the record.">
+      <Field label={mode === 'move' ? 'Note' : 'Reason'} htmlFor="wd-reason" hint="Optional. Kept on the record.">
         <Input id="wd-reason" value={reason} onChange={e => setReason(e.target.value)}
-               placeholder="Moving away" />
+               placeholder={mode === 'move' ? 'Moving up a grade' : 'Moving away'} />
       </Field>
     </RecordSheet>
   );
@@ -199,8 +230,12 @@ export function BookTrialSheet({ classId, className, onClose }: {
   const sessions = useRows<{ id: string; starts_at: string }>(
     ['sessions-ahead', classId], C.CLASS_SESSIONS_AHEAD, [classId]);
   const candidates = useRows<Candidate>(['enrollable', classId], C.ENROLLABLE_STUDENTS, [classId]);
+  const [mode, setMode] = React.useState<'new' | 'existing'>('new');
   const [sessionId, setSessionId] = React.useState('');
   const [studentId, setStudentId] = React.useState('');
+  const [child, setChild] = React.useState({ first_name: '', last_name: '', date_of_birth: '', contact_name: '',
+    contact_email: '', contact_phone: '', emergency_name: '', emergency_phone: '' });
+  const set = (k: keyof typeof child) => (e: React.ChangeEvent<HTMLInputElement>) => setChild(c => ({ ...c, [k]: e.target.value }));
   const book = usePipeline(C.BOOK_TRIAL, onClose);
 
   React.useEffect(() => {
@@ -208,10 +243,15 @@ export function BookTrialSheet({ classId, className, onClose }: {
     if (!studentId && candidates.data?.[0]) setStudentId(candidates.data[0].id);
   }, [sessions.data, candidates.data, sessionId, studentId]);
 
+  const newValid = child.first_name.trim() && child.date_of_birth && child.contact_name.trim()
+    && (child.contact_phone.trim().length >= 6 || child.emergency_phone.trim().length >= 6);
+
   return (
     <RecordSheet title="Book a trial" subtitle={className} onClose={onClose}
-      error={book.error} saving={book.isPending} canSave={!!sessionId && !!studentId}
-      saveLabel="Book them in" onSave={() => book.mutate([sessionId, studentId])}>
+      error={book.error} saving={book.isPending}
+      canSave={!!sessionId && (mode === 'existing' ? !!studentId : !!newValid)}
+      saveLabel="Book them in"
+      onSave={() => book.mutate(mode === 'existing' ? [sessionId, studentId, null] : [sessionId, null, JSON.stringify(child)])}>
       {sessions.isPending && <Skeleton className="h-16" />}
       {!sessions.isPending && sessions.data?.length === 0 && (
         <p className="text-[13px] text-ink-3">
@@ -227,13 +267,42 @@ export function BookTrialSheet({ classId, className, onClose }: {
           </Select>
         </Field>
       )}
-      <Field label="Child" htmlFor="trial-student" required>
-        <Select id="trial-student" value={studentId} onChange={e => setStudentId(e.target.value)}>
-          {candidates.data?.map(c => (
-            <option key={c.id} value={c.id}>{c.first_name} {c.last_name} — {c.family_name}</option>
-          ))}
-        </Select>
-      </Field>
+      <div role="radiogroup" aria-label="Which child" className="grid grid-cols-2 gap-1 rounded-[var(--radius-md)] bg-surface-2 p-1">
+        {([['new', 'A new child'], ['existing', 'Already at the school']] as const).map(([k, l]) => (
+          <button key={k} role="radio" aria-checked={mode === k} onClick={() => setMode(k)}
+            className={`h-9 rounded-[calc(var(--radius-md)-2px)] text-[13px] ${mode === k ? 'bg-surface font-medium shadow-xs' : 'text-ink-2'}`}>{l}</button>
+        ))}
+      </div>
+      {mode === 'existing' ? (
+        <Field label="Child" htmlFor="trial-student" required hint="They need an emergency contact on record.">
+          <Select id="trial-student" value={studentId} onChange={e => setStudentId(e.target.value)}>
+            {candidates.data?.map(c => (
+              <option key={c.id} value={c.id}>{c.first_name} {c.last_name} — {c.family_name}</option>
+            ))}
+          </Select>
+        </Field>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Child’s first name" htmlFor="tn-f" required><Input id="tn-f" value={child.first_name} onChange={set('first_name')} /></Field>
+            <Field label="Last name" htmlFor="tn-l"><Input id="tn-l" value={child.last_name} onChange={set('last_name')} /></Field>
+          </div>
+          <Field label="Date of birth" htmlFor="tn-d" required><Input id="tn-d" type="date" value={child.date_of_birth} onChange={set('date_of_birth')} /></Field>
+          <Field label="Parent or carer" htmlFor="tn-c" required><Input id="tn-c" value={child.contact_name} onChange={set('contact_name')} /></Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Phone" htmlFor="tn-p" required><Input id="tn-p" type="tel" value={child.contact_phone} onChange={set('contact_phone')} /></Field>
+            <Field label="Email" htmlFor="tn-e"><Input id="tn-e" type="email" value={child.contact_email} onChange={set('contact_email')} /></Field>
+          </div>
+          <p className="text-[12.5px] text-ink-3">
+            The phone number is used as the emergency contact unless you add a different one below. The child appears on the
+            teacher’s register, with this contact, from the moment they are booked.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Emergency contact (if different)" htmlFor="tn-en"><Input id="tn-en" value={child.emergency_name} onChange={set('emergency_name')} /></Field>
+            <Field label="Their phone" htmlFor="tn-ep"><Input id="tn-ep" type="tel" value={child.emergency_phone} onChange={set('emergency_phone')} /></Field>
+          </div>
+        </>
+      )}
     </RecordSheet>
   );
 }

@@ -286,7 +286,7 @@ function AddMaterial({ classId, className, onClose }: {
                   onChange={e => setDescription(e.target.value)}
                   placeholder="Practise the first eight before Thursday."
                   className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
-                             focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/12" />
+                             focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
               </Field>
 
               <fieldset className="rounded-[var(--radius-md)] border border-line p-3">

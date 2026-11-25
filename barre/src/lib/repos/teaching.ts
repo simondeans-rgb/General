@@ -7,9 +7,11 @@ export type TeachSession = {
   room: string | null; location: string | null;
   enrolled: number; capacity: number; trials: number;
   marked: number; register_closed_at: string | null;
+  covering: boolean; covered_by: string | null; cover_requested: boolean; cancel_reason: string | null;
 };
 
 export const MY_SESSIONS = `
+with me as (select id from staff_member where user_id = auth.uid() and deleted_at is null)
 select cs.id, cs.class_id, c.name, cs.starts_at, cs.ends_at, cs.status,
        ds.name as style, ds.colour,
        coalesce(sr.name, r.name) as room, l.name as location,
@@ -18,7 +20,12 @@ select cs.id, cs.class_id, c.name, cs.starts_at, cs.ends_at, cs.status,
          where t.session_id = cs.id and t.status = 'booked' and t.deleted_at is null) as trials,
        (select count(*)::int from attendance_record ar
          where ar.session_id = cs.id and ar.deleted_at is null) as marked,
-       cs.register_closed_at
+       cs.register_closed_at, cs.cancel_reason,
+       (cs.teacher_id in (select id from me) and c.teacher_id not in (select id from me)) as covering,
+       case when cs.teacher_id is not null and cs.teacher_id not in (select id from me)
+            then (select display_name from staff_member where id = cs.teacher_id) end as covered_by,
+       exists (select 1 from studio_request q where q.session_id = cs.id and q.status in ('open','in_progress')
+                and q.deleted_at is null) as cover_requested
   from class_session cs
   join class c on c.id = cs.class_id and c.deleted_at is null
   left join dance_style ds on ds.id = c.dance_style_id
@@ -27,6 +34,8 @@ select cs.id, cs.class_id, c.name, cs.starts_at, cs.ends_at, cs.status,
   left join location l on l.id = c.location_id
  where cs.deleted_at is null
    and cs.starts_at >= $1::timestamptz and cs.starts_at < $2::timestamptz
+   -- Mine: classes I teach or assist, and sessions I am covering.
+   and (c.teacher_id in (select id from me) or c.assistant_id in (select id from me) or cs.teacher_id in (select id from me))
  order by cs.starts_at`;
 
 export type RegisterEntry = {
@@ -67,6 +76,12 @@ with roll as (
     from trial t
     join student s on s.id = t.student_id
    where t.session_id = $1 and t.status in ('booked','attended') and t.deleted_at is null
+  union all
+  -- Drop-ins (migration 0033) are marked like anyone in the class.
+  select s.id, s.first_name, s.last_name, s.preferred_name, s.date_of_birth, false
+    from drop_in_booking d
+    join student s on s.id = d.student_id
+   where d.session_id = $1 and d.status = 'booked'
 )
 select roll.id as student_id, roll.first_name, roll.last_name, roll.preferred_name,
        roll.date_of_birth, roll.is_trial,
@@ -183,3 +198,14 @@ select cm.id, cm.subject, cm.body, cm.sent_at, c.name as class_name,
  where cm.deleted_at is null and cm.kind = 'class_broadcast'
  order by cm.sent_at desc
  limit 40`;
+
+export const REQUEST_COVER = `select app.request_cover($1, $2) as id`;
+/** The teacher's next session after this one today, for "Next class". */
+export const NEXT_SESSION = `
+with me as (select id from staff_member where user_id = auth.uid() and deleted_at is null),
+     this as (select starts_at from class_session where id = $1)
+select cs.id, c.name, cs.starts_at from class_session cs join class c on c.id = cs.class_id
+ where cs.deleted_at is null and cs.status <> 'cancelled' and cs.starts_at > (select starts_at from this)
+   and cs.starts_at < date_trunc('day', (select starts_at from this)) + interval '1 day'
+   and (c.teacher_id in (select id from me) or c.assistant_id in (select id from me) or cs.teacher_id in (select id from me))
+ order by cs.starts_at limit 1`;

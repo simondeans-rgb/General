@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ShieldCheck, ArrowRight } from 'lucide-react';
 import { PERSONA_GROUPS, useSession, type Persona } from '@/lib/auth/session';
 import { ROLE_HOME } from '@/components/app/shell';
-import { BarreMark } from '@/components/app/database-gate';
+import { SanaaLogo } from '@/components/app/sanaa';
 import { Badge } from '@/components/ui';
 
 const TONE = { owner: 'accent', admin: 'info', teacher: 'teal', guardian: 'rose', student: 'amber', platform: 'neutral' } as const;
@@ -16,28 +16,26 @@ export default function SignIn() {
 
   // Signed in already? Offer to carry on, but still show everyone — this page
   // used to bounce straight to the home screen, which hid the other people
-  // (including the Barre platform admin) unless you found the avatar menu.
+  // (including the Sanaa platform admin) unless you found the avatar menu.
 
   const choose = (p: Persona) => { signIn(p); router.push(ROLE_HOME[p.role]); };
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-2xl flex-col justify-center px-5 py-10">
       <div className="mb-8">
-        <span className="mb-5 grid size-11 place-items-center rounded-[var(--radius-lg)] bg-accent text-white shadow-sm" aria-hidden>
-          <BarreMark className="size-6" />
-        </span>
-        <h1 className="text-[27px] font-semibold tracking-[-0.022em]">Barre</h1>
-        <p className="mt-1 text-ink-2">The operating system for running a dance studio.</p>
+        <h1><SanaaLogo className="h-12" /></h1>
+        <p className="mt-3 text-[12px] font-medium uppercase tracking-[0.32em] text-ink-2">Bring creativity to life</p>
+        <p className="mt-2 text-ink-2">Everything a dance school runs on — classes, families, payments and progress.</p>
       </div>
 
       {loaded && session && (
         <button onClick={() => router.push(session.platform && !session.support ? '/platform' : ROLE_HOME[session.role])}
-          className="mb-6 flex w-full items-center gap-3 rounded-[var(--radius-lg)] border border-accent/40 bg-accent-soft/50 p-3.5 text-left hover:bg-accent-soft">
+          className="mb-6 flex w-full items-center gap-3 rounded-[var(--radius-lg)] border border-accent-line/40 bg-accent-soft/50 p-3.5 text-left hover:bg-accent-soft">
           <span className="min-w-0 flex-1">
             <span className="block font-medium">Continue as {session.name}</span>
             <span className="block text-[13px] text-ink-2">Or choose someone else below.</span>
           </span>
-          <ArrowRight className="size-4 shrink-0 text-accent" aria-hidden />
+          <ArrowRight className="size-4 shrink-0 text-accent-text" aria-hidden />
         </button>
       )}
 
@@ -55,7 +53,7 @@ export default function SignIn() {
               onClick={() => choose(p)}
               className="group flex w-full items-center gap-3.5 rounded-[var(--radius-lg)] border border-line
                          bg-surface p-3.5 text-left shadow-xs transition-[border-color,box-shadow]
-                         hover:border-line-strong hover:shadow-sm focus-visible:border-accent">
+                         hover:border-line-strong hover:shadow-sm focus-visible:border-accent-line">
               <span aria-hidden
                     className="grid size-10 shrink-0 place-items-center rounded-full bg-surface-2
                                text-[15px] font-semibold text-ink-2">

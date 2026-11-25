@@ -37,12 +37,12 @@ export default function FamilyHome() {
         {/* The one thing a parent opens the app to find out. */}
         {next && (
           <Card className="overflow-hidden">
-            <div className="bg-accent px-4 py-3 text-white">
-              <p className="text-[12px] font-medium uppercase tracking-[0.06em] text-white/75">
+            <div className="bg-accent px-4 py-3 text-on-accent">
+              <p className="text-[12px] font-medium uppercase tracking-[0.06em] text-on-accent opacity-80">
                 {relativeDay(next.starts_at) === 'Today' ? "Next up today" : 'Next class'}
               </p>
               <p className="mt-0.5 text-[19px] font-semibold tracking-tight">{next.child} · {next.name}</p>
-              <p className="mt-0.5 text-white/85">
+              <p className="mt-0.5 text-on-accent opacity-85">
                 {relativeDay(next.starts_at)} at {time(next.starts_at)}
               </p>
             </div>

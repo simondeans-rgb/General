@@ -101,6 +101,8 @@ export type SessionRow = {
   status: string; style: string | null; colour: string | null; level: string | null;
   teacher: string | null; room: string | null; location: string | null;
   enrolled: number; capacity: number; trials: number;
+  covered: boolean; cancel_reason: string | null; moved: boolean;
+  usual_teacher: string | null; room_id: string | null; register_closed: boolean;
 };
 
 /** Today's timetable, and the same shape reused by the schedule screen. */
@@ -111,7 +113,10 @@ select cs.id, cs.class_id, c.name, cs.starts_at, cs.ends_at, cs.status,
        coalesce(sr.name, r.name) as room, l.name as location,
        app.class_enrolled_count(c.id) as enrolled, c.capacity,
        (select count(*)::int from trial t
-         where t.session_id = cs.id and t.status = 'booked' and t.deleted_at is null) as trials
+         where t.session_id = cs.id and t.status = 'booked' and t.deleted_at is null) as trials,
+       cs.teacher_id is not null and cs.teacher_id is distinct from c.teacher_id as covered,
+       cs.cancel_reason, cs.original_starts_at is not null as moved, st.display_name as usual_teacher,
+       coalesce(cs.room_id, c.room_id) as room_id, cs.register_closed_at is not null as register_closed
   from class_session cs
   join class c on c.id = cs.class_id and c.deleted_at is null
   left join dance_style ds on ds.id = c.dance_style_id
@@ -124,6 +129,10 @@ select cs.id, cs.class_id, c.name, cs.starts_at, cs.ends_at, cs.status,
  where cs.deleted_at is null
    and cs.starts_at >= $1::timestamptz and cs.starts_at < $2::timestamptz
  order by cs.starts_at, c.name`;
+
+/** One session, in the same shape as the schedule rows (for the session sheet). */
+export const SESSION_BY_ID = SESSIONS_BETWEEN
+  .replace('and cs.starts_at >= $1::timestamptz and cs.starts_at < $2::timestamptz', 'and cs.id = $1');
 
 export const RECENT_ENROLMENTS = `
 select e.id, e.started_on, s.first_name, s.last_name, c.name as class_name
@@ -187,3 +196,14 @@ select
     where deleted_at is null and status = 'requested') as pending_entries,
   (select count(*)::int from studio_request
     where deleted_at is null and status = 'open' and kind = 'medical_update') as medical_updates`;
+
+/* ── One session at a time (migration 0023) ─────────────────────────────── */
+export const CANCEL_SESSION = `select app.cancel_session($1, $2, $3, $4)`;
+export const MOVE_SESSION = `select app.move_session($1, $2::timestamptz, $3, $4, $5)`;
+export const COVER_SESSION = `select app.cover_session($1, $2, $3, $4)`;
+export const STAFF_OPTIONS = `select id, display_name from staff_member where status = 'active' and deleted_at is null order by display_name`;
+export const ROOM_OPTIONS = `select r.id, l.name || ' · ' || r.name as name from room r join location l on l.id = r.location_id
+  where r.deleted_at is null order by l.name, r.name`;
+export const SESSION_FAMILIES = `
+select count(distinct st.family_id)::int as n from enrolment e join student st on st.id = e.student_id
+ where e.class_id = (select class_id from class_session where id = $1) and e.status = 'active' and e.deleted_at is null`;

@@ -1,10 +1,11 @@
 'use client';
 
 import * as React from 'react';
-import { Route, Phone, Mail, CalendarClock, Sparkles } from 'lucide-react';
+import { Route, Phone, Mail, CalendarClock, Sparkles, Plus, Globe } from 'lucide-react';
+import { NewEnquirySheet } from '@/components/app/new-enquiry';
 import { Shell } from '@/components/app/shell';
 import { useRows, useRow } from '@/lib/query';
-import { Badge, Card, CardHeader, EmptyState, Skeleton, ErrorState, type Tone } from '@/components/ui';
+import { Badge, Button, Card, CardHeader, EmptyState, Skeleton, ErrorState, type Tone } from '@/components/ui';
 import * as C from '@/lib/repos/classes';
 import { TrialActions } from '@/components/app/enrolment-actions';
 import { dateShort, ageFrom, time, relativeDay } from '@/lib/format';
@@ -22,6 +23,7 @@ const STAGE: Record<string, { label: string; tone: Tone }> = {
 };
 
 export default function EnrolmentPage() {
+  const [newEnquiry, setNewEnquiry] = React.useState(false);
   const funnel = useRow<{ total: number; booked: number; attended: number; converted: number; lost: number }>(
     ['funnel'], C.FUNNEL);
   const enquiries = useRows<{ id: string; stage: string; contact_name: string; contact_email: string;
@@ -33,8 +35,13 @@ export default function EnrolmentPage() {
   const rate = f && f.total > 0 ? Math.round((f.converted / f.total) * 1000) / 10 : null;
 
   return (
-    <Shell title="Enrolment" subtitle="From first enquiry to a place in a class" allow={['owner', 'admin']}>
+    <Shell title="Enrolment" subtitle="From first enquiry to a place in a class" allow={['owner', 'admin']}
+      actions={<Button size="sm" variant="primary" onClick={() => setNewEnquiry(true)}>
+        <Plus className="size-4" aria-hidden /> New enquiry
+      </Button>}>
+      {newEnquiry && <NewEnquirySheet onClose={() => setNewEnquiry(false)} />}
       <div className="mx-auto max-w-5xl space-y-5">
+        <PublicPageLink />
         <Card>
           <CardHeader title="Funnel" subtitle={rate != null ? `${rate}% of enquiries became enrolments` : undefined} />
           <div className="p-4">
@@ -163,5 +170,27 @@ function Funnel({ steps }: { steps: [string, number][] }) {
         );
       })}
     </ol>
+  );
+}
+
+/** Where to send prospects: the school's own trial booking page (R-014). */
+function PublicPageLink() {
+  const slug = useRow<{ slug: string }>(['my-slug'], `select slug from studio where deleted_at is null and app.is_admin(id) limit 1`);
+  const [copied, setCopied] = React.useState(false);
+  if (!slug.data) return null;
+  const path = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/join?school=${slug.data.slug}`;
+  const url = typeof window === 'undefined' ? path : window.location.origin + path;
+  return (
+    <Card className="flex flex-wrap items-center gap-3 p-4">
+      <Globe className="size-5 shrink-0 text-accent-text" aria-hidden />
+      <span className="min-w-0 flex-1">
+        <span className="block font-medium">Your trial booking page</span>
+        <span className="block truncate text-[13px] text-ink-2">Put this on your website: families book a trial and appear here and on the register.</span>
+      </span>
+      <a href={path} target="_blank" rel="noreferrer" className="text-sm text-accent-text hover:underline">Open</a>
+      <Button size="sm" onClick={() => { navigator.clipboard?.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 2000); }}>
+        {copied ? 'Copied' : 'Copy link'}
+      </Button>
+    </Card>
   );
 }

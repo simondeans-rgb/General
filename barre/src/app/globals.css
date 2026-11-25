@@ -1,30 +1,41 @@
 @import "tailwindcss";
+@import "@fontsource-variable/inter/index.css";
+@import "@fontsource-variable/fraunces/index.css";
+@import "@fontsource-variable/archivo/wdth.css";
 
 /* ==========================================================================
-   Barre design tokens
+   Sanaa design tokens
    --------------------------------------------------------------------------
    Restrained on purpose. One accent, a warm-neutral canvas, and colour used
    only where it carries meaning — dance style, status, or a number that needs
    acting on. Everything else earns attention through spacing and weight.
    ========================================================================== */
 @theme {
-  --color-canvas:      #fafafb;
-  --color-surface:     #ffffff;
-  --color-surface-2:   #f4f4f7;
-  --color-surface-3:   #ecedf1;
+  /* Sanaa: eucalyptus, ivory and terracotta. The default for every school
+     until it picks its own, and Sanaa's own screens. */
+  --color-canvas:      #f6f2ea;
+  --color-surface:     #fffdf8;
+  --color-surface-2:   #efe9de;
+  --color-surface-3:   #e7dfd1;
 
-  --color-line:        #e8e8ef;
-  --color-line-strong: #d7d7e1;
+  --color-line:        #e4dbcc;
+  --color-line-strong: #d3c7b3;
 
-  --color-ink:         #16161c;
-  --color-ink-2:       #56566a;
-  --color-ink-3:       #8a8a9c;
-  --color-ink-invert:  #ffffff;
+  --color-ink:         #14211e;
+  --color-ink-2:       #4e5a55;
+  --color-ink-3:       #5b645e;
+  --color-ink-invert:  #fffdf8;
 
-  --color-accent:      #5b46d9;
-  --color-accent-hover:#4d3ac4;
-  --color-accent-soft: #efecfe;
-  --color-accent-ink:  #4130a8;
+  --color-accent:      #0b3b34;
+  --color-accent-hover:#082d28;
+  --color-accent-soft: #e2ebe7;
+  --color-accent-ink:  #0b3b34;
+  /* A school's brand replaces the accent at runtime (lib/brand.ts). These
+     three keep it readable whatever colour it is: text ON the accent, the
+     accent AS text on white, and the accent as a line or outline. */
+  --color-on-accent:   #ffffff;
+  --color-accent-text: #0b3b34;
+  --color-accent-line: #0b3b34;
 
   --color-positive:      #0b7a55;
   --color-positive-soft: #e3f6ee;
@@ -54,9 +65,52 @@
   --shadow-md: 0 4px 16px rgb(22 22 28 / 0.07), 0 1px 3px rgb(22 22 28 / 0.05);
   --shadow-lg: 0 12px 40px rgb(22 22 28 / 0.12), 0 2px 8px rgb(22 22 28 / 0.06);
 
-  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+  --font-sans: "Inter Variable", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
                Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Page titles and big numbers. Each school theme brings its own. */
+  --font-display: "Fraunces Variable", "Fraunces", Georgia, "Times New Roman", serif;
+  /* A second brand colour, for gradients and glow (school themes). */
+  --color-secondary: #c86a4f;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* ==========================================================================
+   School themes (lib/theme.ts). Set on <html data-theme> for a school's own
+   people; Sanaa's console keeps the base above. The school's colours are
+   applied on top as inline variables (lib/brand.ts).
+   ========================================================================== */
+[data-theme="classic"] {
+  --color-canvas: #f6f2ea; --color-surface: #fffdf8; --color-surface-2: #efe9de; --color-surface-3: #e7dfd1;
+  --color-line: #e4dbcc; --color-line-strong: #d3c7b3;
+  --color-ink: #14211e; --color-ink-2: #4e5a55; --color-ink-3: #5b645e;
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 18px; --radius-xl: 26px;
+  --shadow-xs: 0 1px 2px rgb(40 50 40 / 0.05);
+  --shadow-sm: 0 2px 6px rgb(40 50 40 / 0.06);
+  --shadow-md: 0 8px 24px rgb(40 50 40 / 0.08);
+  --shadow-lg: 0 18px 50px rgb(40 50 40 / 0.14);
+  --font-display: "Fraunces Variable", "Fraunces", Georgia, "Times New Roman", serif;
+}
+[data-theme="urban"] {
+  color-scheme: dark;
+  --color-canvas: #0d0a1c; --color-surface: #18122f; --color-surface-2: #211a40; --color-surface-3: #2c2452;
+  --color-line: #2a2350; --color-line-strong: #3b3270;
+  --color-ink: #f6f4ff; --color-ink-2: #c3bce3; --color-ink-3: #9a92c4; --color-ink-invert: #0d0a1c;
+  --color-positive: #4ade80; --color-positive-soft: #10301f;
+  --color-caution: #fbbf24;  --color-caution-soft: #33270b;
+  --color-critical: #fb7185; --color-critical-soft: #3a1220;
+  --color-info: #7dd3fc;     --color-info-soft: #0e2a3d;
+  --color-violet: #c4b5fd; --color-violet-soft: #2a2155;
+  --color-amber:  #fcd34d; --color-amber-soft:  #33270b;
+  --color-teal:   #5eead4; --color-teal-soft:   #0d2f2c;
+  --color-rose:   #f9a8d4; --color-rose-soft:   #3a1430;
+  --color-indigo: #a5b4fc; --color-indigo-soft: #1c2150;
+  --color-lime:   #bef264; --color-lime-soft:   #22300d;
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px; --radius-xl: 22px;
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-sm: 0 2px 8px rgb(0 0 0 / 0.35);
+  --shadow-md: 0 8px 30px rgb(0 0 0 / 0.45);
+  --shadow-lg: 0 20px 60px rgb(0 0 0 / 0.55);
+  --font-display: "Archivo Variable", "Archivo", "Arial Black", system-ui, sans-serif;
 }
 
 @layer base {
@@ -72,12 +126,25 @@
     text-rendering: optimizeLegibility;
   }
   h1, h2, h3, h4 { letter-spacing: -0.018em; font-weight: 620; }
+  /* Page titles carry the theme's voice. */
+  [data-theme="classic"] h1 { font-family: var(--font-display); font-weight: 450; letter-spacing: -0.01em; font-size: 1.55em; line-height: 1.1; }
+  [data-theme="urban"] h1 { font-family: var(--font-display); font-weight: 800; font-stretch: 112%; letter-spacing: -0.01em; }
+  [data-theme="urban"] { color: var(--color-ink); }
+  [data-theme="classic"] { color: var(--color-ink); }
+  [data-theme="urban"] body {
+    background:
+      radial-gradient(900px 500px at 85% -10%, color-mix(in srgb, var(--color-secondary) 42%, transparent), transparent 70%),
+      radial-gradient(700px 420px at -10% 110%, color-mix(in srgb, var(--color-accent) 10%, transparent), transparent 70%),
+      var(--color-canvas);
+    background-attachment: fixed;
+  }
   /* Numbers that sit in columns must not jiggle as they change. */
-  .tnum { font-variant-numeric: tabular-nums; }
+  .tnum { font-variant-numeric: lining-nums tabular-nums; }
+  .font-display, .page-title { font-variant-numeric: lining-nums; }
 
   /* One focus treatment everywhere, visible against every surface. */
   :where(a, button, input, select, textarea, [tabindex]):focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--color-accent-line);
     outline-offset: 2px;
     border-radius: var(--radius-sm);
   }
@@ -85,6 +152,28 @@
 }
 
 @layer utilities {
+  .sanaa-on-dark { display: none; }
+  [data-theme="urban"] .sanaa-on-dark { display: inline; }
+  [data-theme="urban"] .sanaa-on-light { display: none; }
+  .font-display { font-family: var(--font-display); }
+  /* Page titles and headline numbers carry each theme's voice. */
+  .page-title { font-size: 17px; font-weight: 600; line-height: 1.25; }
+  @media (min-width: 1024px) { .page-title { font-size: 19px; } }
+  [data-theme="classic"] .page-title { font-family: var(--font-display); font-weight: 450; font-optical-sizing: auto; font-size: 21px; line-height: 1.1; letter-spacing: -0.005em; }
+  @media (min-width: 1024px) { [data-theme="classic"] .page-title { font-size: 30px; } }
+  [data-theme="urban"] .page-title { font-family: var(--font-display); font-weight: 800; font-stretch: 115%; font-size: 18px; }
+  @media (min-width: 1024px) { [data-theme="urban"] .page-title { font-size: 22px; } }
+  [data-theme="classic"] .stat-number { font-family: var(--font-display); font-weight: 450; letter-spacing: 0; }
+  [data-theme="urban"] .stat-number { font-family: var(--font-display); font-weight: 800; font-stretch: 112%; }
+  [data-theme="urban"] .font-display { font-weight: 800; font-stretch: 112%; }
+  /* Urban cards are glass on the glow; Classic cards float on ivory. */
+  [data-theme="urban"] .card { background: color-mix(in srgb, var(--color-surface) 84%, transparent); backdrop-filter: blur(14px);
+    border-color: color-mix(in srgb, var(--color-secondary) 22%, var(--color-line)); }
+  [data-theme="classic"] .card { box-shadow: var(--shadow-sm); border-color: transparent; }
+  .theme-hero {
+    background: linear-gradient(135deg, var(--color-accent), var(--color-secondary));
+    color: var(--color-on-accent);
+  }
   .card {
     background: var(--color-surface);
     border: 1px solid var(--color-line);

@@ -82,9 +82,9 @@ export function MedicalBrief({ brief, layout = 'side' }: { brief: Brief; layout?
                   <UserRound className="size-4 shrink-0 text-ink-3" aria-hidden />
                   <span className="min-w-0 flex-1">
                     <span className="block text-[13.5px] font-medium">{c.name}{c.relationship ? <span className="font-normal text-ink-3"> · {c.relationship}</span> : null}</span>
-                    <span className="tnum block text-[13px] text-accent">{c.phone}</span>
+                    <span className="tnum block text-[13px] text-accent-text">{c.phone}</span>
                   </span>
-                  <span className="text-[12px] font-medium text-accent">Call</span>
+                  <span className="text-[12px] font-medium text-accent-text">Call</span>
                 </a>
               ) : (
                 <span className="block py-2 text-[13.5px]">{c.name}</span>

@@ -6,7 +6,7 @@ export type ClassRow = {
   day_of_week: number; start_time: string; duration_min: number;
   capacity: number; enrolled: number; waiting: number; pct: number | null;
   age_min: number | null; age_max: number | null; price_minor: number;
-  trials_enabled: boolean; sessions_left: number;
+  trials_enabled: boolean; sessions_left: number; term_id: string;
 };
 
 export const CLASSES = `
@@ -16,7 +16,7 @@ select c.id, c.name, ds.name as style, ds.colour, lv.name as level,
        app.class_enrolled_count(c.id) as enrolled,
        app.class_waitlist_count(c.id) as waiting,
        round(100.0 * app.class_enrolled_count(c.id) / nullif(c.capacity,0))::int as pct,
-       c.age_min, c.age_max, c.price_minor, c.trials_enabled,
+       c.age_min, c.age_max, c.price_minor, c.trials_enabled, c.term_id,
        (select count(*)::int from class_session cs
          where cs.class_id = c.id and cs.deleted_at is null
            and cs.starts_at > now() and cs.status = 'scheduled') as sessions_left
@@ -111,15 +111,20 @@ export type ClassDraft = {
   capacity: number; age_min: number | null; age_max: number | null;
   price_minor: number; trials_enabled: boolean; waitlist_enabled: boolean;
   visibility: 'public' | 'unlisted' | 'private';
+  pricing: 'term' | 'monthly' | 'one_off' | 'drop_in'; trial_price_minor: number | null;
+  assistant_id: string | null; prerequisites: string | null; description: string | null;
+  trial_needs_approval: boolean;
 };
 
 export const CREATE_CLASS = `
 insert into class (studio_id, term_id, dance_style_id, level_id, location_id, room_id,
                    teacher_id, name, day_of_week, start_time, duration_min, capacity,
                    age_min, age_max, price_minor, pricing, trials_enabled, waitlist_enabled,
-                   visibility)
+                   visibility, pricing, trial_price_minor, assistant_id, prerequisites,
+                   description, trial_needs_approval)
 select t.studio_id, t.id, $2, $3, $4, $5, $6, $7, $8, $9::time, $10, $11,
-       $12, $13, $14, 'term', $15, $16, $17::class_visibility
+       $12, $13, $14, $18::pricing_model, $15, $16, $17::class_visibility,
+       $19, $20, nullif(btrim($21), ''), nullif(btrim($22), ''), $23
   from term t where t.id = $1
 returning id`;
 
@@ -128,7 +133,9 @@ update class set dance_style_id = $2, level_id = $3, location_id = $4, room_id =
                  teacher_id = $6, name = $7, day_of_week = $8, start_time = $9::time,
                  duration_min = $10, capacity = $11, age_min = $12, age_max = $13,
                  price_minor = $14, trials_enabled = $15, waitlist_enabled = $16,
-                 visibility = $17::class_visibility, updated_at = now()
+                 visibility = $17::class_visibility, pricing = $18::pricing_model,
+                 trial_price_minor = $19, assistant_id = $20, prerequisites = nullif(btrim($21), ''),
+                 description = nullif(btrim($22), ''), trial_needs_approval = $23, updated_at = now()
  where id = $1
 returning id`;
 
@@ -144,7 +151,8 @@ export const CLASS_FOR_EDIT = `
 select c.id, c.name, c.term_id, c.dance_style_id, c.level_id, c.location_id, c.room_id,
        c.teacher_id, c.day_of_week, c.start_time, c.duration_min, c.capacity,
        c.age_min, c.age_max, c.price_minor, c.trials_enabled, c.waitlist_enabled,
-       c.visibility::text as visibility,
+       c.visibility::text as visibility, c.pricing::text as pricing, c.trial_price_minor,
+       c.assistant_id, c.prerequisites, c.description, c.trial_needs_approval,
        (select count(*)::int from class_session cs
          where cs.class_id = c.id and cs.deleted_at is null and cs.starts_at > now()) as future_sessions
   from class c where c.id = $1 and c.deleted_at is null`;
@@ -180,12 +188,13 @@ export const OFFER_PLACE   = `select app.offer_waitlist_place($1, $2) as ok`;
 export const ACCEPT_PLACE  = `select app.accept_waitlist_place($1) as enrolment_id`;
 export const DECLINE_PLACE = `select app.decline_waitlist_place($1, $2) as ok`;
 
-export const BOOK_TRIAL = `
-insert into trial (studio_id, class_id, session_id, student_id, status, price_minor, created_by)
-select cs.studio_id, cs.class_id, cs.id, $2, 'booked', c.trial_price_minor, auth.uid()
-  from class_session cs join class c on c.id = cs.class_id
- where cs.id = $1
-returning id`;
+/** Every trial has a child record with an emergency contact (0023), so the
+ *  child is on the register. Either an existing child, or a new one. */
+export const BOOK_TRIAL = `select app.book_trial($1, $2, $3::jsonb) as id`;
+export const TRANSFER = `select app.transfer_enrolment($1, $2, $3) as id`;
+export const CLASS_OPTIONS = `
+select c.id, c.name, app.class_enrolled_count(c.id) as enrolled, c.capacity
+  from class c where c.deleted_at is null order by c.day_of_week, c.start_time`;
 
 export const TRIAL_OUTCOME = `select app.record_trial_outcome($1, $2, $3) as ok`;
 export const CONVERT_TRIAL = `select app.convert_trial($1, $2) as enrolment_id`;
@@ -232,4 +241,25 @@ export const SET_ENQUIRY_STAGE = `
 update enquiry set stage = $2::enquiry_stage, updated_at = now(),
        next_action_on = $3::date
  where id = $1
+returning id`;
+
+/** Terms, newest first, with which one is running today. */
+export const TERM_TABS = `
+select t.id, t.name, t.starts_on, t.ends_on, current_date between t.starts_on and t.ends_on as current,
+       (select count(*)::int from class c where c.term_id = t.id and c.deleted_at is null) as classes
+  from term t where t.deleted_at is null and t.status <> 'archived' order by t.starts_on desc`;
+export type TermRow = { id: string; name: string; starts_on: string; ends_on: string; current: boolean; classes: number };
+
+/** Duplicate classes, or carry them into another term (migration 0025). */
+export const COPY_CLASSES = `select app.copy_classes($1::uuid[], $2, $3) as r`;
+export type CopyResult = { classes: number; sessions: number; enrolled: number; skipped: number;
+                           not_fitted: { student: string; class: string }[] };
+
+/** A phone call or walk-in, written down (R-014). Notifies the office as usual. */
+export const CREATE_ENQUIRY = `
+insert into enquiry (studio_id, contact_name, contact_phone, contact_email, child_name, child_dob,
+                     interest_class_id, source, next_action_on, created_by)
+select s.id, btrim($1), nullif(btrim($2), ''), nullif(lower(btrim($3)), ''), nullif(btrim($4), ''), $5::date,
+       $6::uuid, $7, coalesce($8::date, current_date + 2), auth.uid()
+  from studio s where s.deleted_at is null and app.is_admin(s.id) limit 1
 returning id`;

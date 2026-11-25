@@ -21,6 +21,12 @@ const EMPTY: C.ClassDraft = {
   room_id: null, teacher_id: null, day_of_week: 1, start_time: '17:00',
   duration_min: 60, capacity: 16, age_min: null, age_max: null,
   price_minor: 5400, trials_enabled: true, waitlist_enabled: true, visibility: 'public',
+  pricing: 'term', trial_price_minor: null, assistant_id: null, prerequisites: null, description: null,
+  trial_needs_approval: false,
+};
+
+const PRICE_LABEL: Record<C.ClassDraft['pricing'], string> = {
+  term: 'Price per term', monthly: 'Price per month', one_off: 'Price for the course', drop_in: 'Price per class',
 };
 
 /**
@@ -91,6 +97,8 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
         draft.teacher_id, draft.name.trim(), draft.day_of_week, draft.start_time,
         draft.duration_min, draft.capacity, draft.age_min, draft.age_max,
         draft.price_minor, draft.trials_enabled, draft.waitlist_enabled, draft.visibility,
+        draft.pricing, draft.trial_price_minor, draft.assistant_id, draft.prerequisites ?? '',
+        draft.description ?? '', draft.trial_needs_approval,
       ];
       return runAs(session, async q => {
         if (editing) {
@@ -115,7 +123,8 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
   const valid = draft.name.trim().length >= 2 && draft.term_id && draft.dance_style_id
     && draft.location_id && draft.capacity > 0 && draft.duration_min > 0
     && /^\d{2}:\d{2}$/.test(draft.start_time)
-    && (draft.age_min == null || draft.age_max == null || draft.age_max >= draft.age_min);
+    && (draft.age_min == null || draft.age_max == null || draft.age_max >= draft.age_min)
+    && (!draft.assistant_id || draft.assistant_id !== draft.teacher_id);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 sm:items-center" onClick={onClose}>
@@ -211,6 +220,15 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
                 </Select>
               </Field>
 
+              <Field label="Assistant" htmlFor="cf-assist" hint="Can take the register and see the class, like the teacher.">
+                <Select id="cf-assist" value={draft.assistant_id ?? ''}
+                        onChange={e => set('assistant_id', e.target.value || null)}>
+                  <option value="">No assistant</option>
+                  {teachers.data?.filter(t => t.id !== draft.teacher_id)
+                    .map(t => <option key={t.id} value={t.id}>{t.display_name}</option>)}
+                </Select>
+              </Field>
+
               <div className="grid grid-cols-3 gap-3">
                 <Field label="Day" htmlFor="cf-day" required>
                   <Select id="cf-day" value={String(draft.day_of_week)}
@@ -256,16 +274,42 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
                 </Field>
               </div>
 
-              <Field label="Price per term" htmlFor="cf-price" hint="In pounds.">
-                <Input id="cf-price" type="number" inputMode="decimal" min={0} step={0.5}
-                       value={(draft.price_minor / 100).toFixed(2)}
-                       onChange={e => set('price_minor', Math.round(Number(e.target.value) * 100))} />
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Charged" htmlFor="cf-pricing">
+                  <Select id="cf-pricing" value={draft.pricing}
+                          onChange={e => set('pricing', e.target.value as C.ClassDraft['pricing'])}>
+                    <option value="term">By the term</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="one_off">One-off course</option>
+                    <option value="drop_in">Pay as you go</option>
+                  </Select>
+                </Field>
+                <Field label={PRICE_LABEL[draft.pricing]} htmlFor="cf-price" hint="In pounds.">
+                  <Input id="cf-price" type="number" inputMode="decimal" min={0} step={0.5}
+                         value={(draft.price_minor / 100).toFixed(2)}
+                         onChange={e => set('price_minor', Math.round(Number(e.target.value) * 100))} />
+                </Field>
+              </div>
+              <Field label="Trial price" htmlFor="cf-trial" hint="Leave empty for a free trial.">
+                <Input id="cf-trial" type="number" inputMode="decimal" min={0} step={0.5}
+                       value={draft.trial_price_minor == null ? '' : (draft.trial_price_minor / 100).toFixed(2)}
+                       onChange={e => set('trial_price_minor', e.target.value === '' ? null : Math.round(Number(e.target.value) * 100))} />
+              </Field>
+              <Field label="Before joining" htmlFor="cf-prereq" hint="Families see this, e.g. ‘Grade 2 passed, or teacher’s invitation’.">
+                <Input id="cf-prereq" value={draft.prerequisites ?? ''} maxLength={200}
+                       onChange={e => set('prerequisites', e.target.value)} />
+              </Field>
+              <Field label="About the class" htmlFor="cf-desc">
+                <textarea id="cf-desc" rows={3} value={draft.description ?? ''} maxLength={1000}
+                  onChange={e => set('description', e.target.value)}
+                  className="w-full rounded-[var(--radius-md)] border border-line bg-surface px-3 py-2 text-sm" />
               </Field>
 
               <fieldset className="rounded-[var(--radius-md)] border border-line p-3">
                 <legend className="px-1 text-[13px] font-medium text-ink-2">How families find it</legend>
                 {([
                   ['trials_enabled', 'Taking trial bookings'],
+                  ['trial_needs_approval', 'Trials need the teacher’s say-so first'],
                   ['waitlist_enabled', 'Keep a waiting list when it is full'],
                 ] as const).map(([k, label]) => (
                   <label key={k} className="flex min-h-[36px] items-center gap-2.5 text-sm">

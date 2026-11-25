@@ -2,14 +2,18 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Activity, ArrowDownRight, ArrowUpRight, Minus, HeartPulse, Info } from 'lucide-react';
+import { Download, Activity, ArrowDownRight, ArrowUpRight, Minus, HeartPulse, Info } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { useRows, useRow } from '@/lib/query';
-import { Badge, Card, CardHeader, ErrorState, Skeleton, type Tone } from '@/components/ui';
+import { Badge, Button, Card, CardHeader, ErrorState, Skeleton, type Tone } from '@/components/ui';
 import * as R from '@/lib/repos/reports';
 import { pulseComponents, pulseScore, MIN_HISTORY_DAYS } from '@/lib/pulse/score';
 import { money, dateShort } from '@/lib/format';
 import { cn } from '@/lib/cn';
+import { readAs } from '@/lib/db/client';
+import { useSession } from '@/lib/auth/session';
+import { downloadCsv } from '@/lib/csv';
+import { isoDate } from '@/lib/format';
 
 const pct = (n: number, d: number) => (d > 0 ? Math.round((n / d) * 100) : null);
 const TONES: Record<string, Tone> = { violet: 'violet', amber: 'amber', teal: 'teal', rose: 'rose', indigo: 'indigo', lime: 'lime' };
@@ -27,7 +31,8 @@ export default function ReportsPage() {
   const d = h.data;
 
   return (
-    <Shell title="Reports" allow={['owner', 'admin']} subtitle="Live from registers, enrolments and the ledger">
+    <Shell title="Reports" allow={['owner', 'admin']} subtitle="Live from registers, enrolments and the ledger"
+      actions={<ReportExports />}>
       <div className="mx-auto max-w-6xl space-y-5">
         {h.error && <ErrorState error={h.error} onRetry={() => h.refetch()} />}
 
@@ -116,7 +121,7 @@ function Kpi({ label, value, note, change, loading, href }: {
     <>
       <p className="text-[12.5px] text-ink-3">{label}</p>
       {loading ? <Skeleton className="mt-2 h-7 w-20" /> : (
-        <p className="tnum mt-1 flex items-baseline gap-2 text-[22px] font-semibold leading-tight tracking-[-0.02em]">
+        <p className="stat-number tnum mt-1 flex items-baseline gap-2 text-[22px] font-semibold leading-tight tracking-[-0.02em]">
           {value ?? '—'}
           {typeof change === 'number' && (
             <span className={cn('inline-flex items-center gap-0.5 text-[13px] font-medium',
@@ -206,7 +211,7 @@ function Pulse({ d }: { d: R.Headline }) {
   return (
     <Card className="overflow-hidden">
       <div className="flex flex-wrap items-start gap-4 border-b border-line p-4">
-        <span aria-hidden className="grid size-10 place-items-center rounded-full bg-accent-soft text-accent">
+        <span aria-hidden className="grid size-10 place-items-center rounded-full bg-accent-soft text-accent-text">
           <HeartPulse className="size-5" />
         </span>
         <div className="min-w-0 flex-1">
@@ -239,5 +244,31 @@ function Pulse({ d }: { d: R.Headline }) {
         The score appears after {MIN_HISTORY_DAYS} days of history and once every rate has a sample of at least 20.
       </p>
     </Card>
+  );
+}
+
+/** Download any of the office's standard lists as a spreadsheet (R-012). */
+function ReportExports() {
+  const { session } = useSession();
+  const [open, setOpen] = React.useState(false);
+  const go = async (k: keyof typeof R.EXPORTS) => {
+    setOpen(false);
+    const e = R.EXPORTS[k];
+    downloadCsv(`${e.file}-${isoDate(new Date())}.csv`, await readAs<Record<string, string>>(session, e.sql));
+  };
+  return (
+    <div className="relative">
+      <Button size="sm" onClick={() => setOpen(o => !o)} aria-expanded={open} aria-haspopup="menu">
+        <Download className="size-4" aria-hidden /> Export
+      </Button>
+      {open && (
+        <div role="menu" className="absolute right-0 z-30 mt-1 w-56 overflow-hidden rounded-[var(--radius-md)] border border-line bg-surface shadow-lg">
+          {(Object.keys(R.EXPORTS) as (keyof typeof R.EXPORTS)[]).map(k => (
+            <button key={k} role="menuitem" onClick={() => go(k)}
+              className="block w-full px-3 py-2.5 text-left text-sm hover:bg-surface-2">{R.EXPORTS[k].label} (CSV)</button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

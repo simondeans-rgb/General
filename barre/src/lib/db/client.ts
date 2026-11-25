@@ -23,7 +23,7 @@ const PGLITE_URL = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/pglite/index.js`;
 export type Row = Record<string, unknown>;
 export type Query = <T = Row>(sql: string, params?: unknown[]) => Promise<T[]>;
 
-export type Session = { userId: string; role: string } | null;
+export type Session = { userId: string; role: string; studio?: string } | null;
 
 const STORAGE = 'idb://barre-demo-v1';
 
@@ -141,7 +141,7 @@ async function runAsNow<T>(db: PGlite, session: Session, fn: (q: Query) => Promi
   await db.exec('begin');
   try {
     await db.query(`select set_config('request.jwt.claims', $1, true)`, [
-      JSON.stringify(session ? { sub: session.userId, role: 'authenticated' } : { role: 'anon' }),
+      JSON.stringify(session ? { sub: session.userId, role: 'authenticated', ...(session.studio ? { studio: session.studio } : {}) } : { role: 'anon' }),
     ]);
     await db.exec('set local role authenticated');
     const q: Query = async <T,>(sql: string, params?: unknown[]) =>
@@ -158,7 +158,7 @@ async function runAsNow<T>(db: PGlite, session: Session, fn: (q: Query) => Promi
 /** Reads: one statement in a READ ONLY transaction, then rolled back.
  *
  *  Read-only is not just tidiness. Two kinds of access exist only inside a
- *  read-only transaction (migration 0019): Barre support viewing a school,
+ *  read-only transaction (migration 0019): Sanaa support viewing a school,
  *  and the members of a suspended school. Postgres refuses any write in such a
  *  transaction, so neither has a path to change anything. */
 export async function readAs<T = Row>(session: Session, sql: string, params?: unknown[]): Promise<T[]> {
@@ -170,7 +170,7 @@ async function readAsNow<T>(db: PGlite, session: Session, sql: string, params?: 
   await db.exec('begin transaction read only');
   try {
     await db.query(`select set_config('request.jwt.claims', $1, true)`, [
-      JSON.stringify(session ? { sub: session.userId, role: 'authenticated' } : { role: 'anon' }),
+      JSON.stringify(session ? { sub: session.userId, role: 'authenticated', ...(session.studio ? { studio: session.studio } : {}) } : { role: 'anon' }),
     ]);
     await db.exec('set local role authenticated');
     return (await db.query<T>(sql, params as any[])).rows;

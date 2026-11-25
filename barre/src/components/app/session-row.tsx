@@ -18,7 +18,7 @@ const BARS: Record<string, string> = {
 };
 
 /** One class in a list. Used by the dashboard and the schedule. */
-export function SessionRow({ session: s, href }: { session: S; href?: string }) {
+export function SessionRow({ session: s, href, onSelect }: { session: S; href?: string; onSelect?: () => void }) {
   const cancelled = s.status === 'cancelled';
   const full = s.enrolled >= s.capacity;
   const body = (
@@ -36,7 +36,9 @@ export function SessionRow({ session: s, href }: { session: S; href?: string }) 
         <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className={cn('font-medium', cancelled && 'line-through')}>{s.name}</span>
           {s.style && <Badge tone={TONES[s.colour ?? ''] ?? 'neutral'}>{s.style}</Badge>}
-          {cancelled && <Badge tone="critical">Cancelled</Badge>}
+          {cancelled && <Badge tone="critical">Cancelled{s.cancel_reason ? ` · ${s.cancel_reason}` : ''}</Badge>}
+          {!cancelled && s.covered && <Badge tone="caution">Cover</Badge>}
+          {!cancelled && s.moved && <Badge tone="info">Moved</Badge>}
           {!cancelled && s.trials > 0 && <Badge tone="info">{s.trials} trial{s.trials === 1 ? '' : 's'}</Badge>}
         </span>
         <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[12.5px] text-ink-2">
@@ -49,5 +51,6 @@ export function SessionRow({ session: s, href }: { session: S; href?: string }) 
       </span>
     </div>
   );
+  if (onSelect) return <button onClick={onSelect} className="block w-full text-left transition-colors hover:bg-surface-2">{body}</button>;
   return href ? <Link href={href} className="block transition-colors hover:bg-surface-2">{body}</Link> : body;
 }
