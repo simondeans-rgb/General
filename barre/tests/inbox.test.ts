@@ -208,7 +208,7 @@ describe('the inbox screen’s queries', () => {
     await asUser(USERS.guardianA, async q => {
       const conv = await q(I.MY_CONVERSATION);
       expect(conv.length).toBeGreaterThan(0);
-      const [m] = await q(I.SEND_TO_STUDIO, ['', 'Is there class at half term?']);
+      const [m] = await q(I.SEND_TO_STUDIO, ['', 'Is there class at half term?', null]);
       const [row] = await q('select family_id, inbound from communication where id = $1', [m.id]);
       expect(row).toEqual({ family_id: FAMILY.a, inbound: true });
       // Broadcasts only for their own children's classes, plus announcements.
