@@ -102,7 +102,7 @@ function Billing() {
   const s = summary.data;
 
   return (
-    <Shell title="Billing" allow={['owner', 'admin']}
+    <Shell title="Billing" help={<>Invoices for every family. Use <b>Billing runs</b> to raise a whole term’s (or month’s) invoices at once: check the drafts, then send them together. Discounts — sibling, multi-class and per-family bursaries — are applied automatically. <b>Export</b> gives your accountant spreadsheets, aged debt and a Xero import file.</>} allow={['owner', 'admin']}
       subtitle={s ? `${money(s.outstanding_minor)} outstanding across ${s.owing_families} famil${s.owing_families === 1 ? 'y' : 'ies'}` : undefined}
       actions={<div className="flex gap-2">
         <ExportButton />

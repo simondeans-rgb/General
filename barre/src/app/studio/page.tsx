@@ -19,6 +19,7 @@ import {
 } from '@/components/ui';
 import * as S from '@/lib/repos/setup';
 import { dateShort } from '@/lib/format';
+import { cn } from '@/lib/cn';
 
 const STYLE_TONES: Tone[] = ['violet', 'amber', 'teal', 'rose', 'indigo', 'lime'];
 const TIMEZONES = ['Europe/London', 'Europe/Dublin', 'Europe/Paris', 'America/New_York',
@@ -35,23 +36,42 @@ function useSetupWrite(sql: string, onDone?: () => void) {
   });
 }
 
+const TABS = [['school', 'School'], ['places', 'Places'], ['terms', 'Terms'], ['teaching', 'Teaching'], ['money', 'Money']] as const;
+type Tab = typeof TABS[number][0];
+
+/** Settings in five tabs, so each area is one tap away (R-053). */
 export default function StudioSettings() {
+  const [tab, setTab] = React.useState<Tab>('school');
+  React.useEffect(() => {
+    const read = () => { const h = window.location.hash.slice(1); if (TABS.some(t => t[0] === h)) setTab(h as Tab); };
+    read();
+    window.addEventListener('hashchange', read);
+    return () => window.removeEventListener('hashchange', read);
+  }, []);
+  const go = (t: Tab) => { setTab(t); history.replaceState(null, '', `#${t}`); };
   return (
-    <Shell title="Studio" subtitle="Everything a timetable is built from"
+    <Shell title="School settings" subtitle="Everything a timetable is built from"
            allow={['owner', 'admin']}>
       <div className="mx-auto max-w-3xl space-y-5">
-        <StudioDetails />
-        <Locations />
-        <Rooms />
-        <Terms />
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Styles />
-          <Levels />
+        <div role="tablist" aria-label="Settings" className="-mx-1 flex gap-1 overflow-x-auto px-1">
+          {TABS.map(([k, l]) => (
+            <button key={k} role="tab" aria-selected={tab === k} aria-controls={`st-panel-${k}`} id={`st-tab-${k}`} onClick={() => go(k)}
+              className={cn('h-9 shrink-0 rounded-full px-3.5 text-[13px]', tab === k ? 'bg-ink font-medium text-surface' : 'text-ink-2 hover:bg-surface-2')}>
+              {l}
+            </button>
+          ))}
         </div>
-        <FrameworkSettings />
-        <ChipSettings />
-        <PackSettings />
-        <AboutDemo />
+        <div role="tabpanel" id={`st-panel-${tab}`} aria-labelledby={`st-tab-${tab}`} className="space-y-5">
+          {tab === 'school' && <><StudioDetails /><AboutDemo /></>}
+          {tab === 'places' && <><Locations /><Rooms /></>}
+          {tab === 'terms' && <Terms />}
+          {tab === 'teaching' && <>
+            <div className="grid gap-5 sm:grid-cols-2"><Styles /><Levels /></div>
+            <FrameworkSettings />
+            <ChipSettings />
+          </>}
+          {tab === 'money' && <PackSettings />}
+        </div>
       </div>
     </Shell>
   );

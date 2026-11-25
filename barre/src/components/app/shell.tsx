@@ -7,12 +7,12 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   CalendarDays, LayoutGrid, Users, GraduationCap, Route, ClipboardCheck,
   Home, Baby, MessageSquare, CreditCard, PlayCircle, Trophy, Inbox, Settings2, Rocket,
-  MoreHorizontal, FolderOpen, Receipt, BarChart3, Building2, Layers, KeyRound, ShieldCheck, LogOut, FileText, ShieldAlert,
+  MoreHorizontal, FolderOpen, Receipt, BarChart3, Building2, Layers, KeyRound, ShieldCheck, LogOut, FileText, ShieldAlert, CircleHelp,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useSession, type Role } from '@/lib/auth/session';
 import { SanaaLogo, SanaaMark } from './sanaa';
-import { SchoolMark, PoweredBy, useSchoolTheme } from './brand';
+import { SchoolMark, PoweredBy, useSchoolTheme, logoFor } from './brand';
 import { EmptyState, Button } from '@/components/ui';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
@@ -22,7 +22,9 @@ import { PersonSwitcher } from './person-switcher';
 import { SchoolSwitcher } from './school-switcher';
 import { useBrandedManifest } from './pwa';
 import { NotificationBell } from './notifications';
-import { AssistantLauncher } from './assistant';
+import dynamic from 'next/dynamic';
+// Office-only, so families and teachers never download it (R-062).
+const AssistantLauncher = dynamic(() => import('./assistant').then(m => m.AssistantLauncher), { ssr: false });
 
 type NavItem = {
   href: string; label: string; icon: React.ElementType;
@@ -30,6 +32,8 @@ type NavItem = {
    *  previously the list was simply truncated at five, which left Classes,
    *  Enrolment and Studio unreachable on a phone. */
   primary?: boolean;
+  /** Screens grouped under this area, shown as tabs at the top of each (R-027). */
+  sub?: { href: string; label: string }[];
 };
 
 /* Each role gets the navigation for the job it actually does. A teacher has no
@@ -37,18 +41,17 @@ type NavItem = {
    not showing it. */
 const OFFICE_NAV: NavItem[] = [
   { href: '/today', label: 'Today', icon: LayoutGrid, primary: true },
-  { href: '/schedule', label: 'Schedule', icon: CalendarDays, primary: true },
-  { href: '/people', label: 'People', icon: Users, primary: true },
-  { href: '/inbox', label: 'Inbox', icon: MessageSquare, primary: true },
-  { href: '/classes', label: 'Classes', icon: GraduationCap },
-  { href: '/enrolment', label: 'Enrolment', icon: Route },
-  { href: '/requests', label: 'Requests', icon: Inbox },
-  { href: '/events', label: 'Events', icon: Trophy },
-  { href: '/billing', label: 'Billing', icon: Receipt },
-  { href: '/reports', label: 'Reports', icon: BarChart3 },
-  { href: '/studio', label: 'Studio', icon: Settings2 },
-  { href: '/safeguarding', label: 'Safeguarding', icon: ShieldAlert },
-  { href: '/account', label: 'Account', icon: KeyRound },
+  { href: '/schedule', label: 'Timetable', icon: CalendarDays, primary: true,
+    sub: [{ href: '/schedule', label: 'Schedule' }, { href: '/classes', label: 'Classes' }, { href: '/events', label: 'Events' }] },
+  { href: '/people', label: 'People', icon: Users, primary: true,
+    sub: [{ href: '/people', label: 'Families and students' }, { href: '/enrolment', label: 'Enrolment' }] },
+  { href: '/inbox', label: 'Messages', icon: MessageSquare, primary: true,
+    sub: [{ href: '/inbox', label: 'Inbox' }, { href: '/requests', label: 'Requests' }] },
+  { href: '/billing', label: 'Money', icon: Receipt,
+    sub: [{ href: '/billing', label: 'Billing' }, { href: '/reports', label: 'Reports' }] },
+  { href: '/studio', label: 'Settings', icon: Settings2,
+    sub: [{ href: '/studio', label: 'School' }, { href: '/safeguarding', label: 'Safeguarding' }, { href: '/account', label: 'Account' },
+          { href: '/onboarding', label: 'Setup' }] },
 ];
 
 const NAV: Record<Role, NavItem[]> = {
@@ -88,19 +91,22 @@ const ROLE_HOME: Record<Role, string> = {
 };
 
 export function Shell({
-  title, subtitle, actions, children, allow,
+  title, subtitle, actions, children, allow, help,
 }: {
   title: string;
   subtitle?: React.ReactNode;
   actions?: React.ReactNode;
   children: React.ReactNode;
   allow: Role[];
+  /** A short "what is this screen for" note (R-061). */
+  help?: React.ReactNode;
 }) {
+  const [helpOpen, setHelpOpen] = React.useState(false);
   const { session, signOut, loaded } = useSession();
   // The school this person is in (or, for Sanaa support, viewing).
   const studio = useRows<{ name: string; status: string; data_deletion_due_on: string | null;
-                           brand_colour: string | null; logo_url: string | null; theme: string; brand_secondary: string | null }>(
-    ['shell-studio'], `select name, status, data_deletion_due_on, brand_colour, logo_url, theme, brand_secondary from studio order by created_at limit 1`, [],
+                           brand_colour: string | null; logo_url: string | null; theme: string; brand_secondary: string | null; logo_light_url: string | null }>(
+    ['shell-studio'], `select name, status, data_deletion_due_on, brand_colour, logo_url, theme, brand_secondary, logo_light_url from studio order by created_at limit 1`, [],
     { enabled: !!session && (!session.platform || !!session.support), staleTime: 60_000 }).data?.[0];
   const branded = !!studio && (!session?.platform || !!session?.support);
   useSchoolTheme(branded ? studio! : null);
@@ -148,7 +154,7 @@ export function Shell({
         <div className="border-b border-line px-4 py-3.5">
           {branded ? (
             <div className="flex items-center gap-2.5">
-              <SchoolMark name={studio!.name} logo={studio!.logo_url} className="size-9" />
+              <SchoolMark name={studio!.name} logo={logoFor(studio!)} className="size-9" />
               <span className="min-w-0 flex-1">
                 <span className="line-clamp-2 text-[14px] font-semibold leading-tight tracking-tight">{studio!.name}</span>
                 <PoweredBy />
@@ -168,9 +174,6 @@ export function Shell({
         <div className="pt-3" />
         <nav className="flex-1 px-2" aria-label="Main">
           {nav.map(item => <RailLink key={item.href} item={item} pathname={pathname} />)}
-          {(session.role === 'owner' || session.role === 'admin') && (
-            <RailLink item={{ href: '/onboarding', label: 'Setup', icon: Rocket }} pathname={pathname} />
-          )}
         </nav>
         <div className="flex items-center gap-2.5 border-t border-line p-3">
           <PersonSwitcher />
@@ -186,22 +189,37 @@ export function Shell({
         <header className="sticky top-0 z-30 overflow-hidden border-b border-line bg-surface/85 backdrop-blur
                            supports-[backdrop-filter]:bg-surface/70">
           {branded && <ThemeFlourish theme={studio!.theme} />}
-          <div className="relative flex min-h-14 items-center gap-3 px-4 py-2.5 lg:px-6">
+          <div className="relative flex min-h-14 flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5 lg:flex-nowrap lg:px-6">
             {branded
-              ? <SchoolMark name={studio!.name} logo={studio!.logo_url} className="size-8 lg:hidden" />
+              ? <SchoolMark name={studio!.name} logo={logoFor(studio!)} className="size-8 lg:hidden" />
               : <SanaaMark className="size-8 lg:hidden" />}
             <div className="min-w-0 flex-1">
               <h1 className="page-title truncate tracking-tight">{title}</h1>
               {subtitle && <div className="truncate text-[13px] text-ink-2">{subtitle}</div>}
             </div>
-            {actions}
+            {help && (
+              <button onClick={() => setHelpOpen(o => !o)} aria-expanded={helpOpen} aria-controls="page-help"
+                aria-label={`About ${title}`} className="grid size-10 shrink-0 place-items-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-ink">
+                <CircleHelp className="size-[18px]" aria-hidden />
+              </button>
+            )}
+            {/* On a phone the page's own buttons take a row of their own, under the title. */}
+            {actions && <div className="order-last flex w-full justify-end lg:order-none lg:w-auto">{actions}</div>}
             {(session.role === 'owner' || session.role === 'admin') && <AssistantLauncher />}
             {session.role !== 'student' && <NotificationBell />}
             <PersonSwitcher className="lg:hidden" />
           </div>
           <SchoolSwitcher className="border-t border-line lg:hidden" />
+          <SubTabs nav={nav} pathname={pathname} />
         </header>
 
+        {help && helpOpen && (
+          <div id="page-help" role="note" className="border-b border-line bg-info-soft px-4 py-3 text-[13.5px] leading-relaxed text-ink-2 lg:px-6">
+            <div className="mx-auto flex max-w-3xl gap-2"><CircleHelp className="mt-0.5 size-4 shrink-0 text-info" aria-hidden />
+              <div className="min-w-0 flex-1">{help}</div>
+              <button onClick={() => setHelpOpen(false)} className="text-[12.5px] font-medium text-ink-2 underline">Close</button></div>
+          </div>
+        )}
         {session.support && <SupportBanner view={session.support} />}
         {!session.platform && studio && (studio.status === 'suspended' || studio.status === 'cancelled') && (
           <div role="status" className="border-b border-caution/30 bg-caution-soft px-4 py-2.5 text-[13px] lg:px-6">
@@ -235,9 +253,31 @@ function isActive(pathname: string, href: string) {
   const clean = pathname.replace(/\/$/, '');
   return clean === href || (!['/teach','/family','/learn','/platform'].includes(href) && clean.startsWith(href + '/'));
 }
+const groupActive = (pathname: string, item: NavItem) =>
+  item.sub ? item.sub.some(x => isActive(pathname, x.href)) : isActive(pathname, item.href);
+
+/** The screens of the current area, as tabs (R-027). */
+function SubTabs({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
+  const group = nav.find(i => i.sub && i.sub.length > 1 && groupActive(pathname, i));
+  if (!group) return null;
+  return (
+    <nav aria-label={group.label} className="relative -mb-px flex gap-1 overflow-x-auto px-3 lg:px-5">
+      {group.sub!.map(x => {
+        const active = isActive(pathname, x.href);
+        return (
+          <Link key={x.href} href={x.href} aria-current={active ? 'page' : undefined}
+            className={cn('shrink-0 border-b-2 px-2.5 py-2 text-[13px]',
+              active ? 'border-accent-line font-medium text-ink' : 'border-transparent text-ink-2 hover:text-ink')}>
+            {x.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
 
 function RailLink({ item, pathname }: { item: NavItem; pathname: string }) {
-  const active = isActive(pathname, item.href);
+  const active = groupActive(pathname, item);
   const Icon = item.icon;
   return (
     <Link href={item.href} aria-current={active ? 'page' : undefined}
@@ -271,7 +311,7 @@ function MobileTabs({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
         {rest.length > 0 && (
           <button onClick={() => setOpen(true)} aria-haspopup="dialog" aria-label="More sections"
             className={cn('flex min-h-[52px] flex-1 flex-col items-center justify-center gap-1 pt-1.5 text-[11px]',
-              rest.some(i => isActive(pathname, i.href)) ? 'text-accent-text' : 'text-ink-3')}>
+              rest.some(i => groupActive(pathname, i)) ? 'text-accent-text' : 'text-ink-3')}>
             <MoreHorizontal className="size-[19px]" aria-hidden />
             <span>More</span>
           </button>
@@ -287,15 +327,26 @@ function MobileTabs({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
             <ul className="space-y-1">
               {rest.map(item => {
                 const Icon = item.icon;
-                const active = isActive(pathname, item.href);
+                // Each area's screens are listed, so any screen is two taps away.
+                const links = item.sub ?? [{ href: item.href, label: item.label }];
                 return (
                   <li key={item.href}>
-                    <Link href={item.href} onClick={() => setOpen(false)}
-                      aria-current={active ? 'page' : undefined}
-                      className={cn('flex min-h-[48px] items-center gap-3 rounded-[var(--radius-md)] px-3 text-sm',
-                        active ? 'bg-accent-soft font-medium text-accent-ink' : 'hover:bg-surface-2')}>
-                      <Icon className="size-[18px]" aria-hidden /> {item.label}
-                    </Link>
+                    {item.sub && <p className="flex items-center gap-2 px-3 pb-1 pt-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-3">
+                      <Icon className="size-3.5" aria-hidden /> {item.label}</p>}
+                    <ul>
+                      {links.map(x => {
+                        const active = isActive(pathname, x.href);
+                        return (
+                          <li key={x.href}>
+                            <Link href={x.href} onClick={() => setOpen(false)} aria-current={active ? 'page' : undefined}
+                              className={cn('flex min-h-[48px] items-center gap-3 rounded-[var(--radius-md)] px-3 text-sm',
+                                active ? 'bg-accent-soft font-medium text-accent-ink' : 'hover:bg-surface-2')}>
+                              {!item.sub && <Icon className="size-[18px]" aria-hidden />} {x.label}
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
                   </li>
                 );
               })}
@@ -309,7 +360,7 @@ function MobileTabs({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
 }
 
 function TabLink({ item, pathname }: { item: NavItem; pathname: string }) {
-  const active = isActive(pathname, item.href);
+  const active = groupActive(pathname, item);
   const Icon = item.icon;
   return (
     <Link href={item.href} aria-current={active ? 'page' : undefined}

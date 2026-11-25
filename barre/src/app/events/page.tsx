@@ -43,7 +43,7 @@ function Events() {
   const [editing, setEditing] = React.useState<E.OfficeEvent | 'new' | null>(null);
   const current = rows.data?.find(e => e.id === selected);
   return (
-    <Shell title="Events" subtitle="Shows, exams, competitions and workshops" allow={['owner', 'admin']}
+    <Shell title="Events" help={<>Shows, competitions, workshops and exam sessions. Invite whole classes, and families accept in their app. Within a show: running order, costumes and sizes, rehearsals with registers, chaperones, a printable programme (children are named only with photo consent), tickets, and fees billed in one step.</>} subtitle="Shows, exams, competitions and workshops" allow={['owner', 'admin']}
       actions={<Button size="sm" variant="primary" onClick={() => setEditing('new')}><Plus className="size-4" aria-hidden /> New event</Button>}>
       <div className="mx-auto max-w-6xl">
         <div className={cn('gap-5', selected ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,440px)]' : 'block')}>

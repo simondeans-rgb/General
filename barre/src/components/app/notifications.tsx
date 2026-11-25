@@ -8,7 +8,8 @@ import {
   Bell, CreditCard, MessageSquare, UserPlus, Sparkles, HeartPulse, ListOrdered, Inbox, GraduationCap, CheckCheck,
   CalendarClock, UserRoundCheck, Contact, Settings2, BellRing, ShieldAlert, BadgeCheck, Award, MessageSquareHeart, FileText,
 } from 'lucide-react';
-import { NotificationSettings } from '@/components/app/notification-settings';
+import dynamic from 'next/dynamic';
+const NotificationSettings = dynamic(() => import('@/components/app/notification-settings').then(m => m.NotificationSettings), { ssr: false });
 import { REMIND_CHECKS } from '@/lib/repos/safeguarding';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';

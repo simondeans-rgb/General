@@ -55,7 +55,7 @@ function Classes() {
       subtitle={rows.data ? `${totals.classes} classes · ${totals.taken} of ${totals.places} places filled (${totals.pct}%)` : undefined}
       allow={['owner', 'admin']}
       actions={<div className="flex gap-2">
-        {term && <Button size="sm" onClick={() => setRolling(true)}>
+        {term && <Button size="sm" aria-label="Start next term" onClick={() => setRolling(true)}>
           <CalendarPlus className="size-4" aria-hidden /> <span className="hidden sm:inline">Start next term</span>
         </Button>}
         <Button size="sm" variant="primary" onClick={() => setAdding(true)}>

@@ -86,7 +86,7 @@ export default function FamilyChildren() {
                     <p className="mt-1 text-[12.5px] text-ink-3">
                       Teachers see allergies and the emergency plan only — never the full record.
                       To change any of it,{' '}
-                      <Link href="/family/enquiries" className="text-accent-text hover:underline">
+                      <Link href="/family/enquiries" className="text-accent-text underline">
                         tell the studio</Link>, so there is a record of who changed what.
                     </p>
                   </dd>

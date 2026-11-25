@@ -6,12 +6,12 @@ import { useSearchParams } from 'next/navigation';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { CheckCircle2, MapPin } from 'lucide-react';
 import { readAs, runAs } from '@/lib/db/client';
-import { SchoolMark, PoweredBy, useSchoolTheme } from '@/components/app/brand';
+import { SchoolMark, PoweredBy, useSchoolTheme, logoFor, SchoolHero } from '@/components/app/brand';
 import { Button, Card, EmptyState, ErrorState, Field, Input, Skeleton } from '@/components/ui';
 import { money, dateLong, time } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
-type School = { name: string; brand_colour: string | null; logo_url: string | null; open: boolean; theme: string; brand_secondary: string | null; privacy_notice_url: string | null };
+type School = { name: string; brand_colour: string | null; logo_url: string | null; open: boolean; theme: string; brand_secondary: string | null; privacy_notice_url: string | null; hero_url: string | null; logo_light_url: string | null };
 type Slot = { session_id: string; class_name: string; style: string | null; starts_at: string; ends_at: string;
   age_min: number | null; age_max: number | null; location: string | null; trial_price_minor: number | null; places_left: number };
 
@@ -54,9 +54,10 @@ function Join() {
         {school.isLoading && <Skeleton className="h-24" />}
         {school.error && <ErrorState error={school.error} />}
         {slug && school.data === null && <Card className="p-6"><EmptyState title="School not found" body="Check the link, or ask the school for theirs." /></Card>}
+        {s && <SchoolHero src={s.hero_url} name={s.name} />}
         {s && (
           <header className="flex items-center gap-3">
-            <SchoolMark name={s.name} logo={s.logo_url} className="size-12" />
+            <SchoolMark name={s.name} logo={logoFor(s)} className="size-12" />
             <div>
               <h1 className="text-[22px] font-semibold tracking-tight">{s.name}</h1>
               <p className="text-sm text-ink-2">Book a trial class</p>

@@ -189,7 +189,7 @@ export function BrandSettings({ canEdit }: { canEdit: boolean }) {
                 {canEdit && (
                   <div className="flex flex-wrap gap-2">
                     <input ref={file} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="sr-only"
-                           id="br-logo" onChange={e => pickFile(e.target.files?.[0])} />
+                           id="br-logo" aria-label="Logo image file" tabIndex={-1} onChange={e => pickFile(e.target.files?.[0])} />
                     <Button size="sm" onClick={() => file.current?.click()}><Upload className="size-4" aria-hidden /> {logo ? 'Replace' : 'Upload a logo'}</Button>
                     {logo && <Button size="sm" variant="ghost" onClick={() => setLogo(null)}><Trash2 className="size-4" aria-hidden /> Remove</Button>}
                   </div>
@@ -311,5 +311,99 @@ function PhonePreview({ school, logo, dark }: { school: string; logo: string | n
       </div>
       <div className="bg-surface pb-2 text-center"><PoweredBy className="justify-center text-[9.5px]" /></div>
     </div>
+  );
+}
+
+const HERO_W = 1600;
+
+/** A photo, cropped to a wide banner and compressed on the device. */
+async function toHero(file: File): Promise<string> {
+  if (!/^image\/(png|jpeg|webp)$/.test(file.type)) throw new Error('Choose a JPG, PNG or WebP photo.');
+  if (file.size > 15 * 1024 * 1024) throw new Error('That photo is over 15 MB. Choose a smaller one.');
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((ok, fail) => {
+      const i = new Image(); i.onload = () => ok(i); i.onerror = () => fail(new Error('That file could not be read as an image.')); i.src = url;
+    });
+    const ratio = 16 / 7;
+    let sw = img.naturalWidth, sh = Math.round(sw / ratio);
+    if (sh > img.naturalHeight) { sh = img.naturalHeight; sw = Math.round(sh * ratio); }
+    const sx = Math.round((img.naturalWidth - sw) / 2), sy = Math.round((img.naturalHeight - sh) / 2);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.min(HERO_W, sw); canvas.height = Math.round(canvas.width / ratio);
+    canvas.getContext('2d')!.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+    for (const q of [0.82, 0.72, 0.6, 0.5]) {
+      const out = canvas.toDataURL('image/jpeg', q);
+      if (out.length <= 690_000) return out;
+    }
+    throw new Error('That photo is too detailed to store. Try another.');
+  } finally { URL.revokeObjectURL(url); }
+}
+
+type Imagery = { id: string; name: string; hero_url: string | null; logo_light_url: string | null; theme: string };
+const IMAGERY = `select id, name, hero_url, logo_light_url, theme from studio order by created_at limit 1`;
+const SAVE_IMAGERY = `update studio set hero_url = $2, logo_light_url = $3, updated_at = now() where id = $1 returning id`;
+
+/** A hero photo and a light logo (R-060). If the photo shows children, check you have consent. */
+export function ImagerySettings({ canEdit }: { canEdit: boolean }) {
+  const { session } = useSession();
+  const qc = useQueryClient();
+  const s = useRows<Imagery>(['imagery'], IMAGERY).data?.[0];
+  const [err, setErr] = React.useState<string | null>(null);
+  const save = useMutation({
+    mutationFn: (v: { hero: string | null; light: string | null }) => runAs(session, q => q(SAVE_IMAGERY, [s!.id, v.hero, v.light])),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['db'] }),
+  });
+  if (!s) return <Card className="p-4"><Skeleton className="h-24" /></Card>;
+  const pick = (kind: 'hero' | 'light') => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; e.target.value = ''; if (!f) return;
+    setErr(null);
+    (kind === 'hero' ? toHero(f) : toLogo(f))
+      .then(url => save.mutate(kind === 'hero' ? { hero: url, light: s.logo_light_url } : { hero: s.hero_url, light: url }))
+      .catch(x => setErr((x as Error).message));
+  };
+  return (
+    <Card>
+      <CardHeader title="Photos" subtitle="A photo of your school for your public page and families’ home screen, and a light logo for dark screens." />
+      <div className="grid gap-4 p-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <p className="text-sm font-medium">Hero photo</p>
+          {s.hero_url
+            // eslint-disable-next-line @next/next/no-img-element
+            ? <img src={s.hero_url} alt="Hero photo" className="aspect-[16/7] w-full rounded-[var(--radius-md)] object-cover" />
+            : <div className="grid aspect-[16/7] place-items-center rounded-[var(--radius-md)] border border-dashed border-line-strong text-[12.5px] text-ink-3">No photo yet</div>}
+          {canEdit && (
+            <div className="flex gap-2">
+              <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-[var(--radius-md)] border border-line-strong px-3 text-sm hover:bg-surface-2">
+                <Upload className="size-4" aria-hidden /> {s.hero_url ? 'Replace' : 'Upload'}
+                <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={pick('hero')} />
+              </label>
+              {s.hero_url && <Button size="sm" variant="ghost" onClick={() => save.mutate({ hero: null, light: s.logo_light_url })}><Trash2 className="size-4" aria-hidden /> Remove</Button>}
+            </div>
+          )}
+          <p className="text-[12px] text-ink-3">Cropped to a wide banner and compressed on this device. If it shows children, make sure their families agreed to photos.</p>
+        </div>
+        <div className="space-y-2">
+          <p className="text-sm font-medium">Light logo</p>
+          <div className="grid h-24 place-items-center rounded-[var(--radius-md)] bg-[#18122f] p-3">
+            {s.logo_light_url
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img src={s.logo_light_url} alt="Light logo" className="max-h-16 object-contain" />
+              : <span className="text-[12.5px] text-white/70">No light logo</span>}
+          </div>
+          {canEdit && (
+            <div className="flex gap-2">
+              <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-[var(--radius-md)] border border-line-strong px-3 text-sm hover:bg-surface-2">
+                <Upload className="size-4" aria-hidden /> {s.logo_light_url ? 'Replace' : 'Upload'}
+                <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="sr-only" onChange={pick('light')} />
+              </label>
+              {s.logo_light_url && <Button size="sm" variant="ghost" onClick={() => save.mutate({ hero: s.hero_url, light: null })}><Trash2 className="size-4" aria-hidden /> Remove</Button>}
+            </div>
+          )}
+          <p className="text-[12px] text-ink-3">Used with the Urban style{s.theme === 'urban' ? ' (your current style)' : ''}, where screens are dark.</p>
+        </div>
+        {(err || save.error != null) && <div className="sm:col-span-2"><ErrorState error={err ?? save.error} /></div>}
+      </div>
+    </Card>
   );
 }

@@ -22,7 +22,7 @@ export function SessionRow({ session: s, href, onSelect }: { session: S; href?: 
   const cancelled = s.status === 'cancelled';
   const full = s.enrolled >= s.capacity;
   const body = (
-    <div className={cn('flex items-stretch gap-3 px-4 py-3', cancelled && 'opacity-60')}>
+    <div className={cn('flex items-stretch gap-3 px-4 py-3', cancelled && 'bg-surface-2/60 text-ink-2')}>
       {/* Colour marks the dance style, but never carries meaning on its own —
           the style is always named next to it. */}
       <span aria-hidden className={cn('w-1 shrink-0 rounded-full', BARS[s.colour ?? ''] ?? 'bg-surface-3')} />
@@ -30,7 +30,7 @@ export function SessionRow({ session: s, href, onSelect }: { session: S; href?: 
         <span className={cn('tnum block text-sm font-semibold', cancelled && 'line-through')}>
           {time(s.starts_at)}
         </span>
-        <span className="tnum block text-[12px] text-ink-3">{time(s.ends_at)}</span>
+        <span className={cn('tnum block text-[12px]', cancelled ? 'text-ink-2' : 'text-ink-3')}>{time(s.ends_at)}</span>
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex flex-wrap items-center gap-x-2 gap-y-1">

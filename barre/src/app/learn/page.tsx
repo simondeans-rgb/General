@@ -1,5 +1,6 @@
 'use client';
 
+import { MySchoolHero } from '@/components/app/school-hero';
 import * as React from 'react';
 import Link from 'next/link';
 import {
@@ -42,6 +43,7 @@ export default function LearnHome() {
     <Shell title={`${greeting()}, ${session?.name.split(' ')[0] ?? ''}`}
            subtitle={dateLong(new Date())} allow={['student']}>
       <div className="mx-auto max-w-lg space-y-4">
+        <MySchoolHero />
         {timetable.isLoading && <Card className="p-4"><Skeleton className="h-24" /></Card>}
         {timetable.error && <ErrorState error={timetable.error} onRetry={() => timetable.refetch()} />}
 
