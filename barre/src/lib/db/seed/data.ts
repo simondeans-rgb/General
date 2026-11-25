@@ -138,7 +138,10 @@ export function buildSeedSql({ today = new Date() }: SeedOptions = {}): string {
          where cs.ends_at < now() - interval '2 hours' and cs.register_closed_at is null
            and exists (select 1 from attendance_record a where a.session_id = cs.id);`
     + `\nselect app.award_event_milestones(id) from studio;`
-    + `\nselect set_config('app.quiet', 'off', false);\n`;
+    + `\nselect set_config('app.quiet', 'off', false);\n`
+    // Fresh tables have no planner statistics; without them some permission-
+    // heavy reports pick very slow plans until autovacuum catches up.
+    + `analyze;\n`;
 }
 
 type Ctx = {

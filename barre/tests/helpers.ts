@@ -52,6 +52,7 @@ export async function rebuild(): Promise<void> {
   await c.query('set role service_role');
   await c.query(buildSeedSql({}));
   await c.query('reset role');
+  await c.query('analyze');   // planner statistics, as a live database would have
 }
 
 export async function closeDb(): Promise<void> {
