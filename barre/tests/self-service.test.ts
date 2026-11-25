@@ -112,7 +112,7 @@ describe('the public trial page (R-014)', () => {
       expect(list.length).toBeGreaterThan(0);
       expect(list.every((r: any) => r.places_left > 0)).toBe(true);
       const form = { contact_name: 'Sam Patel', contact_email: 'sam@example.com', contact_phone: '07700 900800',
-                     child_name: 'Asha Patel', child_dob: '2018-03-03' };
+                     child_name: 'Asha Patel', child_dob: '2018-03-03', privacy_ack: true };
       await q(`select app.public_book_trial($1, $2, $3::jsonb)`, [slug, list[0].session_id, JSON.stringify(form)]);
       await q(`select app.public_book_trial($1, $2, $3::jsonb)`, [slug, list[0].session_id, JSON.stringify(form)]);   // double click
       const trials = await svc(`select t.student_id, e.source from trial t join enquiry e on e.id = t.enquiry_id where e.contact_email = 'sam@example.com'`);

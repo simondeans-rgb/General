@@ -97,7 +97,7 @@ export function RetentionCard({ studioId }: { studioId: string }) {
   const v = { ...pol, ...m } as G.Retention;
   const [done, setDone] = React.useState<string | null>(null);
   const save = useMutation({
-    mutationFn: () => runAs(session, q => q(G.SET_RETENTION, [v.medical_months, v.personal_months, v.financial_months])),
+    mutationFn: () => runAs(session, q => q(G.SET_RETENTION, [v.medical_months, v.personal_months, v.financial_months, v.prospect_days, v.concern_months || null])),
     onSuccess: () => { setM({}); qc.invalidateQueries({ queryKey: ['db'] }); },
   });
   const run = useMutation({
@@ -105,11 +105,11 @@ export function RetentionCard({ studioId }: { studioId: string }) {
     onSuccess: n => { setDone(`${n} change${n === 1 ? '' : 's'} made and recorded in the audit log.`); qc.invalidateQueries({ queryKey: ['db'] }); },
   });
   if (!pol) return <Card className="p-4"><Skeleton className="h-24" /></Card>;
-  const med = (preview.data ?? []).filter(p => p.step === 'medical').length;
-  const anon = (preview.data ?? []).filter(p => p.step === 'anonymise').length;
+  const count = (k: string) => (preview.data ?? []).filter(p => p.step === k).length;
+  const med = count('medical'), anon = count('anonymise'), pros = count('prospect'), fin = count('financial'), con = count('concern');
   return (
     <Card>
-      <CardHeader title="Keeping leavers’ data" subtitle="How long details are kept after a child stops coming. Check these with your own adviser." />
+      <CardHeader title="Keeping data" subtitle="How long details are kept after a child stops coming, and for enquiries that went nowhere. Check these with your own adviser." />
       <div className="space-y-3 px-4 pb-4">
         <div className="grid gap-3 sm:grid-cols-3">
           {([['medical_months', 'Delete medical records after'], ['personal_months', 'Anonymise the child after'], ['financial_months', 'Keep invoices for']] as const).map(([k, l]) => (
@@ -117,14 +117,23 @@ export function RetentionCard({ studioId }: { studioId: string }) {
               <Input id={`rt-${k}`} type="number" min={1} max={240} value={v[k]} onChange={e => setM(x => ({ ...x, [k]: Number(e.target.value) }))} />
             </Field>
           ))}
+          <Field label="Remove enquiries with no activity after" htmlFor="rt-pd" hint="days">
+            <Input id="rt-pd" type="number" min={30} max={730} value={v.prospect_days} onChange={e => setM(x => ({ ...x, prospect_days: Number(e.target.value) }))} />
+          </Field>
+          <Field label="Delete closed safeguarding concerns after" htmlFor="rt-cm" hint="months — empty keeps them. Set from your safeguarding policy (often until the child is 25).">
+            <Input id="rt-cm" type="number" min={12} max={600} value={v.concern_months ?? ''} placeholder="Keep"
+                   onChange={e => setM(x => ({ ...x, concern_months: e.target.value ? Number(e.target.value) : null }))} />
+          </Field>
         </div>
         {Object.keys(m).length > 0 && <Button size="sm" loading={save.isPending} onClick={() => save.mutate()}>Save periods</Button>}
         {save.error != null && <ErrorState error={save.error} />}
-        <p className="text-sm">Due now: <b>{med}</b> medical record{med === 1 ? '' : 's'} to delete, <b>{anon}</b> child{anon === 1 ? '' : 'ren'} to anonymise.
+        <p className="text-sm">Due now: <b>{med}</b> medical record{med === 1 ? '' : 's'} to delete, <b>{anon}</b> child{anon === 1 ? '' : 'ren'} to anonymise,
+          {' '}<b>{pros}</b> old enquir{pros === 1 ? 'y' : 'ies'} to remove, <b>{fin}</b> famil{fin === 1 ? 'y' : 'ies'} to anonymise on invoices
+          {pol.concern_months ? <>, <b>{con}</b> closed concern{con === 1 ? '' : 's'} to delete</> : ''}.
           {pol.last_run_at ? ` Last run ${dateShort(pol.last_run_at)}.` : ''}</p>
         {done && <p role="status" className="text-sm text-positive">{done}</p>}
         {run.error != null && <ErrorState error={run.error} />}
-        <Button size="sm" variant="primary" disabled={!med && !anon} loading={run.isPending} onClick={() => run.mutate()}>Apply now</Button>
+        <Button size="sm" variant="primary" disabled={!med && !anon && !pros && !fin && !con} loading={run.isPending} onClick={() => run.mutate()}>Apply now</Button>
       </div>
     </Card>
   );

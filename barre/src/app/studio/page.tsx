@@ -80,6 +80,7 @@ function StudioDetails() {
           <Fact label="Timezone" value={s.timezone} />
           <Fact label="Email" value={s.contact_email ?? 'Not set'} />
           <Fact label="Phone" value={s.contact_phone ?? 'Not set'} />
+          <Fact label="Privacy notice" value={s.privacy_notice_url ?? 'Not set — add it for your public booking page'} />
         </dl>
       )}
       {!isOwner && (
@@ -106,12 +107,13 @@ function StudioSheet({ studio, onClose }: { studio: S.StudioRow; onClose: () => 
   const [tz, setTz] = React.useState(studio.timezone);
   const [email, setEmail] = React.useState(studio.contact_email ?? '');
   const [phone, setPhone] = React.useState(studio.contact_phone ?? '');
+  const [privacy, setPrivacy] = React.useState(studio.privacy_notice_url ?? '');
   const save = useSetupWrite(S.UPDATE_STUDIO, onClose);
 
   return (
     <RecordSheet title="Studio details" onClose={onClose} error={save.error}
-      saving={save.isPending} canSave={name.trim().length >= 2}
-      onSave={() => save.mutate([studio.id, name.trim(), tz, email, phone])}>
+      saving={save.isPending} canSave={name.trim().length >= 2 && (!privacy.trim() || /^https?:\/\//.test(privacy.trim()))}
+      onSave={() => save.mutate([studio.id, name.trim(), tz, email, phone, privacy])}>
       <Field label="Name" htmlFor="st-name" required>
         <Input id="st-name" value={name} onChange={e => setName(e.target.value)} />
       </Field>
@@ -127,6 +129,11 @@ function StudioSheet({ studio, onClose }: { studio: S.StudioRow; onClose: () => 
       </Field>
       <Field label="Contact phone" htmlFor="st-phone">
         <Input id="st-phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} />
+      </Field>
+      <Field label="Privacy notice link" htmlFor="st-privacy"
+             hint="Shown on your public booking page, where families give their details.">
+        <Input id="st-privacy" type="url" value={privacy} onChange={e => setPrivacy(e.target.value)}
+               placeholder="https://yourstudio.co.uk/privacy" />
       </Field>
     </RecordSheet>
   );

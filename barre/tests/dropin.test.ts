@@ -12,7 +12,7 @@ describe('drop-in and packs (R-034)', () => {
     await asUser(null as any, async (q, svc) => {
       const s = await nextDropIn(svc);
       await q(`select app.public_adult_drop_in('northstar', $1, $2::jsonb)`, [s, JSON.stringify({
-        name: 'Maya Fernandes', email: 'maya@example.com', phone: '07700 900321', emergency_name: 'Leo', emergency_phone: '07700 900322' })]);
+        name: 'Maya Fernandes', email: 'maya@example.com', phone: '07700 900321', emergency_name: 'Leo', emergency_phone: '07700 900322', privacy_ack: true })]);
       const [b] = await svc(`select d.student_id, d.invoice_id, d.price_minor, f.name from drop_in_booking d join student st on st.id = d.student_id
                               join family f on f.id = st.family_id where d.session_id = $1`, [s]);
       expect(b).toMatchObject({ price_minor: 1200, name: 'Fernandes (adult)' });

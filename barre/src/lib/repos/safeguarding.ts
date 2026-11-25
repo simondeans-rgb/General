@@ -19,9 +19,9 @@ export const CHECKS = `select id, staff_id, kind, reference, checked_on, expires
 export const ADD_CHECK = `insert into staff_check (staff_id, kind, reference, checked_on, expires_on) values ($1, $2, nullif(btrim($3), ''), $4::date, $5::date) returning id`;
 export const CHECK_LABEL: Record<string, string> = { dbs: 'DBS', safeguarding_training: 'Safeguarding training', first_aid: 'First aid', other: 'Other' };
 
-export type Retention = { medical_months: number; personal_months: number; financial_months: number; last_run_at: string | null };
-export const RETENTION = `select medical_months, personal_months, financial_months, last_run_at from retention_policy limit 1`;
-export const SET_RETENTION = `update retention_policy set medical_months = $1, personal_months = $2, financial_months = $3, updated_at = now() returning studio_id`;
+export type Retention = { medical_months: number; personal_months: number; financial_months: number; prospect_days: number; concern_months: number | null; last_run_at: string | null };
+export const RETENTION = `select medical_months, personal_months, financial_months, prospect_days, concern_months, last_run_at from retention_policy limit 1`;
+export const SET_RETENTION = `update retention_policy set medical_months = $1, personal_months = $2, financial_months = $3, prospect_days = $4, concern_months = $5, updated_at = now() returning studio_id`;
 export const PREVIEW_RETENTION = `select * from app.apply_retention($1, false)`;
 export const RUN_RETENTION = `select count(*)::int as n from app.apply_retention($1, true)`;
 export const REMIND_CHECKS = `select app.remind_staff_checks(m.studio_id) as n from membership m
