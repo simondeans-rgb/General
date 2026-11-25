@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Megaphone, MessageSquare, Send, Users } from 'lucide-react';
+import { CornerUpLeft, Megaphone, MessageSquare, Send, Users, X } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
@@ -25,6 +25,8 @@ export default function FamilyMessages() {
   const conv = useRows<I.Message>(['my-conversation'], I.MY_CONVERSATION);
   const notices = useRows<I.Broadcast>(['broadcasts'], I.BROADCASTS);
   const [draft, setDraft] = React.useState('');
+  const [replyTo, setReplyTo] = React.useState<I.Message | null>(null);
+  const box = React.useRef<HTMLTextAreaElement>(null);
   const end = React.useRef<HTMLDivElement>(null);
 
   const unreadConv = conv.data?.filter(m => !m.inbound && !m.read_by_me) ?? [];
@@ -46,8 +48,8 @@ export default function FamilyMessages() {
   }, [conv.data?.length, tab]);
 
   const send = useMutation({
-    mutationFn: () => runAs(session, q => q(I.SEND_TO_STUDIO, ['', draft])),
-    onSuccess: () => { setDraft(''); qc.invalidateQueries({ queryKey: ['db'] }); },
+    mutationFn: () => runAs(session, q => q(I.SEND_TO_STUDIO, [replyTo?.subject ? (replyTo.subject.startsWith('Re: ') ? replyTo.subject : `Re: ${replyTo.subject}`) : '', draft, replyTo?.id ?? null])),
+    onSuccess: () => { setDraft(''); setReplyTo(null); qc.invalidateQueries({ queryKey: ['db'] }); },
   });
 
   return (
@@ -87,8 +89,15 @@ export default function FamilyMessages() {
                         mine ? 'rounded-br-sm bg-accent text-on-accent' : 'rounded-bl-sm border border-line bg-surface')}>
                         {m.subject && <p className="mb-1 font-medium">{m.subject}</p>}
                         <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                        <p className={cn('mt-1.5 text-[11.5px]', mine ? 'text-on-accent opacity-80' : 'text-ink-3')}>
-                          {mine ? (m.sender ?? 'You') : (m.sender ?? 'Northstar Dance')} · {time(m.sent_at)}
+                        <p className={cn('mt-1.5 flex items-center gap-2 text-[11.5px]', mine ? 'text-on-accent opacity-80' : 'text-ink-3')}>
+                          <span>{mine ? (m.sender ?? 'You') : (m.sender ?? 'The studio')} · {time(m.sent_at)}</span>
+                          {!mine && !m.is_request && (
+                            <button type="button" onClick={() => { setReplyTo(m); box.current?.focus(); }}
+                              className="ml-auto inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 font-medium text-accent-text hover:bg-surface-2"
+                              aria-label={`Reply to ${m.sender ?? 'the studio'}`}>
+                              <CornerUpLeft className="size-3" aria-hidden /> Reply
+                            </button>
+                          )}
                         </p>
                       </div>
                     </div>
@@ -100,9 +109,16 @@ export default function FamilyMessages() {
             <form className="border-t border-line bg-surface p-3"
                   onSubmit={e => { e.preventDefault(); if (draft.trim()) send.mutate(); }}>
               {send.error && <div className="mb-2"><ErrorState error={send.error} /></div>}
+              {replyTo && (
+                <div className="mb-2 flex items-center gap-2 rounded-[var(--radius-md)] bg-surface-2 px-3 py-1.5 text-[12.5px] text-ink-2">
+                  <CornerUpLeft className="size-3.5 shrink-0" aria-hidden />
+                  <span className="min-w-0 flex-1 truncate">Replying to {replyTo.sender ?? 'the studio'}: {replyTo.subject ?? replyTo.body}</span>
+                  <button type="button" onClick={() => setReplyTo(null)} aria-label="Cancel reply" className="grid size-6 place-items-center rounded-full hover:bg-surface-3"><X className="size-3.5" aria-hidden /></button>
+                </div>
+              )}
               <div className="flex items-end gap-2">
                 <label htmlFor="to-studio" className="sr-only">Message the studio</label>
-                <textarea id="to-studio" value={draft} onChange={e => setDraft(e.target.value)} rows={1}
+                <textarea id="to-studio" ref={box} value={draft} onChange={e => setDraft(e.target.value)} rows={1}
                   placeholder="Message the studio…"
                   className="max-h-40 min-h-[44px] flex-1 resize-none rounded-[22px] border border-line-strong bg-surface px-4 py-2.5 text-[15px]
                              focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12"

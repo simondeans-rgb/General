@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { CalendarX2, ChevronRight, MapPin, User, CalendarPlus } from 'lucide-react';
+import { CalendarX2, ChevronRight, MapPin, User } from 'lucide-react';
+import { CalendarSubscribe } from '@/components/app/calendar-subscribe';
 import { readAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import { downloadIcs } from '@/lib/ics';
@@ -97,9 +98,5 @@ function CalendarButton() {
       description: s.teacher ? `With ${s.teacher}` : null,
     })));
   };
-  return (
-    <Button size="sm" onClick={go} aria-label="Add classes to my calendar">
-      <CalendarPlus className="size-4" aria-hidden /> <span className="hidden sm:inline">Add to calendar</span>
-    </Button>
-  );
+  return <CalendarSubscribe onDownload={go} />;
 }

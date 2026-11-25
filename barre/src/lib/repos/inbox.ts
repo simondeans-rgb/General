@@ -26,7 +26,7 @@ select f.id as family_id, f.name as family_name,
  order by last.sent_at desc`;
 
 export type Message = {
-  id: string; subject: string | null; body: string; sent_at: string; inbound: boolean;
+  id: string; subject: string | null; body: string; sent_at: string; inbound: boolean; reply_to?: string | null;
   sender: string | null; read_by_me: boolean; is_request?: boolean;
 };
 
@@ -41,7 +41,7 @@ select c.id, c.subject, c.body, c.sent_at, c.inbound, c.request_id is not null a
 
 /** The guardian's own conversation: RLS limits it to their family. */
 export const MY_CONVERSATION = `
-select c.id, c.subject, c.body, c.sent_at, c.inbound, c.request_id is not null as is_request,
+select c.id, c.subject, c.body, c.sent_at, c.inbound, c.reply_to, c.request_id is not null as is_request,
        app.sender_name(c.sent_by, c.studio_id) as sender,
        exists (select 1 from communication_read r where r.communication_id = c.id
                 and r.user_id = auth.uid()) as read_by_me
@@ -140,14 +140,22 @@ select c.id, c.subject, c.body, c.sent_at,
 export type Pref = { category: string; in_app: boolean; email: boolean };
 export const MY_PREFS = `select category, in_app, email from notification_preference where user_id = auth.uid()`;
 export const SET_PREF = `select app.set_notification_preference($1, $2, $3)`;
-export const MY_QUIET = `select to_char(quiet_from, 'HH24:MI') as quiet_from, to_char(quiet_to, 'HH24:MI') as quiet_to from user_account where id = auth.uid()`;
+export const MY_QUIET = `select to_char(quiet_from, 'HH24:MI') as quiet_from, to_char(quiet_to, 'HH24:MI') as quiet_to, email_digest from user_account where id = auth.uid()`;
+export const SET_DIGEST = `select app.set_email_digest($1)`;
 export const SET_QUIET = `select app.set_quiet_hours($1::time, $2::time)`;
 /** A guardian writing to the studio. Their family is the only one they can name. */
 export const SEND_TO_STUDIO = `
-insert into communication (studio_id, kind, channel, family_id, subject, body)
-select studio_id, 'direct', 'in_app', family_id, nullif(btrim($1), ''), btrim($2)
-  from guardian where user_id = auth.uid() and deleted_at is null
+insert into communication (studio_id, kind, channel, family_id, subject, body, reply_to)
+select studio_id, 'direct', 'in_app', family_id, nullif(btrim($1), ''), btrim($2), $3::uuid
+  from guardian where user_id = auth.uid() and deleted_at is null and app.in_scope(studio_id)
  limit 1 returning id`;
+
+/** A teacher's threads with families (R-054): what they sent, and replies. */
+export type ThreadMsg = { id: string; reply_to: string | null; family_id: string; family_name: string; subject: string | null;
+  body: string; sent_at: string; inbound: boolean; sender: string | null; mine: boolean };
+export const MY_THREADS = `select * from app.my_threads()`;
+export const TEACHER_REPLY = `select app.teacher_reply($1, $2) as id`;
+export const OTHER_SCHOOL_NOTES = `select * from app.other_school_notifications()`;
 
 export const MARK_READ = `select app.mark_read($1::uuid[])`;
 

@@ -57,6 +57,7 @@ const NAV: Record<Role, NavItem[]> = {
   teacher: [
     { href: '/teach', label: 'Today', icon: ClipboardCheck },
     { href: '/teach/students', label: 'Students', icon: Users },
+    { href: '/teach/messages', label: 'Messages', icon: MessageSquare },
     { href: '/teach/material', label: 'Material', icon: FolderOpen },
     { href: '/teach/reports', label: 'Reports', icon: FileText },
   ],

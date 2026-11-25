@@ -25,7 +25,11 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
   const { session } = useSession();
   const qc = useQueryClient();
   const prefs = useRows<I.Pref>(['my-prefs'], I.MY_PREFS);
-  const quiet = useRows<{ quiet_from: string | null; quiet_to: string | null }>(['my-quiet'], I.MY_QUIET);
+  const quiet = useRows<{ quiet_from: string | null; quiet_to: string | null; email_digest: boolean }>(['my-quiet'], I.MY_QUIET);
+  const digest = useMutation({
+    mutationFn: (on: boolean) => runAs(session, q => q(I.SET_DIGEST, [on])),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['db'] }),
+  });
   const [from, setFrom] = React.useState<string | null>(null);
   const [to, setTo] = React.useState<string | null>(null);
   const q0 = quiet.data?.[0];
@@ -69,6 +73,12 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
         </tbody>
       </table>
       <p className="text-[12.5px] text-ink-3">Class changes and safety notices always reach you. Email starts once the school connects an email service.</p>
+      <label className="flex items-start gap-2.5 text-sm">
+        <input type="checkbox" className="mt-0.5 size-4 accent-[var(--accent)]" checked={!!q0?.email_digest}
+          onChange={e => digest.mutate(e.target.checked)} />
+        <span>One email a day instead
+          <span className="block text-[12.5px] text-ink-3">A summary at 5pm of anything you haven’t seen. Urgent notices — a class cancelled today, a safety alert — still come straight away.</span></span>
+      </label>
       <PushToggle />
       <div className="grid grid-cols-2 gap-3">
         <Field label="Quiet from" htmlFor="qh-f"><Input id="qh-f" type="time" value={qFrom} onChange={e => setFrom(e.target.value)} /></Field>

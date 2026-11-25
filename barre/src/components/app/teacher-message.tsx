@@ -20,7 +20,7 @@ export function TeacherMessageSheet({ student, onClose }: { student: { id: strin
     onSuccess: () => { setSent(true); qc.invalidateQueries({ queryKey: ['db'] }); },
   });
   if (sent) return <RecordSheet title="Sent" onClose={onClose} onSave={onClose} saveLabel="Done">
-    <p className="text-sm text-ink-2">It is in the family’s conversation with the studio. Their reply comes to the office, who will pass it on.</p>
+    <p className="text-sm text-ink-2">It is in the family’s conversation with the studio. Their reply comes to you in Messages, and the office can read it too.</p>
   </RecordSheet>;
   return (
     <RecordSheet title={`Message ${student.first_name}’s family`} onClose={onClose} saving={send.isPending} error={send.error}
