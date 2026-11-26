@@ -66,3 +66,10 @@ Where this build departs from the brief, or interprets it, and why.
 | Office navigation is five areas plus Settings, each with its screens as tabs | Fourteen flat items | Findability; every screen is two taps away on a phone. |
 | The demo loads its schema and sample school only when it builds the database | Bundling them with every page | Cuts each page's first download by about a third; irrelevant once hosted. |
 
+| The product is **Swayvo**, direction B "Counts" with E's notices (approved 26 Nov 2026) | Sotto, Solemi, Sanaa, Choreogia; directions A, C, D, E | Highest naming score with no conflicts found; the eight-count speaks to every style. See docs/brand/. |
+| The logo geometry lives in code (src/lib/swayvo-logo.ts) and every asset is generated from it | Hand-exported files | The app and the files can never drift apart. |
+| Count blue is the product's accent, replaced by a school's own colour inside that school | Swayvo blue everywhere | Schools stay recognisably themselves; Swayvo signs off as "powered by". |
+| Classic and Urban school styles are kept, rebuilt as Swayvo's light and dark looks | Dropping school styles | Schools chose them; both now share one design system. |
+| Changes families must not miss are set as words in display type (MOVED, CANCELLED, DUE) | Coloured badges | Clearest on a phone, and never colour alone. |
+| Database messages were renamed in place (no migration) | A new migration | No production database exists yet; when one does, renames need a migration. |
+| Technical identifiers keep their original names (storage keys, calendar event ids, the `barre` folder) | Renaming everything | Renaming them would break existing demo data and subscribed calendars for no user benefit. |

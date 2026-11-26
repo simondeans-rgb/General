@@ -10,7 +10,7 @@
    never decoration. Hierarchy comes from type, spacing and rules, not boxes.
    A school's own colour replaces Count blue at runtime (lib/brand.ts).
    ========================================================================== */
-@theme {
+@theme static {
   --color-canvas:      #f4f5f8;   /* Studio white */
   --color-surface:     #ffffff;
   --color-surface-2:   #eef0f4;
