@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useSession, type Role } from '@/lib/auth/session';
-import { SanaaLogo, SanaaMark } from './sanaa';
+import { SwayvoLogo, SwayvoIcon } from './swayvo';
 import { SchoolMark, PoweredBy, useSchoolTheme, logoFor } from './brand';
 import { EmptyState, Button } from '@/components/ui';
 import { useRows } from '@/lib/query';
@@ -91,7 +91,7 @@ const ROLE_HOME: Record<Role, string> = {
 };
 
 export function Shell({
-  title, subtitle, actions, children, allow, help,
+  title, subtitle, actions, children, allow, help, actionsInline,
 }: {
   title: string;
   subtitle?: React.ReactNode;
@@ -100,10 +100,12 @@ export function Shell({
   allow: Role[];
   /** A short "what is this screen for" note (R-061). */
   help?: React.ReactNode;
+  /** Icon-only actions stay in the top row on a phone instead of taking a row of their own. */
+  actionsInline?: boolean;
 }) {
   const [helpOpen, setHelpOpen] = React.useState(false);
   const { session, signOut, loaded } = useSession();
-  // The school this person is in (or, for Sanaa support, viewing).
+  // The school this person is in (or, for Swayvo support, viewing).
   const studio = useRows<{ name: string; status: string; data_deletion_due_on: string | null;
                            brand_colour: string | null; logo_url: string | null; theme: string; brand_secondary: string | null; logo_light_url: string | null }>(
     ['shell-studio'], `select name, status, data_deletion_due_on, brand_colour, logo_url, theme, brand_secondary, logo_light_url from studio order by created_at limit 1`, [],
@@ -149,9 +151,9 @@ export function Shell({
   return (
     <div className="min-h-dvh lg:flex">
       {/* Desktop rail */}
-      <aside className="hidden lg:flex w-[236px] shrink-0 flex-col border-r border-line bg-surface">
-        {/* The school's own name and logo; Sanaa steps back to a credit. */}
-        <div className="border-b border-line px-4 py-3.5">
+      <aside className="sticky top-0 hidden h-dvh lg:flex w-[232px] shrink-0 flex-col border-r border-line bg-surface">
+        {/* The school's own name and logo; Swayvo steps back to a credit. */}
+        <div className="px-5 pb-4 pt-5">
           {branded ? (
             <div className="flex items-center gap-2.5">
               <SchoolMark name={studio!.name} logo={logoFor(studio!)} className="size-9" />
@@ -162,40 +164,37 @@ export function Shell({
             </div>
           ) : (
             <div className="flex items-center gap-2.5">
-              <SanaaLogo className="h-6" />
+              <SwayvoLogo className="h-6" />
               <span className="min-w-0">
-                <span className="sr-only">Sanaa</span>
+                <span className="sr-only">Swayvo</span>
                 {session.platform && !session.support && <span className="block text-[11.5px] text-ink-3">Platform</span>}
               </span>
             </div>
           )}
         </div>
         <SchoolSwitcher className="border-b border-line" />
-        <div className="pt-3" />
-        <nav className="flex-1 px-2" aria-label="Main">
+        <nav className="flex-1 overflow-y-auto px-3 pt-2" aria-label="Main">
           {nav.map(item => <RailLink key={item.href} item={item} pathname={pathname} />)}
         </nav>
         <div className="flex items-center gap-2.5 border-t border-line p-3">
           <PersonSwitcher />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">{session.name}</p>
-            <p className="text-[12.5px] capitalize text-ink-3">{session.support ? "Sanaa support" : session.platform ? "Sanaa platform" : session.role}</p>
+            <p className="text-[12.5px] capitalize text-ink-3">{session.support ? "Swayvo support" : session.platform ? "Swayvo platform" : session.role}</p>
             <PersonSwitcher label="Switch person" />
           </div>
         </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 overflow-hidden border-b border-line bg-surface/85 backdrop-blur
-                           supports-[backdrop-filter]:bg-surface/70">
-          {branded && <ThemeFlourish theme={studio!.theme} />}
-          <div className="relative flex min-h-14 flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5 lg:flex-nowrap lg:px-6">
+        <header className="sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/85">
+          <div className="relative flex min-h-14 flex-wrap items-center gap-x-2 gap-y-2 px-4 py-2.5 lg:min-h-[68px] lg:flex-nowrap lg:gap-x-3 lg:px-8">
             {branded
               ? <SchoolMark name={studio!.name} logo={logoFor(studio!)} className="size-8 lg:hidden" />
-              : <SanaaMark className="size-8 lg:hidden" />}
+              : <SwayvoIcon className="size-8 lg:hidden" />}
             <div className="min-w-0 flex-1">
               <h1 className="page-title truncate tracking-tight">{title}</h1>
-              {subtitle && <div className="truncate text-[13px] text-ink-2">{subtitle}</div>}
+              {subtitle && <div className="mt-0.5 truncate text-[13px] text-ink-3">{subtitle}</div>}
             </div>
             {help && (
               <button onClick={() => setHelpOpen(o => !o)} aria-expanded={helpOpen} aria-controls="page-help"
@@ -204,7 +203,7 @@ export function Shell({
               </button>
             )}
             {/* On a phone the page's own buttons take a row of their own, under the title. */}
-            {actions && <div className="order-last flex w-full justify-end lg:order-none lg:w-auto">{actions}</div>}
+            {actions && <div className={cn('flex justify-end', actionsInline ? '' : 'order-last w-full lg:order-none lg:w-auto')}>{actions}</div>}
             {(session.role === 'owner' || session.role === 'admin') && <AssistantLauncher />}
             {session.role !== 'student' && <NotificationBell />}
             <PersonSwitcher className="lg:hidden" />
@@ -232,7 +231,7 @@ export function Shell({
             {(session.role === 'owner') && <> <Link href="/account" className="font-medium underline">Account</Link></>}
           </div>
         )}
-        <main id="main" className="flex-1 px-4 pb-24 pt-4 lg:px-6 lg:pb-10">
+        <main id="main" className="flex-1 px-4 pb-24 pt-5 lg:px-8 lg:pb-12 lg:pt-7">
           {children}
           {/* On a phone the sidebar's name and credit are not visible. */}
           {branded && (
@@ -261,13 +260,13 @@ function SubTabs({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
   const group = nav.find(i => i.sub && i.sub.length > 1 && groupActive(pathname, i));
   if (!group) return null;
   return (
-    <nav aria-label={group.label} className="relative -mb-px flex gap-1 overflow-x-auto px-3 lg:px-5">
+    <nav aria-label={group.label} className="relative -mb-px flex gap-4 overflow-x-auto px-4 lg:px-8">
       {group.sub!.map(x => {
         const active = isActive(pathname, x.href);
         return (
           <Link key={x.href} href={x.href} aria-current={active ? 'page' : undefined}
-            className={cn('shrink-0 border-b-2 px-2.5 py-2 text-[13px]',
-              active ? 'border-accent-line font-medium text-ink' : 'border-transparent text-ink-2 hover:text-ink')}>
+            className={cn('shrink-0 border-b-2 py-2.5 text-[13.5px]',
+              active ? 'border-accent-line font-semibold text-ink' : 'border-transparent font-medium text-ink-3 hover:text-ink')}>
             {x.label}
           </Link>
         );
@@ -281,9 +280,11 @@ function RailLink({ item, pathname }: { item: NavItem; pathname: string }) {
   const Icon = item.icon;
   return (
     <Link href={item.href} aria-current={active ? 'page' : undefined}
-      className={cn('flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm',
-        active ? 'bg-accent-soft font-medium text-accent-ink' : 'text-ink-2 hover:bg-surface-2 hover:text-ink')}>
-      <Icon className="size-[17px]" aria-hidden /> {item.label}
+      className={cn('relative flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2 text-[14px]',
+        active ? 'font-semibold text-ink' : 'text-ink-2 hover:bg-surface-2 hover:text-ink')}>
+      {/* The active area is marked by one beat, in the school's colour. */}
+      {active && <span aria-hidden className="absolute -left-3 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-[2px] bg-accent" />}
+      <Icon className={cn('size-[18px]', active ? 'text-ink' : 'text-ink-3')} aria-hidden strokeWidth={active ? 2.2 : 1.8} /> {item.label}
     </Link>
   );
 }
@@ -310,9 +311,10 @@ function MobileTabs({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
         {shown.map(item => <TabLink key={item.href} item={item} pathname={pathname} />)}
         {rest.length > 0 && (
           <button onClick={() => setOpen(true)} aria-haspopup="dialog" aria-label="More sections"
-            className={cn('flex min-h-[52px] flex-1 flex-col items-center justify-center gap-1 pt-1.5 text-[11px]',
-              rest.some(i => groupActive(pathname, i)) ? 'text-accent-text' : 'text-ink-3')}>
-            <MoreHorizontal className="size-[19px]" aria-hidden />
+            className={cn('relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 pt-2 text-[11px] font-medium',
+              rest.some(i => groupActive(pathname, i)) ? 'text-ink' : 'text-ink-3')}>
+            {rest.some(i => groupActive(pathname, i)) && <span aria-hidden className="absolute left-1/2 top-0 h-[3px] w-6 -translate-x-1/2 rounded-b-[2px] bg-accent" />}
+            <MoreHorizontal className="size-[20px]" aria-hidden />
             <span>More</span>
           </button>
         )}
@@ -364,17 +366,18 @@ function TabLink({ item, pathname }: { item: NavItem; pathname: string }) {
   const Icon = item.icon;
   return (
     <Link href={item.href} aria-current={active ? 'page' : undefined}
-      className={cn('flex min-h-[52px] flex-1 flex-col items-center justify-center gap-1 pt-1.5 text-[11px]',
-        active ? 'text-accent-text' : 'text-ink-3')}>
-      <Icon className="size-[19px]" aria-hidden strokeWidth={active ? 2.4 : 1.9} />
-      <span className={active ? 'font-medium' : undefined}>{item.label}</span>
+      className={cn('relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 pt-2 text-[11px]',
+        active ? 'text-ink' : 'text-ink-3')}>
+      {active && <span aria-hidden className="absolute left-1/2 top-0 h-[3px] w-6 -translate-x-1/2 rounded-b-[2px] bg-accent" />}
+      <Icon className="size-[20px]" aria-hidden strokeWidth={active ? 2.3 : 1.8} />
+      <span className={active ? 'font-semibold' : 'font-medium'}>{item.label}</span>
     </Link>
   );
 }
 
 export { ROLE_HOME };
 
-/** Always on screen while Sanaa support is inside a school. */
+/** Always on screen while Swayvo support is inside a school. */
 function SupportBanner({ view }: { view: { studioId: string; studioName: string; until: string } }) {
   const { session, exitSupport } = useSession();
   const router = useRouter();
@@ -389,7 +392,7 @@ function SupportBanner({ view }: { view: { studioId: string; studioName: string;
     <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-ink/10 bg-ink px-4 py-2 text-[13px] text-surface lg:px-6">
       <ShieldCheck className="size-4 shrink-0" aria-hidden />
       <span className="min-w-0 flex-1">
-        <strong className="font-semibold">Viewing {view.studioName} as Sanaa support.</strong>{' '}
+        <strong className="font-semibold">Viewing {view.studioName} as Swayvo support.</strong>{' '}
         Read-only, with the owner’s permission, until {dateShort(view.until)} {time(view.until)}. Health records are not shown.
       </span>
       <button onClick={exit} className="inline-flex min-h-[32px] items-center gap-1.5 rounded-full bg-surface/15 px-3 font-medium hover:bg-surface/25">
@@ -400,23 +403,3 @@ function SupportBanner({ view }: { view: { studioId: string; studioName: string;
 }
 
 /** Each theme's signature, quietly behind the page title. Decorative only. */
-function ThemeFlourish({ theme }: { theme: string }) {
-  if (theme === 'urban') {
-    return (
-      <svg aria-hidden className="pointer-events-none absolute inset-y-0 right-0 h-full w-[420px] opacity-60" viewBox="0 0 420 80" preserveAspectRatio="xMaxYMid slice">
-        <defs><linearGradient id="streak" x1="0" x2="1"><stop offset="0" stopColor="var(--color-secondary)" stopOpacity="0" />
-          <stop offset="1" stopColor="var(--color-secondary)" stopOpacity=".55" /></linearGradient></defs>
-        <path d="M120 80 L250 0 L300 0 L170 80 Z" fill="url(#streak)" />
-        <path d="M200 80 C 280 40, 340 30, 420 10" stroke="var(--color-accent)" strokeWidth="1.5" fill="none" opacity=".7" />
-      </svg>
-    );
-  }
-  return (
-    <svg aria-hidden className="pointer-events-none absolute inset-y-0 right-0 h-full w-[460px] opacity-[.22]" viewBox="0 0 460 80" preserveAspectRatio="xMaxYMid slice">
-      <defs><linearGradient id="silk" x1="0" x2="1"><stop offset="0" stopColor="var(--color-accent)" stopOpacity="0" />
-        <stop offset=".6" stopColor="var(--color-accent)" /><stop offset="1" stopColor="var(--color-secondary)" /></linearGradient></defs>
-      <path d="M60 70 C 160 10, 240 90, 340 30 S 440 0, 470 20 L470 80 L60 80 Z" fill="url(#silk)" />
-      <path d="M100 60 C 200 0, 260 80, 360 22 S 440 -5, 470 8" stroke="var(--color-accent)" strokeWidth="1" fill="none" />
-    </svg>
-  );
-}

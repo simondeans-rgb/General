@@ -4,7 +4,7 @@ import * as React from 'react';
 import { Suspense } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus, Receipt, AlertTriangle, Search, Send, Banknote, Ban, Undo2, CheckCircle2, Trash2, Wallet, CalendarRange, Download,
+  Plus, AlertTriangle, ArrowRight, Search, Send, Banknote, Ban, Undo2, Trash2, Wallet, CalendarRange, Download,
 } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection } from '@/components/app/detail-panel';
@@ -16,7 +16,7 @@ import { BillingRunPanel } from '@/components/app/billing-run';
 import { useSession } from '@/lib/auth/session';
 import { useSelection } from '@/lib/use-selection';
 import {
-  Badge, Button, Card, EmptyState, ErrorState, Field, Input, Select, Skeleton, type Tone,
+  Button, EmptyState, ErrorState, Field, Input, Select, Skeleton, type Tone,
 } from '@/components/ui';
 import * as B from '@/lib/repos/billing';
 import { money, dateShort, isoDate, toMinor } from '@/lib/format';
@@ -113,91 +113,95 @@ function Billing() {
           <Plus className="size-4" aria-hidden /> <span className="hidden sm:inline">New invoice</span>
         </Button>
       </div>}>
-      <div className="mx-auto max-w-6xl space-y-5">
-        {/* Four numbers that each lead somewhere — not a chart wall. */}
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <Stat label="Outstanding" loading={summary.isLoading}
-            value={s && money(s.outstanding_minor)}
-            note={s && `${s.owing_families} famil${s.owing_families === 1 ? 'y' : 'ies'}`} />
-          <Stat label="Overdue" loading={summary.isLoading} tone={s && Number(s.overdue_minor) > 0 ? 'caution' : undefined}
-            value={s && money(s.overdue_minor)}
-            note={s && `${s.overdue_invoices} invoice${s.overdue_invoices === 1 ? '' : 's'} past due`}
-            onClick={() => setFilter('attention')} />
-          <Stat label="Failed payments" loading={summary.isLoading} tone={s && s.failed_payments > 0 ? 'critical' : undefined}
-            value={s && String(s.failed_payments)}
-            note={s && (s.failed_payments ? `${money(s.failed_minor)} declined` : 'None outstanding')}
-            onClick={() => setFilter('attention')} />
-          <Stat label="Collected, 30 days" loading={summary.isLoading}
-            value={s && money(s.collected_30d_minor)}
-            note={s && (Number(s.credit_minor) > 0 ? `${money(s.credit_minor)} held as credit` : 'Card, transfer and cash')} />
-        </div>
+      <div className="mx-auto max-w-[1240px] space-y-10">
+        {/* The ledger's four figures. Two of them lead to the invoices that need action. */}
+        <section aria-label="Money at a glance">
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-6 border-b border-line pb-6 lg:grid-cols-4 lg:gap-x-0 lg:divide-x lg:divide-line">
+            <Stat label="Outstanding" loading={summary.isLoading}
+              value={s && money(s.outstanding_minor)}
+              note={s && `Owed by ${s.owing_families} famil${s.owing_families === 1 ? 'y' : 'ies'}`} />
+            <Stat label="Overdue" loading={summary.isLoading} tone={s && Number(s.overdue_minor) > 0 ? 'caution' : undefined}
+              value={s && money(s.overdue_minor)}
+              note={s && (s.overdue_invoices ? `${s.overdue_invoices} invoice${s.overdue_invoices === 1 ? '' : 's'} past due` : 'Nothing past due')}
+              action={s && s.overdue_invoices > 0 ? 'Chase' : undefined}
+              onClick={() => setFilter('attention')} />
+            <Stat label="Failed payments" loading={summary.isLoading} tone={s && s.failed_payments > 0 ? 'critical' : undefined}
+              value={s && String(s.failed_payments)}
+              note={s && (s.failed_payments ? `${money(s.failed_minor)} declined` : 'None outstanding')}
+              action={s && s.failed_payments > 0 ? 'Retry' : undefined}
+              onClick={() => setFilter('attention')} />
+            <Stat label="Collected, 30 days" loading={summary.isLoading}
+              value={s && money(s.collected_30d_minor)}
+              note={s && (Number(s.credit_minor) > 0 ? `${money(s.credit_minor)} held as credit` : 'Card, transfer and cash')} />
+          </dl>
+        </section>
 
-        <div className={cn('gap-5', selected ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)]' : 'block')}>
-          <Card className="min-w-0 overflow-hidden">
-            <div className="flex flex-col gap-3 border-b border-line p-3 sm:flex-row sm:items-center">
-              <div role="tablist" aria-label="Show invoices" className="-mx-1 flex gap-1 overflow-x-auto px-1">
-                {FILTERS.map(f => (
-                  <button key={f.key} role="tab" aria-selected={filter === f.key}
-                    onClick={() => setFilter(f.key)}
-                    className={cn('flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px]',
-                      filter === f.key ? 'bg-ink text-surface font-medium' : 'text-ink-2 hover:bg-surface-2')}>
-                    {f.label}
-                    {invoices.data && <span className={cn('tnum text-[12px]',
-                      filter === f.key ? 'opacity-70' : 'text-ink-3')}>{counts[f.key]}</span>}
-                  </button>
-                ))}
-              </div>
-              <label className="relative sm:ml-auto sm:w-60">
+        <div className={cn('gap-x-10 gap-y-8', selected ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:items-start' : 'block')}>
+          <section aria-labelledby="inv-h" className="min-w-0">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b-2 border-ink pb-2">
+              <h2 id="inv-h" className="section-title flex-1">Invoices</h2>
+              <label className="relative w-full sm:w-64">
                 <span className="sr-only">Search invoices</span>
                 <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-3" aria-hidden />
                 <Input value={query} onChange={e => setQuery(e.target.value)}
                        placeholder="Family or invoice number" className="pl-9" />
               </label>
             </div>
+            <div role="tablist" aria-label="Show invoices" className="-mx-1 flex gap-0.5 overflow-x-auto border-b border-line px-1 py-1.5">
+              {FILTERS.map(f => (
+                <button key={f.key} role="tab" aria-selected={filter === f.key}
+                  onClick={() => setFilter(f.key)}
+                  className={cn('flex h-10 shrink-0 items-center gap-1.5 rounded-[var(--radius-md)] px-3 text-[14px]',
+                    filter === f.key ? 'bg-ink font-semibold text-ink-invert' : 'text-ink-2 hover:bg-surface-2 hover:text-ink')}>
+                  {f.label}
+                  {invoices.data && <span className={cn('tnum text-[12px]',
+                    filter === f.key ? 'opacity-75' : 'text-ink-3')}>{counts[f.key]}</span>}
+                </button>
+              ))}
+            </div>
 
-            {invoices.isLoading && <div className="space-y-2 p-4">{[0,1,2,3].map(i => <Skeleton key={i} className="h-12" />)}</div>}
-            {invoices.error && <div className="p-4"><ErrorState error={invoices.error} onRetry={() => invoices.refetch()} /></div>}
+            {invoices.isLoading && <div className="space-y-3 pt-3">{[0,1,2,3].map(i => <Skeleton key={i} className="h-12" />)}</div>}
+            {invoices.error && <div className="pt-4"><ErrorState error={invoices.error} onRetry={() => invoices.refetch()} /></div>}
             {invoices.data && shown.length === 0 && (
               filter === 'attention' && !query
-                ? <EmptyState icon={<CheckCircle2 className="size-5" />} title="Nothing needs chasing"
+                ? <EmptyState title="Nothing needs chasing"
                     body="No failed payments, nothing overdue and no drafts waiting to go out." />
-                : <EmptyState icon={<Receipt className="size-5" />} title="No invoices here"
+                : <EmptyState title="No invoices here"
                     body={query ? 'Nothing matches that search.' : 'Invoices you raise will appear here.'}
                     action={!query && <Button size="sm" onClick={() => setCreating(true)}>
                       <Plus className="size-4" aria-hidden /> New invoice</Button>} />
             )}
 
-            {/* Desktop: a real table, because the office compares rows. */}
+            {/* Desktop: an aligned ledger, because the office compares rows. */}
             {shown.length > 0 && (
-              <table className="hidden w-full text-sm md:table">
-                <thead className="border-b border-line bg-surface-2 text-left text-[12px] text-ink-3">
+              <table className="hidden w-full text-[14.5px] md:table">
+                <thead className="border-b border-line text-left">
                   <tr>
-                    <th scope="col" className="px-4 py-2 font-medium">Invoice</th>
-                    <th scope="col" className="px-2 py-2 font-medium">Family</th>
-                    <th scope="col" className="px-2 py-2 font-medium">Due</th>
-                    <th scope="col" className="px-2 py-2 font-medium">Status</th>
-                    <th scope="col" className="px-4 py-2 text-right font-medium">Outstanding</th>
+                    <th scope="col" className="label py-2.5 pr-3 font-semibold">Invoice</th>
+                    <th scope="col" className="label px-3 py-2.5 font-semibold">Family</th>
+                    <th scope="col" className="label px-3 py-2.5 font-semibold">Due</th>
+                    <th scope="col" className="label px-3 py-2.5 font-semibold">Status</th>
+                    <th scope="col" className="label py-2.5 pl-3 text-right font-semibold">{filter === 'paid' ? 'Total' : 'Outstanding'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
                   {shown.map(i => (
                     <tr key={i.id} onClick={() => select(i.id)}
-                        className={cn('cursor-pointer hover:bg-surface-2', selected === i.id && 'bg-accent-soft/50')}>
-                      <td className="px-4 py-2.5">
+                        className={cn('cursor-pointer hover:bg-surface-2/60', selected === i.id && 'bg-accent-soft/60 hover:bg-accent-soft/60')}>
+                      <td className="py-2.5 pr-3 align-top">
                         {/* The row is clickable for the mouse; this button is
                             the keyboard and screen-reader route to it. */}
-                        <button className="tnum font-medium hover:underline" onClick={e => { e.stopPropagation(); select(i.id); }}>
+                        <button className="tnum font-semibold hover:underline" onClick={e => { e.stopPropagation(); select(i.id); }}
+                          aria-current={selected === i.id || undefined}>
                           {i.number}
                         </button>
-                        <span className="block max-w-[220px] truncate text-[12px] text-ink-3">{i.lines}</span>
+                        <span className="block max-w-[240px] truncate text-[13px] text-ink-3">{i.lines}</span>
                       </td>
-                      <td className="px-2 py-2.5">{i.family_name}</td>
-                      <td className={cn('tnum px-2 py-2.5', i.overdue ? 'text-caution' : 'text-ink-2')}>
-                        {dateShort(i.due_on)}{i.overdue && <span className="sr-only"> (overdue)</span>}
-                      </td>
-                      <td className="px-2 py-2.5"><InvoiceBadges i={i} /></td>
-                      <td className="tnum px-4 py-2.5 text-right font-medium">
-                        {isOpen(i.status) ? money(outstanding(i)) : <span className="text-ink-3">{money(i.total_minor)}</span>}
+                      <td className="px-3 py-2.5 align-top">{i.family_name}</td>
+                      <td className="tnum whitespace-nowrap px-3 py-2.5 align-top text-ink-2">{dateShort(i.due_on)}</td>
+                      <td className="px-3 py-2.5 align-top"><InvoiceStatus i={i} /></td>
+                      <td className="tnum py-2.5 pl-3 text-right align-top font-semibold">
+                        {isOpen(i.status) ? money(outstanding(i)) : <span className="font-normal text-ink-3">{money(i.total_minor)}</span>}
                       </td>
                     </tr>
                   ))}
@@ -205,27 +209,29 @@ function Billing() {
               </table>
             )}
 
-            {/* Phone: one card per invoice, the amount where a thumb expects it. */}
+            {/* Phone: one row per invoice, the amount where a thumb expects it. */}
             <ul className="divide-y divide-line md:hidden">
               {shown.map(i => (
                 <li key={i.id}>
-                  <button onClick={() => select(i.id)}
-                    className={cn('flex w-full items-center gap-3 px-4 py-3 text-left', selected === i.id && 'bg-accent-soft/50')}>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium">{i.family_name}</span>
-                      <span className="mt-1 flex flex-wrap items-center gap-1.5 text-[12.5px] text-ink-2">
+                  <button onClick={() => select(i.id)} aria-current={selected === i.id || undefined}
+                    className={cn('grid min-h-14 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 py-3 text-left', selected === i.id && 'bg-accent-soft/60')}>
+                    <span className="min-w-0">
+                      <span className="block truncate font-semibold">{i.family_name}</span>
+                      <span className="mt-0.5 block truncate text-[13px] text-ink-3">
                         <span className="tnum">{i.number}</span> · due {dateShort(i.due_on)}
-                        <InvoiceBadges i={i} />
                       </span>
                     </span>
-                    <span className="tnum shrink-0 font-medium">
-                      {money(isOpen(i.status) ? outstanding(i) : i.total_minor)}
+                    <span className="text-right">
+                      <span className={cn('tnum block font-semibold', !isOpen(i.status) && 'font-normal text-ink-3')}>
+                        {money(isOpen(i.status) ? outstanding(i) : i.total_minor)}
+                      </span>
+                      <span className="block text-[13px]"><InvoiceStatus i={i} /></span>
                     </span>
                   </button>
                 </li>
               ))}
             </ul>
-          </Card>
+          </section>
 
           {selected && <InvoicePanel id={selected} onClose={() => select(null)} />}
         </div>
@@ -268,34 +274,33 @@ function ExportButton() {
   );
 }
 
-function Stat({ label, value, note, tone, loading, onClick }: {
+function Stat({ label, value, note, tone, loading, onClick, action }: {
   label: string; value?: string | null | false; note?: string | null | false;
-  tone?: 'caution' | 'critical'; loading?: boolean; onClick?: () => void;
+  tone?: 'caution' | 'critical'; loading?: boolean; onClick?: () => void; action?: string;
 }) {
-  const Tag = onClick ? 'button' : 'div';
   return (
-    <Card className="p-0">
-      <Tag onClick={onClick} className={cn('block w-full p-4 text-left', onClick && 'hover:bg-surface-2 rounded-[inherit]')}>
-        <p className="text-[12.5px] text-ink-3">{label}</p>
-        {loading ? <Skeleton className="mt-2 h-7 w-24" /> : (
-          <p className={cn('stat-number tnum mt-1 text-[22px] font-semibold leading-tight tracking-[-0.02em]',
-            tone === 'caution' && 'text-caution', tone === 'critical' && 'text-critical')}>{value}</p>
-        )}
-        {note && <p className="mt-0.5 truncate text-[12.5px] text-ink-2">{note}</p>}
-      </Tag>
-    </Card>
+    <div className="min-w-0 lg:px-6 lg:first:pl-0 lg:last:pr-0">
+      <dt className="label">{label}</dt>
+      {loading ? <dd><Skeleton className="mt-2 h-8 w-28" /></dd> : (
+        <dd className={cn('stat-number mt-1.5 text-[28px] leading-none lg:text-[32px]',
+          tone === 'caution' && 'text-caution', tone === 'critical' && 'text-critical')}>{value}</dd>
+      )}
+      {note && <dd className="mt-1.5 text-[13px] text-ink-3">{note}</dd>}
+      {onClick && action && (
+        <dd><button type="button" onClick={onClick} aria-label={`${action}: show the invoices that need action`}
+          className="-ml-1 mt-0.5 inline-flex min-h-8 items-center gap-1 rounded-[var(--radius-sm)] px-1 text-[13px] font-semibold text-accent-text hover:underline [@media(pointer:coarse)]:min-h-11">
+          {action}<ArrowRight className="size-3.5" aria-hidden /></button></dd>
+      )}
+    </div>
   );
 }
 
-function InvoiceBadges({ i }: { i: B.InvoiceRow }) {
+/** Status as a word. Colour backs it up; it never carries it alone. */
+function InvoiceStatus({ i }: { i: B.InvoiceRow }) {
   const s = STATUS[i.status] ?? STATUS.draft!;
-  return (
-    <span className="inline-flex flex-wrap gap-1">
-      {i.failed ? <Badge tone="critical" icon={<AlertTriangle className="size-3" aria-hidden />}>Card declined</Badge>
-        : i.overdue ? <Badge tone="caution">Overdue</Badge>
-        : <Badge tone={s.tone}>{s.label}</Badge>}
-    </span>
-  );
+  if (i.failed) return <span className="inline-flex items-center gap-1 font-semibold text-critical"><AlertTriangle className="size-3.5" aria-hidden />Card declined</span>;
+  if (i.overdue) return <span className="font-semibold text-caution">Overdue</span>;
+  return <span className={cn(s.tone === 'positive' ? 'text-positive' : s.tone === 'caution' ? 'text-ink' : 'text-ink-3', 'font-medium')}>{s.label}</span>;
 }
 
 // ── Invoice detail ───────────────────────────────────────────────────────
@@ -327,22 +332,22 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
       )}
       {i && (
         <>
-          <div className="mb-5 rounded-[var(--radius-lg)] bg-surface-2 p-4">
-            <div className="flex items-center gap-2">
-              <Badge tone={(STATUS[i.status] ?? STATUS.draft!).tone}>{(STATUS[i.status] ?? STATUS.draft!).label}</Badge>
-              {i.overdue && <Badge tone="caution">Overdue</Badge>}
-              <span className="ml-auto text-[12.5px] text-ink-3">
-                {i.issued_on ? `Issued ${dateShort(i.issued_on)} · ` : ''}due {dateShort(i.due_on)}
+          <div className="mb-5">
+            <p className="text-[13px] text-ink-3">
+              <span className={cn('font-semibold', i.overdue ? 'text-caution' : (STATUS[i.status] ?? STATUS.draft!).tone === 'positive' ? 'text-positive' : 'text-ink')}>
+                {i.overdue ? 'Overdue' : (STATUS[i.status] ?? STATUS.draft!).label}
               </span>
-            </div>
-            <p className="mt-3 text-[12.5px] text-ink-3">{isOpen(i.status) ? 'Still to pay' : 'Total'}</p>
-            <p className="stat-number tnum text-[28px] font-semibold leading-tight tracking-[-0.02em]">
+              {i.overdue && i.status === 'part_paid' && <span className="text-ink"> · part paid</span>}
+              {' · '}{i.issued_on ? `Issued ${dateShort(i.issued_on)}, ` : ''}due {dateShort(i.due_on)}
+            </p>
+            <p className="label mt-4">{isOpen(i.status) ? 'Still to pay' : 'Total'}</p>
+            <p className="stat-number mt-1 text-[36px] leading-none">
               {money(isOpen(i.status) ? owed : i.total_minor)}
             </p>
             {isOpen(i.status) && Number(i.paid_minor) > 0 && (
-              <p className="tnum text-[13px] text-ink-2">{money(i.paid_minor)} of {money(i.total_minor)} paid</p>
+              <p className="tnum mt-1.5 text-[13px] text-ink-2">{money(i.paid_minor)} of {money(i.total_minor)} paid</p>
             )}
-            {i.status === 'void' && i.void_reason && <p className="mt-1 text-[13px] text-ink-2">Voided: {i.void_reason}</p>}
+            {i.status === 'void' && i.void_reason && <p className="mt-1.5 text-[13px] text-ink-2">Voided: {i.void_reason}</p>}
           </div>
 
           {/* The next sensible action first, the rest beside it. */}
@@ -372,9 +377,9 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
 
           <DetailSection title="Lines">
             {items.isLoading && <Skeleton className="h-12" />}
-            <ul className="divide-y divide-line rounded-[var(--radius-md)] border border-line">
+            <ul className="divide-y divide-line border-y border-line">
               {items.data?.map(it => (
-                <li key={it.id} className="flex items-start gap-3 px-3 py-2.5 text-sm">
+                <li key={it.id} className="flex items-start gap-3 py-2.5 text-sm">
                   <span className="min-w-0 flex-1">
                     <span className="block">{it.description}</span>
                     <span className="block text-[12px] text-ink-3">
@@ -388,12 +393,12 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
                 </li>
               ))}
               {Number(i.discount_minor) > 0 && (
-                <li className="flex gap-3 px-3 py-2.5 text-sm text-ink-2">
+                <li className="flex gap-3 py-2.5 text-sm text-ink-2">
                   <span className="flex-1">Invoice discount</span>
                   <span className="tnum">−{money(i.discount_minor)}</span>
                 </li>
               )}
-              <li className="flex gap-3 bg-surface-2 px-3 py-2.5 text-sm font-medium">
+              <li className="flex gap-3 border-t-2 border-ink py-2.5 text-sm font-semibold">
                 <span className="flex-1">Total</span><span className="tnum">{money(i.total_minor)}</span>
               </li>
             </ul>
@@ -402,19 +407,19 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
 
           <DetailSection title="Payments">
             {payments.data?.length === 0 && <p className="text-sm text-ink-3">Nothing received yet.</p>}
-            <ul className="space-y-2">
+            <ul className="divide-y divide-line border-y border-line">
               {payments.data?.map(p => {
                 const ok = !!p.succeeded_at;
                 const refunded = Number(p.refunded_minor);
                 const canRefund = ok && ['bank_transfer', 'cash'].includes(p.method)
                                   && refunded < Number(p.amount_minor);
                 return (
-                  <li key={p.id} className="flex items-start gap-3 rounded-[var(--radius-md)] border border-line px-3 py-2.5 text-sm">
+                  <li key={p.id} className="flex items-start gap-3 py-2.5 text-sm">
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-1.5">
                         {METHOD_LABEL[p.method] ?? p.method}
-                        {!ok && p.failure_code && <Badge tone="critical">Failed · {p.failure_code.replace(/_/g, ' ')}</Badge>}
-                        {refunded > 0 && <Badge tone="info">{money(refunded)} refunded</Badge>}
+                        {!ok && p.failure_code && <span className="text-[13px] font-semibold text-critical">Failed · {p.failure_code.replace(/_/g, ' ')}</span>}
+                        {refunded > 0 && <span className="text-[13px] font-medium text-info">{money(refunded)} refunded</span>}
                       </span>
                       <span className="block text-[12px] text-ink-3">
                         {dateShort(p.succeeded_at ?? p.created_at)}{p.note ? ` · ${p.note}` : ''}
@@ -656,7 +661,7 @@ function NewInvoiceSheet({ onClose, onCreated, familyId }: {
         className="flex max-h-[92dvh] w-full max-w-xl flex-col overflow-hidden rounded-t-[var(--radius-xl)]
                    border border-line bg-surface shadow-lg sm:rounded-[var(--radius-xl)]">
         <div className="border-b border-line p-4">
-          <h2 id="ni-t" className="text-[17px] font-semibold tracking-tight">New invoice</h2>
+          <h2 id="ni-t" className="font-display text-[20px] font-[800] leading-tight [font-stretch:112%]">New invoice</h2>
           <p className="text-[13px] text-ink-2">Lines are itemised for the family exactly as you write them.</p>
         </div>
         <div className="flex-1 space-y-4 overflow-y-auto overscroll-contain p-4">
@@ -673,18 +678,18 @@ function NewInvoiceSheet({ onClose, onCreated, familyId }: {
 
           {family && termCount > 0 && (
             <button onClick={addTermFees}
-              className="flex w-full items-center gap-3 rounded-[var(--radius-md)] border border-dashed border-line-strong p-3 text-left text-sm hover:bg-surface-2">
-              <Wallet className="size-4 shrink-0 text-accent-text" aria-hidden />
+              className="flex min-h-11 w-full items-center gap-3 rounded-[var(--radius-md)] border border-line-strong px-3 py-2.5 text-left text-sm font-medium hover:bg-surface-2">
+              <Wallet className="size-4 shrink-0 text-ink-3" aria-hidden />
               <span className="flex-1">Add term fees for {termCount} enrolled class{termCount === 1 ? '' : 'es'}</span>
             </button>
           )}
 
-          <fieldset className="space-y-3">
+          <fieldset>
             <legend className="mb-1.5 text-[13px] font-medium text-ink-2">Lines</legend>
             {lines.map((l, n) => {
               const minor = toMinor(l.amount);
               return (
-                <div key={l.key} className="rounded-[var(--radius-md)] border border-line p-3">
+                <div key={l.key} className="border-b border-line py-3 first:pt-0">
                   <div className="grid grid-cols-[1fr_auto] gap-2 sm:grid-cols-[140px_1fr_110px_auto]">
                     <Select aria-label={`Line ${n + 1} type`} value={l.kind}
                             onChange={e => update(l.key, { kind: e.target.value })}
@@ -706,7 +711,7 @@ function NewInvoiceSheet({ onClose, onCreated, familyId }: {
                 </div>
               );
             })}
-            <Button size="sm" variant="ghost" onClick={() => setLines(ls => [...ls, blank()])}>
+            <Button size="sm" variant="ghost" className="mt-2" onClick={() => setLines(ls => [...ls, blank()])}>
               <Plus className="size-4" aria-hidden /> Add a line
             </Button>
           </fieldset>
@@ -732,7 +737,7 @@ function NewInvoiceSheet({ onClose, onCreated, familyId }: {
         <div className="border-t border-line p-4 pb-safe">
           <div className="mb-3 flex items-baseline justify-between text-sm">
             <span className="text-ink-2">{fam ? fam.name : 'Total'}</span>
-            <span className="tnum text-[20px] font-semibold">{money(total)}</span>
+            <span className="stat-number text-[24px]">{money(total)}</span>
           </div>
           <div className="flex gap-2">
             <Button className="flex-1" onClick={onClose}>Cancel</Button>

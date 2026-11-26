@@ -2,12 +2,11 @@
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CornerUpLeft, MessageSquare, Send } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Button, Card, EmptyState, ErrorState, Skeleton } from '@/components/ui';
+import { Button, EmptyState, ErrorState, Skeleton } from '@/components/ui';
 import * as I from '@/lib/repos/inbox';
 import { relativeDay, time } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -28,13 +27,13 @@ export default function TeacherMessages() {
   }, [rows.data]);
 
   return (
-    <Shell title="Messages" subtitle="Your conversations with families. The office can read them too." allow={['owner', 'admin', 'teacher']}>
-      <div className="mx-auto max-w-2xl space-y-4">
+    <Shell title="Messages" subtitle="With families. The office can read these too." allow={['owner', 'admin', 'teacher']}>
+      <div className="mx-auto max-w-2xl space-y-10">
         {rows.isLoading && <Skeleton className="h-32" />}
         {rows.error && <ErrorState error={rows.error} onRetry={() => rows.refetch()} />}
         {rows.data?.length === 0 && (
-          <EmptyState icon={<MessageSquare className="size-5" />} title="No conversations yet"
-            body="Write to a family from a student’s page. Their replies come here, and to the office." />
+          <EmptyState title="No conversations yet"
+            body="Write to a family from a student’s page in Students. Their replies come here, and to the office." />
         )}
         {threads.map(t => <Thread key={t[0]!.id} msgs={t} />)}
       </div>
@@ -53,40 +52,36 @@ function Thread({ msgs }: { msgs: I.ThreadMsg[] }) {
     onSuccess: () => { setDraft(''); qc.invalidateQueries({ queryKey: ['db'] }); },
   });
   return (
-    <Card>
-      <div className="flex items-baseline justify-between gap-3 border-b border-line px-4 py-3">
-        <h2 className="min-w-0 truncate font-semibold">{msgs[0]!.family_name}</h2>
-        <span className="shrink-0 text-[12.5px] text-ink-3">{msgs[0]!.subject}</span>
+    <section aria-labelledby={`th-${last.id}`}>
+      <div className="flex flex-wrap items-baseline gap-x-3 border-b-2 border-ink pb-2">
+        <h2 id={`th-${last.id}`} className="section-title min-w-0 flex-1 truncate">{msgs[0]!.family_name}</h2>
+        {waiting
+          ? <span className="text-[13px] font-semibold text-caution">Waiting for your reply</span>
+          : <span className="text-[13px] text-ink-3">Waiting for the family</span>}
       </div>
-      <ul className="space-y-2 bg-surface-2/40 p-4">
+      {msgs[0]!.subject && <p className="pt-2 text-[13.5px] text-ink-3">{msgs[0]!.subject}</p>}
+      <ul className="divide-y divide-line">
         {msgs.map(m => (
-          <li key={m.id} className={cn('flex', m.mine ? 'justify-end' : 'justify-start')}>
-            <div className={cn('max-w-[85%] rounded-[var(--radius-lg)] px-3.5 py-2.5 text-[14.5px] shadow-xs',
-              m.mine ? 'rounded-br-sm bg-accent text-on-accent' : 'rounded-bl-sm border border-line bg-surface')}>
-              <p className="whitespace-pre-wrap break-words">{m.body}</p>
-              <p className={cn('mt-1 text-[11.5px]', m.mine ? 'text-on-accent opacity-80' : 'text-ink-3')}>
-                {m.mine ? 'You' : m.sender ?? 'Family'} · {relativeDay(m.sent_at)} {time(m.sent_at)}
-              </p>
-            </div>
+          <li key={m.id} className={cn('py-3', m.mine && 'pl-6 sm:pl-12')}>
+            <p className="text-[13px] text-ink-3">
+              <span className={cn('font-semibold', m.mine ? 'text-ink-2' : 'text-ink')}>{m.mine ? 'You' : m.sender ?? 'Family'}</span>
+              {' · '}{relativeDay(m.sent_at)} {time(m.sent_at)}
+            </p>
+            <p className="mt-0.5 whitespace-pre-wrap break-words text-[15px] text-ink">{m.body}</p>
           </li>
         ))}
       </ul>
-      {waiting ? (
-        <form className="flex items-end gap-2 border-t border-line p-3" onSubmit={e => { e.preventDefault(); if (draft.trim()) send.mutate(); }}>
+      {waiting && (
+        <form className="flex items-end gap-2 border-t border-line pt-3" onSubmit={e => { e.preventDefault(); if (draft.trim()) send.mutate(); }}>
           <label htmlFor={`tr-${last.id}`} className="sr-only">Reply to the {msgs[0]!.family_name}</label>
           <textarea id={`tr-${last.id}`} rows={1} value={draft} onChange={e => setDraft(e.target.value)} placeholder="Reply…"
-            className="min-h-[44px] flex-1 resize-none rounded-[22px] border border-line-strong bg-surface px-4 py-2.5 text-[15px]"
+            className="min-h-[44px] flex-1 resize-none rounded-[var(--radius-md)] border border-line-strong bg-surface px-3 py-2.5 text-[15px]
+                       focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12"
             style={{ fieldSizing: 'content' } as React.CSSProperties} />
-          <Button type="submit" variant="primary" className="size-11 shrink-0 rounded-full p-0" aria-label="Send reply" loading={send.isPending} disabled={!draft.trim()}>
-            {!send.isPending && <Send className="size-4" aria-hidden />}
-          </Button>
+          <Button type="submit" className="h-11 shrink-0" loading={send.isPending} disabled={!draft.trim()}>Send reply</Button>
         </form>
-      ) : (
-        <p className="flex items-center gap-1.5 border-t border-line px-4 py-2.5 text-[12.5px] text-ink-3">
-          <CornerUpLeft className="size-3.5" aria-hidden /> Waiting for the family to reply.
-        </p>
       )}
-      {send.error != null && <div className="p-3"><ErrorState error={send.error} /></div>}
-    </Card>
+      {send.error != null && <div className="pt-3"><ErrorState error={send.error} /></div>}
+    </section>
   );
 }

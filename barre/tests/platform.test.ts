@@ -10,7 +10,7 @@ afterAll(async () => { await closeDb(); });
 const ELENA = uid(NS.user, 191);   // owner of Kestrel
 const TOM = uid(NS.user, 192);     // owner of Pointe & Flex (suspended)
 
-describe('Sanaa staff are not studio members', () => {
+describe('Swayvo staff are not studio members', () => {
   it('see every school’s account in the console, and no child in any of them', async () => {
     await asReader(PLATFORM_ADMIN, async q => {
       const schools = await q(`select * from app.platform_studios()`);
@@ -178,7 +178,7 @@ describe('plans set limits', () => {
 });
 
 describe('invitations', () => {
-  it('a new school: Sanaa creates it, the owner accepts, and runs it', async () => {
+  it('a new school: Swayvo creates it, the owner accepts, and runs it', async () => {
     const [{ studio_id, invitation_token: tok }] = await commitAs(PLATFORM_ADMIN,
       `select * from app.platform_create_studio('Harbour Dance', 'Sasha Reid', 'Sasha@Harbour.example', 'trial', 30)`);
     await asReader(null, async q => {
@@ -314,7 +314,7 @@ describe('roles within a school', () => {
   });
 });
 
-describe('leaving Sanaa', () => {
+describe('leaving Swayvo', () => {
   it('a cancelled school is kept for its notice period, then only a super admin can erase it', async () => {
     await commitAs(PLATFORM_ADMIN, `select app.platform_set_status($1, 'cancelled', 'Closing the school')`, [OTHER_STUDIOS.kestrel]);
     await expect(commitAs(PLATFORM_ADMIN, `select app.platform_purge_studio($1, 'Kestrel Ballet School')`, [OTHER_STUDIOS.kestrel]))
@@ -353,7 +353,7 @@ describe('session settings are not a way around the rules', () => {
 });
 
 describe('the console and account screens’ queries', () => {
-  it('run for Sanaa staff', async () => {
+  it('run for Swayvo staff', async () => {
     const P = await import('../src/lib/repos/platform');
     await asReader(PLATFORM_ADMIN, async q => {
       expect((await q(P.SCHOOLS)).length).toBeGreaterThanOrEqual(3);

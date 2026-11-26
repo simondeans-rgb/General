@@ -2,17 +2,19 @@
 
 import * as React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ShieldCheck, Lock } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { RecordSheet } from '@/components/app/record-sheet';
-import { Badge, Card, CardHeader, EmptyState, ErrorState, Field, Select, Skeleton, type Tone } from '@/components/ui';
+import { EmptyState, ErrorState, Field, Select, Skeleton } from '@/components/ui';
+import { SettingsSection as Card, SettingsHead as CardHeader } from '@/components/app/progress-settings';
+import { cn } from '@/lib/cn';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import * as G from '@/lib/repos/safeguarding';
 import { dateShort, relativeDay, time } from '@/lib/format';
 
-const STATUS_TONE: Record<string, Tone> = { open: 'critical', monitoring: 'caution', referred: 'info', closed: 'neutral' };
+const STATUS_TEXT: Record<string, string> = { open: 'text-critical', monitoring: 'text-caution', referred: 'text-info', closed: 'text-ink-3' };
+const STATUS_WORD: Record<string, string> = { open: 'Open', monitoring: 'Monitoring', referred: 'Referred', closed: 'Closed' };
 
 /** The safeguarding log (R-033). The owner and the named lead only; every look is recorded. */
 export default function SafeguardingPage() {
@@ -25,29 +27,31 @@ export default function SafeguardingPage() {
   const owner = session?.role === 'owner';
   return (
     <Shell title="Safeguarding" help={<>Concerns any member of staff raises go only to you and your safeguarding lead, and every time one is opened it is logged. Staff checks (DBS, training, first aid) remind you 30 days before they expire. Retention settings decide how long leavers’ details are kept.</>} subtitle="Concerns raised by staff" allow={['owner', 'admin', 'teacher']}>
-      <div className="mx-auto max-w-3xl space-y-5">
+      <div className="mx-auto max-w-[1240px]"><div className="max-w-3xl space-y-10">
         {me && !me.can_read && (
-          <Card><EmptyState icon={<Lock className="size-5" />} title="Only the safeguarding lead and the owner can read concerns"
-            body="To raise one, open the child from your students and choose “Raise a safeguarding concern”." /></Card>
+          <EmptyState title="Only the safeguarding lead and the owner read concerns"
+            body="To raise one, open the child from your students and choose “Raise a safeguarding concern”." />
         )}
         {me?.can_read && (
           <Card>
             <CardHeader title="Concerns" subtitle="Each time this list or a concern is opened, it is recorded." />
-            {log.isLoading && <div className="p-4"><Skeleton className="h-24" /></div>}
-            {log.error && <div className="p-4"><ErrorState error={log.error} /></div>}
-            {log.data?.length === 0 && <EmptyState icon={<ShieldCheck className="size-5" />} title="No concerns recorded" />}
+            {log.isLoading && <div className="pt-3"><Skeleton className="h-24" /></div>}
+            {log.error && <div className="pt-3"><ErrorState error={log.error} /></div>}
+            {log.data?.length === 0 && <EmptyState title="No concerns recorded" body="When a member of staff raises one, it appears here for you and the lead." />}
             <ul className="divide-y divide-line">
               {log.data?.map(c => (
                 <li key={c.id}>
-                  <button onClick={() => setOpen(c)} className="block w-full px-4 py-3 text-left hover:bg-surface-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {c.immediate_risk && c.status !== 'closed' && <Badge tone="critical">At risk</Badge>}
-                      <Badge tone={STATUS_TONE[c.status] ?? 'neutral'}>{c.status}</Badge>
-                      <span className="font-medium">{c.student_name ?? 'Child'}</span>
-                      <span className="ml-auto text-[12.5px] text-ink-3">{relativeDay(c.created_at)}</span>
+                  <button onClick={() => setOpen(c)} className="block w-full py-3.5 text-left hover:bg-surface-2/60">
+                    {c.immediate_risk && c.status !== 'closed' && (
+                      <p className="mb-1 font-display text-[18px] uppercase leading-none tracking-[-0.01em] text-critical [font-stretch:80%]">At risk</p>
+                    )}
+                    <div className="flex flex-wrap items-baseline gap-x-2">
+                      <span className="font-semibold">{c.student_name ?? 'Child'}</span>
+                      <span className={cn('text-[13px] font-semibold', STATUS_TEXT[c.status] ?? 'text-ink-3')}>{STATUS_WORD[c.status] ?? c.status}</span>
+                      <span className="ml-auto text-[13px] text-ink-3">{relativeDay(c.created_at)}</span>
                     </div>
-                    <p className="mt-1 line-clamp-2 text-sm text-ink-2">{c.summary}</p>
-                    <p className="mt-1 text-[12px] text-ink-3">{G.CATEGORIES.find(x => x[0] === c.category)?.[1]} · raised by {c.raised_by} · {c.actions} action{c.actions === 1 ? '' : 's'}</p>
+                    <p className="mt-1 line-clamp-2 text-[14.5px] text-ink-2">{c.summary}</p>
+                    <p className="mt-1 text-[13px] text-ink-3">{G.CATEGORIES.find(x => x[0] === c.category)?.[1]} · raised by {c.raised_by} · {c.actions} action{c.actions === 1 ? '' : 's'}</p>
                   </button>
                 </li>
               ))}
@@ -56,7 +60,7 @@ export default function SafeguardingPage() {
         )}
         {owner && me && <LeadCard studioId={me.id} lead={me.dsl_user_id} />}
         {owner && me && <AccessLog studioId={me.id} />}
-      </div>
+      </div></div>
       {open && <ConcernSheet c={open} onClose={() => setOpen(null)} />}
     </Shell>
   );
@@ -76,15 +80,15 @@ function ConcernSheet({ c, onClose }: { c: G.Concern; onClose: () => void }) {
   return (
     <RecordSheet title={c.student_name ?? 'Concern'} subtitle={`${dateShort(c.created_at)} · raised by ${c.raised_by}`} onClose={onClose}
       onSave={() => act.mutate()} saving={act.isPending} error={act.error} canSave={note.trim().length > 2} saveLabel="Record action">
-      <p className="whitespace-pre-wrap rounded-[var(--radius-md)] bg-surface-2 p-3 text-sm">{c.summary}</p>
-      <ol className="space-y-2">
+      <p className="whitespace-pre-wrap border-l-2 border-ink py-1 pl-3 text-[14.5px]">{c.summary}</p>
+      <ol className="divide-y divide-line border-y border-line">
         {actions.data?.map((a, i) => (
-          <li key={i} className="text-sm"><span className="text-[12px] text-ink-3">{dateShort(a.at)} {time(a.at)} · {a.by_name}{a.status_to ? ` · now ${a.status_to}` : ''}</span>
+          <li key={i} className="py-2 text-[14px]"><span className="text-[13px] text-ink-3">{dateShort(a.at)} {time(a.at)} · {a.by_name}{a.status_to ? ` · now ${a.status_to}` : ''}</span>
             <p>{a.note}</p></li>
         ))}
       </ol>
       <Field label="What was done" htmlFor="sg-n" required>
-        <textarea id="sg-n" rows={3} value={note} onChange={e => setNote(e.target.value)} className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm" />
+        <textarea id="sg-n" rows={3} value={note} onChange={e => setNote(e.target.value)} className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
       </Field>
       <Field label="Status" htmlFor="sg-s">
         <Select id="sg-s" value={status} onChange={e => setStatus(e.target.value)}>
@@ -105,7 +109,9 @@ function LeadCard({ studioId, lead }: { studioId: string; lead: string | null })
     onSuccess: () => qc.invalidateQueries({ queryKey: ['db'] }),
   });
   return (
-    <Card className="p-4">
+    <Card>
+      <CardHeader title="Safeguarding lead" />
+      <div className="pt-3" />
       <Field label="Designated Safeguarding Lead" htmlFor="sg-lead" hint="Reads and acts on every concern, alongside you.">
         <Select id="sg-lead" value={lead ?? ''} onChange={e => set.mutate(e.target.value || null)}>
           <option value="">Not named — only owners</option>
@@ -122,10 +128,10 @@ function AccessLog({ studioId }: { studioId: string }) {
   return (
     <Card>
       <CardHeader title="Who has looked" subtitle="Every view and action on the log" />
-      <ul className="max-h-64 divide-y divide-line overflow-y-auto text-sm">
-        {rows.data?.map((r, i) => <li key={i} className="flex justify-between px-4 py-2"><span>{r.who} {r.what}</span>
-          <span className="text-[12.5px] text-ink-3">{dateShort(r.at)} {time(r.at)}</span></li>)}
-        {rows.data?.length === 0 && <li className="px-4 py-3 text-ink-3">Nobody yet.</li>}
+      <ul className="max-h-72 divide-y divide-line overflow-y-auto text-[14px]">
+        {rows.data?.map((r, i) => <li key={i} className="flex justify-between gap-3 py-2"><span>{r.who} {r.what}</span>
+          <span className="tnum shrink-0 text-[13px] text-ink-3">{dateShort(r.at)} {time(r.at)}</span></li>)}
+        {rows.data?.length === 0 && <li className="py-3 text-ink-3">Nobody yet.</li>}
       </ul>
     </Card>
   );

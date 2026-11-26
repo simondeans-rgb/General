@@ -3,28 +3,27 @@
 import { MySchoolHero } from '@/components/app/school-hero';
 import * as React from 'react';
 import Link from 'next/link';
-import {
-  CalendarDays, PlayCircle, Trophy, MessageSquare, ChevronRight, Sparkles, MapPin, User, FolderOpen,
-} from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
-import { useSession } from '@/lib/auth/session';
 import { PracticeLog } from '@/components/app/practice';
-import { Badge, Card, CardHeader, EmptyState, Skeleton, ErrorState, type Tone } from '@/components/ui';
+import { Goals, Milestones } from '@/components/app/progress';
+import { EmptyState, Skeleton, ErrorState } from '@/components/ui';
 import * as H from '@/lib/repos/hub';
-import { time, greeting, relativeDay, dateLong, dayRange, money } from '@/lib/format';
+import * as P from '@/lib/repos/progress';
+import { time, relativeDay, dateLong, dayRange } from '@/lib/format';
+import { SectionHead, dayDate } from '@/app/family/_parts/ui';
 
-const KIND_TONE: Record<string, Tone> = {
-  competition: 'amber', show: 'violet', exam: 'critical',
-  workshop: 'teal', private_lesson: 'indigo', rehearsal: 'neutral', social: 'lime',
-};
 const KIND_LABEL: Record<string, string> = {
   competition: 'Competition', show: 'Show', exam: 'Exam', workshop: 'Workshop',
   private_lesson: 'Private lesson', rehearsal: 'Rehearsal', social: 'Social',
 };
 
+/**
+ * A student's home: the next class, the teacher's latest words, what they
+ * have reached, what they are working towards and their practice.
+ */
 export default function LearnHome() {
-  const { session } = useSession();
   const [from] = React.useMemo(() => dayRange(0), []);
   const to = React.useMemo(() => { const d = new Date(from); d.setDate(d.getDate() + 14); return d.toISOString(); }, [from]);
 
@@ -33,114 +32,128 @@ export default function LearnHome() {
   const events = useRows<H.EventRow>(['learn-events'], H.EVENTS);
   const resources = useRows<H.Resource>(['learn-resources'], H.RESOURCES);
   const me = useRows<{ id: string }>(['student-self'], `select app.student_self_id() as id`);
+  const myId = me.data?.[0]?.id;
+  const milestones = useRows<P.Milestone>(['milestones', myId], P.MILESTONES, [myId], { enabled: !!myId });
 
   const upcoming = (timetable.data ?? []).filter(s => s.status !== 'cancelled');
   const next = upcoming[0];
+  const after = upcoming.slice(1, 4);
   const latest = feedback.data?.[0];
   const myEvents = (events.data ?? []).filter(e => e.my_status === 'confirmed' || e.kind === 'private_lesson');
 
   return (
-    <Shell title={`${greeting()}, ${session?.name.split(' ')[0] ?? ''}`}
-           subtitle={dateLong(new Date())} allow={['student']}>
-      <div className="mx-auto max-w-lg space-y-4">
-        <MySchoolHero />
-        {timetable.isLoading && <Card className="p-4"><Skeleton className="h-24" /></Card>}
-        {timetable.error && <ErrorState error={timetable.error} onRetry={() => timetable.refetch()} />}
-
-        {next && (
-          <Card className="overflow-hidden">
-            <div className="bg-accent px-4 py-3 text-on-accent">
-              <p className="text-[12px] font-medium uppercase tracking-[0.06em] text-on-accent opacity-80">
-                {relativeDay(next.starts_at) === 'Today' ? 'Next up today' : 'Next'}
-              </p>
-              <p className="mt-0.5 text-[19px] font-semibold tracking-tight">{next.name}</p>
-              <p className="mt-0.5 text-on-accent opacity-85">{relativeDay(next.starts_at)} at {time(next.starts_at)}</p>
-            </div>
-            <div className="flex flex-wrap gap-x-5 gap-y-1 p-4 text-sm text-ink-2">
-              {next.teacher && <span className="inline-flex items-center gap-1.5">
-                <User className="size-3.5" aria-hidden />{next.teacher}</span>}
-              {(next.room || next.location) && <span className="inline-flex items-center gap-1.5">
-                <MapPin className="size-3.5" aria-hidden />{[next.location, next.room].filter(Boolean).join(' · ')}</span>}
-            </div>
-            {next.class_id && (
-              <Link href={`/class/?id=${next.class_id}`}
-                    className="flex items-center gap-2 border-t border-line px-4 py-3 text-sm font-medium hover:bg-surface-2">
-                <FolderOpen className="size-4 text-ink-3" aria-hidden />
-                Videos, music and notes for this class
-                <ChevronRight className="ml-auto size-4 text-ink-3" aria-hidden />
-              </Link>
-            )}
-          </Card>
-        )}
-        {!next && !timetable.isLoading && (
-          <Card><EmptyState icon={<CalendarDays className="size-5" />} title="Nothing coming up"
-            body="Your classes will show here once the next term is published." /></Card>
-        )}
-
-        {latest && (
-          <Card>
-            <CardHeader title="Latest feedback"
-              action={<Link href="/learn/feedback" className="text-[13px] font-medium text-accent-text hover:underline">All</Link>} />
-            <div className="p-4">
-              <p className="flex items-center gap-1.5 font-medium">
-                <Sparkles className="size-4 text-accent-text" aria-hidden />{latest.headline}
-              </p>
-              {latest.going_well && <p className="mt-1.5 text-sm text-ink-2">{latest.going_well}</p>}
-              {latest.work_on && (
-                <p className="mt-2 rounded-[var(--radius-md)] bg-surface-2 p-3 text-sm">
-                  <span className="font-medium">To work on: </span>{latest.work_on}
-                </p>
+    <Shell title="Today" subtitle={dateLong(new Date())} allow={['student']}>
+      <div className="mx-auto grid max-w-[1080px] gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+        <div className="min-w-0 space-y-10">
+          {/* The next class: the one number worth making big. */}
+          {timetable.isLoading && <Skeleton className="h-36" />}
+          {timetable.error != null && <ErrorState error={timetable.error} onRetry={() => timetable.refetch()} />}
+          {next && (
+            <section aria-labelledby="next-h">
+              <p className="label text-accent-text">Next · {relativeDay(next.starts_at)}</p>
+              <p id="next-h" className="display-xl mt-1 text-[72px] text-ink sm:text-[88px]">{time(next.starts_at)}</p>
+              <p className="mt-1 font-display text-[24px] leading-tight">{next.name}</p>
+              <p className="mt-1 text-[14px] text-ink-3">{[next.teacher, next.room, next.location].filter(Boolean).join(' · ')}</p>
+              {next.class_id && (
+                <Link href={`/class/?id=${next.class_id}`}
+                  className="mt-3 inline-flex min-h-[44px] items-center gap-1.5 text-[14.5px] font-semibold text-accent-text hover:underline">
+                  Videos, music and notes for this class <ArrowRight className="size-4" aria-hidden />
+                </Link>
               )}
-              <p className="mt-2 text-[12px] text-ink-3">
-                {latest.author}{latest.class_name ? ` · ${latest.class_name}` : ''} · {relativeDay(latest.shared_at!)}
-              </p>
-            </div>
-          </Card>
-        )}
+              {after.length > 0 && (
+                <ul className="mt-4 divide-y divide-line border-t border-line">
+                  {after.map((s, i) => (
+                    <li key={`${s.id}-${i}`} className="grid grid-cols-[4.75rem_minmax(0,1fr)] items-baseline gap-x-4 py-2.5">
+                      <span>
+                        <span className="block text-[12.5px] text-ink-3">{relativeDay(s.starts_at).length > 9 ? dayDate(s.starts_at) : relativeDay(s.starts_at)}</span>
+                        <span className="block font-display text-[17px] tnum">{time(s.starts_at)}</span>
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate font-semibold">{s.name}</span>
+                        <span className="block truncate text-[13px] text-ink-3">{[s.teacher, s.room].filter(Boolean).join(' · ')}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <Link href="/learn/timetable" className="mt-1 inline-flex min-h-[44px] items-center text-[13px] font-semibold text-accent-text hover:underline">Full timetable</Link>
+            </section>
+          )}
+          {!next && !timetable.isLoading && (
+            <EmptyState title="Nothing coming up" body="Your classes show here once the next term is published." />
+          )}
 
-        {me.data?.[0]?.id && <PracticeLog studentId={me.data[0].id} />}
+          {/* The teacher's latest words, as they wrote them. */}
+          {latest && (
+            <section aria-labelledby="fb-h">
+              <SectionHead id="fb-h" title="Latest from your teacher" href="/learn/feedback" link="All feedback" />
+              <figure className="pt-3">
+                {latest.headline && <p className="font-semibold">{latest.headline}</p>}
+                {latest.going_well && <blockquote className="mt-1 text-[17px] leading-snug">“{latest.going_well}”</blockquote>}
+                {latest.work_on && (
+                  <p className="mt-2.5 border-l-2 border-accent pl-3 text-[14.5px] text-ink-2">
+                    <span className="font-semibold text-ink">To work on: </span>{latest.work_on}
+                  </p>
+                )}
+                <figcaption className="mt-2 text-[13px] text-ink-3">
+                  {[latest.author, latest.class_name, relativeDay(latest.shared_at!)].filter(Boolean).join(' · ')}
+                </figcaption>
+              </figure>
+            </section>
+          )}
 
-        <div className="grid grid-cols-2 gap-3">
-          <TileLink href="/learn/library" icon={<PlayCircle className="size-5" />}
-            label="Videos and tracks" count={resources.data?.length} />
-          <TileLink href="/learn/events" icon={<Trophy className="size-5" />}
-            label="Competitions and events" count={events.data?.length} />
+          {myId && <PracticeLog studentId={myId} />}
         </div>
 
-        {myEvents.length > 0 && (
-          <Card>
-            <CardHeader title="You're down for" />
-            <ul className="divide-y divide-line">
-              {myEvents.slice(0, 4).map(e => (
-                <li key={e.id} className="flex items-center gap-3 px-4 py-3">
-                  <span className="min-w-0 flex-1">
-                    <span className="flex flex-wrap items-center gap-2">
-                      <span className="truncate font-medium">{e.title}</span>
-                      <Badge tone={KIND_TONE[e.kind] ?? 'neutral'}>{KIND_LABEL[e.kind] ?? e.kind}</Badge>
-                    </span>
-                    <span className="mt-0.5 block truncate text-[12.5px] text-ink-2">
-                      {relativeDay(e.starts_at)} · {time(e.starts_at)}{e.venue ? ` · ${e.venue}` : ''}
-                    </span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        )}
+        <div className="min-w-0 space-y-10">
+          {myId && (milestones.data?.length ?? 0) > 0 && (
+            <section aria-labelledby="ms-h">
+              <SectionHead id="ms-h" title="Milestones" href="/learn/feedback" link="Skills and progress" />
+              <div className="pt-3"><Milestones studentId={myId} celebrate /></div>
+            </section>
+          )}
+
+          {myId && (
+            <section aria-labelledby="goals-h">
+              <SectionHead id="goals-h" title="Goals this term" meta="Your teacher agrees them with you" />
+              <Goals studentId={myId} mode="student" />
+            </section>
+          )}
+
+          {myEvents.length > 0 && (
+            <section aria-labelledby="down-h">
+              <SectionHead id="down-h" title="You’re down for" href="/learn/events" link="Events" />
+              <ul className="divide-y divide-line">
+                {myEvents.slice(0, 4).map(e => (
+                  <li key={e.id} className="py-3">
+                    <p className="font-semibold leading-snug">{e.title}</p>
+                    <p className="mt-0.5 text-[13px] text-ink-3">
+                      {[KIND_LABEL[e.kind] ?? e.kind, `${relativeDay(e.starts_at)} ${time(e.starts_at)}`, e.venue].filter(Boolean).join(' · ')}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          <nav aria-label="More" className="divide-y divide-line border-t border-line">
+            {([
+              ['/learn/library', 'Videos and tracks', resources.data ? `${resources.data.length} to watch and practise with` : 'Practise between classes'],
+              ['/learn/events', 'Shows and events', events.data ? `${events.data.length} coming up` : 'Shows, exams, competitions'],
+            ] as const).map(([href, title, body]) => (
+              <Link key={href} href={href} className="group flex min-h-[56px] items-center gap-3 py-3">
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold">{title}</span>
+                  <span className="block text-[13px] text-ink-3">{body}</span>
+                </span>
+                <ArrowRight className="size-4 text-ink-3 group-hover:text-ink" aria-hidden />
+              </Link>
+            ))}
+          </nav>
+
+          <MySchoolHero />
+        </div>
       </div>
     </Shell>
-  );
-}
-
-function TileLink({ href, icon, label, count }: {
-  href: string; icon: React.ReactNode; label: string; count?: number;
-}) {
-  return (
-    <Link href={href}
-      className="card flex flex-col gap-2 p-4 transition-colors hover:bg-surface-2">
-      <span className="grid size-9 place-items-center rounded-full bg-accent-soft text-accent-ink" aria-hidden>{icon}</span>
-      <span className="text-sm font-medium leading-tight">{label}</span>
-      {count != null && <span className="text-[12.5px] text-ink-3">{count} available</span>}
-    </Link>
   );
 }

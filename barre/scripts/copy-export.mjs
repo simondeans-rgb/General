@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const from = join(root, 'out');
-const to = join(root, '..', 'studio');
+// `node scripts/copy-export.mjs studio-next` publishes the preview instead.
+const to = join(root, '..', process.argv[2] ?? 'studio');
 
 if (!existsSync(from)) {
   console.error('No out/ directory — run `next build` first.');

@@ -32,7 +32,7 @@ describe('a school’s exact colour, kept readable', () => {
 
   it('only deepens text when the exact colour would be too faint, keeping its hue', () => {
     for (const p of PRESETS.filter(x => contrast(x.hex, '#ffffff') >= 4.5)) expect(paletteFor(p.hex)).toMatchObject({ text: p.hex, textDeepened: false });
-    expect(paletteFor('#0b3b34')).toMatchObject({ text: '#0b3b34', textDeepened: false });   // Sanaa eucalyptus
+    expect(paletteFor('#0b3b34')).toMatchObject({ text: '#0b3b34', textDeepened: false });   // a deep school green
     const y = paletteFor('#facc15');
     expect(y.textDeepened).toBe(true);
     const [r, g, b] = [1, 3, 5].map(i => parseInt(y.text.slice(i, i + 2), 16));
@@ -45,7 +45,7 @@ describe('a school’s exact colour, kept readable', () => {
     expect(normaliseHex(' #abc ')).toBe('#aabbcc');
     expect(normaliseHex('teal')).toBeNull();
     expect(normaliseHex('#12345')).toBeNull();
-    expect(paletteFor('nonsense').accent).toBe('#0b3b34');   // falls back to Sanaa
+    expect(paletteFor('nonsense').accent).toBe('#2638f0');   // falls back to Swayvo blue
   });
 
   it('makes a monogram from the distinctive words', () => {

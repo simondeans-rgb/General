@@ -110,15 +110,15 @@ export function GuardianSheet({ familyId, row, onClose }: {
       <Field label="Phone" htmlFor="g-phone">
         <Input id="g-phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} />
       </Field>
-      <fieldset className="rounded-[var(--radius-md)] border border-line p-3">
-        <legend className="px-1 text-[13px] font-medium text-ink-2">Their role</legend>
-        <label className="flex min-h-[36px] items-center gap-2.5 text-sm">
-          <input type="checkbox" checked={primary} className="size-4 accent-[var(--accent)]"
+      <fieldset>
+        <legend className="mb-1 text-[13px] font-medium text-ink-2">Their role</legend>
+        <label className="flex min-h-[44px] items-center gap-3 text-[14px]">
+          <input type="checkbox" checked={primary} className="size-[18px] accent-[var(--color-accent)]"
                  onChange={e => setPrimary(e.target.checked)} />
           Main contact for the family
         </label>
-        <label className="flex min-h-[36px] items-center gap-2.5 text-sm">
-          <input type="checkbox" checked={billing} className="size-4 accent-[var(--accent)]"
+        <label className="flex min-h-[44px] items-center gap-3 text-[14px]">
+          <input type="checkbox" checked={billing} className="size-[18px] accent-[var(--color-accent)]"
                  onChange={e => setBilling(e.target.checked)} />
           Receives invoices
         </label>
@@ -251,7 +251,7 @@ export function MedicalSheet({ studentId, studentName, onClose }: {
       {!loaded && <Skeleton className="h-24" />}
       {loaded && (
         <>
-          <p className="flex gap-2 rounded-[var(--radius-md)] bg-surface-2 p-3 text-[12.5px] text-ink-2">
+          <p className="flex gap-2 border-l-2 border-line-strong pl-3 text-[13px] text-ink-2">
             <ShieldAlert className="mt-0.5 size-4 shrink-0 text-ink-3" aria-hidden />
             <span>
               Health data. Teachers of this child’s classes see the allergies,
@@ -261,12 +261,12 @@ export function MedicalSheet({ studentId, studentName, onClose }: {
             </span>
           </p>
 
-          <label className="flex items-start gap-2.5 rounded-[var(--radius-md)] border border-line p-3 text-sm">
-            <input type="checkbox" checked={alert} className="mt-0.5 size-4 accent-[var(--accent)]"
+          <label className="flex min-h-[44px] items-start gap-3 text-[14px]">
+            <input type="checkbox" checked={alert} className="mt-0.5 size-[18px] accent-[var(--color-accent)]"
                    onChange={e => setAlert(e.target.checked)} />
             <span>
-              <span className="font-medium">Urgent — show a red alert</span>
-              <span className="mt-0.5 block text-[12.5px] text-ink-2">
+              <span className="font-semibold">Urgent — show a red alert</span>
+              <span className="mt-0.5 block text-[13px] text-ink-3">
                 For anything a teacher must act on quickly. Without it, teachers still see an amber
                 marker and every detail below.
               </span>
@@ -326,16 +326,16 @@ function EmergencyContacts({ studentId, rows }: { studentId: string; rows: P.Eme
   const remove = useWrite(P.REMOVE_EMERGENCY);
 
   return (
-    <div className="rounded-[var(--radius-md)] border border-line p-3">
-      <div className="flex items-center gap-2">
-        <p className="flex-1 text-[13px] font-medium text-ink-2">Emergency contacts</p>
+    <div>
+      <div className="flex items-center gap-2 border-b border-ink pb-1">
+        <p className="flex-1 text-[14px] font-semibold">Emergency contacts</p>
         {!adding && <Button size="sm" variant="ghost" onClick={() => setAdding(true)}>
           <Plus className="size-4" aria-hidden /> Add
         </Button>}
       </div>
 
       {rows.length === 0 && !adding && (
-        <p className="mt-1 flex items-center gap-1.5 text-[12.5px] text-caution">
+        <p className="mt-2 flex items-center gap-1.5 text-[13px] font-semibold text-caution">
           <AlertTriangle className="size-3.5" aria-hidden />
           None recorded. A teacher has nobody to ring.
         </p>
@@ -352,7 +352,7 @@ function EmergencyContacts({ studentId, rows }: { studentId: string; rows: P.Eme
                 </span>
               </span>
               <Button size="sm" variant="ghost" aria-label={`Remove ${c.full_name}`}
-                      onClick={() => remove.mutate([c.id])}>×</Button>
+                      onClick={() => remove.mutate([c.id])}>Remove</Button>
             </li>
           ))}
         </ul>
@@ -369,8 +369,8 @@ function EmergencyContacts({ studentId, rows }: { studentId: string; rows: P.Eme
                    aria-label="Phone number" placeholder="Phone" />
           </div>
           <div className="flex gap-2">
-            <Button size="sm" className="flex-1" onClick={() => setAdding(false)}>Cancel</Button>
-            <Button size="sm" variant="primary" className="flex-1" loading={add.isPending}
+            <Button size="sm" variant="ghost" className="flex-1" onClick={() => setAdding(false)}>Cancel</Button>
+            <Button size="sm" className="flex-1" loading={add.isPending}
                     disabled={name.trim().length < 2 || phone.trim().length < 5}
                     onClick={() => add.mutate([studentId, name.trim(), rel, phone.trim()])}>
               Add contact
@@ -433,14 +433,14 @@ export function StaffSheet({ row, onClose }: { row: P.StaffRow | null; onClose: 
       {/* Adding someone to the timetable and giving them a login are different
           decisions, and the database treats them differently: staff_member is
           admin-writable, membership is owner-only. */}
-      <p className="rounded-[var(--radius-md)] bg-surface-2 p-3 text-[12.5px] text-ink-2">
+      <p className="border-l-2 border-line-strong pl-3 text-[13px] text-ink-2">
         {row?.user_id
           ? 'This teacher has a login and can take their own registers.'
           : 'They will appear on the timetable straight away. Giving them a login to take registers is a separate step, and only the owner can do it.'}
       </p>
       {row && isOwner && (
-        <div className="border-t border-line pt-3">
-          <p className="mb-2 text-sm font-semibold">Checks and training</p>
+        <div className="pt-2">
+          <p className="mb-2 border-b border-ink pb-1 text-[14px] font-semibold">Checks and training</p>
           <StaffChecks staffId={row.id} />
         </div>
       )}

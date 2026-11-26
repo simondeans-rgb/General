@@ -2,92 +2,112 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { PERSONA_GROUPS, useSession, type Persona } from '@/lib/auth/session';
 import { ROLE_HOME } from '@/components/app/shell';
-import { SanaaLogo } from '@/components/app/sanaa';
-import { Badge } from '@/components/ui';
+import { SwayvoLogo } from '@/components/app/swayvo';
+import { useSchoolTheme } from '@/components/app/brand';
+import { SWAYVO } from '@/lib/swayvo-logo';
 
-const TONE = { owner: 'accent', admin: 'info', teacher: 'teal', guardian: 'rose', student: 'amber', platform: 'neutral' } as const;
-
+/**
+ * The first screen. Swayvo at full volume once — Count blue, the count, the
+ * tagline — then a white sheet with the people you can be. It stands in for
+ * real sign-in (R-001): the permissions behind each person are real.
+ */
 export default function SignIn() {
   const { signIn, session, loaded } = useSession();
   const router = useRouter();
-
-  // Signed in already? Offer to carry on, but still show everyone — this page
-  // used to bounce straight to the home screen, which hid the other people
-  // (including the Sanaa platform admin) unless you found the avatar menu.
+  // This page is Swayvo's own, whatever school the last person belonged to.
+  useSchoolTheme(null);
 
   const choose = (p: Persona) => { signIn(p); router.push(ROLE_HOME[p.role]); };
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-2xl flex-col justify-center px-5 py-10">
-      <div className="mb-8">
-        <h1><SanaaLogo className="h-12" /></h1>
-        <p className="mt-3 text-[12px] font-medium uppercase tracking-[0.32em] text-ink-2">Bring creativity to life</p>
-        <p className="mt-2 text-ink-2">Everything a dance school runs on — classes, families, payments and progress.</p>
-      </div>
+    <main id="main" className="min-h-dvh bg-surface lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
+      {/* Brand side: Count blue, white logo, peach downbeat. */}
+      <section aria-labelledby="tagline" style={{ background: SWAYVO.blue, color: SWAYVO.white }}
+        className="flex flex-col px-6 pb-8 pt-8 sm:px-10 lg:sticky lg:top-0 lg:h-dvh lg:px-14 lg:pb-14 lg:pt-12">
+        <h1><SwayvoLogo tone="white" className="h-8 lg:h-10" /></h1>
+        <div className="mt-10 lg:mt-auto">
+          <p id="tagline" className="font-display text-[44px] font-[850] leading-[0.92] tracking-[-0.02em] [font-stretch:112%] sm:text-[56px] lg:text-[72px]">
+            Five, six, seven, <span style={{ color: SWAYVO.peach }}>eight.</span>
+          </p>
+          <Count />
+          <p className="font-display text-[20px] font-[800] leading-tight [font-stretch:112%] lg:text-[24px]">More time for dance.</p>
+          <p className="mt-2 max-w-md text-[15px] leading-relaxed text-white/85">
+            Classes, registers, payments, messages and progress for dance schools.
+          </p>
+        </div>
+      </section>
 
-      {loaded && session && (
-        <button onClick={() => router.push(session.platform && !session.support ? '/platform' : ROLE_HOME[session.role])}
-          className="mb-6 flex w-full items-center gap-3 rounded-[var(--radius-lg)] border border-accent-line/40 bg-accent-soft/50 p-3.5 text-left hover:bg-accent-soft">
-          <span className="min-w-0 flex-1">
-            <span className="block font-medium">Continue as {session.name}</span>
-            <span className="block text-[13px] text-ink-2">Or choose someone else below.</span>
-          </span>
-          <ArrowRight className="size-4 shrink-0 text-accent-text" aria-hidden />
-        </button>
-      )}
+      {/* The picker: who to be. */}
+      <section aria-labelledby="pick-h" className="-mt-4 rounded-t-[20px] bg-surface px-5 pb-12 pt-7 sm:px-10 lg:mt-0 lg:rounded-none lg:px-16 lg:pt-14">
+        <div className="mx-auto max-w-xl">
+          <h2 id="pick-h" className="font-display text-[26px] font-[800] leading-tight [font-stretch:112%]">Sign in</h2>
+          <p className="mt-1 text-[15px] text-ink-2">This is a demo, so there’s no password. Choose a person and you see exactly what they would.</p>
 
-      <h2 className="mb-1 text-[19px] font-semibold tracking-tight">Choose who to sign in as</h2>
-      <p className="mb-5 text-sm text-ink-2">No password in the demo — pick a person and you see exactly what they would.</p>
-
-      {PERSONA_GROUPS().map(g => (
-        <section key={g.title} className="mb-6" aria-labelledby={`grp-${g.title}`}>
-          <h3 id={`grp-${g.title}`} className="text-[13px] font-semibold uppercase tracking-[0.06em] text-ink-3">{g.title}</h3>
-          <p className="mb-2.5 text-[13px] text-ink-3">{g.blurb}</p>
-          <ul className="space-y-2.5">
-            {g.people.map(p => (
-          <li key={p.userId}>
-            <button
-              onClick={() => choose(p)}
-              className="group flex w-full items-center gap-3.5 rounded-[var(--radius-lg)] border border-line
-                         bg-surface p-3.5 text-left shadow-xs transition-[border-color,box-shadow]
-                         hover:border-line-strong hover:shadow-sm focus-visible:border-accent-line">
-              <span aria-hidden
-                    className="grid size-10 shrink-0 place-items-center rounded-full bg-surface-2
-                               text-[15px] font-semibold text-ink-2">
-                {p.name.split(' ').map(w => w[0]).join('')}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium">{p.name}</span>
-                  <Badge tone={TONE[p.role]}>{p.title}</Badge>
-                </span>
-                <span className="mt-0.5 block text-[13px] text-ink-2">{p.blurb}</span>
-              </span>
-              <ArrowRight className="size-4 shrink-0 text-ink-3 transition-transform group-hover:translate-x-0.5" aria-hidden />
+          {loaded && session && (
+            <button onClick={() => router.push(session.platform && !session.support ? '/platform' : ROLE_HOME[session.role])}
+              className="group mt-6 flex min-h-12 w-full items-center gap-3 rounded-[var(--radius-md)] bg-accent px-4 py-3 text-left text-on-accent hover:bg-accent-hover">
+              <span className="min-w-0 flex-1 font-semibold">Continue as {session.name}</span>
+              <ArrowRight className="size-4 shrink-0 transition-transform group-hover:translate-x-0.5" aria-hidden />
             </button>
-          </li>
-            ))}
-          </ul>
-        </section>
-      ))}
+          )}
 
-      {/* Being straight about what this is. The permissions are real; the
-          password check is the part that is missing, and pretending otherwise
-          would be the wrong kind of demo. */}
-      <div className="mt-7 flex gap-3 rounded-[var(--radius-lg)] border border-line bg-surface-2 p-4">
-        <ShieldCheck className="mt-0.5 size-4 shrink-0 text-ink-3" aria-hidden />
-        <p className="text-[13px] leading-relaxed text-ink-2">
-          <strong className="font-medium text-ink">This is a demo, and it runs on a real database.</strong>{' '}
-          Postgres is compiled to WebAssembly and running in your browser, with the same
-          schema and the same row level security policies the production app uses. Picking a
-          person here skips the password, but not the permissions: Marcus really cannot see
-          another teacher's students, and Hannah really cannot see another family's invoices —
-          the database refuses, not the interface.
-        </p>
-      </div>
+          {PERSONA_GROUPS().map(g => (
+            <section key={g.title} className="mt-9" aria-labelledby={`grp-${g.title}`}>
+              <div className="border-b-2 border-ink pb-2">
+                <h3 id={`grp-${g.title}`} className="section-title">{g.title}</h3>
+                <p className="text-[13px] text-ink-3">{g.blurb}</p>
+              </div>
+              <ul className="divide-y divide-line">
+                {g.people.map(p => (
+                  <li key={p.userId}>
+                    <button onClick={() => choose(p)}
+                      className="group grid w-full grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-x-3.5 py-3.5 text-left hover:bg-surface-2/60 focus-visible:bg-surface-2/60">
+                      <span aria-hidden className="grid size-11 place-items-center rounded-full bg-surface-2 font-display text-[15px] font-[800] text-ink-2">
+                        {p.name.split(' ').map(w => w[0]).join('')}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="flex flex-wrap items-baseline gap-x-2">
+                          <span className="font-semibold">{p.name}</span>
+                          <span className="text-[13px] text-ink-3">{p.title}</span>
+                        </span>
+                        <span className="mt-0.5 block text-[14px] leading-snug text-ink-2">{p.blurb}</span>
+                      </span>
+                      <ArrowRight className="size-4 shrink-0 text-ink-3 transition-transform group-hover:translate-x-0.5 group-hover:text-accent-text" aria-hidden />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+
+          {/* Being straight about what this is. The permissions are real; the
+              password check is the part that is missing. */}
+          <div className="mt-10 border-t border-line pt-4">
+            <p className="text-[13px] font-semibold text-ink">A demo on a real database</p>
+            <p className="mt-1 text-[13px] leading-relaxed text-ink-3">
+              Postgres runs in your browser with the same schema and row level security as the production app.
+              Choosing a person skips the password, not the permissions: Marcus cannot see another teacher’s
+              students and Hannah cannot see another family’s invoices — the database refuses, not the interface.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+/** The eight-count, drawn large: peach downbeat, beat five lifted. */
+function Count() {
+  const h = [100, 40, 40, 40, 72, 40, 40, 40];
+  return (
+    <div aria-hidden className="my-7 flex h-14 items-end gap-1.5 lg:my-9 lg:h-[72px]">
+      {h.map((v, i) => (
+        <span key={i} className="block w-3 rounded-[2px] lg:w-3.5"
+          style={{ height: `${v}%`, marginLeft: i === 4 ? 8 : 0, background: i === 0 ? SWAYVO.peach : 'rgb(255 255 255 / 0.32)' }} />
+      ))}
     </div>
   );
 }

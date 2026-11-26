@@ -2,9 +2,9 @@
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { RecordSheet } from '@/components/app/record-sheet';
-import { Badge, Button, EmptyState, ErrorState, Field, Input, Select, Skeleton } from '@/components/ui';
+import { Button, EmptyState, ErrorState, Field, Input, Select, Skeleton } from '@/components/ui';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
@@ -45,19 +45,19 @@ export function ChildClassesSheet({ child, onClose }: { child: { id: string; fir
           </button>
         </div>
         {done && (
-          <p role="status" className="mb-3 flex items-start gap-2 rounded-[var(--radius-md)] bg-positive-soft px-3 py-2 text-[13px]">
-            <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-positive" aria-hidden /> {done}
+          <p role="status" className="mb-3 border-l-2 border-positive pl-3 text-[14px]">
+            <span className="font-semibold text-positive">Done. </span>{done}
           </p>
         )}
         {act.error != null && <div className="mb-3"><ErrorState error={act.error} /></div>}
         {opts.isLoading && <Skeleton className="h-32" />}
         {opts.error && <ErrorState error={opts.error} />}
-        {opts.data && list.length === 0 && <EmptyState title="No classes for this age just now" body="Ask the studio — new classes open each term." />}
+        {opts.data && list.length === 0 && <EmptyState title="No classes for this age just now" body="Ask the studio. New classes open each term." />}
         <ul className="divide-y divide-line">
           {list.map(o => (
             <li key={o.class_id} className="py-3">
               <div className="flex items-baseline justify-between gap-3">
-                <span className="font-medium">{o.name}</span>
+                <span className="font-semibold">{o.name}</span>
                 <span className="tnum shrink-0 text-[13px] text-ink-2">{money(o.price_minor)} {PER[o.pricing]}</span>
               </div>
               <p className="text-[13px] text-ink-2">
@@ -67,16 +67,16 @@ export function ChildClassesSheet({ child, onClose }: { child: { id: string; fir
               </p>
               {o.prerequisites && <p className="text-[12.5px] text-ink-3">Before joining: {o.prerequisites}</p>}
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                {o.pricing === 'drop_in' ? <Badge tone="info">Pay as you go — book a date under Drop-in classes</Badge>
-                  : o.enrolled ? <Badge tone="positive">{child.first_name} is in this class</Badge>
-                  : o.waiting ? <Badge tone="info">On the waiting list</Badge>
-                  : o.asked ? <Badge tone="caution">Asked — the office will be in touch</Badge>
+                {o.pricing === 'drop_in' ? <span className="text-[13.5px] font-semibold text-ink-2">Pay as you go. Book a date under Drop-in classes.</span>
+                  : o.enrolled ? <span className="text-[13.5px] font-semibold text-positive">{child.first_name} is in this class</span>
+                  : o.waiting ? <span className="text-[13.5px] font-semibold text-info">On the waiting list</span>
+                  : o.asked ? <span className="text-[13.5px] font-semibold text-caution">Asked. The office will be in touch.</span>
                   : (
                     <>
                       {!o.full && (
-                        <Button size="sm" variant="primary" loading={act.isPending && (act.variables?.params[1] === o.class_id)}
+                        <Button size="sm" loading={act.isPending && (act.variables?.params[1] === o.class_id)}
                           onClick={() => act.mutate({ sql: F.REQUEST_PLACE, params: [child.id, o.class_id, null],
-                            ok: () => `Asked for a place in ${o.name}. The office will confirm — you will get a notification.` })}>
+                            ok: () => `Asked for a place in ${o.name}. The office will confirm, and you’ll get a notification.` })}>
                           Ask for a place
                         </Button>
                       )}
@@ -86,11 +86,11 @@ export function ChildClassesSheet({ child, onClose }: { child: { id: string; fir
                           Join the waiting list
                         </Button>
                       )}
-                      {o.full && !o.waitlist_enabled && <Badge tone="neutral">Full</Badge>}
+                      {o.full && !o.waitlist_enabled && <span className="text-[13.5px] font-semibold text-ink-2">Full</span>}
                       {o.trials_enabled && !o.trial_booked && o.trial_sessions.length > 0 && (
                         <Button size="sm" variant="ghost" onClick={() => setTrialFor(o)}>Book a trial</Button>
                       )}
-                      {o.trial_booked && <Badge tone="info">Trial booked</Badge>}
+                      {o.trial_booked && <span className="text-[13.5px] font-semibold text-info">Trial booked</span>}
                     </>
                   )}
               </div>

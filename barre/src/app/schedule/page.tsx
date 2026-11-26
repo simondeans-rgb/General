@@ -1,17 +1,16 @@
 'use client';
 
 import * as React from 'react';
-import { ChevronLeft, ChevronRight, CalendarX2, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
-import { SessionRow } from '@/components/app/session-row';
+import { SessionRow, SectionHead, ViewTabs } from '@/components/app/session-row';
 import { SessionSheet } from '@/components/app/session-sheet';
 import { ClassForm } from '@/components/app/class-form';
 import { WeekGrid } from '@/components/app/week-grid';
 import { useRows } from '@/lib/query';
-import { Button, Card, EmptyState, Skeleton, ErrorState, Badge } from '@/components/ui';
+import { Button, EmptyState, Skeleton, ErrorState } from '@/components/ui';
 import * as Q from '@/lib/repos/dashboard';
 import { weekRange, dateLong, dayName, isoDate, toDate } from '@/lib/format';
-import { cn } from '@/lib/cn';
 
 type View = 'grid' | 'week' | 'day' | 'teacher' | 'room';
 
@@ -32,7 +31,7 @@ export default function SchedulePage() {
 
   return (
     <Shell
-      help={<>Every class session, week by week. The week grid shows rooms side by side and marks clashes in red; drag a class to another day to move that week’s session. Tap a class to cancel it, move it or arrange cover — families are told.</>}
+      help={<>Every class session, week by week. The week grid shows rooms side by side and names any clash; drag a class to another day to move that week’s session. Tap a class to cancel it, move it or arrange cover — families are told.</>}
       title="Schedule"
       subtitle={`${dateLong(from)} – ${dateLong(new Date(new Date(to).getTime() - 86400000))}`}
       allow={['owner', 'admin']}
@@ -54,23 +53,15 @@ export default function SchedulePage() {
         </div>
       }
     >
-      <div className="mx-auto max-w-6xl space-y-4">
-        <div role="tablist" aria-label="Schedule view"
-             className="inline-flex rounded-[var(--radius-md)] border border-line bg-surface p-0.5">
-          {(['grid','week','day','teacher','room'] as View[]).map(v => (
-            <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)}
-              className={cn('min-h-[34px] rounded-[7px] px-3 text-[13px] font-medium capitalize transition-colors',
-                view === v ? 'bg-accent-soft text-accent-ink' : 'text-ink-2 hover:text-ink')}>
-              {v === 'grid' ? 'Week grid' : v === 'week' ? 'List' : v}
-            </button>
-          ))}
-        </div>
+      <div className="mx-auto max-w-[1240px] space-y-6">
+        <ViewTabs label="Schedule view" value={view} onChange={setView}
+          options={[['grid', 'Week grid'], ['week', 'List'], ['day', 'Day'], ['teacher', 'Teacher'], ['room', 'Room']]} />
 
-        {sessions.isLoading && <Card className="space-y-3 p-4">{[0,1,2,3].map(i => <Skeleton key={i} className="h-14" />)}</Card>}
+        {sessions.isLoading && <div className="space-y-3">{[0,1,2,3].map(i => <Skeleton key={i} className="h-14" />)}</div>}
         {sessions.error && <ErrorState error={sessions.error} onRetry={() => sessions.refetch()} />}
         {sessions.data && sessions.data.length === 0 && (
-          <Card><EmptyState icon={<CalendarX2 className="size-5" />} title="No classes this week"
-            body="Either the term has not started or this week falls in a break." /></Card>
+          <EmptyState title="No classes this week"
+            body="The term hasn’t started yet, or this week falls in a break." />
         )}
         {sessions.data && sessions.data.length > 0 && (view === 'grid'
           ? <WeekGrid sessions={sessions.data} from={from} onOpen={setOpen} />
@@ -100,30 +91,26 @@ function Grouped({ sessions, view }: { sessions: Q.SessionRow[]; view: View }) {
   }, [sessions, view]);
 
   if (groups.length === 0) {
-    return <Card><EmptyState icon={<CalendarX2 className="size-5" />} title="Nothing today"
-      body="Switch to the week view to see the rest of the timetable." /></Card>;
+    return <EmptyState title="Nothing on today"
+      body="The rest of the week is in the list and the grid." />;
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-10">
       {open && <SessionSheet session={open} onClose={() => setOpen(null)} />}
       {groups.map(([key, rows]) => {
         const label = key.includes('|') ? key.split('|')[1]! : key;
         const date = key.includes('|') ? key.split('|')[0]! : null;
         const heads = rows.reduce((n, r) => n + (r.status === 'cancelled' ? 0 : r.enrolled), 0);
+        const isToday = date === isoDate(new Date());
         return (
-          <Card key={key}>
-            <div className="flex items-baseline gap-2.5 border-b border-line px-4 py-2.5">
-              <h2 className="font-semibold">{label}</h2>
-              {date && <span className="text-[13px] text-ink-3">{dateLong(date)}</span>}
-              <span className="ml-auto text-[12.5px] text-ink-3">
-                {rows.length} class{rows.length === 1 ? '' : 'es'} · {heads} places
-              </span>
-            </div>
+          <section key={key}>
+            <SectionHead title={<>{date ? dateLong(date) : label}{isToday && <span className="ml-2 text-[13px] font-semibold text-accent-text">Today</span>}</>}
+              meta={`${rows.length} class${rows.length === 1 ? '' : 'es'} · ${heads} booked`} />
             <ul className="divide-y divide-line">
               {rows.map(s => <li key={s.id}><SessionRow session={s} onSelect={() => setOpen(s)} /></li>)}
             </ul>
-          </Card>
+          </section>
         );
       })}
     </div>

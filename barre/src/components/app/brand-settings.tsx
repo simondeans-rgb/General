@@ -2,11 +2,12 @@
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Upload, Trash2, Check, Info, Home, CalendarDays, MessageSquare, Play, Bell, BarChart3 } from 'lucide-react';
+import { Upload, Trash2, Check, Info, Home, CalendarDays, MessageSquare, Bell, TrendingUp } from 'lucide-react';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Button, Card, CardHeader, ErrorState, Field, Input, Skeleton } from '@/components/ui';
+import { Button, ErrorState, Field, Input, Skeleton } from '@/components/ui';
+import { SettingsSection as Card, SettingsHead as CardHeader } from './progress-settings';
 import { SchoolMark, PoweredBy } from './brand';
 import { cssVars, normaliseHex, paletteFor } from '@/lib/brand';
 import { THEMES, themeOf, type Theme, type ThemeId } from '@/lib/theme';
@@ -106,32 +107,32 @@ export function BrandSettings({ canEdit }: { canEdit: boolean }) {
     if (file.current) file.current.value = '';
   };
 
-  if (!current) return <Card className="p-4"><Skeleton className="h-40" /></Card>;
+  if (!current) return <Card><Skeleton className="h-40" /></Card>;
   const school = name || current.name;
 
   return (
     <Card id="brand">
       <CardHeader title="Your brand" subtitle="Choose a style, then make it yours with your colours and logo" />
-      <div className="space-y-6 p-4">
+      <div className="space-y-8 pt-4">
         {/* 1. The style */}
         <fieldset disabled={!canEdit}>
-          <legend className="mb-2 text-[13px] font-medium text-ink-2">1 · Style</legend>
+          <legend className="mb-2 text-[14px] font-semibold">1 · Style</legend>
           <div role="radiogroup" aria-label="Style" className="grid gap-3 sm:grid-cols-2">
             {(Object.values(THEMES) as Theme[]).map(th => {
               const on = th.id === theme;
               const a = on ? colour : th.accent, b = on ? second : th.secondary;
               return (
                 <button key={th.id} type="button" role="radio" aria-checked={on} onClick={() => chooseTheme(th.id)}
-                  className={cn('overflow-hidden rounded-[var(--radius-lg)] border-2 text-left transition-shadow',
-                    on ? 'border-accent-line shadow-md' : 'border-line hover:border-line-strong')}>
+                  className={cn('overflow-hidden rounded-[var(--radius-lg)] border-2 text-left',
+                    on ? 'border-ink' : 'border-line hover:border-line-strong')}>
                   <div data-theme={th.id} style={previewVars(th, a, b)} className="pointer-events-none">
                     <MiniScreen school={school} logo={logo} dark={th.dark} />
                   </div>
                   <div className="flex items-start gap-2 bg-surface px-3 py-2.5">
-                    <span className={cn('mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border', on ? 'border-accent bg-accent text-on-accent' : 'border-line-strong')}>
+                    <span className={cn('mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border', on ? 'border-ink bg-ink text-ink-invert' : 'border-line-strong')}>
                       {on && <Check className="size-3" aria-hidden />}
                     </span>
-                    <span><span className="block font-semibold">{th.name}</span><span className="block text-[12.5px] text-ink-2">{th.tagline}</span></span>
+                    <span><span className="block font-semibold">{th.name}</span><span className="block text-[13px] text-ink-3">{th.tagline}</span></span>
                   </div>
                 </button>
               );
@@ -143,15 +144,15 @@ export function BrandSettings({ canEdit }: { canEdit: boolean }) {
           <div className="space-y-5">
             {/* 2. Colours */}
             <fieldset disabled={!canEdit}>
-              <legend className="mb-1.5 text-[13px] font-medium text-ink-2">2 · Colours</legend>
-              <p className="mb-2 text-[12.5px] text-ink-3">Pick a pairing made for {t.name}, or enter the exact colours from your brand guidelines.</p>
+              <legend className="mb-1 text-[14px] font-semibold">2 · Colours</legend>
+              <p className="mb-3 text-[13px] text-ink-3">Pick a pairing made for {t.name}, or enter the exact colours from your brand guidelines.</p>
               <div role="radiogroup" aria-label="Colour pairings" className="flex flex-wrap gap-2">
                 {t.presets.map(p => {
                   const on = colour === p.accent && second === p.secondary;
                   return (
                     <button key={p.name} type="button" role="radio" aria-checked={on} title={p.name} aria-label={`${p.name}: ${p.accent.toUpperCase()} and ${p.secondary.toUpperCase()}`}
                       onClick={() => { setColour(p.accent); setSecond(p.secondary); }}
-                      className={cn('flex items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-[12.5px]', on ? 'border-ink ring-1 ring-ink' : 'border-line hover:border-line-strong')}>
+                      className={cn('flex min-h-10 items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-[13px]', on ? 'border-ink ring-1 ring-ink font-semibold' : 'border-line-strong hover:border-ink-3')}>
                       <span className="flex">
                         <span className="size-6 rounded-full ring-2 ring-surface" style={{ background: p.accent }} />
                         <span className="-ml-2 size-6 rounded-full ring-2 ring-surface" style={{ background: p.secondary }} />
@@ -163,7 +164,7 @@ export function BrandSettings({ canEdit }: { canEdit: boolean }) {
               </div>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <HexField id="br-hex" label="Main colour" hint="Buttons, highlights, active tabs" value={colour} onChange={setColour} />
-                <HexField id="br-hex2" label="Second colour" hint={t.dark ? 'The glow behind screens, and gradients' : 'Gradients and accents'} value={second} onChange={setSecond} />
+                <HexField id="br-hex2" label="Second colour" hint={t.dark ? 'The downbeat, and highlights on dark screens' : 'The downbeat and small accents'} value={second} onChange={setSecond} />
               </div>
               {(palette.darkText || palette.textDeepened) && (
                 <p className="mt-2 flex items-start gap-1.5 text-[12.5px] text-ink-2">
@@ -180,7 +181,7 @@ export function BrandSettings({ canEdit }: { canEdit: boolean }) {
 
             {/* 3. Name and logo */}
             <div className="space-y-4">
-              <p className="text-[13px] font-medium text-ink-2">3 · Name and logo</p>
+              <p className="text-[14px] font-semibold">3 · Name and logo</p>
               <Field label="School name" htmlFor="br-name" required>
                 <Input id="br-name" value={name} onChange={e => setName(e.target.value)} disabled={!canEdit} maxLength={120} />
               </Field>
@@ -195,7 +196,7 @@ export function BrandSettings({ canEdit }: { canEdit: boolean }) {
                   </div>
                 )}
               </div>
-              <p className="text-[12.5px] text-ink-3">
+              <p className="text-[13px] text-ink-3">
                 {logoError ? <span role="alert" className="text-critical">{logoError}</span>
                   : `PNG, JPG, WebP or SVG. A square logo on a transparent background works best${t.dark ? ' — use a light version on the dark Urban style' : ''}. Without one, your initials are used.`}
               </p>
@@ -215,7 +216,7 @@ export function BrandSettings({ canEdit }: { canEdit: boolean }) {
 
           {/* What parents will see, before anyone else does. */}
           <figure aria-label="Preview" data-theme={theme} style={previewVars(t, colour, second)}
-            className="overflow-hidden rounded-[28px] border-[6px] border-[#111] bg-canvas shadow-lg">
+            className="overflow-hidden rounded-[28px] border-[6px] border-ink bg-canvas shadow-md">
             <PhonePreview school={school} logo={logo} dark={t.dark} />
             <figcaption className="sr-only">Preview of the parent app with this style and these colours</figcaption>
           </figure>
@@ -230,8 +231,8 @@ function HexField({ id, label, hint, value, onChange }: { id: string; label: str
   React.useEffect(() => setText(value.toUpperCase()), [value]);
   const ok = !!normaliseHex(text);
   return (
-    <div className="rounded-[var(--radius-md)] border border-line p-3">
-      <label htmlFor={id} className="block text-[13px] font-medium">{label}</label>
+    <div>
+      <label htmlFor={id} className="block text-[13px] font-medium text-ink-2">{label}</label>
       <div className="mt-1.5 flex items-center gap-2">
         <label className="relative size-10 shrink-0 cursor-pointer overflow-hidden rounded-[var(--radius-md)] border border-line" style={{ background: value }} title="Choose visually">
           <input type="color" value={value} className="absolute inset-0 cursor-pointer opacity-0" aria-label={`${label}: choose visually`}
@@ -240,39 +241,46 @@ function HexField({ id, label, hint, value, onChange }: { id: string; label: str
         <Input id={id} value={text} className="tnum w-32 uppercase" spellCheck={false} autoComplete="off" maxLength={7}
                aria-invalid={!ok} onChange={e => { setText(e.target.value); const h = normaliseHex(e.target.value); if (h) onChange(h); }} />
       </div>
-      <p className="mt-1.5 text-[12px]">{ok ? <span className="text-ink-3">{hint}</span>
+      <p className="mt-1.5 text-[12.5px]">{ok ? <span className="text-ink-3">{hint}</span>
         : <span role="alert" className="text-critical">Enter a hex code like #C2563C.</span>}</p>
     </div>
   );
 }
 
-/** A small, static sample of the app in a theme — for choosing between them. */
-function MiniScreen({ school, logo, dark }: { school: string; logo: string | null; dark: boolean }) {
+/** The count, in the school's colours: the downbeat in the second colour. */
+function MiniCount({ h = 12, w = 3 }: { h?: number; w?: number }) {
+  const tall = [100, 45, 45, 45, 75, 45, 45, 45];
   return (
-    <div className="h-40 overflow-hidden bg-canvas p-3"
-         style={dark ? { background: 'radial-gradient(260px 160px at 100% 0%, color-mix(in srgb, var(--color-secondary) 45%, transparent), transparent 70%), var(--color-canvas)' } : undefined}>
+    <span aria-hidden className="inline-flex items-end" style={{ height: h, gap: Math.max(1, w / 2) }}>
+      {tall.map((v, i) => <span key={i} className={cn('block rounded-[1px]', i === 0 ? 'bg-secondary' : 'bg-accent')}
+        style={{ width: w, height: `${v}%`, marginLeft: i === 4 ? w : 0 }} />)}
+    </span>
+  );
+}
+
+/** A small, static sample of the app in a style — for choosing between them. */
+function MiniScreen({ school, logo }: { school: string; logo: string | null; dark: boolean }) {
+  return (
+    <div className="h-40 overflow-hidden bg-canvas p-3 text-ink">
       <div className="flex items-center gap-1.5">
         <SchoolMark name={school} logo={logo} className="size-5 text-[8px]" />
-        <span className="truncate text-[10px] font-semibold text-ink">{school}</span>
+        <span className="truncate text-[10px] font-semibold">{school}</span>
       </div>
-      <p className="font-display mt-2 text-[22px] leading-none text-ink">Hi Emma,</p>
-      <div className="theme-hero mt-2 flex h-[52px] items-end justify-between rounded-[var(--radius-md)] p-2">
-        <span className="text-[10px] font-semibold">Floorwork Foundations</span>
-        <span className="grid size-5 place-items-center rounded-full bg-black/25"><Play className="size-2.5 fill-current" /></span>
+      <p className="mt-3 text-[8px] font-semibold uppercase tracking-[0.08em] text-accent-text">Next · Tuesday</p>
+      <p className="display-xl text-[34px]">17:30</p>
+      <div className="mt-1 flex items-center justify-between gap-2">
+        <span className="truncate text-[10px] font-semibold">Grade 3 Ballet</span>
+        <MiniCount h={9} w={2} />
       </div>
-      <div className="mt-2 flex gap-1.5">
-        <span className="rounded-full bg-accent px-2 py-0.5 text-[9px] font-semibold text-on-accent">Classes</span>
-        <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[9px] text-ink-2">Progress</span>
-      </div>
+      <span className="mt-2 block rounded-[4px] bg-accent py-1 text-center text-[9px] font-semibold text-on-accent">Book a class</span>
     </div>
   );
 }
 
-/** The parent home screen, in the chosen style and colours. */
-function PhonePreview({ school, logo, dark }: { school: string; logo: string | null; dark: boolean }) {
+/** The parent home screen, in the chosen style and colours, in the Swayvo look. */
+function PhonePreview({ school, logo }: { school: string; logo: string | null; dark: boolean }) {
   return (
-    <div className="flex h-[520px] flex-col bg-canvas text-ink"
-         style={dark ? { background: 'radial-gradient(360px 260px at 100% 0%, color-mix(in srgb, var(--color-secondary) 45%, transparent), transparent 70%), var(--color-canvas)' } : undefined}>
+    <div className="flex h-[520px] flex-col bg-canvas text-ink">
       <div className="flex items-center justify-between px-4 pb-2 pt-4">
         <span className="flex items-center gap-2">
           <SchoolMark name={school} logo={logo} className="size-7 text-[10px]" />
@@ -280,32 +288,32 @@ function PhonePreview({ school, logo, dark }: { school: string; logo: string | n
         </span>
         <Bell className="size-4 text-ink-2" aria-hidden />
       </div>
-      <div className="flex-1 space-y-3 overflow-hidden px-4">
+      <div className="flex-1 space-y-4 overflow-hidden px-4 pt-2">
         <div>
-          <p className="font-display text-[30px] leading-tight">Hi Emma,</p>
-          <p className="text-[12px] text-ink-2">Ready to dance today?</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-accent-text">Next · Emma · Tuesday</p>
+          <p className="display-xl mt-0.5 text-[52px]">17:30</p>
+          <p className="font-display text-[16px] font-[800] leading-tight [font-stretch:112%]">Grade 3 Ballet</p>
+          <p className="text-[11px] text-ink-3">Miss Freya · Studio One</p>
         </div>
-        <div className="theme-hero relative h-28 overflow-hidden rounded-[var(--radius-lg)] p-3">
-          <svg aria-hidden viewBox="0 0 200 100" className="absolute inset-0 h-full w-full opacity-30" preserveAspectRatio="none">
-            {dark ? <path d="M-10 90 L120 -10 L150 -10 L20 90 Z" fill="white" />
-              : <path d="M0 70 C 50 20, 100 110, 200 30 L200 100 L0 100 Z" fill="white" />}
-          </svg>
-          <span className="absolute left-1/2 top-1/2 grid size-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-[#111]"><Play className="size-4 fill-current" /></span>
-          <span className="absolute bottom-2.5 left-3 text-[12px] font-semibold">Next: Grade 3 Ballet</span>
+        <div className="border-t-2 border-ink pt-2">
+          <p className="font-display text-[15px] uppercase leading-none tracking-[-0.01em] [font-stretch:80%]">Moved</p>
+          <p className="mt-1 text-[11.5px] font-semibold leading-snug">Thursday Tap moves to Studio Two</p>
+          <p className="text-[10.5px] text-ink-3">Same time, same teacher.</p>
         </div>
-        <div className="card p-3">
+        <div className="border-t border-line pt-2">
           <div className="flex items-center justify-between">
-            <span><span className="block text-[11px] text-ink-3">This week</span><span className="block text-[13px] font-semibold">3 classes · 1 trial</span></span>
-            <BarChart3 className="size-5 text-accent-text" aria-hidden />
+            <span className="text-[11px] font-semibold">Pliés</span>
+            <MiniCount h={11} w={3} />
           </div>
-          <span className="mt-2 inline-block rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-accent-ink">94% attendance</span>
+          <p className="text-[10.5px] text-ink-3">Secure · from Miss Freya’s last feedback</p>
         </div>
         <span className="block rounded-[var(--radius-md)] bg-accent py-2.5 text-center text-[13px] font-semibold text-on-accent">Book a class</span>
       </div>
       <div className="flex border-t border-line bg-surface">
-        {[[Home, 'Home', true], [CalendarDays, 'Schedule', false], [MessageSquare, 'Messages', false]].map(([I, l, on]) => {
+        {[[Home, 'Home', true], [CalendarDays, 'Schedule', false], [MessageSquare, 'Messages', false], [TrendingUp, 'Progress', false]].map(([I, l, on]) => {
           const Icon = I as React.ElementType;
-          return <span key={l as string} className={cn('flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px]', on ? 'text-accent-text' : 'text-ink-3')}>
+          return <span key={l as string} className={cn('relative flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px]', on ? 'font-semibold text-ink' : 'text-ink-3')}>
+            {on && <span className="absolute top-0 h-0.5 w-5 bg-accent" />}
             <Icon className="size-4" aria-hidden />{l as string}</span>;
         })}
       </div>
@@ -354,7 +362,7 @@ export function ImagerySettings({ canEdit }: { canEdit: boolean }) {
     mutationFn: (v: { hero: string | null; light: string | null }) => runAs(session, q => q(SAVE_IMAGERY, [s!.id, v.hero, v.light])),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['db'] }),
   });
-  if (!s) return <Card className="p-4"><Skeleton className="h-24" /></Card>;
+  if (!s) return <Card><Skeleton className="h-24" /></Card>;
   const pick = (kind: 'hero' | 'light') => (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; e.target.value = ''; if (!f) return;
     setErr(null);
@@ -365,42 +373,42 @@ export function ImagerySettings({ canEdit }: { canEdit: boolean }) {
   return (
     <Card>
       <CardHeader title="Photos" subtitle="A photo of your school for your public page and families’ home screen, and a light logo for dark screens." />
-      <div className="grid gap-4 p-4 sm:grid-cols-2">
+      <div className="grid gap-x-8 gap-y-6 pt-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <p className="text-sm font-medium">Hero photo</p>
+          <p className="text-[14px] font-semibold">Hero photo</p>
           {s.hero_url
             // eslint-disable-next-line @next/next/no-img-element
             ? <img src={s.hero_url} alt="Hero photo" className="aspect-[16/7] w-full rounded-[var(--radius-md)] object-cover" />
             : <div className="grid aspect-[16/7] place-items-center rounded-[var(--radius-md)] border border-dashed border-line-strong text-[12.5px] text-ink-3">No photo yet</div>}
           {canEdit && (
             <div className="flex gap-2">
-              <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-[var(--radius-md)] border border-line-strong px-3 text-sm hover:bg-surface-2">
+              <label className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-[var(--radius-md)] border border-line-strong bg-surface px-3 text-sm font-semibold hover:bg-surface-2 focus-within:ring-4 focus-within:ring-accent-line/12">
                 <Upload className="size-4" aria-hidden /> {s.hero_url ? 'Replace' : 'Upload'}
                 <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={pick('hero')} />
               </label>
               {s.hero_url && <Button size="sm" variant="ghost" onClick={() => save.mutate({ hero: null, light: s.logo_light_url })}><Trash2 className="size-4" aria-hidden /> Remove</Button>}
             </div>
           )}
-          <p className="text-[12px] text-ink-3">Cropped to a wide banner and compressed on this device. If it shows children, make sure their families agreed to photos.</p>
+          <p className="text-[13px] text-ink-3">Cropped to a wide banner and compressed on this device. If it shows children, make sure their families agreed to photos.</p>
         </div>
         <div className="space-y-2">
-          <p className="text-sm font-medium">Light logo</p>
-          <div className="grid h-24 place-items-center rounded-[var(--radius-md)] bg-[#18122f] p-3">
+          <p className="text-[14px] font-semibold">Light logo</p>
+          <div data-theme="urban" className="grid h-24 place-items-center rounded-[var(--radius-md)] bg-canvas p-3">
             {s.logo_light_url
               // eslint-disable-next-line @next/next/no-img-element
               ? <img src={s.logo_light_url} alt="Light logo" className="max-h-16 object-contain" />
-              : <span className="text-[12.5px] text-white/70">No light logo</span>}
+              : <span className="text-[13px] text-ink-3">No light logo</span>}
           </div>
           {canEdit && (
             <div className="flex gap-2">
-              <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-[var(--radius-md)] border border-line-strong px-3 text-sm hover:bg-surface-2">
+              <label className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-[var(--radius-md)] border border-line-strong bg-surface px-3 text-sm font-semibold hover:bg-surface-2 focus-within:ring-4 focus-within:ring-accent-line/12">
                 <Upload className="size-4" aria-hidden /> {s.logo_light_url ? 'Replace' : 'Upload'}
                 <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="sr-only" onChange={pick('light')} />
               </label>
               {s.logo_light_url && <Button size="sm" variant="ghost" onClick={() => save.mutate({ hero: s.hero_url, light: null })}><Trash2 className="size-4" aria-hidden /> Remove</Button>}
             </div>
           )}
-          <p className="text-[12px] text-ink-3">Used with the Urban style{s.theme === 'urban' ? ' (your current style)' : ''}, where screens are dark.</p>
+          <p className="text-[13px] text-ink-3">Used with the Urban style{s.theme === 'urban' ? ' (your current style)' : ''}, where screens are dark.</p>
         </div>
         {(err || save.error != null) && <div className="sm:col-span-2"><ErrorState error={err ?? save.error} /></div>}
       </div>

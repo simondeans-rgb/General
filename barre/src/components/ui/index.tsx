@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { cn } from '@/lib/cn';
 
 /* ==========================================================================
@@ -27,14 +28,14 @@ export function Button({
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] font-medium',
-        'transition-[background-color,border-color,box-shadow,transform] duration-100',
+        'inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] font-semibold tracking-[-0.005em]',
+        'transition-[background-color,border-color,color,transform] duration-100',
         'active:translate-y-px disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap',
-        size === 'sm' && 'h-8 px-2.5 text-[13px]',
-        size === 'md' && 'h-10 px-3.5 text-sm min-h-[40px]',
+        size === 'sm' && 'h-9 px-3 text-[13px] [@media(pointer:coarse)]:h-10',
+        size === 'md' && 'h-10 px-4 text-sm [@media(pointer:coarse)]:h-11',
         size === 'lg' && 'h-12 px-5 text-[15px]',
-        variant === 'primary' && 'bg-accent text-on-accent hover:bg-accent-hover shadow-xs',
-        variant === 'secondary' && 'bg-surface text-ink border border-line-strong hover:bg-surface-2 shadow-xs',
+        variant === 'primary' && 'bg-accent text-on-accent hover:bg-accent-hover',
+        variant === 'secondary' && 'bg-surface text-ink border border-line-strong hover:border-ink-3 hover:bg-surface-2',
         variant === 'ghost' && 'text-ink-2 hover:bg-surface-2 hover:text-ink',
         variant === 'danger' && 'bg-surface text-critical border border-line-strong hover:bg-critical-soft',
         className,
@@ -65,10 +66,10 @@ export function CardHeader({
   title, subtitle, action, className,
 }: { title: React.ReactNode; subtitle?: React.ReactNode; action?: React.ReactNode; className?: string }) {
   return (
-    <div className={cn('flex items-start gap-3 px-4 py-3 border-b border-line', className)}>
+    <div className={cn('flex items-start gap-3 px-4 pb-2.5 pt-3.5 border-b border-line', className)}>
       <div className="min-w-0 flex-1">
-        <h2 className="text-[13px] font-semibold tracking-[0.04em] uppercase text-ink-3">{title}</h2>
-        {subtitle && <p className="mt-0.5 text-sm text-ink-2">{subtitle}</p>}
+        <h2 className="section-title">{title}</h2>
+        {subtitle && <p className="mt-0.5 text-[13.5px] text-ink-3">{subtitle}</p>}
       </div>
       {action}
     </div>
@@ -77,7 +78,7 @@ export function CardHeader({
 
 // ── Badge ─────────────────────────────────────────────────────────────────
 const TONES = {
-  neutral:  'bg-surface-2 text-ink-2 border-line',
+  neutral:  'bg-surface-2 text-ink-2 border-transparent',
   accent:   'bg-accent-soft text-accent-ink border-transparent',
   positive: 'bg-positive-soft text-positive border-transparent',
   caution:  'bg-caution-soft text-caution border-transparent',
@@ -97,7 +98,7 @@ export function Badge({
 }: { tone?: Tone; children: React.ReactNode; className?: string; icon?: React.ReactNode }) {
   return (
     <span className={cn(
-      'inline-flex min-w-0 max-w-full items-center gap-1 rounded-full border px-2 py-0.5 text-[12px] font-medium leading-5 whitespace-nowrap',
+      'inline-flex min-w-0 max-w-full items-center gap-1 rounded-[var(--radius-sm)] border px-1.5 py-px text-[12px] font-semibold leading-5 whitespace-nowrap',
       TONES[tone] ?? TONES.neutral, className)}>
       {icon}<span className="min-w-0 truncate">{children}</span>
     </span>
@@ -162,10 +163,10 @@ export function EmptyState({
   icon, title, body, action,
 }: { icon?: React.ReactNode; title: string; body?: string; action?: React.ReactNode }) {
   return (
-    <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
-      {icon && <div className="mb-3 grid size-11 place-items-center rounded-full bg-surface-2 text-ink-3">{icon}</div>}
-      <p className="font-medium text-ink">{title}</p>
-      {body && <p className="mt-1 max-w-sm text-sm text-ink-2">{body}</p>}
+    <div className="flex flex-col items-start justify-center px-5 py-10">
+      {icon && <div aria-hidden className="mb-3 text-ink-3 [&_svg]:size-5">{icon}</div>}
+      <p className="font-display text-[19px] leading-tight text-ink">{title}</p>
+      {body && <p className="mt-1.5 max-w-md text-[14.5px] text-ink-2">{body}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>
   );
@@ -189,6 +190,73 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
       <p className="font-medium text-critical">Something went wrong</p>
       <p className="mt-1 text-sm text-ink-2 break-words">{message}</p>
       {onRetry && <Button className="mt-3" size="sm" onClick={onRetry}>Try again</Button>}
+    </div>
+  );
+}
+
+// ── Beats: the eight-count meter ──────────────────────────────────────────
+/**
+ * A value shown as eight beats in two groups of four (the Swayvo count). Use
+ * for "how full / how far": places in a class, weeks of term, a skill's level.
+ * Always pair with words or a number — the beats alone are not the value.
+ */
+export function Beats({ value, max = 1, label, size = 'md', tone = 'accent', className }: {
+  value: number; max?: number; label: string; size?: 'sm' | 'md' | 'lg'; tone?: 'accent' | 'ink' | 'caution' | 'critical' | 'positive'; className?: string;
+}) {
+  const filled = Math.max(0, Math.min(8, (value / (max || 1)) * 8));
+  const colour = { accent: 'var(--color-accent)', ink: 'var(--color-ink)', caution: 'var(--color-caution)',
+    critical: 'var(--color-critical)', positive: 'var(--color-positive)' }[tone];
+  const h = size === 'sm' ? 10 : size === 'lg' ? 22 : 14;
+  return (
+    <span role="img" aria-label={label} className={cn('inline-flex shrink-0 items-end', className)} style={{ height: h, gap: size === 'lg' ? 3 : 2 }}>
+      {Array.from({ length: 8 }, (_, i) => {
+        const part = Math.max(0, Math.min(1, filled - i));
+        return (
+          <span key={i} aria-hidden className="relative block overflow-hidden rounded-[1px] bg-surface-3"
+            style={{ width: size === 'lg' ? 5 : size === 'sm' ? 3 : 4, height: '100%', marginLeft: i === 4 ? (size === 'lg' ? 5 : 3) : 0 }}>
+            {part > 0 && <span className="absolute inset-x-0 bottom-0" style={{ height: `${part * 100}%`, background: colour }} />}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
+// ── Notice: changes set as type, not badges (from the Press direction) ─────
+/**
+ * A change people must not miss — a class moved or cancelled, a date due —
+ * set as a short uppercase verb in display type, with the detail beneath.
+ * The word carries the meaning; colour only supports it.
+ */
+export function Notice({ word, tone = 'ink', title, detail, action, className }: {
+  word: string; tone?: 'ink' | 'critical' | 'caution' | 'accent' | 'positive'; title: React.ReactNode;
+  detail?: React.ReactNode; action?: React.ReactNode; className?: string;
+}) {
+  const colour = { ink: 'text-ink', critical: 'text-critical', caution: 'text-caution', accent: 'text-accent-text', positive: 'text-positive' }[tone];
+  return (
+    <div className={cn('flex items-start gap-3', className)}>
+      <div className="min-w-0 flex-1">
+        <p className={cn('font-display text-[22px] uppercase leading-none tracking-[-0.01em] [font-stretch:80%]', colour)}>{word}</p>
+        <p className="mt-1.5 text-[15px] font-semibold leading-snug text-ink">{title}</p>
+        {detail && <p className="mt-0.5 text-[13.5px] text-ink-3">{detail}</p>}
+      </div>
+      {action}
+    </div>
+  );
+}
+
+// ── SectionHead: the standard section heading ────────────────────────────
+/** Sentence-case title, optional meta, one link or action, a 2px ink rule beneath. */
+export function SectionHead({ title, meta, action, href, link, as: H = 'h2', id, className }: {
+  title: React.ReactNode; meta?: React.ReactNode; action?: React.ReactNode; href?: string; link?: string;
+  as?: 'h2' | 'h3'; id?: string; className?: string;
+}) {
+  return (
+    <div className={cn('mb-1 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b-2 border-ink pb-2', className)}>
+      <H id={id} className="section-title min-w-0 flex-1">{title}</H>
+      {meta && <span className="text-[13px] text-ink-3">{meta}</span>}
+      {href && link && <Link href={href} className="text-[13px] font-semibold text-accent-text hover:underline">{link}</Link>}
+      {action && <span className="-my-2 flex items-center">{action}</span>}
     </div>
   );
 }

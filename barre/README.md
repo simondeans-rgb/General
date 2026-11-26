@@ -1,4 +1,4 @@
-# Sanaa
+# Swayvo
 
 **The operating system for running a dance studio.**
 
@@ -34,7 +34,7 @@ Worth doing in this order:
      tells her it arrived; **Acknowledge & add to record** puts her words on
      Nia's record and tells her, in one step — and Nia's teachers see it.
    - **Account → Your brand**: Northstar's navy and star logo are what every
-     parent sees, "powered by Sanaa". Try another colour or upload a logo —
+     parent sees, "powered by Swayvo". Try another colour or upload a logo —
      the preview updates before anyone else sees it.
    - Press **⌘K** for the questions the assistant will answer, and the screens
      that answer them today.
@@ -46,9 +46,9 @@ Worth doing in this order:
    her conversation with the studio; tap an invoice in **Payments** to see its
    lines.
 
-4. **Jordan (Sanaa platform admin)** — first on the sign-in page under "You,
-   running Sanaa", or via **Switch person** at the bottom of the sidebar.
-   Every school on Sanaa: plans, status, usage, revenue. **New school** creates an account and an owner invitation
+4. **Jordan (Swayvo platform admin)** — first on the sign-in page under "You,
+   running Swayvo", or via **Switch person** at the bottom of the sidebar.
+   Every school on Swayvo: plans, status, usage, revenue. **New school** creates an account and an owner invitation
    link; open it (signed out, or in a private window) to join as that owner.
    Northstar's owner has allowed support access: open its read-only view
    from Northstar's panel. Pointe & Flex is suspended — sign in as its owner
@@ -64,6 +64,15 @@ seeds; after that it is instant, and your changes persist.
 So when Marcus cannot see another teacher's students, that is the database
 refusing him — not this interface choosing not to render them. `Studio → Reset
 demo data` puts it back.
+
+## Versions and previews
+
+- **Live demo** — `/General/studio/`, built from the default branch. Changes reach it only by merging.
+- **Preview** — `/General/studio-next/`, the work in progress on the `studio` branch. It keeps its own
+  demo database and sign-in, so trying the preview never disturbs the live demo. Build it with
+  `NEXT_PUBLIC_BASE_PATH=/General/studio-next NEXT_PUBLIC_SITE_KEY=next npm run build && node scripts/copy-export.mjs studio-next`.
+- **`sanaa-v1`** — a frozen branch marking the version that was live before the next round of
+  significant changes. Nothing is pushed to it; compare against it or restore from it.
 
 ## Running it locally
 
@@ -100,11 +109,14 @@ unchanged on Supabase, a plain server, or in the browser.
 - [docs/SECURITY.md](docs/SECURITY.md) — the permission model, why teachers
   cannot read the medical table or family conversations, and what is
   deliberately *not* protected in this build.
-- [docs/PLATFORM.md](docs/PLATFORM.md) — running Sanaa for many schools: the
+- [docs/PLATFORM.md](docs/PLATFORM.md) — running Swayvo for many schools: the
   console, plans, invitations, support access and an account's lifecycle.
 - [docs/DECISIONS.md](docs/DECISIONS.md) — where the build departs from the brief, and why.
 - [docs/PAYMENTS.md](docs/PAYMENTS.md) — the ledger, and the two server routes
   that switch on card payments with Stripe.
+- [docs/brand/GUIDELINES.md](docs/brand/GUIDELINES.md) — the Swayvo brand: logo, colour, type, voice.
+- [docs/brand/DESIGN-SYSTEM.md](docs/brand/DESIGN-SYSTEM.md) — the rules every screen follows; live at `/design`.
+- [docs/brand/FINAL-ASSESSMENT.md](docs/brand/FINAL-ASSESSMENT.md) — what was tested and the quality scorecard.
 - [docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md) — the automated checks
   (`npm run a11y`) and the manual screen-reader review still to do.
 

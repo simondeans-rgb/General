@@ -6,6 +6,7 @@ import { BellRing } from 'lucide-react';
 import { Button, ErrorState } from '@/components/ui';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
+import { SWAYVO } from '@/lib/swayvo-logo';
 
 const base = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 const VAPID = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? '';
@@ -26,7 +27,7 @@ export function useBrandedManifest(name: string | null | undefined, colour: stri
     const origin = location.origin;
     const manifest = {
       name, short_name: name.length > 12 ? name.split(' ')[0] : name, start_url: `${origin}${base}/`, scope: `${origin}${base}/`,
-      display: 'standalone', background_color: '#f6f2ea', theme_color: colour ?? '#0b3b34',
+      display: 'standalone', background_color: SWAYVO.studio, theme_color: colour ?? SWAYVO.blue,
       icons: [192, 512].map(s => ({ src: `${origin}${base}/icons/icon-${s}.png`, sizes: `${s}x${s}`, type: 'image/png' })),
     };
     const url = URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' }));
@@ -62,13 +63,13 @@ export function PushToggle() {
     },
   });
   if (!supported || !VAPID) {
-    return <p className="text-[12.5px] text-ink-3">Phone alerts start once your school’s app is hosted. On an iPhone, add the app to your Home Screen first.</p>;
+    return <p className="text-[13px] text-ink-3">Phone alerts start once your school’s app is hosted. On an iPhone, add the app to your Home Screen first.</p>;
   }
   return (
     <div className="space-y-1.5">
-      {state === 'on' ? <p className="flex items-center gap-1.5 text-sm"><BellRing className="size-4 text-positive" aria-hidden /> Phone alerts are on for this device.</p>
+      {state === 'on' ? <p className="text-sm"><span className="font-semibold text-positive">On.</span> Phone alerts reach this device.</p>
         : <Button size="sm" loading={on.isPending} disabled={state === 'blocked'} onClick={() => on.mutate()}><BellRing className="size-4" aria-hidden /> Turn on phone alerts</Button>}
-      {state === 'blocked' && <p className="text-[12.5px] text-ink-3">Notifications are blocked for this site — allow them in your browser’s settings.</p>}
+      {state === 'blocked' && <p className="text-[13px] text-ink-3">Notifications are blocked for this site — allow them in your browser’s settings.</p>}
       {on.error != null && <ErrorState error={on.error} />}
     </div>
   );

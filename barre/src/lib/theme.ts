@@ -4,12 +4,11 @@
  * then go on top (lib/brand.ts), so two schools on the same theme still look
  * like themselves.
  *
- *   classic — Sanaa's own look and the default: eucalyptus, ivory and
- *             terracotta, Fraunces headings, soft corners.
- *   urban   — street, commercial, contemporary: deep violet dark mode, a
- *             bold wide sans, a neon accent with a second colour for glow.
+ *   classic — Swayvo's light look and the default: Studio white, Count blue,
+ *             ink type, Archivo headlines.
+ *   urban   — the dark look: night grounds, wider headlines, a vivid accent.
  *
- * Sanaa's own screens (the platform console) keep the neutral base theme.
+ * Swayvo's own screens (the platform console) keep the base tokens.
  */
 import { normaliseHex } from './brand';
 
@@ -26,12 +25,12 @@ export type Theme = {
 
 export const THEMES: Record<ThemeId, Theme> = {
   classic: {
-    id: 'classic', name: 'Classic', tagline: 'Elegant and calm — ivory, serif headings, soft edges',
-    surface: '#fffdf8', canvas: '#f6f2ea', ink: '#14211e', dark: false,
-    accent: '#0b3b34', secondary: '#c86a4f',
+    id: 'classic', name: 'Classic', tagline: 'Light and clear — white studio, ink type, your colour for actions',
+    surface: '#ffffff', canvas: '#f4f5f8', ink: '#121521', dark: false,
+    accent: '#2638f0', secondary: '#ffb089',
     presets: [
-      { name: 'Sanaa', accent: '#0b3b34', secondary: '#c86a4f' },
-      { name: 'Terracotta', accent: '#c86a4f', secondary: '#0b3b34' },
+      { name: 'Swayvo', accent: '#2638f0', secondary: '#ffb089' },
+      { name: 'Eucalyptus', accent: '#0b3b34', secondary: '#c86a4f' },
       { name: 'Charcoal & blush', accent: '#2b2b2b', secondary: '#d9a89a' },
       { name: 'Midnight', accent: '#1e3a8a', secondary: '#c9a227' },
       { name: 'Plum', accent: '#6b2155', secondary: '#e3a1b9' },
@@ -39,8 +38,8 @@ export const THEMES: Record<ThemeId, Theme> = {
     ],
   },
   urban: {
-    id: 'urban', name: 'Urban', tagline: 'Bold and electric — dark mode, wide type, neon accents',
-    surface: '#18122f', canvas: '#0d0a1c', ink: '#f6f4ff', dark: true,
+    id: 'urban', name: 'Urban', tagline: 'Bold and after-dark — night grounds, wide type, vivid accents',
+    surface: '#141826', canvas: '#0b0d16', ink: '#f3f4f8', dark: true,
     accent: '#c6f432', secondary: '#8b5cf6',
     presets: [
       { name: 'Volt & violet', accent: '#c6f432', secondary: '#8b5cf6' },

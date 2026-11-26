@@ -4,11 +4,11 @@ import * as React from 'react';
 import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { CheckCircle2, AlertTriangle } from 'lucide-react';
 import { readAs, runAs } from '@/lib/db/client';
 import { useSession, type Role } from '@/lib/auth/session';
-import { SanaaMark } from '@/components/app/sanaa';
-import { Button, Card, ErrorState, Field, Input, Skeleton } from '@/components/ui';
+import { SwayvoLogo } from '@/components/app/swayvo';
+import { useSchoolTheme } from '@/components/app/brand';
+import { Button, ErrorState, Field, Input, Notice, Skeleton } from '@/components/ui';
 
 type Preview = { studio_name: string; role: Role; email: string; full_name: string | null;
   family_name: string | null; student_name: string | null; state: string };
@@ -46,6 +46,8 @@ function Invite() {
     enabled: !!token,
   });
   const p = preview.data?.[0];
+  // Swayvo's own page until the person is inside their school.
+  useSchoolTheme(null);
   const [name, setName] = React.useState('');
   React.useEffect(() => { if (p?.full_name) setName(n => n || p.full_name!); }, [p]);
 
@@ -63,9 +65,9 @@ function Invite() {
   });
 
   return (
-    <main className="grid min-h-dvh place-items-center bg-surface-2 p-4">
-      <Card className="w-full max-w-md p-6">
-        <SanaaMark className="mb-4 size-10" />
+    <main id="main" className="min-h-dvh bg-surface px-5 pb-12 pt-8 sm:px-8">
+      <div className="mx-auto w-full max-w-md">
+        <SwayvoLogo className="mb-10 h-7" />
         {!token && <Problem text="This link is missing its invitation code. Open the link exactly as it was sent." />}
         {token && preview.isLoading && <Skeleton className="h-32" />}
         {preview.error && <ErrorState error={preview.error} />}
@@ -73,12 +75,13 @@ function Invite() {
         {p && p.state !== 'valid' && <Problem title={p.studio_name} text={PROBLEM[p.state] ?? 'This invitation cannot be used.'} />}
         {p && p.state === 'valid' && (
           <>
-            <h1 className="text-[22px] font-semibold tracking-tight">Join {p.studio_name}</h1>
-            <p className="mt-1 text-sm text-ink-2">
+            <p className="label text-accent-text">Invitation</p>
+            <h1 className="mt-1 font-display text-[30px] font-[800] leading-[1.05] [font-stretch:112%]">Join {p.studio_name}</h1>
+            <p className="mt-2 text-[15px] text-ink-2">
               You have been invited as {AS[p.role] ?? p.role}
               {p.family_name ? ` in the ${p.family_name}` : ''}{p.student_name ? ` — a login for ${p.student_name}` : ''}.
             </p>
-            <div className="mt-5 space-y-3">
+            <div className="mt-6 space-y-4 border-t-2 border-ink pt-5">
               <Field label="Email" htmlFor="iv-email" hint="The invitation was sent to this address.">
                 <Input id="iv-email" value={p.email} readOnly />
               </Field>
@@ -86,22 +89,22 @@ function Invite() {
                 <Input id="iv-name" value={name} onChange={e => setName(e.target.value)} autoComplete="name" />
               </Field>
               {p.role === 'student' && (
-                <p className="rounded-[var(--radius-md)] bg-surface-2 p-3 text-[13px] text-ink-2">
+                <p className="border-l-2 border-line-strong py-1 pl-3 text-[14px] text-ink-2">
                   Your login works once a parent has approved it.
                 </p>
               )}
               {accept.error && <ErrorState error={accept.error} />}
               <Button variant="primary" size="lg" className="w-full" loading={accept.isPending}
                       disabled={name.trim().length < 2} onClick={() => accept.mutate()}>
-                <CheckCircle2 className="size-4" aria-hidden /> Accept and join
+                Accept and join
               </Button>
-              <p className="text-center text-[12px] text-ink-3">
+              <p className="text-center text-[13px] text-ink-3">
                 Demo: no password is needed here. In the live service you create your login first.
               </p>
             </div>
           </>
         )}
-      </Card>
+      </div>
     </main>
   );
 }
@@ -109,9 +112,8 @@ function Invite() {
 function Problem({ title, text }: { title?: string; text: string }) {
   return (
     <div>
-      <h1 className="flex items-center gap-2 text-[19px] font-semibold"><AlertTriangle className="size-5 text-caution" aria-hidden />
-        {title ?? 'Invitation'}</h1>
-      <p className="mt-2 text-sm text-ink-2">{text}</p>
+      <h1 className="sr-only">{title ?? 'Invitation'}</h1>
+      <Notice word="Can’t use this link" tone="caution" title={title ?? 'Invitation'} detail={text} />
     </div>
   );
 }

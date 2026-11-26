@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Download, MailPlus, ShieldCheck, ShieldOff, UserMinus, Users, CheckCircle2 } from 'lucide-react';
+import { Download, MailPlus, ShieldOff, UserMinus, CheckCircle2 } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { RetentionCard } from '@/components/app/safeguarding';
 import { RecordSheet } from '@/components/app/record-sheet';
@@ -12,8 +12,9 @@ import { useRows } from '@/lib/query';
 import { runAs, readAs } from '@/lib/db/client';
 import { useSession, type Role } from '@/lib/auth/session';
 import {
-  Badge, Button, Card, CardHeader, EmptyState, ErrorState, Field, Input, Select, Skeleton, type Tone,
+  Beats, Button, EmptyState, ErrorState, Field, Input, Select, Skeleton, type Tone,
 } from '@/components/ui';
+import { SettingsSection as Card, SettingsHead as CardHeader } from '@/components/app/progress-settings';
 import * as A from '@/lib/repos/account';
 import { inviteLink } from '@/lib/repos/platform';
 import { money, dateShort, relativeDay, time } from '@/lib/format';
@@ -32,7 +33,7 @@ const STATUS: Record<string, string> = {
 };
 
 /**
- * The school's own account: what it is on, who can get in, whether Sanaa
+ * The school's own account: what it is on, who can get in, whether Swayvo
  * support may look, and its data to take away. Owners and administrators.
  */
 export default function AccountPage() {
@@ -43,7 +44,7 @@ export default function AccountPage() {
   return (
     <Shell title="Account" subtitle={acct ? `${acct.name} · ${STATUS[acct.status] ?? acct.status}` : undefined}
       allow={['owner', 'admin']}>
-      <div className="mx-auto max-w-3xl space-y-5">
+      <div className="mx-auto max-w-[1240px]"><div className="max-w-3xl space-y-12">
         <BrandSettings canEdit={isOwner && !session?.platform} />
         <ImagerySettings canEdit={isOwner && !session?.platform} />
         <PlanCard acct={acct} />
@@ -51,13 +52,13 @@ export default function AccountPage() {
         {isOwner && !session?.platform && acct && <SupportCard studioId={acct.id} />}
         {isOwner && !session?.platform && acct && <RetentionCard studioId={acct.id} />}
         {isOwner && !session?.platform && <ExportCard name={acct?.name} />}
-      </div>
+      </div></div>
     </Shell>
   );
 }
 
 function PlanCard({ acct }: { acct?: A.AccountRow }) {
-  if (!acct) return <Card className="p-4"><Skeleton className="h-24" /></Card>;
+  if (!acct) return <Card><Skeleton className="h-24" /></Card>;
   const rows: [string, number, number | null][] = [
     ['Students', acct.students, acct.max_students],
     ['Locations', acct.locations, acct.max_locations],
@@ -67,28 +68,30 @@ function PlanCard({ acct }: { acct?: A.AccountRow }) {
     <Card>
       <CardHeader title="Plan" subtitle={acct.plan_name
         ? `${acct.plan_name}${acct.price_minor ? ` · ${money(acct.price_minor)} a month` : ''}` : 'No plan set'} />
-      <div className="space-y-3 p-4">
+      <div className="space-y-4 pt-3">
         {acct.status === 'trialling' && acct.trial_ends_on && (
-          <p className="text-sm text-ink-2">Your free trial runs until <strong className="font-medium text-ink">{dateShort(acct.trial_ends_on)}</strong>.</p>
+          <p className="text-[14.5px] text-ink-2">Your free trial runs until <strong className="font-semibold text-ink">{dateShort(acct.trial_ends_on)}</strong>.</p>
         )}
         {acct.status_reason && (acct.status === 'suspended' || acct.status === 'cancelled' || acct.status === 'past_due') && (
-          <p className="rounded-[var(--radius-md)] bg-caution-soft p-3 text-sm">{acct.status_reason}</p>
+          <p className="border-l-2 border-caution py-1 pl-3 text-[14.5px]"><strong className="font-semibold text-caution">{STATUS[acct.status]}.</strong> {acct.status_reason}</p>
         )}
-        {rows.map(([label, used, cap]) => {
-          const pct = cap ? Math.min(100, Math.round((used / cap) * 100)) : 0;
-          return (
-            <div key={label}>
-              <div className="flex justify-between text-sm">
-                <span className="text-ink-2">{label}</span>
-                <span className="tnum">{used}{cap ? ` of ${cap}` : ' · no limit'}</span>
+        <dl className="grid grid-cols-3 gap-4">
+          {rows.map(([label, used, cap]) => {
+            const pct = cap ? Math.min(100, Math.round((used / cap) * 100)) : 0;
+            return (
+              <div key={label} className="min-w-0">
+                <dt className="label">{label}</dt>
+                <dd className="mt-1 flex flex-wrap items-baseline gap-x-1.5">
+                  <span className="stat-number text-[26px] leading-none">{used}</span>
+                  <span className="tnum text-[13px] text-ink-3">{cap ? `of ${cap}` : 'no limit'}</span>
+                </dd>
+                {cap != null && <dd className="mt-2"><Beats value={used} max={cap} tone={pct >= 90 ? 'caution' : 'accent'} label={`${used} of ${cap} ${label.toLowerCase()}`} />
+                  {pct >= 90 && <span className="ml-2 text-[13px] font-semibold text-caution">Nearly full</span>}</dd>}
               </div>
-              {cap != null && <div aria-hidden className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-3">
-                <div className={cn('h-full rounded-full', pct >= 90 ? 'bg-caution' : 'bg-accent')} style={{ width: `${pct}%` }} />
-              </div>}
-            </div>
-          );
-        })}
-        <p className="text-[12.5px] text-ink-3">To change plan, contact Sanaa. Nothing is ever deleted for being over a limit — you just cannot add more.</p>
+            );
+          })}
+        </dl>
+        <p className="text-[13px] text-ink-3">To change plan, contact Swayvo. Nothing is ever deleted for being over a limit — you just cannot add more.</p>
       </div>
     </Card>
   );
@@ -122,35 +125,35 @@ function Team({ isOwner, studioId }: { isOwner: boolean; studioId?: string }) {
   const count = (roles: string[]) => members.data?.filter(m => roles.includes(m.role)).length ?? 0;
 
   return (
-    <Card className="overflow-hidden">
+    <Card>
       <CardHeader title="People with access" subtitle="Everyone who can sign in to this school, and what their role lets them do"
-        action={!session?.platform && <Button size="sm" variant="primary" onClick={() => setInviting(true)}>
+        action={!session?.platform && <Button size="sm" onClick={() => setInviting(true)}>
           <MailPlus className="size-4" aria-hidden /> Invite
         </Button>} />
-      <div role="tablist" aria-label="People with access" className="flex gap-1 border-b border-line px-3 py-2">
+      <div role="tablist" aria-label="People with access" className="flex gap-1 border-b border-line">
         {([['staff', 'Staff', count(staffRoles)], ['families', 'Parents and students', count(['guardian', 'student'])]] as const).map(([k, l, n]) => (
           <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
-            className={cn('h-9 rounded-full px-3 text-[13px]', tab === k ? 'bg-ink font-medium text-surface' : 'text-ink-2 hover:bg-surface-2')}>
-            {l} <span className="tnum opacity-70">{n}</span>
+            className={cn('-mb-px h-11 border-b-2 px-2.5 text-[14px]', tab === k ? 'border-ink font-semibold text-ink' : 'border-transparent text-ink-2 hover:text-ink')}>
+            {l} <span className="tnum text-[12px] text-ink-3">{n}</span>
           </button>
         ))}
       </div>
-      {act.error != null && <div className="p-3"><ErrorState error={act.error} /></div>}
-      {members.isLoading && <div className="space-y-2 p-4">{[0, 1, 2].map(i => <Skeleton key={i} className="h-12" />)}</div>}
-      {members.data && shown.length === 0 && <EmptyState icon={<Users className="size-5" />} title="Nobody here yet"
+      {act.error != null && <div className="pt-3"><ErrorState error={act.error} /></div>}
+      {members.isLoading && <div className="space-y-2 pt-3">{[0, 1, 2].map(i => <Skeleton key={i} className="h-12" />)}</div>}
+      {members.data && shown.length === 0 && <EmptyState title="Nobody here yet"
         body={tab === 'families' ? 'Invite parents from here, or from a family’s record.' : 'Invite your team.'} />}
       {groups.map(([role, list]) => (
         <section key={role} aria-label={ROLE[role]!.plural}>
-          <div className="flex items-baseline gap-2 bg-surface-2 px-4 py-1.5">
-            <h3 className="text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-3">{ROLE[role]!.plural}</h3>
-            <span className="truncate text-[12px] text-ink-3">{ROLE[role]!.does}</span>
+          <div className="mt-5 border-b border-line pb-1.5">
+            <h3 className="text-[14px] font-semibold">{ROLE[role]!.plural} <span className="tnum font-normal text-ink-3">{list.length}</span></h3>
+            <p className="text-[13px] text-ink-3">{ROLE[role]!.does}</p>
           </div>
           <ul className="divide-y divide-line">
             {list.map(m => (
-              <li key={m.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
+              <li key={m.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2.5">
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate font-medium">{m.full_name}{m.is_me && <span className="font-normal text-ink-3"> (you)</span>}</span>
-                  <span className="block truncate text-[12.5px] text-ink-3">{m.email}{m.detail ? ` · ${m.detail}` : ''}</span>
+                  <span className="block truncate font-semibold">{m.full_name}{m.is_me && <span className="font-normal text-ink-3"> (you)</span>}</span>
+                  <span className="block truncate text-[13px] text-ink-3">{m.email}{m.detail ? ` · ${m.detail}` : ''}</span>
                 </span>
                 {isOwner && staffRoles.includes(m.role) && !session?.platform ? (
                   <Select aria-label={`Role for ${m.full_name}`} className="h-9 w-[150px] text-[13px]" value={m.role}
@@ -159,7 +162,7 @@ function Team({ isOwner, studioId }: { isOwner: boolean; studioId?: string }) {
                     <option value="admin">Administrator</option>
                     <option value="teacher">Teacher</option>
                   </Select>
-                ) : <Badge tone={ROLE[m.role]!.tone}>{ROLE[m.role]!.label}</Badge>}
+                ) : <span className="text-[13px] text-ink-2">{ROLE[m.role]!.label}</span>}
                 {canRemove(m) && !session?.platform && (
                   <Button size="sm" variant="ghost" aria-label={`Remove ${m.full_name}’s access`} onClick={() => setRemoving(m)}>
                     <UserMinus className="size-4" aria-hidden />
@@ -172,14 +175,14 @@ function Team({ isOwner, studioId }: { isOwner: boolean; studioId?: string }) {
       ))}
 
       {!!invites.data?.length && (
-        <div className="border-t border-line p-4">
-          <h3 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-3">Invited, not joined yet</h3>
-          <ul className="space-y-2">
+        <div className="mt-6">
+          <h3 className="border-b border-line pb-1.5 text-[14px] font-semibold">Invited, not joined yet <span className="tnum font-normal text-ink-3">{invites.data.length}</span></h3>
+          <ul className="divide-y divide-line">
             {invites.data.map(i => (
-              <li key={i.id} className="flex flex-wrap items-center gap-2 rounded-[var(--radius-md)] border border-line px-3 py-2 text-sm">
+              <li key={i.id} className="flex flex-wrap items-center gap-2 py-2.5 text-sm">
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate">{i.full_name ?? i.email} <Badge tone={ROLE[i.role]?.tone ?? 'neutral'}>{ROLE[i.role]?.label ?? i.role}</Badge></span>
-                  <span className="block truncate text-[12px] text-ink-3">
+                  <span className="block truncate"><span className="font-semibold">{i.full_name ?? i.email}</span> <span className="text-[13px] text-ink-2">· {ROLE[i.role]?.label ?? i.role}</span></span>
+                  <span className="block truncate text-[13px] text-ink-3">
                     {i.email}{i.family_name ? ` · ${i.family_name}` : ''}{i.student_name ? ` · for ${i.student_name}` : ''} · expires {dateShort(i.expires_at)}
                   </span>
                 </span>
@@ -288,7 +291,7 @@ function InviteSheet({ studioId, isOwner, onClose }: { studioId: string; isOwner
   );
 }
 
-// ── Sanaa support ────────────────────────────────────────────────────────
+// ── Swayvo support ────────────────────────────────────────────────────────
 function SupportCard({ studioId }: { studioId: string }) {
   const { session } = useSession();
   const qc = useQueryClient();
@@ -308,16 +311,16 @@ function SupportCard({ studioId }: { studioId: string }) {
 
   return (
     <Card>
-      <CardHeader title="Sanaa support" subtitle="Let Sanaa’s team see your account when you need help" />
-      <div className="space-y-3 p-4">
-        <p className="text-sm text-ink-2">
-          Sanaa cannot see your families, children or money unless you allow it here. Access is read-only, ends when
+      <CardHeader title="Swayvo support" subtitle="Let Swayvo’s team see your account when you need help" />
+      <div className="space-y-4 pt-3">
+        <p className="text-[14.5px] text-ink-2">
+          Swayvo cannot see your families, children or money unless you allow it here. Access is read-only, ends when
           you say, and never includes health records. Every time support opens your account it is listed below.
         </p>
         {live ? (
-          <div className="rounded-[var(--radius-md)] border border-positive/30 bg-positive-soft p-3">
-            <p className="flex items-center gap-2 text-sm font-medium">
-              <ShieldCheck className="size-4 text-positive" aria-hidden /> Allowed until {dateShort(live.expires_at)} {time(live.expires_at)}
+          <div className="border-l-2 border-positive py-1 pl-3">
+            <p className="text-[14.5px] font-semibold">
+              <span className="text-positive">Support can look</span> until {dateShort(live.expires_at)} {time(live.expires_at)}
             </p>
             <p className="mt-0.5 text-[13px] text-ink-2">{live.reason}</p>
             <Button size="sm" className="mt-2.5" loading={revoke.isPending} onClick={() => revoke.mutate()}>
@@ -335,7 +338,7 @@ function SupportCard({ studioId }: { studioId: string }) {
                 <option value="72">3 days</option><option value="168">7 days</option>
               </Select>
             </Field>
-            <Button variant="primary" loading={grant.isPending} disabled={reason.trim().length < 3} onClick={() => grant.mutate()}>
+            <Button loading={grant.isPending} disabled={reason.trim().length < 3} onClick={() => grant.mutate()}>
               Allow access
             </Button>
           </div>
@@ -343,9 +346,9 @@ function SupportCard({ studioId }: { studioId: string }) {
         {(grant.error ?? revoke.error) != null && <ErrorState error={grant.error ?? revoke.error} />}
         {!!visits.data?.length && (
           <div>
-            <h3 className="mb-1.5 text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-3">When support looked</h3>
-            <ul className="space-y-1 text-[13px] text-ink-2">
-              {visits.data.map((v, n) => <li key={n}>{relativeDay(v.at)} {time(v.at)} — {v.summary}</li>)}
+            <h3 className="border-b border-line pb-1.5 text-[14px] font-semibold">When support looked</h3>
+            <ul className="divide-y divide-line text-[14px] text-ink-2">
+              {visits.data.map((v, n) => <li key={n} className="py-2">{relativeDay(v.at)} {time(v.at)} — {v.summary}</li>)}
             </ul>
           </div>
         )}
@@ -375,9 +378,9 @@ function ExportCard({ name }: { name?: string }) {
   };
   return (
     <Card>
-      <CardHeader title="Your data" subtitle="Everything your school holds in Sanaa, in one file" />
-      <div className="flex flex-wrap items-center gap-3 p-4">
-        <p className="min-w-0 flex-1 text-sm text-ink-2">
+      <CardHeader title="Your data" subtitle="Everything your school holds in Swayvo, in one file" />
+      <div className="flex flex-wrap items-center gap-3 pt-3">
+        <p className="min-w-0 flex-1 text-[14.5px] text-ink-2">
           Families, children, health and consent records, classes, registers, invoices, payments and messages — as JSON.
           It contains personal data about children: store it securely.
         </p>

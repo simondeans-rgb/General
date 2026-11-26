@@ -31,9 +31,9 @@ describe('themes stay readable', () => {
       }
     }
   });
-  it('Sanaa is the default: eucalyptus and terracotta on Classic', () => {
-    expect(schoolColours(null)).toMatchObject({ accent: '#0b3b34', secondary: '#c86a4f' });
-    expect(THEMES.classic.presets[0]!.name).toBe('Sanaa');
+  it('Swayvo is the default: Count blue and Rosin peach on Classic', () => {
+    expect(schoolColours(null)).toMatchObject({ accent: '#2638f0', secondary: '#ffb089' });
+    expect(THEMES.classic.presets[0]!.name).toBe('Swayvo');
   });
   it('a school without its own colours gets its theme’s', () => {
     expect(schoolColours('urban')).toMatchObject({ accent: '#c6f432', secondary: '#8b5cf6' });

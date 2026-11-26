@@ -207,3 +207,10 @@ export const ROOM_OPTIONS = `select r.id, l.name || ' · ' || r.name as name fro
 export const SESSION_FAMILIES = `
 select count(distinct st.family_id)::int as n from enrolment e join student st on st.id = e.student_id
  where e.class_id = (select class_id from class_session where id = $1) and e.status = 'active' and e.deleted_at is null`;
+
+/** The term running today, and how far through it we are (Today's header). */
+export type TermNow = { name: string; week: number; weeks: number };
+export const TERM_NOW = `
+select t.name, (current_date - t.starts_on) / 7 + 1 as week, (t.ends_on - t.starts_on) / 7 + 1 as weeks
+  from term t where t.deleted_at is null and current_date between t.starts_on and t.ends_on
+ order by t.starts_on desc limit 1`;

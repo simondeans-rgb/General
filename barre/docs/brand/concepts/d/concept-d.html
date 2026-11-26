@@ -1,0 +1,1131 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Swayvo — Echo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:ital,wght@0,400..700;1,400..700&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===================== TOKENS ===================== */
+:root{
+  /* ground + ink — monochrome photographic */
+  --gel:#F2F2EF;        /* Gelatin: silver-white ground */
+  --paper:#FAFAF8;      /* raised paper (sheets, inputs) */
+  --carbon:#141414;     /* Carbon: text, marks — 16.4:1 on gel */
+  --s700:#585854;       /* Silver 700: secondary text — 6.4:1 on gel */
+  --s600:#6B6B66;       /* Silver 600: tertiary text, min for text — 4.8:1 on gel */
+  --s500:#8A8A85;       /* Silver 500: icons, large numerals only (3.1:1) */
+  --s300:#C9C9C4;       /* Silver 300: echo, strong rules */
+  --s200:#DEDED9;       /* Silver 200: hairline rules */
+  --e1:#D4D4CF; --e2:#A3A39E;    /* echo steps (far, near) on light */
+  --e1d:#3A3A37; --e2d:#6E6E69;  /* echo steps on carbon */
+  /* the one jewel */
+  --safe:#7A1E2B;       /* Safelight oxblood: actions + "now" — 9.1:1 on gel */
+  --safe-press:#5E1520;
+  --safe-dk:#E08A93;    /* Safelight on carbon (7.2:1) */
+  /* semantic — separate from brand, always with shape + words */
+  --ok:#2E6B3F;  --ok-bg:#E3ECE3;
+  --warn:#8A5300; --warn-bg:#F1E8D6;
+  --crit:#B8321A; --crit-bg:#F4E1DB;
+  --info:#2D5A86; --info-bg:#E1E7EE;
+  /* type */
+  --display:"Familjen Grotesk","Helvetica Neue",Arial,system-ui,sans-serif;
+  --ui:"Inter Tight","Inter","Helvetica Neue",Arial,system-ui,sans-serif;
+  /* spacing — 4pt */
+  --sp1:4px;--sp2:8px;--sp3:12px;--sp4:16px;--sp5:24px;--sp6:32px;--sp7:48px;--sp8:72px;--sp9:112px;
+  /* motion */
+  --echo-ease:cubic-bezier(.16,1,.3,1); --echo-dur:240ms;
+  /* logo vars (inherited into <use>) */
+  --ink:var(--carbon); --now:var(--safe); --bg:var(--gel);
+}
+*{box-sizing:border-box}
+html{background:var(--gel);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--gel);color:var(--carbon);font-family:var(--ui);font-size:16px;line-height:1.5;overflow-x:hidden;font-feature-settings:"ss01" 0}
+.tnum{font-variant-numeric:tabular-nums}
+svg.sym{display:block}
+a{color:inherit}
+
+/* ===================== BOARD LAYOUT ===================== */
+.wrap{max-width:1240px;margin:0 auto;padding:0 48px}
+section.sec{padding:var(--sp9) 0 var(--sp8)}
+.sec-head{display:grid;grid-template-columns:200px 1fr;gap:32px;align-items:baseline;margin-bottom:var(--sp7)}
+.sec-no{font:500 13px/1 var(--ui);letter-spacing:.14em;text-transform:uppercase;color:var(--s700)}
+.sec-title{font:600 clamp(34px,5vw,60px)/1 var(--display);letter-spacing:-.03em;margin:0}
+.sec-lede{grid-column:2;max-width:640px;color:var(--s700);margin:14px 0 0;font-size:17px}
+.label{font:500 12px/1.3 var(--ui);letter-spacing:.12em;text-transform:uppercase;color:var(--s700)}
+.note{font-size:14px;color:var(--s700);line-height:1.5}
+.rule{height:1px;background:var(--s200);border:0;margin:0}
+
+/* cover */
+.cover{min-height:92vh;display:grid;grid-template-rows:auto 1fr auto;padding:28px 0 40px}
+.cover-top{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.cover-main{display:grid;grid-template-columns:1.25fr 1fr;gap:48px;align-items:end;padding:72px 0 40px}
+.cover-logo{width:100%;max-width:720px}
+.cover h1{font:500 clamp(22px,2.4vw,30px)/1.25 var(--display);letter-spacing:-.01em;margin:40px 0 0;max-width:560px}
+.cover .tag{font:italic 500 clamp(28px,3.4vw,44px)/1.1 var(--display);letter-spacing:-.02em;margin:18px 0 0}
+.cover-photo{aspect-ratio:4/5;width:100%}
+.cover-foot{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;border-top:1px solid var(--s300);padding-top:16px}
+
+/* photography placeholder: echoed light forms, never a figure */
+.ph{position:relative;overflow:hidden;background:
+  radial-gradient(ellipse 11% 40% at 66% 50%, rgba(238,238,233,.92), rgba(238,238,233,0) 70%),
+  radial-gradient(ellipse 11% 40% at 56% 53%, rgba(238,238,233,.48), rgba(238,238,233,0) 70%),
+  radial-gradient(ellipse 11% 40% at 46% 56%, rgba(238,238,233,.24), rgba(238,238,233,0) 70%),
+  radial-gradient(ellipse 11% 40% at 36% 59%, rgba(238,238,233,.10), rgba(238,238,233,0) 70%),
+  radial-gradient(ellipse 70% 50% at 85% 0%, #4a4a47, rgba(74,74,71,0) 70%),
+  linear-gradient(170deg,#2b2b29 0%,#121212 70%);color:#E6E6E1}
+.ph.v2{background:
+  radial-gradient(ellipse 30% 9% at 58% 38%, rgba(238,238,233,.85), rgba(238,238,233,0) 70%),
+  radial-gradient(ellipse 30% 9% at 52% 46%, rgba(238,238,233,.42), rgba(238,238,233,0) 70%),
+  radial-gradient(ellipse 30% 9% at 46% 54%, rgba(238,238,233,.2), rgba(238,238,233,0) 70%),
+  radial-gradient(ellipse 18% 30% at 70% 70%, rgba(200,200,195,.25), rgba(200,200,195,0) 70%),
+  linear-gradient(200deg,#3a3a37 0%,#161616 75%)}
+.ph.v3{background:
+  radial-gradient(ellipse 7% 30% at 30% 45%, rgba(20,20,20,.75), rgba(20,20,20,0) 70%),
+  radial-gradient(ellipse 7% 30% at 38% 45%, rgba(20,20,20,.4), rgba(20,20,20,0) 70%),
+  radial-gradient(ellipse 7% 30% at 46% 45%, rgba(20,20,20,.18), rgba(20,20,20,0) 70%),
+  linear-gradient(180deg,#E9E9E5 0%,#C9C9C4 100%);color:#2a2a28}
+.ph-cap{position:absolute;left:14px;bottom:12px;right:14px;font:500 11px/1.35 var(--ui);letter-spacing:.06em;text-transform:uppercase;opacity:.9}
+
+/* strategy */
+.strat{display:grid;grid-template-columns:1.1fr 1fr;gap:64px}
+.strat p.big{font:500 clamp(22px,2.3vw,28px)/1.3 var(--display);letter-spacing:-.01em;margin:0}
+.person{font:600 clamp(26px,3vw,38px)/1.1 var(--display);letter-spacing:-.02em;margin:10px 0 0}
+.person em{font-style:italic;font-weight:500}
+.voice{margin:0;padding:0;list-style:none}
+.voice li{display:grid;grid-template-columns:120px 1fr;gap:16px;padding:16px 0;border-top:1px solid var(--s200)}
+.voice li:last-child{border-bottom:1px solid var(--s200)}
+.voice q{quotes:none;font-size:17px;line-height:1.45}
+
+/* identity */
+.id-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:24px}
+.tile{background:var(--paper);padding:40px;display:flex;flex-direction:column;justify-content:space-between;gap:28px;min-height:280px}
+.tile.dark{background:var(--carbon);color:var(--gel);--ink:var(--gel);--e1:var(--e1d);--e2:var(--e2d);--now:var(--safe-dk);--bg:var(--carbon)}
+.tile.dark .label,.tile.dark .note{color:#B4B4AF}
+.tile .art-logo{width:100%;max-width:520px}
+.c12{grid-column:span 12}.c8{grid-column:span 8}.c7{grid-column:span 7}.c6{grid-column:span 6}.c5{grid-column:span 5}.c4{grid-column:span 4}.c3{grid-column:span 3}
+.icons-row{display:flex;align-items:flex-end;gap:28px;flex-wrap:wrap}
+.appicon{border-radius:22.5%;overflow:hidden;display:block}
+.fav{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--s700)}
+.fav span.box{display:inline-flex;align-items:center;justify-content:center;background:var(--paper);border:1px solid var(--s200);padding:6px}
+.construct{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.spec-list{margin:0;padding:0;list-style:none;font-size:15px}
+.spec-list li{padding:10px 0;border-top:1px solid var(--s200)}
+
+/* colour */
+.swatches{display:grid;grid-template-columns:repeat(6,1fr);gap:0}
+.sw{min-height:200px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;font-size:13px;line-height:1.4}
+.sw b{font:600 17px/1.1 var(--display);display:block;margin-bottom:4px;letter-spacing:-.01em}
+.sw .hex{font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.sem{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:40px}
+.sem div{border-top:3px solid;padding-top:12px;font-size:14px}
+.sem b{display:flex;align-items:center;gap:8px;font-size:15px}
+.rule-box{display:grid;grid-template-columns:200px 1fr;gap:32px;margin-top:56px;align-items:start}
+.ratio{display:flex;height:28px;margin-top:16px}
+.ratio span{display:block}
+
+/* type */
+.spec{display:grid;grid-template-columns:200px 1fr;gap:32px;padding:32px 0;border-top:1px solid var(--s200);align-items:baseline}
+.spec .meta{font-size:13px;color:var(--s700);line-height:1.5}
+.d1{font:600 88px/.95 var(--display);letter-spacing:-.035em;margin:0}
+.d2{font:600 56px/1 var(--display);letter-spacing:-.03em;margin:0}
+.d3{font:500 34px/1.1 var(--display);letter-spacing:-.02em;margin:0}
+.ital{font:italic 500 34px/1.2 var(--display);letter-spacing:-.015em;margin:0}
+.scale-row{display:grid;grid-template-columns:110px 70px 1fr;gap:16px;align-items:baseline;padding:8px 0;border-top:1px solid var(--s200)}
+.nums{font:500 44px/1 var(--ui);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+
+/* graphic language */
+.gl{display:grid;grid-template-columns:repeat(12,1fr);gap:24px}
+.gl .tile{min-height:0}
+.echo-rule{display:flex;align-items:flex-end;gap:0;height:120px}
+.icons{display:grid;grid-template-columns:repeat(6,1fr);gap:20px 8px}
+.icons figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12px;color:var(--s700)}
+.icons svg{width:32px;height:32px}
+.demo-stage{position:relative;height:150px;overflow:hidden;border-bottom:1px solid var(--s200)}
+.demo-el{position:absolute;left:22%;bottom:24px;font:600 84px/1 var(--display);letter-spacing:-.04em;color:var(--carbon)}
+.demo-el.t{color:var(--s500);opacity:0}
+.demo-stage.play .demo-el.main{animation:arrive var(--echo-dur) var(--echo-ease) both}
+.demo-stage.play .demo-el.t1{animation:trail 420ms ease-out both}
+.demo-stage.play .demo-el.t2{animation:trail2 420ms ease-out both}
+@keyframes arrive{from{transform:translateX(-96px)}to{transform:none}}
+@keyframes trail{0%{opacity:0;transform:translateX(-96px)}25%{opacity:.5;transform:translateX(-56px)}100%{opacity:0;transform:translateX(-24px)}}
+@keyframes trail2{0%{opacity:0;transform:translateX(-96px)}25%{opacity:.25;transform:translateX(-80px)}100%{opacity:0;transform:translateX(-48px)}}
+.btn-replay{font:500 14px var(--ui);background:transparent;color:var(--carbon);border:1px solid var(--carbon);padding:0 18px;height:44px;cursor:pointer;margin-top:16px}
+@media (prefers-reduced-motion: reduce){
+  .demo-stage.play .demo-el.main{animation:none}
+  .demo-el.t,.demo-stage.play .demo-el.t1,.demo-stage.play .demo-el.t2{animation:none;opacity:0;display:none}
+  .cover .echo-in, .echo-in{animation:none !important}
+}
+.echo-in{animation:arrive 240ms var(--echo-ease) both}
+
+/* ===================== ARTBOARDS ===================== */
+.art{margin:0;min-width:0}
+.art-box{position:relative;width:100%;overflow:hidden}
+.art-in{position:absolute;left:0;top:0;transform-origin:0 0}
+.art figcaption{font-size:13px;color:var(--s700);margin-top:12px;letter-spacing:.02em}
+.art figcaption b{color:var(--carbon);font-weight:600}
+.phones{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:40px 32px;align-items:start}
+.phones.two{grid-template-columns:repeat(2,minmax(0,1fr));max-width:840px}
+.stack{display:grid;gap:72px}
+.sub{font:600 26px/1.15 var(--display);letter-spacing:-.02em;margin:0 0 20px}
+
+/* ---- phone screen base ---- */
+.ph-screen{width:390px;height:844px;background:var(--gel);border:1px solid var(--s300);border-radius:44px;overflow:hidden;position:relative;font-family:var(--ui);color:var(--carbon);font-size:15px}
+.status{height:48px;display:flex;justify-content:space-between;align-items:center;padding:0 30px 0 34px;font:600 15px var(--ui);font-variant-numeric:tabular-nums}
+.status .bat{width:26px;height:12px;border:1.5px solid var(--carbon);border-radius:3px;position:relative}
+.status .bat::after{content:"";position:absolute;inset:1.5px 6px 1.5px 1.5px;background:var(--carbon);border-radius:1px}
+.pad{padding:0 24px}
+.ph-nav{position:absolute;left:0;right:0;bottom:0;height:84px;background:var(--gel);border-top:1px solid var(--s200);display:grid;grid-template-columns:repeat(4,1fr);padding:8px 8px 26px}
+.ph-nav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:12px;color:var(--s700);text-decoration:none;min-height:48px}
+.ph-nav a.on{color:var(--carbon);font-weight:600}
+.ph-nav a.on svg{stroke-width:2}
+.ph-nav svg{width:24px;height:24px}
+.kicker{font:500 13px/1 var(--ui);letter-spacing:.12em;text-transform:uppercase;color:var(--s700)}
+.mag{font:600 44px/.98 var(--display);letter-spacing:-.035em;margin:10px 0 0}
+.btn{display:flex;align-items:center;justify-content:center;height:52px;padding:0 20px;font:600 16px var(--ui);border:0;width:100%;letter-spacing:.005em}
+.btn.primary{background:var(--safe);color:#F7F2F2}
+.btn.ink{background:var(--carbon);color:var(--gel)}
+.btn.ghost{background:transparent;color:var(--carbon);border:1px solid var(--carbon)}
+.btn.text{background:transparent;color:var(--carbon);text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:1px}
+.icn{width:24px;height:24px;flex:none}
+svg.st{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:square;stroke-linejoin:miter}
+
+/* status shapes (never colour alone) */
+.shape{width:10px;height:10px;flex:none;display:inline-block}
+.shape.crit{background:var(--crit);transform:rotate(45deg);width:9px;height:9px}
+.shape.warn{width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:10px solid var(--warn)}
+.shape.info{border:2px solid var(--info)}
+.shape.ok{background:var(--ok);border-radius:50%}
+.shape.neutral{border:1.5px solid var(--s700);border-radius:50%}
+
+/* ---- a · sign in ---- */
+.signin .ph{height:330px;margin:0}
+.signin .logo{width:176px;margin:36px 0 0}
+.field{margin-top:22px}
+.field label{display:block;font-size:14px;font-weight:500;margin-bottom:8px;color:var(--s700)}
+.field .in{height:52px;background:var(--paper);border:1px solid var(--s500);display:flex;align-items:center;padding:0 16px;font-size:16px;color:var(--carbon)}
+
+/* ---- desktop base ---- */
+.dt{width:1280px;height:800px;background:var(--gel);display:grid;grid-template-columns:232px 1fr;font-family:var(--ui);color:var(--carbon);overflow:hidden;border:1px solid var(--s300)}
+.rail{border-right:1px solid var(--s200);padding:28px 20px 24px 28px;display:flex;flex-direction:column}
+.rail .lg{width:104px}
+.rail .school{font-size:13px;color:var(--s700);margin:14px 0 36px;line-height:1.35}
+.rail nav a{display:flex;align-items:center;gap:12px;position:relative;height:40px;font-size:15px;text-decoration:none;color:var(--s700)}
+.rail nav a.on{color:var(--carbon);font-weight:600}
+.rail nav a.on::before{content:"";position:absolute;left:-28px;top:11px;width:3px;height:18px;background:var(--carbon)}
+.rail nav a svg{width:20px;height:20px}
+.rail .me{margin-top:auto;font-size:14px;border-top:1px solid var(--s200);padding-top:16px}
+.rail .me small{display:block;color:var(--s700);font-size:13px}
+.main{padding:36px 48px 32px;min-width:0}
+.dt-title{font:600 58px/.95 var(--display);letter-spacing:-.04em;margin:0}
+.dt-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px}
+.search{width:280px;height:40px;border:1px solid var(--s300);background:var(--paper);display:flex;align-items:center;gap:10px;padding:0 12px;font-size:14px;color:var(--s600)}
+.h-sec{font:600 13px/1 var(--ui);letter-spacing:.12em;text-transform:uppercase;color:var(--s700);margin:0 0 6px;display:flex;justify-content:space-between}
+.attn{display:grid;grid-template-columns:20px 1fr auto;align-items:center;column-gap:14px;min-height:66px;border-top:1px solid var(--s200);padding:10px 0}
+.attn b{font-weight:600;font-size:16px;display:block}
+.attn span.d{font-size:14px;color:var(--s700)}
+.lnk{font-size:14px;font-weight:600;text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:1px;white-space:nowrap}
+.btn-sm{height:36px;padding:0 14px;font:600 14px var(--ui);display:inline-flex;align-items:center;border:0}
+.cls{display:grid;grid-template-columns:64px 1fr 92px;column-gap:16px;padding:14px 0;border-top:1px solid var(--s200);align-items:start}
+.cls .t{font:600 20px/1.1 var(--ui);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.cls .n{font-weight:600;font-size:16px}
+.cls .m{font-size:14px;color:var(--s700)}
+.fill{font-size:14px;font-variant-numeric:tabular-nums;text-align:right}
+.bar{height:3px;background:var(--s200);margin-top:7px;position:relative}
+.bar i{position:absolute;left:0;top:0;bottom:0;background:var(--carbon)}
+
+/* ---- teacher ---- */
+.reg-row{display:grid;grid-template-columns:1fr 48px 48px;column-gap:6px;align-items:center;min-height:56px;border-top:1px solid var(--s200);padding:4px 0}
+.reg-row .nm{font-size:17px;font-weight:500}
+.reg-row .med{display:flex;align-items:center;gap:7px;font-size:15px;color:var(--s700);margin-top:2px}
+.reg-row .med.urgent{color:var(--crit);font-weight:600}
+.tap{width:48px;height:48px;display:flex;align-items:center;justify-content:center}
+.tap i{width:34px;height:34px;border-radius:50%;border:1.5px solid var(--s500);display:flex;align-items:center;justify-content:center}
+.tap.p.on i{background:var(--carbon);border-color:var(--carbon);color:var(--gel)}
+.tap.a.on i{background:transparent;border:2px solid var(--carbon);color:var(--carbon)}
+.tap i svg{width:18px;height:18px}
+.trial{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-bottom:1.5px solid var(--carbon);margin-left:6px}
+.medx{width:15px;height:15px;flex:none}
+
+/* ---- student progress ---- */
+.hero-track{position:relative;height:90px;margin-top:14px}
+.ht-line{position:absolute;left:0;right:0;top:40px;height:1px;background:var(--s300)}
+.ht-tick{position:absolute;top:34px;width:1px;height:13px;background:var(--s500)}
+.ht-lbl{position:absolute;top:66px;font-size:13px;color:var(--s700);transform:translateX(-50%);white-space:nowrap}
+.ht-mark{position:absolute;top:16px;width:14px;height:48px;transform:translateX(-50%)}
+.sk{display:grid;grid-template-columns:1fr 112px;column-gap:12px;align-items:center;min-height:46px;border-top:1px solid var(--s200)}
+.sk .nm{font-size:16px;font-weight:500}
+.sk .lv{font-size:15px;color:var(--s700)}
+.mini{position:relative;height:16px}
+.mini::before{content:"";position:absolute;left:0;right:0;top:7.5px;height:1px;background:var(--s300)}
+.mini i{position:absolute;top:2px;width:4px;height:12px;background:var(--carbon);transform:translateX(-50%)}
+.mini i.e1{background:var(--e1)} .mini i.e2{background:var(--e2)}
+.mini b{position:absolute;top:5px;width:1px;height:6px;background:var(--s500)}
+.quote{font:italic 500 21px/1.3 var(--display);letter-spacing:-.01em;margin:0}
+
+/* ---- parent ---- */
+.day-row{display:grid;grid-template-columns:92px 1fr;column-gap:10px;padding:8px 0;border-top:1px solid var(--s200);font-size:15px}
+.day-row .w{font-variant-numeric:tabular-nums;color:var(--s700)}
+.day-row b{font-weight:600}
+.notice{display:grid;grid-template-columns:16px 1fr;column-gap:10px;align-items:baseline;padding:8px 0;border-top:1px solid var(--s200);font-size:15px;line-height:1.4}
+.child{font:600 22px/1 var(--display);letter-spacing:-.02em;margin:16px 0 6px;display:flex;justify-content:space-between;align-items:baseline}
+.child small{font:500 14px var(--ui);color:var(--s700);letter-spacing:0}
+
+/* ---- payment ---- */
+.line{display:grid;grid-template-columns:1fr auto;padding:9px 0;font-size:15px;font-variant-numeric:tabular-nums}
+.line .x{color:var(--s700)}
+.method{display:grid;grid-template-columns:24px 1fr auto;column-gap:12px;align-items:center;min-height:56px;border-top:1px solid var(--s200);font-size:16px}
+.radio{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--s700);position:relative}
+.radio.on{border:2px solid var(--carbon)}
+.radio.on::after{content:"";position:absolute;inset:4px;background:var(--carbon);border-radius:50%}
+
+/* ---- timetable ---- */
+.tt{display:grid;grid-template-columns:150px repeat(6,1fr);border-top:1px solid var(--carbon)}
+.tt .dh{padding:10px 12px 12px;font-size:14px;color:var(--s700);border-left:1px solid var(--s200)}
+.tt .dh b{display:block;font:600 22px/1.1 var(--display);color:var(--carbon);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.tt .dh.today{background:var(--paper)}
+.tt .rm{padding:14px 12px 14px 0;border-top:1px solid var(--s300);font-size:14px;line-height:1.3}
+.tt .rm b{display:block;font:600 17px/1.15 var(--display);letter-spacing:-.01em}
+.tt .rm small{color:var(--s700);font-size:13px}
+.tt .cell{border-top:1px solid var(--s300);border-left:1px solid var(--s200);padding:8px 8px;min-height:170px;display:flex;flex-direction:column;gap:8px}
+.tt .cell.today{background:var(--paper)}
+.ev{padding:2px 0 2px 10px;font-size:13px;line-height:1.3;position:relative}
+.ev::before{content:"";position:absolute;left:0;top:2px;bottom:2px;width:0;border-left:2px solid var(--carbon)}
+.ev.k-tap::before{border-left:2px dotted var(--carbon)}
+.ev.cont::before{border-left:4px double var(--carbon);left:-1px}
+.ev.street::before{border-left:4px solid var(--carbon)}
+.ev.jazz::before{border-left:2px dashed var(--carbon)}
+.ev .tm{font-variant-numeric:tabular-nums;font-weight:600;display:block}
+.ev .cn{font-weight:600;display:block;font-size:14px}
+.ev .tc{color:var(--s700);display:block}
+.ev .stt{display:flex;align-items:center;gap:6px;margin-top:3px;font-weight:600}
+.ev.cancel .cn{text-decoration:line-through;text-decoration-thickness:1px;color:var(--s700)}
+.legend{display:flex;gap:22px;flex-wrap:wrap;font-size:13px;color:var(--s700)}
+.legend span{display:flex;align-items:center;gap:8px}
+.legend i{display:inline-block;height:16px;width:0;border-left:2px solid var(--carbon)}
+
+/* ---- marketing ---- */
+.mk{width:1280px;height:720px;background:var(--gel);display:grid;grid-template-columns:1.15fr 1fr;overflow:hidden;border:1px solid var(--s300);font-family:var(--ui);color:var(--carbon)}
+.echo-word{position:relative;display:inline-block}
+.echo-word .g{position:absolute;left:0;top:0;pointer-events:none}
+.mk-grid{display:grid;grid-template-columns:2fr 1fr;gap:40px;align-items:start}
+.store{width:430px;height:932px;background:var(--gel);overflow:hidden;position:relative;border:1px solid var(--s300)}
+.ig{width:1080px;height:1080px;background:var(--carbon);color:var(--gel);position:relative;overflow:hidden}
+
+/* notes */
+.notes{display:grid;grid-template-columns:repeat(4,1fr);gap:32px}
+.notes h3{font:600 22px/1.1 var(--display);letter-spacing:-.02em;margin:0 0 12px}
+.notes ul{margin:0;padding:0 0 0 18px;font-size:15px}
+.notes li{margin-bottom:8px}
+footer{padding:48px 0 72px;color:var(--s700);font-size:13px;border-top:1px solid var(--s300)}
+
+/* ===================== RESPONSIVE ===================== */
+@media (max-width:1000px){
+  .phones{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cover-main{grid-template-columns:1fr}
+  .cover-photo{aspect-ratio:16/10}
+  .strat{grid-template-columns:1fr;gap:40px}
+  .c8,.c7,.c6,.c5,.c4{grid-column:span 12}
+  .c3{grid-column:span 6}
+  .swatches{grid-template-columns:repeat(3,1fr)}
+  .notes{grid-template-columns:1fr 1fr}
+  .mk-grid{grid-template-columns:1fr}
+}
+@media (max-width:640px){
+  .wrap{padding:0 16px}
+  section.sec{padding:72px 0 40px}
+  .sec-head,.spec,.rule-box{grid-template-columns:1fr;gap:8px}
+  .sec-lede{grid-column:1}
+  .phones,.phones.two{grid-template-columns:1fr;max-width:390px}
+  .tile{padding:24px}
+  .c3{grid-column:span 12}
+  .swatches{grid-template-columns:repeat(2,1fr)}
+  .sem,.notes{grid-template-columns:1fr 1fr}
+  .construct{grid-template-columns:1fr}
+  .demo-el{left:4%;font-size:64px}
+  .voice li{grid-template-columns:1fr;gap:4px}
+  .d1{font-size:56px}.d2{font-size:40px}.d3,.ital{font-size:26px}
+  .icons{grid-template-columns:repeat(4,1fr)}
+  .scale-row{grid-template-columns:90px 54px 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ SVG SYMBOLS (logo geometry is hand-built; see logo.svg) ============ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="sv-word" viewBox="-4 10 281 100"><polygon transform="translate(171 0)" points="0,20 11,20 22.6,62.2 33.5,20 39,20 23.5,80 16.5,80" fill="var(--e1)"/><polygon transform="translate(180 0)" points="0,20 11,20 22.6,62.2 33.5,20 39,20 23.5,80 16.5,80" fill="var(--e2)"/><path d="M37.5 30.5C34.5 26.2 29.4 24.5 23.2 24.5C15.2 24.5 9.6 28.6 9.6 35.2C9.6 42.4 16.2 44.3 23.4 46.3L26.2 47.1C34.2 49.4 38.6 52.6 38.6 60.4C38.6 70.2 31.4 75.5 22.6 75.5C15.4 75.5 9.2 72.6 5.6 67" fill="none" stroke="var(--ink)" stroke-width="9"/>
+<g fill="var(--ink)"><polygon transform="translate(47 0)" points="0,20 10,20 18.8,59.3 27,20 32,20 19.5,80 13.5,80"/><polygon transform="translate(69 0)" points="0,20 10,20 18.8,59.3 27,20 32,20 19.5,80 13.5,80"/>
+<path transform="translate(103.5 0)" fill-rule="evenodd" d="M19 19.5A18.5 30.5 0 1 0 19 80.5A18.5 30.5 0 1 0 19 19.5ZM20.5 25A9.5 25 0 1 1 20.5 75A9.5 25 0 1 1 20.5 25Z"/><rect x="134" y="19.5" width="9.5" height="60.5"/>
+<polygon transform="translate(147 0)" points="0,20 11,20 22.6,62.2 33.5,20 39,20 17.3,104 11.8,104 17.3,82.8"/>
+<path transform="translate(233 0)" fill-rule="evenodd" d="M20 19A20 31 0 1 0 20 81A20 31 0 1 0 20 19ZM20 24.5A11 25.5 0 1 1 20 75.5A11 25.5 0 1 1 20 24.5Z"/></g>
+<polygon transform="translate(189 0)" points="0,20 11,20 22.6,62.2 33.5,20 39,20 23.5,80 16.5,80" fill="var(--now)"/></symbol>
+    <symbol id="sv-word-mono" viewBox="-4 10 281 100"><path d="M178 20L194.5 80" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M183.5 20L200 80" stroke="currentColor" stroke-width="3.2" fill="none"/><path d="M37.5 30.5C34.5 26.2 29.4 24.5 23.2 24.5C15.2 24.5 9.6 28.6 9.6 35.2C9.6 42.4 16.2 44.3 23.4 46.3L26.2 47.1C34.2 49.4 38.6 52.6 38.6 60.4C38.6 70.2 31.4 75.5 22.6 75.5C15.4 75.5 9.2 72.6 5.6 67" fill="none" stroke="currentColor" stroke-width="9"/>
+<g fill="currentColor"><polygon transform="translate(47 0)" points="0,20 10,20 18.8,59.3 27,20 32,20 19.5,80 13.5,80"/><polygon transform="translate(69 0)" points="0,20 10,20 18.8,59.3 27,20 32,20 19.5,80 13.5,80"/>
+<path transform="translate(103.5 0)" fill-rule="evenodd" d="M19 19.5A18.5 30.5 0 1 0 19 80.5A18.5 30.5 0 1 0 19 19.5ZM20.5 25A9.5 25 0 1 1 20.5 75A9.5 25 0 1 1 20.5 25Z"/><rect x="134" y="19.5" width="9.5" height="60.5"/>
+<polygon transform="translate(147 0)" points="0,20 11,20 22.6,62.2 33.5,20 39,20 17.3,104 11.8,104 17.3,82.8"/>
+<path transform="translate(233 0)" fill-rule="evenodd" d="M20 19A20 31 0 1 0 20 81A20 31 0 1 0 20 19ZM20 24.5A11 25.5 0 1 1 20 75.5A11 25.5 0 1 1 20 24.5Z"/></g>
+<polygon transform="translate(189 0)" points="0,20 11,20 22.6,62.2 33.5,20 39,20 23.5,80 16.5,80" fill="currentColor" stroke="var(--bg)" stroke-width="3" paint-order="stroke"/></symbol>
+    <symbol id="sv-mark" viewBox="-9 12 77 76"><polygon points="0,20 11,20 22.6,62.2 33.5,20 39,20 23.5,80 16.5,80" fill="var(--e1)"/><polygon transform="translate(10 0)" points="0,20 11,20 22.6,62.2 33.5,20 39,20 23.5,80 16.5,80" fill="var(--e2)"/><polygon transform="translate(20 0)" points="0,20 11,20 22.6,62.2 33.5,20 39,20 23.5,80 16.5,80" fill="var(--now)"/></symbol>
+    <symbol id="sv-mark-sm" viewBox="-5 18 64 64"><polygon points="0,20 11,20 20,57.2 29,20 40,20 25.5,80 14.5,80" fill="#A3A39E"/><polygon transform="translate(14 0)" points="0,20 11,20 20,57.2 29,20 40,20 25.5,80 14.5,80" fill="var(--ink)"/></symbol>
+    <!-- icons: 24 grid, 1.5 stroke, square caps, no fills -->
+    <symbol id="i-today" viewBox="0 0 24 24"><rect x="3.75" y="5.75" width="16.5" height="14.5"/><path d="M3.75 10h16.5M8 3.5v4M16 3.5v4"/><rect x="11" y="13.5" width="2" height="2"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3.75" y="4.75" width="16.5" height="14.5"/><path d="M3.75 9.5h16.5M3.75 14.25h16.5M9.25 4.75v14.5M14.75 4.75v14.5"/></symbol>
+    <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.25"/><path d="M3.5 19.5c.6-3.3 2.8-5 5.5-5s4.9 1.7 5.5 5"/><path d="M15.5 5.6a3.2 3.2 0 0 1 0 5.8M17.5 14.8c1.6.7 2.6 2.4 3 4.7"/></symbol>
+    <symbol id="i-card" viewBox="0 0 24 24"><rect x="3.25" y="6" width="17.5" height="12.5"/><path d="M3.25 10h17.5M6.5 15h4"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5.25h16v11H10l-4 3.25v-3.25H4z"/></symbol>
+    <symbol id="i-funnel" viewBox="0 0 24 24"><path d="M3.75 5.25h16.5M6.75 10.25h10.5M9.75 15.25h4.5M11.25 19.5h1.5"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.75v4.5M12 15.75v4.5M3.75 12h4.5M15.75 12h4.5"/><circle cx="12" cy="12" r="1.25"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 4v16h16M8 16v-4M12 16V8M16 16v-6"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3.5l7 2.75v5.5c0 4.2-2.9 7.2-7 8.75-4.1-1.55-7-4.55-7-8.75v-5.5z"/></symbol>
+    <symbol id="i-rise" viewBox="0 0 24 24"><path d="M4 18.5l4-5" opacity=".35"/><path d="M8 13.5l4-3" opacity=".65"/><path d="M12 10.5l7.5-5M14.5 5.5h5v5"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M14.5 5.5L8 12l6.5 6.5"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4.5 12h14M13 6.5l5.5 5.5-5.5 5.5"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.75"/><path d="M5 20c.8-3.8 3.6-5.75 7-5.75s6.2 1.95 7 5.75"/></symbol>
+    <symbol id="i-med" viewBox="0 0 24 24"><rect x="3.75" y="3.75" width="16.5" height="16.5"/><path d="M12 7.5v9M7.5 12h9"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 10.5L12 4l8 6.5V20H4z"/><path d="M10 20v-5.5h4V20"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+<!-- ================= 1 · COVER ================= -->
+<header class="cover" id="cover">
+  <div class="cover-top">
+    <span class="label">Concept D · Brand + product direction</span>
+    <span class="label">Studio review · Thursday 26 November</span>
+  </div>
+  <div class="cover-main">
+    <div>
+      <svg class="sym cover-logo echo-in" viewBox="-4 10 281 100" role="img" aria-label="Swayvo"><use href="#sv-word"/></svg>
+      <h1>Echo — a brand built from what movement leaves behind: every class, every correction, every level reached, kept as a quiet trace.</h1>
+      <p class="tag">Every move leaves a mark.</p>
+    </div>
+    <div class="ph cover-photo"><span class="ph-cap">Photography: contemporary dancer, 1/4s exposure, three flash pops, studio daylight, black and white</span></div>
+  </div>
+  <div class="cover-foot">
+    <span class="note">Swayvo · dance-school management for owners, teachers, students and parents</span>
+    <span class="note">Echo · monochrome photographic · one jewel</span>
+  </div>
+</header>
+
+<!-- ================= 2 · STRATEGY ================= -->
+<section class="sec" id="strategy">
+  <div class="sec-head"><span class="sec-no">02 — Strategy</span><h2 class="sec-title">What movement leaves behind</h2></div>
+  <div class="strat">
+    <div>
+      <p class="big">Marey and Muybridge photographed motion as a row of overlapping exposures: the body, a moment ago and now. Swayvo borrows that idea. The admin keeps a quiet record so that progress, attendance and growth become visible as echoes, while the screen people actually work on stays still.</p>
+      <p class="label" style="margin-top:40px">Personality</p>
+      <p class="person">Poised. Expressive. Assured. <em>Quietly bold.</em></p>
+    </div>
+    <div>
+      <p class="label" style="margin:0 0 12px">Tone of voice: plain, adult, warm without exclamation marks</p>
+      <ul class="voice">
+        <li><span class="label">Owner alert</span><q>Three card payments didn't go through, £162.00 in total. Retry them now, or send each family a short note.</q></li>
+        <li><span class="label">Teacher prompt</span><q>Junior Tap is done. One line for Layla's family about her trial?</q></li>
+        <li><span class="label">Student</span><q>Contraction and release has moved to secure. That's your work, remembered.</q></li>
+        <li><span class="label">Parent notice</span><q>Grade 2 Ballet on Tuesday 1 December moves to Studio Two. Same time, same teacher.</q></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 3 · IDENTITY ================= -->
+<section class="sec" id="identity">
+  <div class="sec-head"><span class="sec-no">03 — Identity</span><h2 class="sec-title">A name that moves</h2>
+    <p class="sec-lede">A condensed, sharply cut lowercase wordmark drawn from scratch. Lowercase keeps the name conversational and puts every letter in one x-height band, so the echo of the <i>v</i> reads as motion rather than as a capital shouting. The thick-thin diagonals borrow from high-contrast fashion type; the <i>v</i> is the only letter that moves, stepping forward in two fading exposures to land in Safelight.</p></div>
+
+  <div class="id-grid">
+    <div class="tile c12" style="min-height:380px">
+      <span class="label">Primary logo · horizontal</span>
+      <svg class="sym art-logo" style="max-width:760px" viewBox="-4 10 281 100" role="img" aria-label="Swayvo"><use href="#sv-word"/></svg>
+      <span class="note">Carbon letters, echoes in Silver (#D4D4CF, #A3A39E), the leading <i>v</i> in Safelight. On light grounds only; use the carbon version below on photography.</span>
+    </div>
+
+    <div class="tile c5">
+      <span class="label">Alternative lockup · stacked with descriptor</span>
+      <div>
+        <svg class="sym" style="width:72%" viewBox="-4 10 281 100" role="img" aria-label="Swayvo"><use href="#sv-word"/></svg>
+        <div style="display:flex;gap:14px;align-items:center;margin-top:14px;font:500 14px var(--ui);letter-spacing:.14em;text-transform:uppercase;color:var(--s700)"><span style="width:28px;height:1px;background:var(--carbon)"></span>Studio management</div>
+      </div>
+      <span class="note">For sign-in, marketing footers, partner pages. Descriptor in Inter Tight 500, tracked +14%.</span>
+    </div>
+    <div class="tile c3">
+      <span class="label">Standalone mark</span>
+      <svg class="sym" style="width:150px;height:150px" viewBox="-9 12 77 76" role="img" aria-label="Swayvo mark"><use href="#sv-mark"/></svg>
+      <span class="note">The echoed <i>v</i>: two exposures and the present one.</span>
+    </div>
+    <div class="tile c4">
+      <span class="label">Small sizes · simplified mark</span>
+      <div style="display:flex;gap:28px;align-items:flex-end">
+        <svg class="sym" style="width:64px;height:64px" viewBox="-5 18 64 64" role="img" aria-label="Swayvo small mark"><use href="#sv-mark-sm"/></svg>
+        <svg class="sym" style="width:32px;height:32px" viewBox="-5 18 64 64" aria-hidden="true"><use href="#sv-mark-sm"/></svg>
+        <svg class="sym" style="width:16px;height:16px" viewBox="-5 18 64 64" aria-hidden="true"><use href="#sv-mark-sm"/></svg>
+      </div>
+      <span class="note">Below 48px: one echo, both diagonals thickened to survive pixel snapping. Shown at 64 / 32 / 16px.</span>
+    </div>
+
+    <div class="tile c6">
+      <span class="label">App icon · the mark on Carbon</span>
+      <div class="icons-row">
+                <svg class="appicon" width="180" height="180" viewBox="0 0 1024 1024" role="img" aria-label="Swayvo app icon, 180px"><rect width="1024" height="1024" fill="#141414"/><g transform="translate(234 52) scale(9.3)"><polygon points="0,20 11,20 22.6,62.2 33.5,20 39,20 23.5,80 16.5,80" fill="#3A3A37"/><polygon transform="translate(10 0)" points="0,20 11,20 22.6,62.2 33.5,20 39,20 23.5,80 16.5,80" fill="#6E6E69"/><polygon transform="translate(20 0)" points="0,20 11,20 22.6,62.2 33.5,20 39,20 23.5,80 16.5,80" fill="#F2F2EF"/></g></svg>
+        <svg class="appicon" width="60" height="60" viewBox="0 0 1024 1024" aria-label="App icon, 60px" role="img"><rect width="1024" height="1024" fill="#141414"/><g transform="translate(234 52) scale(9.3)"><polygon points="0,20 11,20 22.6,62.2 33.5,20 39,20 23.5,80 16.5,80" fill="#3A3A37"/><polygon transform="translate(10 0)" points="0,20 11,20 22.6,62.2 33.5,20 39,20 23.5,80 16.5,80" fill="#6E6E69"/><polygon transform="translate(20 0)" points="0,20 11,20 22.6,62.2 33.5,20 39,20 23.5,80 16.5,80" fill="#F2F2EF"/></g></svg>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <span class="fav"><span class="box"><svg width="32" height="32" viewBox="-5 18 64 64" aria-hidden="true"><use href="#sv-mark-sm"/></svg></span>32px favicon</span>
+          <span class="fav"><span class="box"><svg width="16" height="16" viewBox="-5 18 64 64" aria-hidden="true"><use href="#sv-mark-sm"/></svg></span>16px favicon</span>
+        </div>
+      </div>
+      <span class="note">180 / 60px icon renders, 32 / 16px favicons. On the home screen the present <i>v</i> turns Gelatin: no accent on an icon that sits beside other apps' colour.</span>
+    </div>
+    <div class="tile dark c6">
+      <span class="label">On Carbon</span>
+      <svg class="sym art-logo" viewBox="-4 10 281 100" role="img" aria-label="Swayvo on dark"><use href="#sv-word"/></svg>
+      <span class="note">Echoes darken to #3A3A37 and #6E6E69; Safelight lifts to #E08A93 to hold contrast.</span>
+    </div>
+
+    <div class="tile c6" style="color:var(--carbon)">
+      <span class="label">Monochrome · one colour, light</span>
+      <svg class="sym art-logo" viewBox="-4 10 281 100" role="img" aria-label="Swayvo mono"><use href="#sv-word-mono"/></svg>
+      <span class="note">With no tints available (foil, embroidery, single-ink print) the echoes reduce to two trailing strokes, thinning as they fall behind.</span>
+    </div>
+    <div class="tile dark c6" style="color:var(--gel)">
+      <span class="label">Monochrome · one colour, reversed</span>
+      <svg class="sym art-logo" viewBox="-4 10 281 100" role="img" aria-label="Swayvo mono reversed"><use href="#sv-word-mono"/></svg>
+      <span class="note">Reversed out of Carbon or a dark photograph.</span>
+    </div>
+
+    <div class="tile c12" style="min-height:0">
+      <div class="construct">
+        <div>
+          <span class="label">Clear space</span>
+          <svg viewBox="-60 -20 424 160" style="width:100%;margin-top:16px" aria-label="Clear space diagram" role="img">
+            <rect x="-40" y="-10" width="384" height="140" fill="none" stroke="#A3A39E" stroke-dasharray="3 3"/>
+            <g transform="translate(0 0)"><svg x="0" y="10" width="277" height="100" viewBox="-4 10 281 100"><use href="#sv-word"/></svg></g>
+            <path d="M-40 140h40" stroke="#7A1E2B" stroke-width="1.5"/><text x="-20" y="154" font-size="11" text-anchor="middle" fill="#585854" font-family="Inter Tight, sans-serif">o</text>
+          </svg>
+          <p class="note">Keep clear space equal to the width of the <i>o</i> on all sides. The echoes count as part of the logo: never crop or crowd them.</p>
+        </div>
+        <div>
+          <span class="label">Minimum size</span>
+          <div style="display:flex;align-items:flex-end;gap:24px;margin-top:24px">
+            <svg viewBox="-4 10 281 100" style="width:96px" aria-label="Wordmark at 96px" role="img"><use href="#sv-word"/></svg>
+            <svg viewBox="-4 10 281 100" style="width:72px" aria-hidden="true"><use href="#sv-word-mono"/></svg>
+          </div>
+          <p class="note">Wordmark: 96px / 24mm wide minimum with echoes; down to 72px in one-colour. Below that, use the small mark.</p>
+        </div>
+        <div>
+          <span class="label">Don't</span>
+          <ul class="spec-list" style="margin-top:12px">
+            <li>Echo any letter other than the <i>v</i>, or add a third echo.</li>
+            <li>Reverse the echo direction: time moves left to right.</li>
+            <li>Set "Swayvo" in a font as a substitute for the drawn mark.</li>
+            <li>Put Safelight on anything but the present <i>v</i>.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 4 · COLOUR ================= -->
+<section class="sec" id="colour">
+  <div class="sec-head"><span class="sec-no">04 — Colour</span><h2 class="sec-title">Silver print, one safelight</h2>
+    <p class="sec-lede">The palette of a gelatin silver print: a cool silver-white ground, carbon blacks and a long grey ramp that does the echo work. The single jewel is <b>Safelight</b>, a deep oxblood taken from the darkroom lamp under which photographs appear. It is unusual in software, adult rather than playful, and owned by none of the obvious dance-app blues and pinks.</p></div>
+  <div class="swatches">
+    <div class="sw" style="background:#F2F2EF;color:#141414;border:1px solid #DEDED9"><div><b>Gelatin</b>Ground</div><div class="hex">#F2F2EF<br>Carbon on it 16.4:1</div></div>
+    <div class="sw" style="background:#FAFAF8;color:#141414;border:1px solid #DEDED9;border-left:0"><div><b>Paper</b>Raised surface, inputs</div><div class="hex">#FAFAF8<br>17.6:1</div></div>
+    <div class="sw" style="background:#141414;color:#F2F2EF"><div><b>Carbon</b>Text, marks, dark ground</div><div class="hex">#141414<br>Gelatin on it 16.4:1</div></div>
+    <div class="sw" style="background:#585854;color:#F2F2EF"><div><b>Silver 700</b>Secondary text</div><div class="hex">#585854<br>6.4:1 on Gelatin</div></div>
+    <div class="sw" style="background:#A3A39E;color:#141414"><div><b>Silver 400</b>Near echo, icons</div><div class="hex">#A3A39E<br>Not for text</div></div>
+    <div class="sw" style="background:#7A1E2B;color:#F7F2F2"><div><b>Safelight</b>Actions + "now" only</div><div class="hex">#7A1E2B<br>9.1:1 on Gelatin · on dark #E08A93</div></div>
+  </div>
+  <div style="display:flex;height:40px;margin-top:0">
+    <span style="flex:1;background:#141414"></span><span style="flex:1;background:#3A3A37"></span><span style="flex:1;background:#585854"></span><span style="flex:1;background:#6B6B66"></span><span style="flex:1;background:#8A8A85"></span><span style="flex:1;background:#A3A39E"></span><span style="flex:1;background:#C9C9C4"></span><span style="flex:1;background:#D4D4CF"></span><span style="flex:1;background:#DEDED9"></span><span style="flex:1;background:#F2F2EF;border:1px solid #DEDED9"></span>
+  </div>
+  <p class="note" style="margin-top:10px">Silver ramp: 900 #141414 · #3A3A37 · 700 #585854 · 600 #6B6B66 (smallest text allowed, 4.8:1) · 500 #8A8A85 · 400 #A3A39E · 300 #C9C9C4 · #D4D4CF · 200 #DEDED9 · Gelatin. Echo steps use 400 and #D4D4CF.</p>
+
+  <div class="sem">
+    <div style="border-color:var(--ok)"><b style="color:var(--ok)"><span class="shape ok"></span>Success #2E6B3F</b>5.7:1 · filled circle · "Paid", "Present"</div>
+    <div style="border-color:var(--warn)"><b style="color:var(--warn)"><span class="shape warn"></span>Warning #8A5300</b>5.6:1 · triangle · "Due soon", "Moved"</div>
+    <div style="border-color:var(--crit)"><b style="color:var(--crit)"><span class="shape crit"></span>Critical #B8321A</b>5.3:1 · diamond · "Failed", "Urgent"</div>
+    <div style="border-color:var(--info)"><b style="color:var(--info)"><span class="shape info"></span>Info #2D5A86</b>6.4:1 · open square · "Notice", "Waiting"</div>
+  </div>
+  <p class="note" style="margin-top:14px">Critical is a bright vermilion, deliberately warmer and lighter than Safelight, and always carries the diamond and a word. Ratios measured on Gelatin.</p>
+
+  <div class="rule-box">
+    <span class="label">The rule</span>
+    <div>
+      <p style="font:500 22px/1.35 var(--display);letter-spacing:-.01em;margin:0;max-width:760px">Safelight appears once per screen: on the one action that moves the day forward, or on the marker for "now". Everything else is Carbon on Gelatin. If a second thing wants the colour, one of them is wrong.</p>
+      <div class="ratio" aria-label="Colour proportion: about 80 percent Gelatin, 15 percent Carbon and greys, under 2 percent Safelight" role="img"><span style="flex:80;background:#F2F2EF;border:1px solid #DEDED9"></span><span style="flex:10;background:#141414"></span><span style="flex:6;background:#A3A39E"></span><span style="flex:1.5;background:#7A1E2B"></span><span style="flex:2.5;background:#B8321A;opacity:.0"></span></div>
+      <p class="note">Proportion on a typical screen: Gelatin 80 · Carbon 10 · Silver 6 · Safelight under 2.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 5 · TYPE ================= -->
+<section class="sec" id="type">
+  <div class="sec-head"><span class="sec-no">05 — Type</span><h2 class="sec-title">Gallery captions, magazine headers</h2>
+    <p class="sec-lede"><b>Familjen Grotesk</b> (OFL) for display: a grotesk with Scandinavian editorial manners, slightly squared curves and a real italic, so headlines feel set by an art director rather than generated. <b>Inter Tight</b> (OFL) for UI and numerals: neutral, compact, tabular figures for registers, money and times.</p></div>
+  <div class="spec"><div class="meta">Display XL<br>Familjen Grotesk 600<br>88/84 · −3.5%</div><p class="d1">Movement, remembered.</p></div>
+  <div class="spec"><div class="meta">Display L · page titles<br>Familjen Grotesk 600<br>56/56 · −3%</div><p class="d2">Thursday 26 November</p></div>
+  <div class="spec"><div class="meta">Display M<br>Familjen Grotesk 500<br>34/38 · −2%</div><p class="d3">Contemporary Seniors with Priya Raman</p></div>
+  <div class="spec"><div class="meta">The one italic moment<br>Familjen Grotesk Italic 500<br>Quotes and feedback only</div><p class="ital">“Your spirals have real control now.”</p></div>
+  <div class="spec"><div class="meta">Body + UI<br>Inter Tight 400 / 500 / 600</div>
+    <div>
+      <p style="font-size:17px;max-width:620px;margin:0">Grade 2 Ballet on Tuesday 1 December moves to Studio Two. Same time, same teacher. Costume sizes for the Summer Show are due by 4 December.</p>
+      <div style="margin-top:24px">
+        <div class="scale-row"><span class="label">Title</span><span class="tnum">20/26</span><span style="font:600 20px var(--ui)">Needs attention</span></div>
+        <div class="scale-row"><span class="label">Body L</span><span class="tnum">17/24</span><span style="font:500 17px var(--ui)">Kai Doherty</span></div>
+        <div class="scale-row"><span class="label">Body</span><span class="tnum">15/22</span><span style="font:400 15px var(--ui)">Asthma — inhaler in bag</span></div>
+        <div class="scale-row"><span class="label">Caption</span><span class="tnum">13/18</span><span style="font:400 13px var(--ui);color:var(--s700)">Studio Two · Marcus Bell</span></div>
+        <div class="scale-row"><span class="label">Overline</span><span class="tnum">12/16</span><span style="font:500 12px var(--ui);letter-spacing:.12em;text-transform:uppercase;color:var(--s700)">Autumn term · week 11 of 13</span></div>
+      </div>
+      <p class="note">Phone minimum: 15px body, 16px inputs. Desktop minimum: 13px captions.</p>
+    </div></div>
+  <div class="spec"><div class="meta">Numerals<br>Inter Tight 500, tabular</div>
+    <div><div class="nums">£2,088.00 · 16:30 · 12/16 · 91%</div><div class="nums" style="font-size:28px;color:var(--s700);margin-top:8px">0123456789 £186.00 £9.60</div></div></div>
+</section>
+
+<!-- ================= 6 · GRAPHIC LANGUAGE ================= -->
+<section class="sec" id="graphic">
+  <div class="sec-head"><span class="sec-no">06 — Graphic language</span><h2 class="sec-title">The echo, used rarely</h2>
+    <p class="sec-lede">One form, repeated in two or three offset, fading exposures, always stepping left to right: where it was, where it is now. It appears in the logo, on progress, in transitions and on marketing type. Everyday UI stays perfectly still.</p></div>
+  <div class="gl">
+    <div class="tile c7">
+      <span class="label">The echo rule</span>
+      <svg viewBox="0 0 560 170" style="width:100%" role="img" aria-label="Echo construction: three copies at 20, 45 and 100 percent strength, offset by a quarter of the form's width">
+        <g font-family="Inter Tight, sans-serif" font-size="12" fill="#585854">
+          <rect x="40" y="20" width="96" height="96" fill="#D4D4CF"/><rect x="72" y="20" width="96" height="96" fill="#A3A39E"/><rect x="104" y="20" width="96" height="96" fill="#141414"/>
+          <path d="M40 132h32M72 132h32" stroke="#585854"/><path d="M40 128v8M72 128v8M104 128v8" stroke="#585854"/>
+          <text x="40" y="154">offset = ⅓ of width</text>
+          <polygon transform="translate(300 32) scale(1.2)" points="0,20 11,20 22.6,62.2 33.5,20 39,20 23.5,80 16.5,80" fill="#D4D4CF"/>
+          <polygon transform="translate(320 32) scale(1.2)" points="0,20 11,20 22.6,62.2 33.5,20 39,20 23.5,80 16.5,80" fill="#A3A39E"/>
+          <polygon transform="translate(340 32) scale(1.2)" points="0,20 11,20 22.6,62.2 33.5,20 39,20 23.5,80 16.5,80" fill="#7A1E2B"/>
+          <text x="300" y="154">past · past · now</text>
+          <text x="440" y="60" fill="#141414" font-weight="600">2–3 steps</text><text x="440" y="78">never more</text>
+          <text x="440" y="104" fill="#141414" font-weight="600">Left → right</text><text x="440" y="122">time's direction</text>
+        </g>
+      </svg>
+      <span class="note">Steps are solid tints (#D4D4CF, #A3A39E), not transparency, so overlaps stay clean on any ground. In one-colour use they become two strokes of decreasing weight.</span>
+    </div>
+    <div class="tile c5">
+      <span class="label">Where the echo is allowed</span>
+      <ul class="spec-list">
+        <li><b>Logo</b> · the <i>v</i>, always.</li>
+        <li><b>Progress</b> · a skill's earlier levels trail behind the current one.</li>
+        <li><b>Transitions</b> · a new page title arrives with two trails, then holds.</li>
+        <li><b>Marketing type</b> · one word per layout, never a whole line.</li>
+        <li style="border-bottom:1px solid var(--s200)"><b>Never</b> · on buttons, lists, registers, money, alerts.</li>
+      </ul>
+    </div>
+    <div class="tile c7">
+      <span class="label">Icons · 24px grid, 1.5px stroke, square caps, no fills</span>
+      <div class="icons">
+        <figure><svg class="st"><use href="#i-today"/></svg>Today</figure>
+        <figure><svg class="st"><use href="#i-grid"/></svg>Timetable</figure>
+        <figure><svg class="st"><use href="#i-people"/></svg>Families</figure>
+        <figure><svg class="st"><use href="#i-card"/></svg>Billing</figure>
+        <figure><svg class="st"><use href="#i-chat"/></svg>Messages</figure>
+        <figure><svg class="st"><use href="#i-rise"/></svg>Progress</figure>
+        <figure><svg class="st"><use href="#i-funnel"/></svg>Enrolment</figure>
+        <figure><svg class="st"><use href="#i-star"/></svg>Events</figure>
+        <figure><svg class="st"><use href="#i-chart"/></svg>Reports</figure>
+        <figure><svg class="st"><use href="#i-shield"/></svg>Safeguarding</figure>
+        <figure><svg class="st"><use href="#i-med"/></svg>Medical</figure>
+        <figure><svg class="st"><use href="#i-check"/></svg>Present</figure>
+      </div>
+      <span class="note">Icons sit in navigation and controls only, never beside headings. The Progress icon is the only one that echoes.</span>
+    </div>
+    <div class="tile c5">
+      <span class="label">Motion · echo on arrival</span>
+      <div class="demo-stage" id="demo" aria-hidden="true">
+        <span class="demo-el t t2">secure</span><span class="demo-el t t1">secure</span><span class="demo-el main">secure</span>
+      </div>
+      <button class="btn-replay" id="replay" type="button">Replay</button>
+      <p class="note" style="margin:16px 0 0">An element arrives over 240ms (ease-out) with two fading trails, then holds completely still. Used on page titles and when a skill level changes. With reduced motion turned on: no trails, no travel, the new state simply appears.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 7 · PRODUCT SCREENS ================= -->
+<section class="sec" id="screens">
+  <div class="sec-head"><span class="sec-no">07 — Product</span><h2 class="sec-title">Still screens, one moving idea</h2>
+    <p class="sec-lede">Magazine-header titles for owners, students and parents; fast, plain lists for teachers; perfectly aligned tables for operations. Very few containers: rules and whitespace do the grouping.</p></div>
+
+  <div class="stack">
+
+  <!-- a, d, e, g phones row 1 -->
+  <div class="phones">
+    <!-- a · SIGN IN -->
+    <figure class="art" data-w="390" data-h="844"><div class="art-box"><div class="art-in">
+      <div class="ph-screen signin">
+        <div class="ph" style="height:350px"><div class="status" style="color:#F2F2EF;position:relative;z-index:1"><span class="tnum">16:24</span><span class="bat" style="border-color:#F2F2EF"></span></div><span class="ph-cap">Photography: street dancer mid-spin, 1/2s, rear-curtain flash, b/w</span></div>
+        <div class="pad">
+          <svg class="logo" viewBox="-4 10 281 100" role="img" aria-label="Swayvo"><use href="#sv-word"/></svg>
+          <p style="font:500 22px/1.25 var(--display);letter-spacing:-.01em;margin:22px 0 0">Northstar Dance Academy</p>
+          <p style="margin:4px 0 0;color:var(--s700);font-size:15px">Greenwich & Blackheath</p>
+          <div class="field"><label>Email</label><div class="in">hannah.wright@example.com</div></div>
+          <button class="btn primary" style="margin-top:16px">Send me a sign-in link</button>
+          <button class="btn text" style="height:48px;margin-top:4px">Use a passkey instead</button>
+          <p style="font-size:15px;color:var(--s700);margin:14px 0 0;line-height:1.45">New here? Your school sends the first invite, so there is no account to create.</p>
+        </div>
+      </div>
+    </div></div><figcaption><b>a</b> · Sign in / first run</figcaption></figure>
+
+    <!-- c1 · TEACHER TODAY -->
+    <figure class="art" data-w="390" data-h="844"><div class="art-box"><div class="art-in">
+      <div class="ph-screen">
+        <div class="status"><span>16:24</span><span class="bat"></span></div>
+        <div class="pad">
+          <div class="kicker" style="margin-top:14px">Thursday 26 November</div>
+          <h3 style="font:600 34px/1 var(--display);letter-spacing:-.03em;margin:10px 0 26px">Marcus, two classes</h3>
+
+          <div style="border-top:1px solid var(--carbon);padding-top:16px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:600 40px/1 var(--ui);font-variant-numeric:tabular-nums;letter-spacing:-.02em">16:30</span><span class="kicker" style="color:var(--carbon)">In 6 min</span></div>
+            <div style="font:600 24px/1.2 var(--display);letter-spacing:-.015em;margin-top:8px">Junior Tap</div>
+            <div style="font-size:15px;color:var(--s700);margin-top:2px">Studio Two · 12 dancers + 1 trial</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:15px;margin-top:12px"><svg class="st medx" style="color:var(--carbon)"><use href="#i-med"/></svg>2 medical notes · 1 urgent</div>
+            <button class="btn primary" style="margin-top:18px;height:60px;font-size:17px">Open register</button>
+          </div>
+
+          <div style="border-top:1px solid var(--s300);padding-top:16px;margin-top:28px">
+            <span style="font:600 28px/1 var(--ui);font-variant-numeric:tabular-nums;letter-spacing:-.02em">18:30</span>
+            <div style="font:600 21px/1.2 var(--display);letter-spacing:-.015em;margin-top:8px">Senior Tap</div>
+            <div style="font-size:15px;color:var(--s700);margin-top:2px">Main Hall · Blackheath · 11 dancers</div>
+            <button class="btn ghost" style="margin-top:14px">Register</button>
+          </div>
+
+          <div style="border-top:1px solid var(--s200);margin-top:28px;padding-top:14px;display:grid;grid-template-columns:1fr 24px;align-items:center;min-height:56px">
+            <div><div style="font-size:15px;font-weight:600">After class</div><div style="font-size:15px;color:var(--s700)">Quick feedback takes a line per dancer.</div></div>
+            <svg class="st icn"><use href="#i-arrow"/></svg>
+          </div>
+        </div>
+        <nav class="ph-nav"><a class="on"><svg class="st"><use href="#i-today"/></svg>Today</a><a><svg class="st"><use href="#i-people"/></svg>Classes</a><a><svg class="st"><use href="#i-chat"/></svg>Messages</a><a><svg class="st"><use href="#i-user"/></svg>Me</a></nav>
+      </div>
+    </div></div><figcaption><b>c</b> · Teacher — today</figcaption></figure>
+
+    <!-- c2 · REGISTER -->
+    <figure class="art" data-w="390" data-h="844"><div class="art-box"><div class="art-in">
+      <div class="ph-screen" style="background:var(--paper)">
+        <div class="status"><span>16:31</span><span class="bat"></span></div>
+        <div class="pad">
+          <div style="display:flex;align-items:center;gap:4px;height:44px;margin-left:-8px;font-size:15px"><svg class="st icn"><use href="#i-back"/></svg>Today</div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:2px">
+            <h3 style="font:600 30px/1 var(--display);letter-spacing:-.03em;margin:0">Junior Tap</h3>
+            <span class="tnum" style="font-size:15px;color:var(--s700)">16:30 · Studio Two</span>
+          </div>
+          <div class="tnum" style="display:flex;gap:16px;font-size:15px;margin:12px 0 10px"><span><b>7</b> present</span><span><b>1</b> absent</span><span style="color:var(--s700)"><b style="color:var(--carbon)">5</b> to mark</span></div>
+          <div style="display:grid;grid-template-columns:1fr 48px 48px;column-gap:6px;font-size:12px;color:var(--s700);letter-spacing:.08em;text-transform:uppercase;padding-bottom:4px"><span>13 dancers</span><span style="text-align:center">In</span><span style="text-align:center">Out</span></div>
+        </div>
+        <div class="pad" style="height:560px;overflow:hidden">
+          <div class="reg-row"><div class="nm">Sofia Ackah</div><span class="tap p on"><i><svg class="st" style="stroke-width:2"><use href="#i-check"/></svg></i></span><span class="tap a"><i></i></span></div>
+          <div class="reg-row"><div class="nm">Idris Adeyemi</div><span class="tap p on"><i><svg class="st" style="stroke-width:2"><use href="#i-check"/></svg></i></span><span class="tap a"><i></i></span></div>
+          <div class="reg-row"><div class="nm">Elias Bennett</div><span class="tap p"><i></i></span><span class="tap a on"><i><svg class="st" style="stroke-width:2"><use href="#i-x"/></svg></i></span></div>
+          <div class="reg-row"><div><div class="nm">Kai Doherty</div><div class="med"><svg class="st medx"><use href="#i-med"/></svg>Asthma — inhaler in bag</div></div><span class="tap p on"><i><svg class="st" style="stroke-width:2"><use href="#i-check"/></svg></i></span><span class="tap a"><i></i></span></div>
+          <div class="reg-row"><div class="nm">Nia Doherty</div><span class="tap p on"><i><svg class="st" style="stroke-width:2"><use href="#i-check"/></svg></i></span><span class="tap a"><i></i></span></div>
+          <div class="reg-row"><div class="nm">Zara Ellery</div><span class="tap p on"><i><svg class="st" style="stroke-width:2"><use href="#i-check"/></svg></i></span><span class="tap a"><i></i></span></div>
+          <div class="reg-row"><div class="nm">Ottilie Ferreira</div><span class="tap p on"><i><svg class="st" style="stroke-width:2"><use href="#i-check"/></svg></i></span><span class="tap a"><i></i></span></div>
+          <div class="reg-row"><div><div class="nm">Jonah Grant</div><div class="med urgent"><span class="shape crit" style="margin:0 3px"></span>Nut allergy — urgent</div></div><span class="tap p on"><i><svg class="st" style="stroke-width:2"><use href="#i-check"/></svg></i></span><span class="tap a"><i></i></span></div>
+          <div class="reg-row"><div class="nm">Layla Haddad<span class="trial">Trial</span></div><span class="tap p"><i></i></span><span class="tap a"><i></i></span></div>
+          <div class="reg-row"><div class="nm">Sena Hussain</div><span class="tap p"><i></i></span><span class="tap a"><i></i></span></div>
+          <div class="reg-row"><div class="nm">Leo Mensah</div><span class="tap p"><i></i></span><span class="tap a"><i></i></span></div>
+          <div class="reg-row"><div class="nm">Ruby Okafor</div><span class="tap p"><i></i></span><span class="tap a"><i></i></span></div>
+        </div>
+        <div style="position:absolute;left:0;right:0;bottom:0;padding:12px 24px 30px;background:var(--paper);border-top:1px solid var(--s300);display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <button class="btn ghost" style="height:56px;font-size:15px">Rest present</button>
+          <button class="btn ink" style="height:56px">Save · 8 of 13</button>
+        </div>
+      </div>
+    </div></div><figcaption><b>c</b> · Teacher — register, 16:30 Junior Tap</figcaption></figure>
+  </div>
+
+  <div class="phones">
+    <!-- d · STUDENT PROGRESS -->
+    <figure class="art" data-w="390" data-h="844"><div class="art-box"><div class="art-in">
+      <div class="ph-screen">
+        <div class="status"><span>16:24</span><span class="bat"></span></div>
+        <div class="pad">
+          <div class="kicker" style="margin-top:8px">Amir · progress</div>
+          <h3 class="mag echo-in" style="font-size:40px">Contemporary</h3>
+          <div style="font-size:15px;color:var(--s700);margin-top:8px">Seniors · Thu 19:00 · Priya Raman</div>
+
+          <div style="margin-top:18px;border-top:1px solid var(--carbon);padding-top:12px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:15px;font-weight:600">Contraction and release</span><span class="kicker" style="font-size:12px">Since 19 Nov</span></div>
+            <div style="display:flex;align-items:baseline;gap:10px;margin-top:10px"><span style="font:600 40px/1 var(--display);letter-spacing:-.03em">Secure</span><span style="font-size:15px;color:var(--s700)">up from developing</span></div>
+            <div class="hero-track" role="img" aria-label="Moved from developing to secure">
+              <div class="ht-line"></div>
+              <div class="ht-tick" style="left:8%"></div><div class="ht-tick" style="left:50%"></div><div class="ht-tick" style="left:92%"></div>
+              <svg class="ht-mark" style="left:8%" viewBox="0 0 14 48"><rect width="14" height="48" fill="#E3E3DF"/></svg>
+              <svg class="ht-mark" style="left:22%" viewBox="0 0 14 48"><rect width="14" height="48" fill="#D4D4CF"/></svg>
+              <svg class="ht-mark" style="left:36%" viewBox="0 0 14 48"><rect width="14" height="48" fill="#A3A39E"/></svg>
+              <svg class="ht-mark" style="left:50%" viewBox="0 0 14 48"><rect width="14" height="48" fill="#7A1E2B"/></svg>
+              <span class="ht-lbl" style="left:8%;transform:none">Developing</span><span class="ht-lbl" style="left:50%;color:var(--carbon);font-weight:600">Secure</span><span class="ht-lbl" style="left:92%;transform:translateX(-100%)">Mastered</span>
+            </div>
+          </div>
+
+          <div style="margin-top:6px">
+            <div class="sk"><span class="nm">Floorwork</span><span><span class="lv">Secure</span><div class="mini"><b style="left:4%"></b><b style="left:50%"></b><b style="left:96%"></b><i style="left:50%"></i></div></span></div>
+            <div class="sk"><span class="nm">Spirals</span><span><span class="lv">Secure</span><div class="mini"><b style="left:4%"></b><b style="left:50%"></b><b style="left:96%"></b><i style="left:50%"></i></div></span></div>
+            <div class="sk"><span class="nm">Balance</span><span><span class="lv">Developing</span><div class="mini"><b style="left:4%"></b><b style="left:50%"></b><b style="left:96%"></b><i style="left:4%;transform:none"></i></div></span></div>
+            <div class="sk"><span class="nm">Travelling</span><span><span class="lv">Developing</span><div class="mini"><b style="left:4%"></b><b style="left:50%"></b><b style="left:96%"></b><i style="left:4%;transform:none"></i></div></span></div>
+            <div class="sk" style="border-bottom:1px solid var(--s200)"><span class="nm">Musicality</span><span><span class="lv">Mastered</span><div class="mini"><b style="left:4%"></b><b style="left:50%"></b><b style="left:96%"></b><i style="left:96%;transform:translateX(-100%)"></i></div></span></div>
+          </div>
+
+          <p class="quote" style="margin-top:14px;font-size:18px">“Your spirals have real control now. Keep the breath going through the release.”</p>
+          <div style="font-size:15px;color:var(--s700);margin-top:4px">Priya Raman · Thu 19 Nov</div>
+        </div>
+        <nav class="ph-nav"><a><svg class="st"><use href="#i-today"/></svg>Today</a><a class="on"><svg class="st"><use href="#i-rise"/></svg>Progress</a><a><svg class="st"><use href="#i-chat"/></svg>Messages</a><a><svg class="st"><use href="#i-user"/></svg>Me</a></nav>
+      </div>
+    </div></div><figcaption><b>d</b> · Student — progress (Amir), top of page</figcaption></figure>
+
+    <!-- d2 · STUDENT PROGRESS scrolled -->
+    <figure class="art" data-w="390" data-h="844"><div class="art-box"><div class="art-in">
+      <div class="ph-screen">
+        <div class="status"><span>16:25</span><span class="bat"></span></div>
+        <div class="pad">
+          <div class="kicker" style="margin-top:12px">Amir · goal</div>
+          <p style="font:600 30px/1.08 var(--display);letter-spacing:-.025em;margin:12px 0 0">Clean double pirouette by the spring show</p>
+          <div style="font-size:15px;color:var(--s700);margin-top:10px">Set with Priya · Contemporary Seniors</div>
+          <div style="display:flex;gap:10px;margin-top:16px"><button class="btn ghost" style="width:auto;height:44px;font-size:15px">Log practice</button><button class="btn text" style="width:auto;height:44px;font-size:15px">Edit goal</button></div>
+
+          <div style="margin-top:34px;border-top:1px solid var(--carbon);padding-top:16px">
+            <div class="kicker">Milestone</div>
+            <div style="position:relative;height:120px;margin-top:6px" role="img" aria-label="50 classes">
+              <span style="position:absolute;left:0;top:0;font:600 120px/1 var(--display);letter-spacing:-.05em;color:#E9E9E5" class="tnum">50</span>
+              <span style="position:absolute;left:9px;top:0;font:600 120px/1 var(--display);letter-spacing:-.05em;color:#CFCFCA" class="tnum">50</span>
+              <span style="position:absolute;left:18px;top:0;font:600 120px/1 var(--display);letter-spacing:-.05em;color:var(--carbon)" class="tnum">50</span>
+            </div>
+            <p style="font-size:17px;margin:8px 0 0;line-height:1.4">Fifty classes. Every one of them is still in there.</p>
+          </div>
+
+          <div style="margin-top:30px;border-top:1px solid var(--s300);padding-top:14px;display:grid;grid-template-columns:1fr auto;align-items:baseline">
+            <div><div class="kicker">Practice this week</div><div style="font-size:15px;color:var(--s700);margin-top:8px">Logged from home</div></div>
+            <div class="tnum" style="font:600 34px/1 var(--ui);letter-spacing:-.02em">45<span style="font-size:17px;font-weight:500;margin-left:4px">min</span></div>
+          </div>
+
+          <div style="margin-top:22px;border-top:1px solid var(--s300);padding-top:14px">
+            <div class="kicker" style="margin-bottom:6px">Your classes</div>
+            <div class="day-row"><span class="w">Thu 18:30</span><span><b>Senior Tap</b> · Main Hall</span></div>
+            <div class="day-row"><span class="w">Thu 19:00</span><span><b>Contemporary Seniors</b> · Studio One</span></div>
+            <div class="day-row"><span class="w">Fri 17:30</span><span><b>Street Seniors</b> · cancelled this week</span></div>
+          </div>
+        </div>
+        <nav class="ph-nav"><a><svg class="st"><use href="#i-today"/></svg>Today</a><a class="on"><svg class="st"><use href="#i-rise"/></svg>Progress</a><a><svg class="st"><use href="#i-chat"/></svg>Messages</a><a><svg class="st"><use href="#i-user"/></svg>Me</a></nav>
+      </div>
+    </div></div><figcaption><b>d</b> · Student — goal, milestone, practice (scrolled)</figcaption></figure>
+
+    <!-- e · PARENT HOME -->
+    <figure class="art" data-w="390" data-h="844"><div class="art-box"><div class="art-in">
+      <div class="ph-screen">
+        <div class="status"><span>16:24</span><span class="bat"></span></div>
+        <div class="pad">
+          <div class="kicker" style="margin-top:12px">Hannah · Thu 26 Nov</div>
+          <h3 class="mag" style="font-size:36px;margin-top:8px">This week</h3>
+
+          <div style="margin-top:12px">
+            <div class="notice"><span class="shape warn" style="transform:translateY(1px)"></span><span><b>Moved:</b> Grade 2 Ballet on Tue 1 Dec moves to Studio Two.</span></div>
+            <div class="notice" style="border-bottom:1px solid var(--s200)"><span class="shape info"></span><span><b>Due 4 Dec:</b> Summer Show costume sizes. <u style="text-underline-offset:3px">Add sizes</u></span></div>
+          </div>
+
+          <div class="child">Amir <small>15</small></div>
+          <div class="day-row"><span class="w">Today 18:30</span><span><b>Senior Tap</b> · Main Hall</span></div>
+          <div class="day-row"><span class="w">Today 19:00</span><span><b>Contemporary Seniors</b> · Studio One</span></div>
+          <div class="day-row"><span class="w">Fri 17:30</span><span style="display:flex;gap:8px;align-items:baseline"><span class="shape crit" style="flex:none;transform:rotate(45deg) translateY(-1px)"></span><span><b>Street Seniors</b> cancelled, teacher unwell</span></span></div>
+
+          <div class="child">Nia <small>9</small></div>
+          <div class="day-row"><span class="w">Tue 1 Dec</span><span><b>Grade 2 Ballet</b> 17:30 · Studio Two</span></div>
+          <div class="day-row"><span class="w">Wed 2 Dec</span><span><b>Grade 3 Ballet</b> 17:30 · Studio One</span></div>
+
+          <div style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;margin-top:14px;border-top:1px solid var(--carbon);padding-top:12px">
+            <div><div class="tnum" style="font:600 26px/1 var(--ui);letter-spacing:-.02em">£186.00</div><div style="font-size:15px;color:var(--s700);margin-top:4px">INV-1088 · due 10 Dec</div></div>
+            <button class="btn primary" style="width:112px">Pay</button>
+          </div>
+
+          <div style="border-top:1px solid var(--s200);margin-top:12px;padding-top:10px"><p style="font:italic 500 17px/1.3 var(--display);margin:0">“Your spirals have real control now.”</p>
+          <div style="font-size:15px;color:var(--s700)">Priya on Amir · 19 Nov</div></div>
+        </div>
+        <nav class="ph-nav"><a class="on"><svg class="st"><use href="#i-home"/></svg>Home</a><a><svg class="st"><use href="#i-today"/></svg>Week</a><a><svg class="st"><use href="#i-card"/></svg>Payments</a><a><svg class="st"><use href="#i-chat"/></svg>Messages</a></nav>
+      </div>
+    </div></div><figcaption><b>e</b> · Parent — home (Hannah, two children)</figcaption></figure>
+  </div>
+
+  <div class="phones">
+    <!-- g · PAYMENT -->
+    <figure class="art" data-w="390" data-h="844"><div class="art-box"><div class="art-in">
+      <div class="ph-screen" style="background:var(--paper)">
+        <div class="status"><span>16:26</span><span class="bat"></span></div>
+        <div class="pad">
+          <div style="display:flex;align-items:center;gap:4px;height:44px;margin-left:-8px;font-size:15px"><svg class="st icn"><use href="#i-back"/></svg>Payments</div>
+          <div class="kicker" style="margin-top:10px">INV-1088 · Spring term</div>
+          <div class="tnum" style="font:600 60px/1 var(--ui);letter-spacing:-.035em;margin-top:12px">£186.00</div>
+          <div style="font-size:15px;color:var(--s700);margin-top:8px">Due Thursday 10 December</div>
+
+          <div style="margin-top:24px;border-top:1px solid var(--carbon)">
+            <div class="line" style="padding-top:14px"><span style="font-weight:600">Nia</span><span></span></div>
+            <div class="line"><span class="x">Grade 2 Ballet</span><span>£84.00</span></div>
+            <div class="line"><span class="x">Grade 3 Ballet</span><span>£96.00</span></div>
+            <div class="line"><span class="x">Sibling discount</span><span>−£9.60</span></div>
+            <div class="line" style="padding-top:12px;border-top:1px solid var(--s200);margin-top:4px"><span style="font-weight:600">Amir</span><span></span></div>
+            <div class="line"><span class="x">Senior Tap drop-in pack</span><span>£15.60</span></div>
+            <div class="line" style="border-top:1px solid var(--carbon);margin-top:6px;padding-top:12px;font-weight:600;font-size:17px"><span>Total</span><span>£186.00</span></div>
+          </div>
+
+          <div class="kicker" style="margin:22px 0 4px">Pay with</div>
+          <div class="method"><span class="radio on"></span><span>Card or Apple Pay</span><svg class="st icn" style="color:var(--s700)"><use href="#i-card"/></svg></div>
+          <div class="method" style="border-bottom:1px solid var(--s200)"><span class="radio"></span><span>Bank transfer<br><span class="tnum" style="font-size:15px;color:var(--s700)">Reference NDA-1088</span></span><span></span></div>
+
+          <button class="btn primary" style="margin-top:22px;height:56px">Pay £186.00</button>
+          <p style="font-size:15px;color:var(--s700);margin:14px 0 0;text-align:left">Last paid: INV-1041 · £54.00 · 5 Nov</p>
+        </div>
+      </div>
+    </div></div><figcaption><b>g</b> · Payment — Hannah pays INV-1088</figcaption></figure>
+
+    <div style="grid-column:span 2;align-self:center">
+      <p class="sub">Why the screens look like this</p>
+      <ul class="spec-list" style="max-width:520px">
+        <li><b>Register</b> is the plainest screen in the product: 56px rows, separate In / Out targets of 48px, medical notes in words with a cross or a critical diamond, and the trial dancer named in text.</li>
+        <li><b>Progress</b> is the only place the echo touches the UI: the current level in Safelight with Contraction and release's earlier position trailing behind. Developing is a position on a line, not a red mark.</li>
+        <li><b>Parent and payment</b> stay calm and exact: tabular figures, a single total, one Safelight button. The cancellation gets the critical diamond and a reason.</li>
+        <li style="border-bottom:1px solid var(--s200)"><b>Safelight</b> is used once per screen: Send link, Open register, the "now" level, Pay.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- b · OWNER TODAY desktop -->
+  <figure class="art" data-w="1280" data-h="800"><div class="art-box"><div class="art-in">
+    <div class="dt">
+      <aside class="rail">
+        <svg class="lg" viewBox="-4 10 281 100" role="img" aria-label="Swayvo" style="--now:var(--carbon)"><use href="#sv-word"/></svg>
+        <div class="school">Northstar Dance Academy<br>Greenwich & Blackheath</div>
+        <nav>
+          <a class="on"><svg class="st"><use href="#i-today"/></svg>Today</a>
+          <a><svg class="st"><use href="#i-grid"/></svg>Timetable</a>
+          <a><svg class="st"><use href="#i-people"/></svg>Families</a>
+          <a><svg class="st"><use href="#i-card"/></svg>Billing</a>
+          <a><svg class="st"><use href="#i-funnel"/></svg>Enrolment</a>
+          <a><svg class="st"><use href="#i-star"/></svg>Events</a>
+          <a><svg class="st"><use href="#i-chart"/></svg>Reports</a>
+          <a><svg class="st"><use href="#i-shield"/></svg>Safeguarding</a>
+        </nav>
+        <div class="me">Freya Lindqvist<small>Owner</small></div>
+      </aside>
+      <main class="main">
+        <div class="dt-head">
+          <div><div class="kicker">Autumn term · week 11 of 13</div><h3 class="dt-title echo-in" style="margin-top:12px">Thursday 26 November</h3></div>
+          <div class="search"><svg class="st" style="width:18px;height:18px"><use href="#i-search"/></svg>Find a dancer, family or class</div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1.12fr 1fr;gap:56px;margin-top:40px">
+          <div>
+            <h4 class="h-sec"><span>Needs attention</span><span style="letter-spacing:0;text-transform:none;font-weight:500">5 items</span></h4>
+            <div class="attn"><span class="shape crit" style="margin-left:2px"></span><div><b>3 card payments failed</b><span class="d tnum">£162.00 · retry now or send each family a note</span></div><span class="btn-sm" style="background:var(--safe);color:#F7F2F2">Retry payments</span></div>
+            <div class="attn"><span class="shape warn"></span><div><b>Medical update to acknowledge</b><span class="d">Nia Wright — new inhaler</span></div><span class="lnk">Acknowledge</span></div>
+            <div class="attn"><span class="shape info"></span><div><b>4 families waiting for a reply</b><span class="d">Oldest 2 days</span></div><span class="lnk">Open inbox</span></div>
+            <div class="attn"><span class="shape neutral"></span><div><b>5 trials attended, not yet enrolled</b><span class="d">Follow up while the class is fresh</span></div><span class="lnk">Follow up</span></div>
+            <div class="attn" style="border-bottom:1px solid var(--s200)"><span class="shape neutral"></span><div><b>Grade 3 Ballet is full</b><span class="d">8 on the waiting list</span></div><span class="lnk">Waiting list</span></div>
+          </div>
+          <div>
+            <h4 class="h-sec"><span>Classes today</span><span style="letter-spacing:0;text-transform:none;font-weight:500">4 classes</span></h4>
+            <div class="cls"><span class="t">16:30</span><div><div class="n">Junior Tap <span style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;border-bottom:1.5px solid var(--carbon);margin-left:6px">Next</span></div><div class="m">Marcus Bell · Studio Two</div></div><div class="fill">12/16<div class="bar"><i style="width:75%"></i></div><div class="m" style="margin-top:4px">+ 1 trial</div></div></div>
+            <div class="cls"><span class="t">18:30</span><div><div class="n">Senior Tap</div><div class="m">Marcus Bell · Main Hall</div></div><div class="fill">11/16<div class="bar"><i style="width:68.75%"></i></div></div></div>
+            <div class="cls"><span class="t">19:00</span><div><div class="n">Contemporary Seniors</div><div class="m">Priya Raman · Studio One</div></div><div class="fill">14/18<div class="bar"><i style="width:77.8%"></i></div></div></div>
+            <div class="cls" style="border-bottom:1px solid var(--s200)"><span class="t">20:00</span><div><div class="n">Adult Contemporary drop-in</div><div class="m">Priya Raman · Studio One</div></div><div class="fill">9/20<div class="bar"><i style="width:45%"></i></div></div></div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1.12fr 1fr;gap:56px;margin-top:40px;border-top:1px solid var(--carbon);padding-top:18px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px">
+            <div><div class="kicker">Outstanding</div><div class="tnum" style="font:600 32px/1 var(--ui);letter-spacing:-.02em;margin-top:10px">£612.00</div><div class="m" style="font-size:14px;color:var(--s700);margin-top:6px">across 8 families · <span class="lnk" style="font-weight:500">View</span></div></div>
+            <div><div class="kicker">Collected, last 30 days</div><div class="tnum" style="font:600 32px/1 var(--ui);letter-spacing:-.02em;margin-top:10px">£2,088.00</div></div>
+          </div>
+          <div style="display:grid;gap:14px">
+            <div><div style="display:flex;justify-content:space-between;font-size:14px"><span>Attendance, last 4 weeks</span><b class="tnum">91%</b></div><div class="bar"><i style="width:91%"></i></div></div>
+            <div><div style="display:flex;justify-content:space-between;font-size:14px"><span>Places filled</span><b class="tnum">68% · 143 of 210</b></div><div class="bar"><i style="width:68%"></i></div></div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div></div><figcaption><b>b</b> · Owner — Today (1280 × 800)</figcaption></figure>
+
+  <!-- f · TIMETABLE desktop -->
+  <figure class="art" data-w="1280" data-h="800"><div class="art-box"><div class="art-in">
+    <div class="dt">
+      <aside class="rail">
+        <svg class="lg" viewBox="-4 10 281 100" role="img" aria-label="Swayvo" style="--now:var(--carbon)"><use href="#sv-word"/></svg>
+        <div class="school">Northstar Dance Academy<br>Greenwich & Blackheath</div>
+        <nav>
+          <a><svg class="st"><use href="#i-today"/></svg>Today</a>
+          <a class="on"><svg class="st"><use href="#i-grid"/></svg>Timetable</a>
+          <a><svg class="st"><use href="#i-people"/></svg>Families</a>
+          <a><svg class="st"><use href="#i-card"/></svg>Billing</a>
+          <a><svg class="st"><use href="#i-funnel"/></svg>Enrolment</a>
+          <a><svg class="st"><use href="#i-star"/></svg>Events</a>
+          <a><svg class="st"><use href="#i-chart"/></svg>Reports</a>
+          <a><svg class="st"><use href="#i-shield"/></svg>Safeguarding</a>
+        </nav>
+        <div class="me">Freya Lindqvist<small>Owner</small></div>
+      </aside>
+      <main class="main" style="padding-top:32px">
+        <div class="dt-head">
+          <div><div class="kicker">Week 11 · by room</div><h3 class="dt-title" style="margin-top:12px;font-size:50px">23–28 November</h3></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="btn-sm" style="border:1px solid var(--s300);width:40px;justify-content:center;padding:0"><svg class="st" style="width:18px;height:18px"><use href="#i-back"/></svg></span>
+            <span class="btn-sm" style="border:1px solid var(--s300)">This week</span>
+            <span class="btn-sm" style="border:1px solid var(--s300);width:40px;justify-content:center;padding:0"><svg class="st" style="width:18px;height:18px;transform:scaleX(-1)"><use href="#i-back"/></svg></span>
+            <span class="btn-sm" style="background:var(--carbon);color:var(--gel);margin-left:8px">Add class</span>
+          </div>
+        </div>
+        <div class="legend" style="margin:22px 0 14px">
+          <span><i></i>Ballet</span><span><i style="border-left-style:dotted"></i>Tap</span><span><i style="border-left:4px double var(--carbon)"></i>Contemporary / Modern</span><span><i style="border-left-width:4px"></i>Street</span><span><i style="border-left-style:dashed"></i>Jazz</span>
+        </div>
+        <div class="tt">
+          <div></div>
+          <div class="dh">Mon<b>23</b></div><div class="dh">Tue<b>24</b></div><div class="dh">Wed<b>25</b></div>
+          <div class="dh today" style="box-shadow:inset 0 3px 0 var(--safe)"><span style="color:var(--safe);font-weight:600">Thu · today</span><b>26</b></div>
+          <div class="dh">Fri<b>27</b></div><div class="dh">Sat<b>28</b></div>
+
+          <div class="rm"><b>Studio One</b><small>Greenwich</small></div>
+          <div class="cell"><div class="ev"><span class="tm">16:00</span><span class="cn">Pre-School Ballet</span><span class="tc">Freya</span></div><div class="ev"><span class="tm">17:00</span><span class="cn">Primary Ballet</span><span class="tc">Freya</span></div></div>
+          <div class="cell"><div class="ev"><span class="tm">17:30</span><span class="cn">Grade 2 Ballet</span><span class="tc">Freya</span></div></div>
+          <div class="cell"><div class="ev"><span class="tm">17:30</span><span class="cn">Grade 3 Ballet</span><span class="tc">Freya</span><span class="stt" style="color:var(--info)"><span class="shape info" style="width:9px;height:9px"></span>Full · 8 waiting</span></div></div>
+          <div class="cell today"><div class="ev cont"><span class="tm">19:00</span><span class="cn">Contemporary Seniors</span><span class="tc">Priya · <span class="tnum">14/18</span></span></div><div class="ev cont"><span class="tm">20:00</span><span class="cn">Adult Contemporary drop-in</span><span class="tc">Priya · <span class="tnum">9/20</span></span></div></div>
+          <div class="cell"></div>
+          <div class="cell"><div class="ev"><span class="tm">09:15</span><span class="cn">Grade 1 Ballet</span><span class="tc">Freya</span></div></div>
+
+          <div class="rm"><b>Studio Two</b><small>Greenwich</small></div>
+          <div class="cell" style="min-height:120px"></div>
+          <div class="cell" style="min-height:120px"><div class="ev k-tap"><span class="tm">16:30</span><span class="cn">Junior Tap</span><span class="tc">Marcus</span></div></div>
+          <div class="cell" style="min-height:120px"></div>
+          <div class="cell today" style="min-height:120px"><div class="ev k-tap"><span class="tm">16:30</span><span class="cn">Junior Tap</span><span class="tc">Marcus · <span class="tnum">12/16 + 1 trial</span></span></div></div>
+          <div class="cell" style="min-height:120px"></div>
+          <div class="cell" style="min-height:120px"></div>
+
+          <div class="rm"><b>Main Hall</b><small>Blackheath</small></div>
+          <div class="cell"></div>
+          <div class="cell"><div class="ev cont"><span class="tm">16:00</span><span class="cn">Modern Juniors</span><span class="tc">Priya</span></div></div>
+          <div class="cell"><div class="ev street"><span class="tm">16:30</span><span class="cn">Street Juniors</span><span class="tc">Tomasz Wójcik</span></div></div>
+          <div class="cell today"><div class="ev k-tap"><span class="tm">18:30</span><span class="cn">Senior Tap</span><span class="tc">Marcus · <span class="tnum">11/16</span></span></div></div>
+          <div class="cell"><div class="ev street cancel"><span class="tm">17:30</span><span class="cn">Street Seniors</span><span class="tc">Tomasz</span><span class="stt" style="color:var(--crit)"><span class="shape crit" style="width:8px;height:8px"></span>Cancelled · teacher unwell</span></div></div>
+          <div class="cell"><div class="ev jazz"><span class="tm">10:30</span><span class="cn">Jazz Intermediate</span><span class="tc">Tomasz</span></div></div>
+        </div>
+      </main>
+    </div>
+  </div></div><figcaption><b>f</b> · Week timetable by room (1280 × 800)</figcaption></figure>
+
+  </div>
+</section>
+
+<!-- ================= 8 · MARKETING ================= -->
+<section class="sec" id="marketing">
+  <div class="sec-head"><span class="sec-no">08 — Marketing</span><h2 class="sec-title">A season brochure, not a SaaS page</h2></div>
+  <div class="stack">
+  <figure class="art" data-w="1280" data-h="720"><div class="art-box"><div class="art-in">
+    <div class="mk">
+      <div style="padding:40px 56px 48px;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;gap:32px;font-size:15px;white-space:nowrap">
+          <svg viewBox="-4 10 281 100" style="width:124px" role="img" aria-label="Swayvo"><use href="#sv-word"/></svg>
+          <span style="margin-left:auto">For schools</span><span>Teachers</span><span>Families</span><span>Pricing</span><span>Sign in</span>
+        </div>
+        <div style="margin-top:auto">
+          <div class="kicker">Software for dance schools</div>
+          <h2 style="font:600 96px/.92 var(--display);letter-spacing:-.045em;margin:20px 0 0">Every<br><span class="echo-word"><span class="g" style="color:#E0E0DC;left:-36px">move</span><span class="g" style="color:#BDBDB8;left:-18px">move</span><span style="position:relative">move</span></span> leaves<br>a mark.</h2>
+          <p style="font-size:19px;line-height:1.45;max-width:470px;margin:26px 0 0;color:var(--s700)">Registers, payments, timetables and messages, handled quietly. What's left is the record that matters: who came, what they learned, how far they've come.</p>
+          <div style="display:flex;gap:12px;margin-top:30px;max-width:420px"><span class="btn primary" style="width:auto;padding:0 26px">Book a studio demo</span><span class="btn ghost" style="width:auto;padding:0 22px">See it in a class</span></div>
+        </div>
+      </div>
+      <div class="ph v2" style="height:100%"><span class="ph-cap">Photography: two jazz dancers crossing the frame, 1s exposure, strobe at start and end, b/w, studio daylight</span></div>
+    </div>
+  </div></div><figcaption><b>Landing</b> · website hero (1280 × 720)</figcaption></figure>
+
+  <div class="mk-grid">
+    <figure class="art" data-w="1080" data-h="1080"><div class="art-box"><div class="art-in">
+      <div class="ig" style="--ink:#F2F2EF">
+        <div style="position:absolute;left:96px;top:96px" class="label"><span style="color:#B4B4AF;font-size:22px;letter-spacing:.14em">Northstar Dance Academy · Milestones</span></div>
+        <div style="position:absolute;left:60px;top:190px;font:600 560px/1 var(--display);letter-spacing:-.06em" class="tnum">
+          <span style="position:absolute;left:0;color:#262624">50</span><span style="position:absolute;left:60px;color:#4A4A47">50</span><span style="position:relative;left:120px;color:#F2F2EF">50</span>
+        </div>
+        <p style="position:absolute;left:96px;bottom:200px;margin:0;font:500 54px/1.1 var(--display);letter-spacing:-.02em;color:#F2F2EF;max-width:760px">Fifty classes. <i>Every one left a mark.</i></p>
+        <svg viewBox="-4 10 281 100" style="position:absolute;right:96px;bottom:90px;width:220px;--ink:#F2F2EF;--e1:#3A3A37;--e2:#6E6E69;--now:#E08A93" aria-label="Swayvo" role="img"><use href="#sv-word"/></svg>
+      </div>
+    </div></div><figcaption><b>Instagram</b> · 1080 × 1080 milestone post</figcaption></figure>
+
+    <figure class="art" data-w="430" data-h="932"><div class="art-box"><div class="art-in">
+      <div class="store">
+        <div style="padding:52px 32px 0">
+          <p style="font:600 46px/.98 var(--display);letter-spacing:-.035em;margin:0">See how<br>far you've<br><span class="echo-word"><span class="g" style="color:#E0E0DC;left:-20px">come.</span><span class="g" style="color:#BDBDB8;left:-10px">come.</span><span style="position:relative">come.</span></span></p>
+          <p style="font-size:17px;color:var(--s700);margin:14px 0 0">Skills, feedback and goals from your teachers.</p>
+        </div>
+        <div style="position:absolute;left:40px;right:-60px;top:330px;height:700px;border:1px solid var(--s300);border-radius:40px;background:var(--gel);padding:56px 26px 0">
+          <div class="kicker">Amir · progress</div>
+          <div style="font:600 40px/1 var(--display);letter-spacing:-.035em;margin-top:10px">Contemporary</div>
+          <div style="border-top:1px solid var(--carbon);margin-top:22px;padding-top:12px;font-size:15px;font-weight:600">Contraction and release</div>
+          <div class="hero-track" style="width:300px">
+            <div class="ht-line"></div><div class="ht-tick" style="left:8%"></div><div class="ht-tick" style="left:50%"></div><div class="ht-tick" style="left:92%"></div>
+            <svg class="ht-mark" style="left:20%" viewBox="0 0 14 48"><rect width="14" height="48" fill="#E6E6E1"/></svg><svg class="ht-mark" style="left:30%" viewBox="0 0 14 48"><rect width="14" height="48" fill="#D4D4CF"/></svg><svg class="ht-mark" style="left:40%" viewBox="0 0 14 48"><rect width="14" height="48" fill="#A3A39E"/></svg><svg class="ht-mark" style="left:50%" viewBox="0 0 14 48"><rect width="14" height="48" fill="#7A1E2B"/></svg>
+            <span class="ht-lbl" style="left:8%;transform:none">Developing</span><span class="ht-lbl" style="left:50%;color:var(--carbon);font-weight:600">Secure</span>
+          </div>
+          <div style="width:300px;margin-top:16px">
+            <div class="sk"><span class="nm">Spirals</span><span class="lv">Secure</span></div>
+            <div class="sk"><span class="nm">Balance</span><span class="lv">Developing</span></div>
+            <div class="sk"><span class="nm">Musicality</span><span class="lv">Mastered</span></div>
+          </div>
+          <p class="quote" style="width:300px;margin-top:18px;font-size:19px">“Keep the breath going through the release.”</p>
+        </div>
+      </div>
+    </div></div><figcaption><b>App Store</b> · screenshot 1 of 5 (portrait)</figcaption></figure>
+  </div>
+  </div>
+</section>
+
+<!-- ================= 9 · NOTES ================= -->
+<section class="sec" id="notes">
+  <div class="sec-head"><span class="sec-no">09 — Concept notes</span><h2 class="sec-title">Honestly</h2></div>
+  <div class="notes">
+    <div><h3>Strengths</h3><ul>
+      <li>The echo gives progress a visual meaning no competitor has: you can see where a skill was.</li>
+      <li>Monochrome plus one jewel looks premium and works for ballet, street and commercial alike.</li>
+      <li>The UI is mostly still and plain, so the teacher register stays fast.</li>
+      <li>Photography direction travels from a hip-hop battle to a Grade 1 class without changing.</li></ul></div>
+    <div><h3>Weaknesses</h3><ul>
+      <li>Very little colour: style coding in the timetable relies on line patterns, which are subtler than colour.</li>
+      <li>The condensed wordmark needs care below 96px; the small mark carries the brand on phones.</li>
+      <li>Parents of young children may find it cool rather than warm.</li></ul></div>
+    <div><h3>Risks</h3><ul>
+      <li>The echo is easy to overuse; one extra trail turns gallery into motion-blur cliché.</li>
+      <li>Safelight and critical are both in the red family; the shape-plus-word rule must be enforced in code.</li>
+      <li>The look depends on real black-and-white photography; a budget shoot will undersell it.</li></ul></div>
+    <div><h3>Complexity · medium</h3><ul>
+      <li>Tokens and components: low. Neutral palette, two Google fonts, square controls.</li>
+      <li>Echo motion: medium. One shared CSS/FLIP utility, reduced-motion fallback built in.</li>
+      <li>Photography: medium to high, a commissioned b/w library across eight styles.</li></ul></div>
+  </div>
+</section>
+
+<footer>Swayvo — Echo · Concept D · fonts: Familjen Grotesk, Inter Tight (SIL OFL) · all imagery is placeholder art direction, no photographs used · logo files: logo.svg, mark.svg, app-icon.svg, logo-mono-light.svg, logo-mono-dark.svg</footer>
+</div>
+
+<script>
+(function(){
+  function fit(){
+    document.querySelectorAll('.art').forEach(function(f){
+      var w=+f.dataset.w,h=+f.dataset.h,box=f.querySelector('.art-box'),inn=f.querySelector('.art-in');
+      var s=Math.min(1,box.clientWidth/w);
+      inn.style.width=w+'px';inn.style.transform='scale('+s+')';box.style.height=(h*s)+'px';
+    });
+  }
+  fit();window.addEventListener('resize',fit);
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit);
+  var d=document.getElementById('demo'),r=document.getElementById('replay');
+  function play(){d.classList.remove('play');void d.offsetWidth;d.classList.add('play');}
+  r.addEventListener('click',play);
+  if('IntersectionObserver' in window){new IntersectionObserver(function(e){e.forEach(function(x){if(x.isIntersecting)play();});},{threshold:.6}).observe(d);}else play();
+})();
+</script>
+</body>
+</html>

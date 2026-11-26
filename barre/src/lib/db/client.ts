@@ -24,7 +24,10 @@ export type Query = <T = Row>(sql: string, params?: unknown[]) => Promise<T[]>;
 
 export type Session = { userId: string; role: string; studio?: string } | null;
 
-const STORAGE = 'idb://barre-demo-v1';
+// The live demo and the preview share one web address, so each keeps its own
+// database; otherwise a preview with a newer schema would wipe the live one.
+const SITE = process.env.NEXT_PUBLIC_SITE_KEY ?? '';
+const STORAGE = `idb://barre-demo-v1${SITE ? '-' + SITE : ''}`;
 
 /**
  * The demo database is persisted in the browser, so a returning visitor keeps
@@ -156,7 +159,7 @@ async function runAsNow<T>(db: PGlite, session: Session, fn: (q: Query) => Promi
 /** Reads: one statement in a READ ONLY transaction, then rolled back.
  *
  *  Read-only is not just tidiness. Two kinds of access exist only inside a
- *  read-only transaction (migration 0019): Sanaa support viewing a school,
+ *  read-only transaction (migration 0019): Swayvo support viewing a school,
  *  and the members of a suspended school. Postgres refuses any write in such a
  *  transaction, so neither has a path to change anything. */
 export async function readAs<T = Row>(session: Session, sql: string, params?: unknown[]): Promise<T[]> {

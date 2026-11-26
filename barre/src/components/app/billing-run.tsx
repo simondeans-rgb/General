@@ -2,11 +2,11 @@
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, HeartHandshake, Percent, Plus, Send, Trash2, X } from 'lucide-react';
+import { CheckCircle2, Percent, Plus, Send, Trash2, X } from 'lucide-react';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Badge, Button, Card, CardHeader, EmptyState, ErrorState, Field, Input, Select, Skeleton } from '@/components/ui';
+import { Button, EmptyState, ErrorState, Field, Input, Notice, Select, Skeleton } from '@/components/ui';
 import * as B from '@/lib/repos/billing';
 import { money, dateShort, isoDate } from '@/lib/format';
 
@@ -65,55 +65,50 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 sm:items-center" onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-labelledby="run-t" onClick={e => e.stopPropagation()}
-        className="max-h-[90dvh] w-full max-w-2xl overflow-y-auto overscroll-contain rounded-t-[var(--radius-xl)]
-                   border border-line bg-surface-2 p-4 pb-safe shadow-lg sm:rounded-[var(--radius-xl)]">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 id="run-t" className="text-lg font-semibold tracking-tight">Billing runs</h2>
-          <button onClick={onClose} aria-label="Close" className="grid size-9 place-items-center rounded-full hover:bg-surface-3">
+        onKeyDown={e => { if (e.key === 'Escape') onClose(); }}
+        className="max-h-[92dvh] w-full max-w-2xl overflow-y-auto overscroll-contain rounded-t-[var(--radius-xl)]
+                   border border-line bg-surface px-5 pb-safe pt-4 shadow-lg sm:rounded-[var(--radius-xl)] sm:px-6">
+        <div className="sticky top-0 z-10 -mx-5 mb-2 flex items-center justify-between bg-surface px-5 py-2 sm:-mx-6 sm:px-6">
+          <h2 id="run-t" className="font-display text-[22px] font-[800] leading-tight [font-stretch:112%]">Billing runs</h2>
+          <button onClick={onClose} aria-label="Close" className="grid size-10 place-items-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-ink">
             <X className="size-4" aria-hidden />
           </button>
         </div>
 
         {done && (
-          <p role="status" className="mb-3 flex items-center gap-2 rounded-[var(--radius-md)] bg-positive-soft px-3 py-2 text-[13px]">
-            <CheckCircle2 className="size-4 text-positive" aria-hidden /> {done}
+          <p role="status" className="mb-4 flex items-center gap-2 border-l-2 border-positive py-1 pl-3 text-[14px] text-ink">
+            <CheckCircle2 className="size-4 shrink-0 text-positive" aria-hidden /> {done}
           </p>
         )}
-        {act.error != null && <div className="mb-3"><ErrorState error={act.error} /></div>}
+        {act.error != null && <div className="mb-4"><ErrorState error={act.error} /></div>}
 
-        <div className="space-y-4">
+        <div className="space-y-9 pb-6">
           {draft && (
-            <Card className="border-caution/40">
-              <CardHeader title={`Drafts waiting: ${draft.period_month ? monthName(draft.period_month) : draft.term_name}`}
-                subtitle={`${draft.invoice_count} invoices, ${money(draft.total_minor)} in all, due ${dateShort(draft.due_on)}. Check them in the Drafts tab, then send.`} />
-              <div className="flex flex-wrap gap-2 px-4 pb-4">
-                <Button variant="primary" loading={act.isPending}
-                  onClick={() => act.mutate({ sql: B.ISSUE_BILLING_RUN, params: [draft.id], msg: `${draft.invoice_count} invoices sent to families.` })}>
-                  <Send className="size-4" aria-hidden /> Send all {draft.invoice_count}
-                </Button>
-                <Button variant="ghost" loading={act.isPending}
-                  onClick={() => act.mutate({ sql: B.DISCARD_BILLING_RUN, params: [draft.id], msg: 'Drafts discarded. Nothing was sent.' })}>
-                  <Trash2 className="size-4" aria-hidden /> Discard drafts
-                </Button>
-              </div>
-            </Card>
+            <Notice word="Drafts waiting" tone="caution"
+              title={`${draft.invoice_count} invoices for ${draft.period_month ? monthName(draft.period_month) : draft.term_name} · ${money(draft.total_minor)}`}
+              detail={`Due ${dateShort(draft.due_on)}. Check them in the Drafts tab, then send them together.`}
+              className="border-b border-line pb-5"
+            />
+          )}
+          {draft && (
+            <div className="-mt-6 flex flex-wrap gap-2">
+              <Button variant="primary" loading={act.isPending}
+                onClick={() => act.mutate({ sql: B.ISSUE_BILLING_RUN, params: [draft.id], msg: `${draft.invoice_count} invoices sent to families.` })}>
+                <Send className="size-4" aria-hidden /> Send all {draft.invoice_count}
+              </Button>
+              <Button variant="ghost" loading={act.isPending}
+                onClick={() => act.mutate({ sql: B.DISCARD_BILLING_RUN, params: [draft.id], msg: 'Drafts discarded. Nothing was sent.' })}>
+                <Trash2 className="size-4" aria-hidden /> Discard drafts
+              </Button>
+            </div>
           )}
 
-          <Card>
-            <CardHeader title="Discounts" subtitle="Applied automatically. Where both apply, the larger one is used." />
-            <ul className="divide-y divide-line">
-              {rules.data?.map(r => <RuleRow key={r.id} r={r} onChange={x => setRule.mutate(x)} />)}
-            </ul>
-            {setRule.error != null && <div className="p-3"><ErrorState error={setRule.error} /></div>}
-          </Card>
-
-          <FamilyDiscounts />
-
-          <Card>
-            <CardHeader title="Preview" subtitle={month
+          <section aria-labelledby="run-prev">
+            <Head id="run-prev" title="New run" meta={month ? 'Monthly classes' : 'Term and course fees'} />
+            <p className="mt-2 text-[13px] text-ink-3">{month
               ? 'Monthly classes for this month only. Children already invoiced for the month are left out.'
-              : 'Term and course fees. Monthly classes are billed month by month instead.'} />
-            <div className="grid grid-cols-2 gap-3 px-4 pb-3 sm:grid-cols-3">
+              : 'Monthly classes are billed month by month instead.'}</p>
+            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
               <Field label="Term" htmlFor="run-term">
                 <Select id="run-term" value={term} onChange={e => setTermId(e.target.value)}>
                   {terms.data?.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -129,30 +124,36 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
                 <Input id="run-due" type="date" value={due} onChange={e => setDue(e.target.value)} />
               </Field>
             </div>
-            {lines.isLoading && <div className="p-4"><Skeleton className="h-24" /></div>}
-            {lines.error && <div className="p-4"><ErrorState error={lines.error} /></div>}
+            {lines.isLoading && <div className="pt-4"><Skeleton className="h-24" /></div>}
+            {lines.error && <div className="pt-4"><ErrorState error={lines.error} /></div>}
             {lines.data?.length === 0 && (
               <EmptyState title="Everyone is invoiced" body={`Every child has an invoice for ${periodName}, or no class is billed this way.`} />
             )}
             {families.length > 0 && (
               <>
-                <p className="border-y border-line bg-surface-2 px-4 py-2 text-[13px] text-ink-2">
-                  {families.length} families · <span className="tnum font-medium text-ink">{money(total)}</span>
-                  {discounts > 0 && <> after <span className="tnum">{money(discounts)}</span> of discounts</>}
-                </p>
+                <div className="mt-5 flex items-end justify-between gap-4 border-b border-line pb-3">
+                  <div>
+                    <p className="label">To invoice</p>
+                    <p className="stat-number mt-1 text-[28px] leading-none">{money(total)}</p>
+                  </div>
+                  <p className="text-right text-[13px] text-ink-3">
+                    {families.length} families
+                    {discounts > 0 && <><br /><span className="tnum">{money(discounts)}</span> of discounts</>}
+                  </p>
+                </div>
                 <ul className="max-h-80 divide-y divide-line overflow-y-auto">
                   {families.map(f => (
-                    <li key={f.name} className="px-4 py-2.5">
+                    <li key={f.name} className="py-2.5">
                       <div className="flex items-baseline justify-between gap-3">
-                        <span className="font-medium">{f.name}</span>
-                        <span className="tnum font-medium">{money(f.gross - f.discount)}</span>
+                        <span className="font-semibold">{f.name}</span>
+                        <span className="tnum font-semibold">{money(f.gross - f.discount)}</span>
                       </div>
-                      <ul className="mt-0.5 space-y-0.5 text-[12.5px] text-ink-2">
+                      <ul className="mt-0.5 space-y-0.5 text-[13px] text-ink-2">
                         {f.lines.map(l => (
                           <li key={l.student_id + l.class_id} className="flex justify-between gap-3">
-                            <span className="min-w-0 truncate">{l.student_name.split(' ')[0]} · {l.description}</span>
+                            <span className="min-w-0 truncate">{l.student_name.split(' ')[0]} · {l.description}
+                              {l.discount_minor > 0 && <span className="text-positive"> · {l.discount_reason}</span>}</span>
                             <span className="tnum shrink-0">
-                              {l.discount_minor > 0 && <Badge tone="positive">{l.discount_reason}</Badge>}{' '}
                               {money(Math.round(Number(l.quantity) * l.unit_minor) - l.discount_minor)}
                             </span>
                           </li>
@@ -161,33 +162,56 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
                     </li>
                   ))}
                 </ul>
-                <div className="p-4">
-                  <Button variant="primary" className="w-full" disabled={!!draft} loading={act.isPending}
+                <div className="border-t border-line pt-4">
+                  <Button variant={draft ? 'secondary' : 'primary'} className="w-full" disabled={!!draft} loading={act.isPending}
                     onClick={() => act.mutate({ sql: B.CREATE_BILLING_RUN, params: [term, due, month || null],
                       msg: `${families.length} draft invoices raised for ${periodName}. Nothing has been sent yet.` })}>
                     Raise {families.length} draft invoices
                   </Button>
-                  {draft && <p className="mt-2 text-center text-[12.5px] text-ink-3">Send or discard the drafts above first.</p>}
+                  <p className="mt-2 text-center text-[13px] text-ink-3">
+                    {draft ? 'Send or discard the drafts above first.' : 'Drafts first. Nothing reaches families until you send.'}
+                  </p>
                 </div>
               </>
             )}
-          </Card>
+          </section>
+
+          <section aria-labelledby="run-disc">
+            <Head id="run-disc" title="Discounts" meta="Applied automatically" />
+            <p className="mt-2 text-[13px] text-ink-3">Where both apply, the larger one is used.</p>
+            <ul className="divide-y divide-line">
+              {rules.data?.map(r => <RuleRow key={r.id} r={r} onChange={x => setRule.mutate(x)} />)}
+            </ul>
+            {setRule.error != null && <div className="pt-3"><ErrorState error={setRule.error} /></div>}
+          </section>
+
+          <FamilyDiscounts />
 
           {runs.data && runs.data.some(r => r.status === 'issued') && (
-            <Card>
-              <CardHeader title="Earlier runs" />
-              <ul className="divide-y divide-line text-sm">
+            <section aria-labelledby="run-old">
+              <Head id="run-old" title="Earlier runs" />
+              <ul className="divide-y divide-line text-[14px]">
                 {runs.data.filter(r => r.status === 'issued').map(r => (
-                  <li key={r.id} className="flex justify-between px-4 py-2.5">
-                    <span>{r.period_month ? monthName(r.period_month) : r.term_name} · sent {dateShort(r.issued_at!)}</span>
-                    <span className="tnum">{r.invoice_count} · {money(r.total_minor)}</span>
+                  <li key={r.id} className="flex justify-between gap-3 py-2.5">
+                    <span>{r.period_month ? monthName(r.period_month) : r.term_name} <span className="text-ink-3">· sent {dateShort(r.issued_at!)}</span></span>
+                    <span className="tnum text-ink-2">{r.invoice_count} invoices · <span className="font-semibold text-ink">{money(r.total_minor)}</span></span>
                   </li>
                 ))}
               </ul>
-            </Card>
+            </section>
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function Head({ id, title, meta, action }: { id?: string; title: string; meta?: string; action?: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-3 border-b-2 border-ink pb-2">
+      <h3 id={id} className="section-title flex-1">{title}</h3>
+      {meta && <span className="text-[13px] text-ink-3">{meta}</span>}
+      {action}
     </div>
   );
 }
@@ -203,13 +227,13 @@ function RuleRow({ r, onChange }: { r: B.DiscountRule; onChange: (r: B.DiscountR
   };
   const label = r.kind === 'sibling' ? 'Sibling discount' : 'Multi-class discount';
   return (
-    <li className="flex flex-wrap items-center gap-3 px-4 py-3">
+    <li className="flex flex-wrap items-center gap-3 py-3">
       <label className="flex min-w-0 flex-1 items-center gap-2.5 text-sm">
-        <input type="checkbox" checked={r.enabled} className="size-4 accent-[var(--accent)]"
+        <input type="checkbox" checked={r.enabled} className="size-5 accent-[var(--color-accent)]"
                onChange={e => onChange({ ...r, enabled: e.target.checked })} />
         <span>
           <span className="block font-medium">{label}</span>
-          <span className="block text-[12.5px] text-ink-2">{RULE_TEXT[r.kind](r.from_nth)}</span>
+          <span className="block text-[13px] text-ink-3">{RULE_TEXT[r.kind](r.from_nth)}</span>
         </span>
       </label>
       <span className="flex items-center gap-1.5 text-sm">
@@ -260,15 +284,15 @@ function FamilyDiscounts() {
   });
   const ok = f.family && Number(f.amount) > 0 && (f.kind !== 'percent' || Number(f.amount) <= 100);
   return (
-    <Card>
-      <CardHeader title="Family discounts" subtitle="Bursaries, staff rates and other agreements. Families only see the word “Discount”."
-        action={!adding && <Button size="sm" onClick={() => setAdding(true)}><Plus className="size-4" aria-hidden /> Add</Button>} />
-      {rows.data?.length === 0 && !adding && <p className="px-4 pb-4 text-[13px] text-ink-3">None yet.</p>}
+    <section aria-labelledby="run-fam">
+      <Head id="run-fam" title="Family discounts"
+        action={!adding && <Button size="sm" variant="ghost" onClick={() => setAdding(true)}><Plus className="size-4" aria-hidden /> Add</Button>} />
+      <p className="mt-2 text-[13px] text-ink-3">Bursaries, staff rates and other agreements. Families only see the word “Discount”.</p>
+      {rows.data?.length === 0 && !adding && <p className="py-3 text-[14px] text-ink-3">None yet.</p>}
       {!!rows.data?.length && (
-        <ul className="divide-y divide-line border-t border-line">
+        <ul className="divide-y divide-line">
           {rows.data.map(d => (
-            <li key={d.id} className="flex items-center gap-3 px-4 py-2.5 text-sm">
-              <HeartHandshake className="size-4 shrink-0 text-ink-3" aria-hidden />
+            <li key={d.id} className="flex items-center gap-3 py-2.5 text-sm">
               <span className="min-w-0 flex-1">
                 <span className="block font-medium">{d.family_name}</span>
                 <span className="block text-[12.5px] text-ink-2">
@@ -276,14 +300,14 @@ function FamilyDiscounts() {
                 </span>
               </span>
               <span className="tnum font-medium">{d.kind === 'percent' ? `${d.amount}%` : `${money(d.amount)} off`}</span>
-              <button className="grid size-8 place-items-center rounded-full text-ink-3 hover:bg-surface-2" aria-label={`End discount for ${d.family_name}`}
+              <button className="grid size-10 place-items-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-critical" aria-label={`End discount for ${d.family_name}`}
                 onClick={() => end.mutate(d.id)}><Trash2 className="size-4" aria-hidden /></button>
             </li>
           ))}
         </ul>
       )}
       {adding && (
-        <div className="grid gap-3 border-t border-line p-4 sm:grid-cols-2">
+        <div className="mt-2 grid gap-3 border-t border-line pt-4 sm:grid-cols-2">
           <Field label="Family" htmlFor="fd-f" required>
             <Select id="fd-f" value={f.family} onChange={e => setF({ ...f, family: e.target.value })}>
               <option value="">Choose…</option>
@@ -314,6 +338,6 @@ function FamilyDiscounts() {
           </div>
         </div>
       )}
-    </Card>
+    </section>
   );
 }

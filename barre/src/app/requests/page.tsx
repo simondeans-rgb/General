@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Inbox, Check, X, MessageSquare, Trophy, CheckCircle2, HeartPulse, ClipboardPlus, CornerDownLeft, UserRoundCheck } from 'lucide-react';
+import { Check, X, MessageSquare, ClipboardPlus, CornerDownLeft, UserRoundCheck } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { RecordSheet } from '@/components/app/record-sheet';
 import * as P from '@/lib/repos/people';
@@ -11,8 +11,9 @@ import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import {
-  Badge, Button, Card, CardHeader, EmptyState, ErrorState, Field, Select, Skeleton, type Tone,
+  Button, EmptyState, ErrorState, Field, Notice, Select, Skeleton,
 } from '@/components/ui';
+import { SectionHead, Word } from '@/components/app/session-row';
 import * as H from '@/lib/repos/hub';
 import * as D from '@/lib/repos/dashboard';
 import { SessionSheet } from '@/components/app/session-sheet';
@@ -80,42 +81,41 @@ export default function RequestsPage() {
   return (
     <Shell title="Requests" allow={['owner', 'admin']}
       subtitle={total ? `${total} waiting on you` : 'Nothing waiting'}>
-      <div className="mx-auto max-w-3xl space-y-5">
-        <Card>
-          <CardHeader title="From families" subtitle="Medical updates first — they are what a teacher needs before the next class" />
-          {requests.isLoading && <div className="space-y-2 p-4">{[0,1].map(i => <Skeleton key={i} className="h-20" />)}</div>}
+      <div className="mx-auto grid max-w-[1240px] gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+        <section className="min-w-0">
+          <SectionHead title="From families" meta={requests.data?.length ? `${requests.data.length} · medical updates first` : undefined} />
+          {requests.isLoading && <div className="space-y-2 pt-3">{[0,1].map(i => <Skeleton key={i} className="h-20" />)}</div>}
           {requests.data?.length === 0 && !requests.isLoading && (
-            <EmptyState icon={<Inbox className="size-5" />} title="Nothing unanswered"
-              body="Questions from parents and students land here." />
+            <EmptyState title="Nothing unanswered"
+              body="Questions and updates from parents and students land here." />
           )}
           {acked && (
-            <p role="status" className="flex items-center gap-2 border-b border-line bg-positive-soft px-4 py-2.5 text-[13px]">
-              <CheckCircle2 className="size-4 shrink-0 text-positive" aria-hidden /> {acked}
-            </p>
+            <div role="status" className="border-b border-line py-3">
+              <Notice word="Done" tone="positive" title={acked} />
+            </div>
           )}
-          {ack.error != null && <div className="p-3"><ErrorState error={ack.error} /></div>}
-          {approve.error != null && <div className="p-3"><ErrorState error={approve.error} /></div>}
+          {ack.error != null && <div className="pt-3"><ErrorState error={ack.error} /></div>}
+          {approve.error != null && <div className="pt-3"><ErrorState error={approve.error} /></div>}
           <ul className="divide-y divide-line">
-            {requests.data?.map(r => {
+            {requests.data?.map((r, i) => {
               const medical = r.kind === 'medical_update';
+              // One primary action on the screen: the first request's.
+              const lead = i === 0 ? 'primary' : 'secondary';
               return (
-                <li key={r.id} className={cn('px-4 py-3', medical && 'bg-caution-soft/40')}>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge tone={medical ? 'critical' : 'neutral'}
-                           icon={medical ? <HeartPulse className="size-3" aria-hidden /> : undefined}>
-                      {KIND_LABEL[r.kind] ?? r.kind}
-                    </Badge>
-                    <span className="text-[12.5px] text-ink-3">
+                <li key={r.id} className={cn('px-1 py-4', medical && 'border-l-2 border-critical pl-3')}>
+                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                    <Word tone={medical ? 'critical' : 'ink'}>{KIND_LABEL[r.kind] ?? r.kind}</Word>
+                    <span className="text-[13px] text-ink-3">
                       {r.guardian_name ?? r.family_name}{r.student_name ? ` · about ${r.student_name}` : ''}
                     </span>
                     <span className="ml-auto text-[12.5px] text-ink-3">{relativeDay(r.created_at)}</span>
                   </div>
-                  <p className="mt-1.5 font-medium">{r.subject}</p>
-                  <p className="mt-0.5 text-sm text-ink-2">{r.body}</p>
-                  <div className="mt-2.5 flex flex-wrap gap-2">
+                  <p className="mt-1.5 font-semibold">{r.subject}</p>
+                  <p className="mt-0.5 text-[14.5px] text-ink-2">{r.body}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
                     {medical ? (
                       <>
-                        <Button size="sm" variant="primary" onClick={() => setRecording(r)}>
+                        <Button size="sm" variant={lead} onClick={() => setRecording(r)}>
                           <ClipboardPlus className="size-4" aria-hidden /> Acknowledge & add to record
                         </Button>
                         <Button size="sm" loading={ack.isPending && ack.variables?.id === r.id}
@@ -128,7 +128,7 @@ export default function RequestsPage() {
                       </>
                     ) : r.action ? (
                       <>
-                        <Button size="sm" variant="primary" loading={approve.isPending && approve.variables?.id === r.id}
+                        <Button size="sm" variant={lead} loading={approve.isPending && approve.variables?.id === r.id}
                                 onClick={() => approve.mutate(r)}>
                           <Check className="size-4" aria-hidden />
                           {r.action === 'join_class' ? 'Give them a place' : r.action === 'add_child' ? 'Add to the family' : 'Book the trial'}
@@ -139,7 +139,7 @@ export default function RequestsPage() {
                       </>
                     ) : r.session_id ? (
                       <>
-                        <Button size="sm" variant="primary" loading={openCover.isPending && openCover.variables === r.session_id}
+                        <Button size="sm" variant={lead} loading={openCover.isPending && openCover.variables === r.session_id}
                                 onClick={() => openCover.mutate(r.session_id!)}>
                           <UserRoundCheck className="size-4" aria-hidden /> Arrange cover
                         </Button>
@@ -157,31 +157,30 @@ export default function RequestsPage() {
               );
             })}
           </ul>
-        </Card>
-        <Card>
-          <CardHeader title="Event and competition entries"
-            subtitle="Nothing is in the diary until you confirm it" />
-          {entries.isLoading && <div className="space-y-2 p-4">{[0,1].map(i => <Skeleton key={i} className="h-14" />)}</div>}
-          {entries.error && <div className="p-4"><ErrorState error={entries.error} /></div>}
+        </section>
+        <section className="min-w-0">
+          <SectionHead title="Event and competition entries" meta={entries.data?.length ? `${entries.data.length}` : undefined} />
+          <p className="py-2 text-[13px] text-ink-3">Nothing is in the diary until you confirm it.</p>
+          {entries.isLoading && <div className="space-y-2">{[0,1].map(i => <Skeleton key={i} className="h-14" />)}</div>}
+          {entries.error && <ErrorState error={entries.error} />}
           {entries.data?.length === 0 && !entries.isLoading && (
-            <EmptyState icon={<Trophy className="size-5" />} title="No entries waiting"
-              body="Requests from families appear here." />
+            <p className="border-t border-line py-3 text-[14px] text-ink-3">No entries waiting.</p>
           )}
-          <ul className="divide-y divide-line">
+          <ul className="divide-y divide-line border-t border-line">
             {entries.data?.map(e => (
-              <li key={e.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+              <li key={e.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-1 py-3">
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate font-medium">{e.student_name}</span>
-                  <span className="block truncate text-[13px] text-ink-2">
+                  <span className="block truncate font-semibold">{e.student_name}</span>
+                  <span className="block text-[13px] text-ink-3">
                     {e.event_title} · {dateLong(e.starts_at)}, {time(e.starts_at)}
                   </span>
                 </span>
                 <span className="flex shrink-0 gap-2">
-                  <Button size="sm" variant="secondary" loading={decide.isPending}
+                  <Button size="sm" variant="ghost" loading={decide.isPending}
                           onClick={() => decide.mutate({ id: e.id, status: 'declined' })}>
                     <X className="size-4" aria-hidden /> Decline
                   </Button>
-                  <Button size="sm" variant="primary" loading={decide.isPending}
+                  <Button size="sm" loading={decide.isPending}
                           onClick={() => decide.mutate({ id: e.id, status: 'confirmed' })}>
                     <Check className="size-4" aria-hidden /> Confirm
                   </Button>
@@ -189,8 +188,7 @@ export default function RequestsPage() {
               </li>
             ))}
           </ul>
-        </Card>
-
+        </section>
       </div>
 
       {covering && <SessionSheet session={covering} initial="cover" onClose={() => setCovering(null)} />}
@@ -213,32 +211,38 @@ function AnswerDialog({ request, onClose }: { request: any; onClose: () => void 
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 sm:items-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 sm:items-center sm:p-6" onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-labelledby="ans-t" onClick={e => e.stopPropagation()}
-        className="max-h-[88dvh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-t-[var(--radius-xl)]
-                   border border-line bg-surface p-4 pb-safe shadow-lg sm:rounded-[var(--radius-xl)]">
+        className="flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-[var(--radius-xl)]
+                   border border-line bg-surface shadow-lg sm:rounded-[var(--radius-xl)]">
         {done ? (
-          <div className="py-4 text-center">
-            <span className="mx-auto mb-3 grid size-11 place-items-center rounded-full bg-positive-soft text-positive" aria-hidden>
-              <CheckCircle2 className="size-5" />
-            </span>
-            <p id="ans-t" className="font-medium">Replied</p>
-            <p className="mt-1 text-sm text-ink-2">The family sees your answer in their hub.</p>
-            <Button className="mt-4 w-full" variant="primary" onClick={onClose}>Done</Button>
-          </div>
+          <>
+            <div className="px-5 py-6">
+              <h2 id="ans-t" className="sr-only">Replied</h2>
+              <Notice word="Replied" tone="positive" title={request.subject} detail="The family sees your answer in their hub." />
+            </div>
+            <div className="flex border-t border-line px-5 py-3 pb-safe sm:justify-end">
+              <Button className="w-full sm:w-auto" variant="primary" onClick={onClose}>Done</Button>
+            </div>
+          </>
         ) : (
           <>
-            <h2 id="ans-t" className="text-[17px] font-semibold tracking-tight">Reply</h2>
-            <p className="mt-0.5 text-sm text-ink-2">{request.subject}</p>
-            <p className="mt-2 rounded-[var(--radius-md)] bg-surface-2 p-3 text-sm text-ink-2">{request.body}</p>
-            <textarea value={answer} onChange={e => setAnswer(e.target.value)} rows={4}
-              aria-label="Your reply" placeholder="Write your reply…"
-              className="mt-3 w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
-                         focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
-            {send.isError && <div className="mt-3"><ErrorState error={send.error} /></div>}
-            <div className="mt-4 flex gap-2">
-              <Button className="flex-1" onClick={onClose}>Cancel</Button>
-              <Button className="flex-1" variant="primary" loading={send.isPending}
+            <div className="border-b border-line px-5 pb-3 pt-4">
+              <h2 id="ans-t" className="font-display text-[20px] leading-tight">Reply</h2>
+              <p className="mt-1 text-[13.5px] text-ink-3">{request.subject}</p>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+              <blockquote className="border-l-2 border-line-strong pl-3 text-[14.5px] text-ink-2">{request.body}</blockquote>
+              <label htmlFor="ans-body" className="mt-4 block text-[13px] font-medium text-ink-2">Your reply</label>
+              <textarea id="ans-body" value={answer} onChange={e => setAnswer(e.target.value)} rows={4}
+                placeholder="Write your reply…"
+                className="mt-1.5 w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
+                           focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
+              {send.isError && <div className="mt-3"><ErrorState error={send.error} /></div>}
+            </div>
+            <div className="flex gap-2 border-t border-line px-5 py-3 pb-safe sm:justify-end">
+              <Button className="flex-1 sm:flex-none" variant="ghost" onClick={onClose}>Cancel</Button>
+              <Button className="flex-[2] sm:flex-none" variant="primary" loading={send.isPending}
                       disabled={answer.trim().length < 2} onClick={() => send.mutate()}>Send reply</Button>
             </div>
           </>
@@ -306,9 +310,9 @@ function RecordUpdateSheet({ request: r, onClose, onDone }: {
     <RecordSheet title="Add to the medical record" subtitle={`${r.guardian_name ?? r.family_name}${child ? ` · ${child.name}` : ''}`}
       onClose={onClose} onSave={() => save.mutate()} saving={save.isPending} error={save.error}
       canSave={changed && message.trim().length > 3} saveLabel="Update record and tell the parent">
-      <figure className="rounded-[var(--radius-md)] border-l-4 border-caution bg-caution-soft p-3">
-        <figcaption className="text-[12px] font-medium text-ink-3">{r.guardian_name ?? 'The parent'} wrote · {r.subject}</figcaption>
-        <blockquote className="mt-1 text-sm">{r.body}</blockquote>
+      <figure className="border-l-2 border-critical pl-3">
+        <figcaption className="text-[13px] text-ink-3">{r.guardian_name ?? 'The parent'} wrote · {r.subject}</figcaption>
+        <blockquote className="mt-1 text-[15px] font-medium">{r.body}</blockquote>
       </figure>
 
       {!r.student_id && r.children.length > 1 && (
@@ -330,16 +334,16 @@ function RecordUpdateSheet({ request: r, onClose, onDone }: {
                 className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
                            focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
               <button type="button" onClick={() => take(k)}
-                className="mt-1 inline-flex min-h-[32px] items-center gap-1 rounded-full px-2 text-[12.5px] font-medium text-accent-text hover:bg-accent-soft">
+                className="mt-1 inline-flex min-h-[36px] items-center gap-1 text-[13px] font-semibold text-accent-text hover:underline">
                 <CornerDownLeft className="size-3.5" aria-hidden /> Add the parent’s words here
               </button>
             </Field>
           ))}
-          <label className="flex items-start gap-2.5 rounded-[var(--radius-md)] border border-line p-3 text-sm">
-            <input type="checkbox" checked={urgent} onChange={e => setUrgent(e.target.checked)} className="mt-0.5 size-4" />
+          <label className="flex min-h-[44px] items-start gap-3 text-[14px]">
+            <input type="checkbox" checked={urgent} onChange={e => setUrgent(e.target.checked)} className="mt-0.5 size-[18px] accent-[var(--color-accent)]" />
             <span>
-              <span className="font-medium">Urgent — show a red alert</span>
-              <span className="mt-0.5 block text-[12.5px] text-ink-2">Teachers see every detail above either way.</span>
+              <span className="font-semibold">Urgent — show a red alert</span>
+              <span className="mt-0.5 block text-[13px] text-ink-3">Teachers see every detail above either way.</span>
             </span>
           </label>
           <Field label="Message to the parent" htmlFor="ru-msg" required>

@@ -8,7 +8,7 @@ import { RecordSheet } from '@/components/app/record-sheet';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Badge, Button, Card, ErrorState, Field, Input, Skeleton } from '@/components/ui';
+import { Button, ErrorState, Field, Input, Skeleton } from '@/components/ui';
 import * as P from '@/lib/repos/platform';
 import { money, toMinor } from '@/lib/format';
 
@@ -22,43 +22,52 @@ export default function PlansPage() {
 
   return (
     <Shell title="Plans" subtitle="What each school pays, and what it includes" allow={['platform']}>
-      <div className="mx-auto max-w-4xl space-y-4">
+      <div className="mx-auto max-w-[1240px]"><div className="max-w-4xl space-y-6">
         {plans.isLoading && <Skeleton className="h-40" />}
         {plans.error && <ErrorState error={plans.error} />}
-        <div className="grid gap-3 sm:grid-cols-2">
-          {plans.data?.map(p => {
-            const on = schools.data?.filter(s => s.plan_code === p.code && s.status !== 'cancelled').length ?? 0;
-            return (
-              <Card key={p.id} className="p-4">
-                <div className="flex items-start gap-2">
-                  <div className="min-w-0 flex-1">
-                    <h2 className="flex items-center gap-2 font-semibold">{p.name}{p.is_trial && <Badge tone="info">Trial</Badge>}</h2>
-                    <p className="tnum mt-1 text-[22px] font-semibold tracking-[-0.02em]">
-                      {p.price_minor ? money(p.price_minor) : 'Free'}<span className="text-sm font-normal text-ink-3">{p.price_minor ? ' a month' : ''}</span>
-                    </p>
-                  </div>
-                  {amSuper && (
-                    <Button size="sm" variant="ghost" aria-label={`Edit ${p.name}`} onClick={() => setEditing(p)}>
-                      <Pencil className="size-4" aria-hidden />
-                    </Button>
-                  )}
-                </div>
-                <dl className="mt-3 space-y-1 text-sm">
-                  {([['Students', p.max_students], ['Locations', p.max_locations], ['Staff', p.max_staff]] as const).map(([k, v]) => (
-                    <div key={k} className="flex justify-between"><dt className="text-ink-2">{k}</dt><dd className="tnum">{limit(v)}</dd></div>
-                  ))}
-                </dl>
-                <p className="mt-3 border-t border-line pt-2 text-[12.5px] text-ink-3">{on} school{on === 1 ? '' : 's'} on this plan</p>
-              </Card>
-            );
-          })}
-        </div>
-        <p className="text-[12.5px] text-ink-3">
+        {plans.data && (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[560px] text-[14.5px]">
+              <caption className="sr-only">Plans</caption>
+              <thead className="border-b-2 border-ink text-left">
+                <tr>
+                  <th scope="col" className="label py-2.5 pr-3 font-semibold">Plan</th>
+                  <th scope="col" className="label px-3 py-2.5 text-right font-semibold">A month</th>
+                  <th scope="col" className="label px-3 py-2.5 text-right font-semibold">Students</th>
+                  <th scope="col" className="label px-3 py-2.5 text-right font-semibold">Locations</th>
+                  <th scope="col" className="label px-3 py-2.5 text-right font-semibold">Staff</th>
+                  <th scope="col" className="label px-3 py-2.5 text-right font-semibold">Schools</th>
+                  {amSuper && <th scope="col" className="w-12"><span className="sr-only">Edit</span></th>}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {plans.data.map(p => {
+                  const on = schools.data?.filter(s => s.plan_code === p.code && s.status !== 'cancelled').length ?? 0;
+                  return (
+                    <tr key={p.id}>
+                      <th scope="row" className="py-3 pr-3 text-left font-semibold">{p.name}{p.is_trial && <span className="ml-2 text-[13px] font-medium text-info">Trial</span>}</th>
+                      <td className="stat-number px-3 py-3 text-right text-[20px]">{p.price_minor ? money(p.price_minor) : 'Free'}</td>
+                      <td className="tnum px-3 py-3 text-right">{limit(p.max_students)}</td>
+                      <td className="tnum px-3 py-3 text-right">{limit(p.max_locations)}</td>
+                      <td className="tnum px-3 py-3 text-right">{limit(p.max_staff)}</td>
+                      <td className="tnum px-3 py-3 text-right text-ink-2">{on}</td>
+                      {amSuper && <td className="py-2 pl-2 text-right">
+                        <Button size="sm" variant="ghost" aria-label={`Edit ${p.name}`} onClick={() => setEditing(p)}>
+                          <Pencil className="size-4" aria-hidden />
+                        </Button></td>}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="max-w-2xl text-[13px] text-ink-3">
           Taking payment from schools (Stripe Billing) is not connected yet: plans set limits and the console’s revenue
           figure, and you invoice schools yourself for now. Moving a school to a smaller plan never deletes anything — it
           only stops new additions past the limit.
         </p>
-      </div>
+      </div></div>
       {editing && <PlanSheet plan={editing} onClose={() => setEditing(null)} />}
     </Shell>
   );

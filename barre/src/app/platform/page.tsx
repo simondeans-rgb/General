@@ -4,9 +4,7 @@ import * as React from 'react';
 import { Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  Building2, Plus, Search, Copy, Check, ShieldCheck, ShieldOff, Users, MailPlus, Trash2, Clock,
-} from 'lucide-react';
+import { Plus, Search, MailPlus, Trash2, Clock } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection, KeyValue } from '@/components/app/detail-panel';
 import { RecordSheet } from '@/components/app/record-sheet';
@@ -16,7 +14,7 @@ import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import { useSelection } from '@/lib/use-selection';
 import {
-  Badge, Button, Card, EmptyState, ErrorState, Field, Input, Select, Skeleton, type Tone,
+  Beats, Button, EmptyState, ErrorState, Field, Input, Select, Skeleton, type Tone,
 } from '@/components/ui';
 import * as P from '@/lib/repos/platform';
 import { money, dateShort, relativeDay, time } from '@/lib/format';
@@ -60,45 +58,53 @@ function Schools() {
   });
 
   return (
-    <Shell title="Schools" subtitle="Every dance school on Sanaa" allow={['platform']}
+    <Shell title="Schools" subtitle="Every dance school on Swayvo" allow={['platform']}
       actions={<Button size="sm" variant="primary" onClick={() => setCreating(true)}>
         <Plus className="size-4" aria-hidden /> New school
       </Button>}>
-      <div className="mx-auto max-w-6xl space-y-5">
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <Tile label="Schools" value={schools.isLoading ? null : String(d.length)} note={`${paying.length} paying`} />
-          <Tile label="Monthly revenue" value={schools.isLoading ? null : money(mrr)} note="Active and overdue plans" />
-          <Tile label="On trial" value={schools.isLoading ? null : String(trials.length)}
-                note={endingSoon.length ? `${endingSoon.length} ending this week` : 'None ending this week'}
-                onClick={() => setFilter('trialling')} />
-          <Tile label="Need attention" value={schools.isLoading ? null : String(attention.length)}
-                tone={attention.length ? 'caution' : undefined} note="Overdue or suspended"
-                onClick={() => setFilter('attention')} />
-        </div>
+      <div className="mx-auto max-w-[1240px] space-y-10">
+        <section aria-label="Swayvo at a glance">
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-6 border-b border-line pb-6 lg:grid-cols-4 lg:gap-x-0 lg:divide-x lg:divide-line">
+            <Tile label="Schools" value={schools.isLoading ? null : String(d.length)} note={`${paying.length} paying`} />
+            <Tile label="Monthly revenue" value={schools.isLoading ? null : money(mrr)} note="Active and overdue plans" />
+            <Tile label="On trial" value={schools.isLoading ? null : String(trials.length)}
+                  note={endingSoon.length ? `${endingSoon.length} ending this week` : 'None ending this week'}
+                  action={trials.length ? 'Show trials' : undefined} onClick={() => setFilter('trialling')} />
+            <Tile label="Need attention" value={schools.isLoading ? null : String(attention.length)}
+                  tone={attention.length ? 'caution' : undefined} note="Overdue or suspended"
+                  action={attention.length ? 'Show them' : undefined} onClick={() => setFilter('attention')} />
+          </dl>
+        </section>
 
-        <div className={cn('gap-5', selected ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,440px)]' : 'block')}>
-          <Card className="min-w-0 overflow-hidden">
-            <div className="flex flex-col gap-3 border-b border-line p-3 sm:flex-row sm:items-center">
-              <div role="tablist" aria-label="Show schools" className="-mx-1 flex gap-1 overflow-x-auto px-1">
-                {([['all', 'All'], ['trialling', 'Trial'], ['active', 'Active'], ['attention', 'Need attention'], ['cancelled', 'Cancelled']] as const)
-                  .map(([k, l]) => (
-                    <button key={k} role="tab" aria-selected={filter === k} onClick={() => setFilter(k)}
-                      className={cn('h-9 shrink-0 rounded-full px-3 text-[13px]',
-                        filter === k ? 'bg-ink font-medium text-surface' : 'text-ink-2 hover:bg-surface-2')}>{l}</button>
-                  ))}
-              </div>
-              <label className="relative sm:ml-auto sm:w-60">
+        <div className={cn('gap-x-10 gap-y-8', selected ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,440px)] lg:items-start' : 'block')}>
+          <section aria-labelledby="sch-h" className="min-w-0">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b-2 border-ink pb-2">
+              <h2 id="sch-h" className="section-title flex-1">Schools</h2>
+              <label className="relative w-full sm:w-64">
                 <span className="sr-only">Search schools</span>
                 <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-3" aria-hidden />
                 <Input value={query} onChange={e => setQuery(e.target.value)} placeholder="School or owner" className="pl-9" />
               </label>
             </div>
+            <div role="tablist" aria-label="Show schools" className="-mx-1 flex gap-0.5 overflow-x-auto border-b border-line px-1 py-1.5">
+              {([['all', 'All'], ['trialling', 'Trial'], ['active', 'Active'], ['attention', 'Need attention'], ['cancelled', 'Cancelled']] as const)
+                .map(([k, l]) => (
+                  <button key={k} role="tab" aria-selected={filter === k} onClick={() => setFilter(k)}
+                    className={cn('h-10 shrink-0 rounded-[var(--radius-md)] px-3 text-[14px]',
+                      filter === k ? 'bg-ink font-semibold text-ink-invert' : 'text-ink-2 hover:bg-surface-2 hover:text-ink')}>{l}</button>
+                ))}
+            </div>
 
-            {schools.isLoading && <div className="space-y-2 p-4">{[0,1,2].map(i => <Skeleton key={i} className="h-12" />)}</div>}
-            {schools.error && <div className="p-4"><ErrorState error={schools.error} onRetry={() => schools.refetch()} /></div>}
+            {schools.isLoading && <div className="space-y-3 pt-3">{[0,1,2].map(i => <Skeleton key={i} className="h-12" />)}</div>}
+            {schools.error && <div className="pt-4"><ErrorState error={schools.error} onRetry={() => schools.refetch()} /></div>}
             {schools.data && shown.length === 0 && (
-              <EmptyState icon={<Building2 className="size-5" />} title="No schools here"
+              <EmptyState title="No schools here"
                 body={query ? 'Nothing matches that search.' : 'Schools you add appear here.'} />
+            )}
+            {shown.length > 0 && (
+              <div aria-hidden className={cn('hidden gap-x-4 border-b border-line py-2.5', selected ? 'xl:grid xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_110px_130px]' : 'md:grid md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_110px_130px]')}>
+                <span className="label">School</span><span className="label">Plan</span><span className="label">Students</span><span className="label text-right">Status</span>
+              </div>
             )}
             <ul className="divide-y divide-line">
               {shown.map(s => {
@@ -106,30 +112,29 @@ function Schools() {
                 const over = s.max_students != null && s.students > s.max_students;
                 return (
                   <li key={s.id}>
-                    <button onClick={() => select(s.id)}
-                      className={cn('grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-4 py-3 text-left hover:bg-surface-2 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_110px_120px]',
-                        selected === s.id && 'bg-accent-soft/50')}>
+                    <button onClick={() => select(s.id)} aria-current={selected === s.id || undefined}
+                      className={cn('grid min-h-14 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 py-3 text-left hover:bg-surface-2/60',
+                        selected ? 'xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_110px_130px]' : 'md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_110px_130px]',
+                        selected === s.id && 'bg-accent-soft/60 hover:bg-accent-soft/60')}>
                       <span className="min-w-0">
-                        <span className="block truncate font-medium">{s.name}</span>
-                        <span className="block truncate text-[12.5px] text-ink-3">
+                        <span className="block truncate font-semibold">{s.name}</span>
+                        <span className="block truncate text-[13px] text-ink-3">
                           {s.owner_names ?? (s.pending_invites ? 'Owner invited — not joined yet' : 'No owner')}
                         </span>
                       </span>
-                      <span className="hidden min-w-0 text-[13px] text-ink-2 md:block">
-                        {s.plan_name ?? '—'}{s.price_minor ? ` · ${money(s.price_minor)}/mo` : ''}
+                      <span className={cn('hidden min-w-0 text-[14px] text-ink-2', selected ? 'xl:block' : 'md:block')}>
+                        {s.plan_name ?? '—'}{s.price_minor ? <span className="tnum text-ink-3"> · {money(s.price_minor)}/mo</span> : ''}
                       </span>
-                      <span className={cn('tnum hidden text-[13px] md:block', over ? 'font-medium text-caution' : 'text-ink-2')}>
-                        {s.students}{s.max_students ? ` / ${s.max_students}` : ''} students
+                      <span className={cn('tnum hidden text-[14px]', selected ? 'xl:block' : 'md:block', over ? 'font-semibold text-caution' : 'text-ink-2')}>
+                        {s.students}{s.max_students ? ` / ${s.max_students}` : ''}{over && <span className="block text-[12.5px]">Over limit</span>}
                       </span>
-                      <span className="flex justify-end">
-                        <Badge tone={st.tone}>{st.label}</Badge>
-                      </span>
+                      <span className={cn('text-right text-[13.5px] font-semibold', TONE_TEXT[st.tone] ?? 'text-ink-2')}>{st.label}</span>
                     </button>
                   </li>
                 );
               })}
             </ul>
-          </Card>
+          </section>
 
           {selected && <SchoolPanel id={selected} school={d.find(s => s.id === selected)} onClose={() => select(null)} />}
         </div>
@@ -139,19 +144,23 @@ function Schools() {
   );
 }
 
-function Tile({ label, value, note, tone, onClick }: {
-  label: string; value: string | null; note?: string; tone?: 'caution'; onClick?: () => void;
+const TONE_TEXT: Record<string, string> = { info: 'text-info', positive: 'text-positive', caution: 'text-caution', critical: 'text-critical', neutral: 'text-ink-3' };
+
+function Tile({ label, value, note, tone, onClick, action }: {
+  label: string; value: string | null; note?: string; tone?: 'caution'; onClick?: () => void; action?: string;
 }) {
-  const Tag = onClick ? 'button' : 'div';
   return (
-    <Card className="p-0">
-      <Tag onClick={onClick} className={cn('block w-full rounded-[inherit] p-4 text-left', onClick && 'hover:bg-surface-2')}>
-        <p className="text-[12.5px] text-ink-3">{label}</p>
-        {value == null ? <Skeleton className="mt-2 h-7 w-20" /> :
-          <p className={cn('tnum mt-1 text-[22px] font-semibold leading-tight tracking-[-0.02em]', tone === 'caution' && 'text-caution')}>{value}</p>}
-        {note && <p className="mt-0.5 truncate text-[12.5px] text-ink-2">{note}</p>}
-      </Tag>
-    </Card>
+    <div className="min-w-0 lg:px-6 lg:first:pl-0 lg:last:pr-0">
+      <dt className="label">{label}</dt>
+      {value == null ? <dd><Skeleton className="mt-2 h-8 w-20" /></dd> :
+        <dd className={cn('stat-number mt-1.5 text-[28px] leading-none lg:text-[32px]', tone === 'caution' && 'text-caution')}>{value}</dd>}
+      {note && <dd className="mt-1.5 text-[13px] text-ink-3">{note}</dd>}
+      {onClick && action && (
+        <dd><button type="button" onClick={onClick}
+          className="-ml-1 mt-0.5 inline-flex min-h-8 items-center rounded-[var(--radius-sm)] px-1 text-[13px] font-semibold text-accent-text hover:underline [@media(pointer:coarse)]:min-h-11">
+          {action} →</button></dd>
+      )}
+    </div>
   );
 }
 
@@ -194,13 +203,13 @@ function SchoolPanel({ id, school: s, onClose }: { id: string; school?: P.School
 
   return (
     <DetailPanel open onClose={onClose} title={s.name} subtitle={`${s.slug} · joined ${dateShort(s.created_at)}`}>
-      <div className="mb-5 rounded-[var(--radius-lg)] bg-surface-2 p-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge tone={st.tone}>{st.label}</Badge>
-          {s.status === 'trialling' && s.trial_ends_on && <span className="text-[13px] text-ink-2">ends {dateShort(s.trial_ends_on)}</span>}
-          {s.status === 'cancelled' && s.data_deletion_due_on && <span className="text-[13px] text-ink-2">data deleted from {dateShort(s.data_deletion_due_on)}</span>}
-        </div>
-        {s.status_reason && <p className="mt-2 text-sm text-ink-2">{s.status_reason}</p>}
+      <div className="mb-6">
+        <p className="text-[14px]">
+          <span className={cn('font-semibold', TONE_TEXT[st.tone] ?? 'text-ink')}>{st.label}</span>
+          {s.status === 'trialling' && s.trial_ends_on && <span className="text-ink-2"> · ends {dateShort(s.trial_ends_on)}</span>}
+          {s.status === 'cancelled' && s.data_deletion_due_on && <span className="text-ink-2"> · data deleted from {dateShort(s.data_deletion_due_on)}</span>}
+        </p>
+        {s.status_reason && <p className="mt-1 text-[14px] text-ink-2">{s.status_reason}</p>}
         {/* The actions that make sense from where the account is now. */}
         <div className="mt-3 flex flex-wrap gap-2">
           {s.status === 'trialling' && <>
@@ -242,23 +251,21 @@ function SchoolPanel({ id, school: s, onClose }: { id: string; school?: P.School
 
       <DetailSection title="People with access" action={
         <Button size="sm" variant="ghost" onClick={() => setSheet('invite')}><MailPlus className="size-3.5" aria-hidden /> Invite owner or admin</Button>}>
-        <p className="flex flex-wrap gap-1.5 text-sm">
-          <Badge tone="accent">{s.owners} owner{s.owners === 1 ? '' : 's'}</Badge>
-          <Badge tone="info">{s.admins} admin{s.admins === 1 ? '' : 's'}</Badge>
-          <Badge tone="teal">{s.teachers} teacher{s.teachers === 1 ? '' : 's'}</Badge>
-          <Badge tone="rose">{s.guardians} parent{s.guardians === 1 ? '' : 's'}</Badge>
-          <Badge tone="amber">{s.student_logins} student{s.student_logins === 1 ? '' : 's'}</Badge>
-        </p>
-        <p className="mt-2 text-[12.5px] text-ink-3">
-          Sanaa sees how many — the school manages who, from its Account page.
+        <dl className="grid grid-cols-5 gap-2 text-center">
+          {([['Owners', s.owners], ['Admins', s.admins], ['Teachers', s.teachers], ['Parents', s.guardians], ['Students', s.student_logins]] as const).map(([l, n]) => (
+            <div key={l} className="min-w-0"><dd className="stat-number text-[20px] leading-none">{n}</dd><dt className="mt-1 truncate text-[12px] text-ink-3">{l}</dt></div>
+          ))}
+        </dl>
+        <p className="mt-3 text-[13px] text-ink-3">
+          Swayvo sees how many — the school manages who, from its Account page.
         </p>
         {liveInvites.length > 0 && (
-          <ul className="mt-3 space-y-2">
+          <ul className="mt-3 divide-y divide-line border-y border-line">
             {liveInvites.map(i => (
-              <li key={i.id} className="flex flex-wrap items-center gap-2 rounded-[var(--radius-md)] border border-line px-3 py-2 text-sm">
+              <li key={i.id} className="flex flex-wrap items-center gap-2 py-2.5 text-sm">
                 <span className="min-w-0 flex-1">
                   <span className="block truncate">{i.full_name ?? i.email} <span className="text-ink-3">· invited as {i.role}</span></span>
-                  <span className="block text-[12px] text-ink-3">{i.email} · sent {relativeDay(i.created_at)} · expires {dateShort(i.expires_at)}</span>
+                  <span className="block text-[13px] text-ink-3">{i.email} · sent {relativeDay(i.created_at)} · expires {dateShort(i.expires_at)}</span>
                 </span>
                 <Button size="sm" onClick={() => reissue.mutate(i)} loading={reissue.isPending}>New link</Button>
                 <Button size="sm" variant="ghost" onClick={() => revoke.mutate(i.id)}>Withdraw</Button>
@@ -271,29 +278,27 @@ function SchoolPanel({ id, school: s, onClose }: { id: string; school?: P.School
 
       <DetailSection title="Support access">
         {s.support_until ? (
-          <div className="rounded-[var(--radius-md)] border border-positive/30 bg-positive-soft p-3">
-            <p className="flex items-center gap-2 text-sm font-medium"><ShieldCheck className="size-4 text-positive" aria-hidden />
-              Granted by the owner until {dateShort(s.support_until)} {time(s.support_until)}</p>
-            <p className="mt-1 text-[12.5px] text-ink-2">A read-only view of the school as an administrator sees it, without health records. Opening it is logged on the school’s record.</p>
+          <div className="border-l-2 border-positive py-1 pl-3">
+            <p className="text-[14px] font-semibold"><span className="text-positive">Granted</span> by the owner until {dateShort(s.support_until)} {time(s.support_until)}</p>
+            <p className="mt-1 text-[13px] text-ink-2">A read-only view of the school as an administrator sees it, without health records. Opening it is logged on the school’s record.</p>
             <Button size="sm" variant="primary" className="mt-2.5" loading={support.isPending} onClick={() => support.mutate(undefined)}>
               Open read-only view
             </Button>
           </div>
         ) : (
-          <p className="flex items-start gap-2 text-sm text-ink-2">
-            <ShieldOff className="mt-0.5 size-4 shrink-0 text-ink-3" aria-hidden />
-            Not granted. The owner can let Sanaa support in for up to a week from their Account page.
+          <p className="text-[14px] text-ink-2">
+            <span className="font-semibold text-ink">Not granted.</span> The owner can let Swayvo support in for up to a week from their Account page.
           </p>
         )}
       </DetailSection>
 
       <DetailSection title="Account history">
         {events.data?.length === 0 && <p className="text-sm text-ink-3">Nothing yet.</p>}
-        <ol className="space-y-2">
+        <ol className="divide-y divide-line">
           {events.data?.map((e, n) => (
-            <li key={n} className="text-sm">
+            <li key={n} className="py-2 text-sm">
               <span className="block">{e.summary ?? e.action}</span>
-              <span className="block text-[12px] text-ink-3">{e.actor ?? 'System'} · {relativeDay(e.at)} {time(e.at)}</span>
+              <span className="block text-[13px] text-ink-3">{e.actor ?? 'System'} · {relativeDay(e.at)} {time(e.at)}</span>
             </li>
           ))}
         </ol>
@@ -317,16 +322,12 @@ function Usage({ label, used, cap }: { label: string; used: number; cap: number 
   const pct = cap ? Math.min(100, Math.round((used / cap) * 100)) : 0;
   const over = cap != null && used > cap;
   return (
-    <div>
-      <div className="flex justify-between text-[13px]">
-        <span className="text-ink-2">{label}</span>
-        <span className={cn('tnum', over && 'font-medium text-caution')}>{used}{cap ? ` of ${cap}` : ' · no limit'}{over ? ' — over the limit' : ''}</span>
-      </div>
-      {cap != null && (
-        <div aria-hidden className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-3">
-          <div className={cn('h-full rounded-full', pct >= 90 ? 'bg-caution' : 'bg-accent')} style={{ width: `${pct}%` }} />
-        </div>
-      )}
+    <div className="flex items-center justify-between gap-3 text-[14px]">
+      <span className="text-ink-2">{label}</span>
+      <span className="flex items-center gap-2.5">
+        {cap != null && <Beats value={used} max={cap} tone={pct >= 90 ? 'caution' : 'accent'} label={`${used} of ${cap}`} />}
+        <span className={cn('tnum', over && 'font-semibold text-caution')}>{used}{cap ? ` of ${cap}` : ' · no limit'}{over ? ' · over limit' : ''}</span>
+      </span>
     </div>
   );
 }

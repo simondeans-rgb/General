@@ -2,9 +2,9 @@
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ShieldAlert } from 'lucide-react';
 import { RecordSheet } from '@/components/app/record-sheet';
-import { Badge, Button, Card, CardHeader, ErrorState, Field, Input, Select, Skeleton } from '@/components/ui';
+import { Button, ErrorState, Field, Input, Select, Skeleton } from '@/components/ui';
+import { SettingsSection as Card, SettingsHead as CardHeader } from './progress-settings';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
@@ -29,9 +29,8 @@ export function RaiseConcernSheet({ student, onClose }: { student: { id: string;
     <RecordSheet title="Raise a safeguarding concern" subtitle={`About ${student.first_name}`} onClose={onClose}
       saving={raise.isPending} error={raise.error} canSave={summary.trim().length >= 10} saveLabel="Send to the safeguarding lead"
       onSave={() => raise.mutate()}>
-      <p className="flex gap-2 rounded-[var(--radius-md)] bg-critical-soft p-3 text-[13px]">
-        <ShieldAlert className="mt-0.5 size-4 shrink-0 text-critical" aria-hidden />
-        If a child is in immediate danger, call 999 first. Write what you saw or were told, in their words where you can. Do not investigate.
+      <p className="border-l-2 border-critical py-1 pl-3 text-[14px]">
+        <strong className="font-semibold text-critical">If a child is in immediate danger, call 999 first.</strong> Write what you saw or were told, in their words where you can. Do not investigate.
       </p>
       <Field label="What kind of concern" htmlFor="rc-c">
         <Select id="rc-c" value={category} onChange={e => setCategory(e.target.value)}>
@@ -40,10 +39,10 @@ export function RaiseConcernSheet({ student, onClose }: { student: { id: string;
       </Field>
       <Field label="What happened" htmlFor="rc-s" required hint="Facts, dates and times. Only the lead and the owner will read this.">
         <textarea id="rc-s" rows={6} value={summary} onChange={e => setSummary(e.target.value)}
-          className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm" />
+          className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
       </Field>
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" className="size-4 accent-[var(--accent)]" checked={urgent} onChange={e => setUrgent(e.target.checked)} />
+      <label className="flex min-h-11 items-center gap-2.5 text-sm">
+        <input type="checkbox" className="size-5 accent-[var(--color-accent)]" checked={urgent} onChange={e => setUrgent(e.target.checked)} />
         The child may be at risk today
       </label>
     </RecordSheet>
@@ -63,11 +62,11 @@ export function StaffChecks({ staffId }: { staffId: string }) {
   const soon = (d: string | null) => d && new Date(d).getTime() < Date.now() + 30 * 86400_000;
   return (
     <div className="space-y-2">
-      <ul className="space-y-1">
+      <ul className="divide-y divide-line">
         {rows.data?.map(c => (
-          <li key={c.id} className="flex items-center justify-between gap-2 text-sm">
+          <li key={c.id} className="flex items-center justify-between gap-2 py-1.5 text-sm">
             <span>{G.CHECK_LABEL[c.kind]}{c.reference ? ` · ${c.reference}` : ''} · {dateShort(c.checked_on)}</span>
-            {c.expires_on && <Badge tone={soon(c.expires_on) ? 'critical' : 'neutral'}>{new Date(c.expires_on) < new Date() ? 'Expired' : 'Expires'} {dateShort(c.expires_on)}</Badge>}
+            {c.expires_on && <span className={soon(c.expires_on) ? 'shrink-0 text-[13px] font-semibold text-critical' : 'shrink-0 text-[13px] text-ink-3'}>{new Date(c.expires_on) < new Date() ? 'Expired' : 'Expires'} {dateShort(c.expires_on)}</span>}
           </li>
         ))}
         {rows.data?.length === 0 && <li className="text-[13px] text-ink-3">No checks recorded.</li>}
@@ -104,13 +103,13 @@ export function RetentionCard({ studioId }: { studioId: string }) {
     mutationFn: async () => (await runAs(session, q => q<{ n: number }>(G.RUN_RETENTION, [studioId])))[0]!.n,
     onSuccess: n => { setDone(`${n} change${n === 1 ? '' : 's'} made and recorded in the audit log.`); qc.invalidateQueries({ queryKey: ['db'] }); },
   });
-  if (!pol) return <Card className="p-4"><Skeleton className="h-24" /></Card>;
+  if (!pol) return <Card><Skeleton className="h-24" /></Card>;
   const count = (k: string) => (preview.data ?? []).filter(p => p.step === k).length;
   const med = count('medical'), anon = count('anonymise'), pros = count('prospect'), fin = count('financial'), con = count('concern');
   return (
     <Card>
       <CardHeader title="Keeping data" subtitle="How long details are kept after a child stops coming, and for enquiries that went nowhere. Check these with your own adviser." />
-      <div className="space-y-3 px-4 pb-4">
+      <div className="space-y-4 pt-4">
         <div className="grid gap-3 sm:grid-cols-3">
           {([['medical_months', 'Delete medical records after'], ['personal_months', 'Anonymise the child after'], ['financial_months', 'Keep invoices for']] as const).map(([k, l]) => (
             <Field key={k} label={l} htmlFor={`rt-${k}`} hint="months">
@@ -127,13 +126,13 @@ export function RetentionCard({ studioId }: { studioId: string }) {
         </div>
         {Object.keys(m).length > 0 && <Button size="sm" loading={save.isPending} onClick={() => save.mutate()}>Save periods</Button>}
         {save.error != null && <ErrorState error={save.error} />}
-        <p className="text-sm">Due now: <b>{med}</b> medical record{med === 1 ? '' : 's'} to delete, <b>{anon}</b> child{anon === 1 ? '' : 'ren'} to anonymise,
+        <p className="border-t border-line pt-3 text-[14.5px]">Due now: <b>{med}</b> medical record{med === 1 ? '' : 's'} to delete, <b>{anon}</b> child{anon === 1 ? '' : 'ren'} to anonymise,
           {' '}<b>{pros}</b> old enquir{pros === 1 ? 'y' : 'ies'} to remove, <b>{fin}</b> famil{fin === 1 ? 'y' : 'ies'} to anonymise on invoices
           {pol.concern_months ? <>, <b>{con}</b> closed concern{con === 1 ? '' : 's'} to delete</> : ''}.
           {pol.last_run_at ? ` Last run ${dateShort(pol.last_run_at)}.` : ''}</p>
         {done && <p role="status" className="text-sm text-positive">{done}</p>}
         {run.error != null && <ErrorState error={run.error} />}
-        <Button size="sm" variant="primary" disabled={!med && !anon && !pros && !fin && !con} loading={run.isPending} onClick={() => run.mutate()}>Apply now</Button>
+        <Button size="sm" disabled={!med && !anon && !pros && !fin && !con} loading={run.isPending} onClick={() => run.mutate()}>Apply now</Button>
       </div>
     </Card>
   );

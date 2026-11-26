@@ -2,9 +2,9 @@
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Pencil, Phone, Plus, Trash2, UserRound } from 'lucide-react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { RecordSheet } from '@/components/app/record-sheet';
-import { Button, Card, CardHeader, Field, Input, Skeleton } from '@/components/ui';
+import { Button, Field, Input, Skeleton } from '@/components/ui';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
@@ -25,16 +25,18 @@ export function YourDetails() {
   const g = useRows<F.Guardian>(['my-guardians'], F.MY_GUARDIANS);
   const [editing, setEditing] = React.useState<F.Guardian | null>(null);
   return (
-    <Card>
-      <CardHeader title="Your details" subtitle="Keep these current — the studio is told when you change them" />
-      {g.isLoading && <div className="p-4"><Skeleton className="h-12" /></div>}
+    <section aria-labelledby="your-details-h">
+      <div className="mb-1 flex items-baseline gap-3 border-b-2 border-ink pb-2">
+        <h2 id="your-details-h" className="section-title min-w-0 flex-1">Your details</h2>
+        <span className="text-[13px] text-ink-3">The studio is told when you change them</span>
+      </div>
+      {g.isLoading && <Skeleton className="mt-3 h-12" />}
       <ul className="divide-y divide-line">
         {g.data?.map(p => (
-          <li key={p.id} className="flex items-center gap-3 px-4 py-3">
-            <UserRound className="size-4 shrink-0 text-ink-3" aria-hidden />
+          <li key={p.id} className="flex min-h-[56px] items-center gap-3 py-3">
             <span className="min-w-0 flex-1">
-              <span className="block font-medium">{p.full_name}{p.is_me ? ' (you)' : ''}</span>
-              <span className="block truncate text-[13px] text-ink-2">
+              <span className="block font-semibold">{p.full_name}{p.is_me ? ' (you)' : ''}</span>
+              <span className="block truncate text-[13px] text-ink-3">
                 {[p.phone, p.email].filter(Boolean).join(' · ') || 'No phone or email yet'}</span>
             </span>
             <Button size="sm" variant="ghost" onClick={() => setEditing(p)} aria-label={`Edit ${p.full_name}`}>
@@ -44,7 +46,7 @@ export function YourDetails() {
         ))}
       </ul>
       {editing && <GuardianSheet g={editing} onClose={() => setEditing(null)} />}
-    </Card>
+    </section>
   );
 }
 
@@ -70,27 +72,27 @@ export function EmergencyContacts({ studentId, name }: { studentId: string; name
   const list = (all.data ?? []).filter(c => c.student_id === studentId && !removing(c.id));
   const [editing, setEditing] = React.useState<F.Contact | 'new' | null>(null);
   return (
-    <div className="border-t border-line px-4 py-3">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-ink-3">Emergency contacts</p>
-        <Button size="sm" variant="ghost" onClick={() => setEditing('new')}>
-          <Plus className="size-4" aria-hidden /> Add
-        </Button>
-      </div>
+    <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-4 py-3">
+      <dt className="text-ink-3">Emergency contacts</dt>
+      <dd className="min-w-0">
       {list.length === 0 && !all.isLoading && (
-        <p className="mt-1 text-[13px] font-medium text-critical">None yet — please add someone the studio can ring.</p>
+        <p className="font-semibold text-critical">None yet. Add someone the studio can ring.</p>
       )}
-      <ul className="mt-1 space-y-1">
+      <ul className="space-y-0.5">
         {list.map(c => (
-          <li key={c.id} className="flex items-center gap-2 text-sm">
-            <Phone className="size-3.5 shrink-0 text-ink-3" aria-hidden />
-            <span className="min-w-0 flex-1 truncate">{c.full_name}{c.relationship ? ` (${c.relationship})` : ''} · {c.phone}</span>
+          <li key={c.id} className="flex items-center gap-2">
+            <span className="min-w-0 flex-1"><span className="font-medium">{c.full_name}</span>{c.relationship ? <span className="text-ink-3"> ({c.relationship})</span> : ''}
+              <span className="block tnum text-[13.5px] text-ink-2">{c.phone}</span></span>
             <Button size="sm" variant="ghost" onClick={() => setEditing(c)} aria-label={`Edit ${c.full_name}`}>
               <Pencil className="size-3.5" aria-hidden />
             </Button>
           </li>
         ))}
       </ul>
+      <Button size="sm" variant="ghost" className="-ml-3 mt-1" onClick={() => setEditing('new')}>
+        <Plus className="size-4" aria-hidden /> Add a contact
+      </Button>
+      </dd>
       {editing && <ContactSheet studentId={studentId} childName={name} c={editing === 'new' ? null : editing}
                                 canRemove={list.length > 1} onClose={() => setEditing(null)} />}
     </div>

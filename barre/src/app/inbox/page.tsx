@@ -4,10 +4,7 @@ import * as React from 'react';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  ArrowLeft, Megaphone, MessageSquare, PenSquare, Send, Users, FileText, Plus, Inbox as InboxIcon,
-  CheckCircle2, Mail, Clock, ClipboardList,
-} from 'lucide-react';
+import { ArrowLeft, ArrowRight, PenSquare, Send, Plus } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { RecordSheet } from '@/components/app/record-sheet';
 import { Automations } from '@/components/app/automations';
@@ -18,11 +15,12 @@ import { useSession } from '@/lib/auth/session';
 import { useSelection } from '@/lib/use-selection';
 import { useSearchParams } from 'next/navigation';
 import {
-  Badge, Button, Card, EmptyState, ErrorState, Field, Input, Select, Skeleton,
+  Button, EmptyState, ErrorState, Field, Input, Notice, Select, Skeleton,
 } from '@/components/ui';
+import { SectionHead, ViewTabs, Word } from '@/components/app/session-row';
 import * as I from '@/lib/repos/inbox';
 import * as H from '@/lib/repos/hub';
-import { relativeDay, time, initials } from '@/lib/format';
+import { relativeDay, time } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 type Tab = 'families' | 'broadcasts' | 'templates' | 'automations';
@@ -49,30 +47,24 @@ function Inbox() {
         <PenSquare className="size-4" aria-hidden /> <span className="hidden sm:inline">New message</span>
         <span className="sm:hidden">New</span>
       </Button>}>
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-[1240px]">
         {/* Structured requests have their own queue; say so rather than
             splitting the office's attention across two unexplained places. */}
         {!!requests.data?.length && (
           <Link href="/requests"
-            className="mb-4 flex items-center gap-3 rounded-[var(--radius-lg)] border border-line bg-surface px-4 py-3 text-sm hover:bg-surface-2">
-            <InboxIcon className="size-4 text-accent-text" aria-hidden />
-            <span className="flex-1">{requests.data.length} request{requests.data.length === 1 ? '' : 's'} from families waiting for an answer</span>
-            <span className="text-accent-text">Open</span>
+            className="group mb-6 grid grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-x-3 border-y border-line py-3">
+            <span className="font-display text-[28px] leading-none tnum">{requests.data.length}</span>
+            <span className="font-semibold">Request{requests.data.length === 1 ? '' : 's'} from families waiting for an answer</span>
+            <span className="flex items-center gap-1 text-[13px] font-semibold text-accent-text group-hover:underline">Open requests<ArrowRight className="size-3.5" aria-hidden /></span>
           </Link>
         )}
 
-        <div className="lg:grid lg:grid-cols-[360px_minmax(0,1fr)] lg:gap-5">
+        <ViewTabs label="Inbox sections" value={tab} onChange={setTab} className={cn('mb-5 border-b border-line', family && tab === 'families' && 'hidden lg:flex')}
+          options={[['families', unread > 0 ? `Families · ${unread}` : 'Families'], ['broadcasts', 'Groups'], ['templates', 'Templates'], ['automations', 'Automations']]} />
+
+        <div className={cn(tab === 'families' && 'lg:grid lg:grid-cols-[380px_minmax(0,1fr)] lg:gap-8')}>
           {/* On a phone the list and the conversation are separate screens. */}
-          <div className={cn('min-w-0', family && tab === 'families' && 'hidden lg:block')}>
-            <div role="tablist" aria-label="Inbox sections" className="-mx-1 mb-3 flex gap-1 overflow-x-auto px-1">
-              {([['families', 'Families'], ['broadcasts', 'Groups'], ['templates', 'Templates'], ['automations', 'Automations']] as const).map(([k, l]) => (
-                <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
-                  className={cn('h-9 shrink-0 rounded-full px-3 text-[13px]',
-                    tab === k ? 'bg-ink font-medium text-surface' : 'text-ink-2 hover:bg-surface-2')}>
-                  {l}{k === 'families' && unread > 0 && <span className="tnum ml-1.5 opacity-70">{unread}</span>}
-                </button>
-              ))}
-            </div>
+          <div className={cn('min-w-0', family && tab === 'families' && 'hidden lg:block', tab !== 'families' && 'max-w-3xl')}>
             {tab === 'families' && <ThreadList threads={threads} selected={family} onSelect={select} />}
             {tab === 'broadcasts' && <BroadcastList />}
             {tab === 'templates' && <TemplateList />}
@@ -83,10 +75,10 @@ function Inbox() {
             <div className={cn('min-w-0', !family && 'hidden lg:block')}>
               {family
                 ? <Conversation familyId={family} onBack={() => select(null)} />
-                : <Card className="hidden h-full min-h-[420px] place-items-center lg:grid">
-                    <EmptyState icon={<MessageSquare className="size-5" />} title="Choose a conversation"
+                : <div className="hidden h-full min-h-[420px] border-l border-line pl-8 lg:block">
+                    <EmptyState title="Choose a conversation"
                       body="Every message to or from a family is kept here and in their record." />
-                  </Card>}
+                  </div>}
             </div>
           )}
         </div>
@@ -101,40 +93,33 @@ function ThreadList({ threads, selected, onSelect }: {
   threads: ReturnType<typeof useRows<I.Thread>>; selected: string | null; onSelect: (id: string) => void;
 }) {
   return (
-    <Card className="overflow-hidden">
-      {threads.isLoading && <div className="space-y-2 p-3">{[0,1,2,3].map(i => <Skeleton key={i} className="h-14" />)}</div>}
-      {threads.error && <div className="p-4"><ErrorState error={threads.error} onRetry={() => threads.refetch()} /></div>}
-      {threads.data?.length === 0 && <EmptyState icon={<MessageSquare className="size-5" />}
+    <div>
+      {threads.isLoading && <div className="space-y-2">{[0,1,2,3].map(i => <Skeleton key={i} className="h-14" />)}</div>}
+      {threads.error && <ErrorState error={threads.error} onRetry={() => threads.refetch()} />}
+      {threads.data?.length === 0 && <EmptyState
         title="No conversations yet" body="Messages from families arrive here." />}
-      <ul className="divide-y divide-line">
+      <ul className="divide-y divide-line border-y border-line">
         {threads.data?.map(t => (
           <li key={t.family_id}>
             <button onClick={() => onSelect(t.family_id)} aria-current={selected === t.family_id || undefined}
-              className={cn('flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-surface-2',
-                selected === t.family_id && 'bg-accent-soft/50')}>
-              <span aria-hidden className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-full bg-surface-2 text-[12px] font-semibold text-ink-2">
-                {initials(t.family_name)}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="flex items-baseline gap-2">
-                  <span className={cn('truncate', t.unread ? 'font-semibold' : 'font-medium')}>{t.family_name}</span>
-                  <span className="ml-auto shrink-0 text-[12px] text-ink-3">{relativeDay(t.last_at)}</span>
-                </span>
-                <span className={cn('mt-0.5 line-clamp-2 text-[13px]', t.unread ? 'text-ink' : 'text-ink-2')}>
-                  {!t.last_inbound && <span className="text-ink-3">You: </span>}
-                  {t.last_subject ? `${t.last_subject} — ` : ''}{t.last_body}
-                </span>
+              className={cn('block w-full px-2 py-3 text-left hover:bg-surface-2/60',
+                selected === t.family_id && 'bg-surface-2 shadow-[inset_3px_0_0_var(--color-accent)]')}>
+              <span className="flex items-baseline gap-2">
+                <span className={cn('truncate', t.unread ? 'font-bold' : 'font-semibold')}>{t.family_name}</span>
                 {/* Status in words as well as weight: "unread" is not colour-only. */}
-                <span className="mt-1 flex gap-1.5">
-                  {t.unread > 0 && <Badge tone="accent">{t.unread} new</Badge>}
-                  {t.last_inbound && t.unread === 0 && <Badge tone="caution">Awaiting reply</Badge>}
-                </span>
+                {t.unread > 0 && <Word>{t.unread} new</Word>}
+                {t.last_inbound && t.unread === 0 && <Word tone="caution">Awaiting reply</Word>}
+                <span className="ml-auto shrink-0 text-[12.5px] text-ink-3">{relativeDay(t.last_at)}</span>
+              </span>
+              <span className={cn('mt-0.5 line-clamp-2 text-[13.5px]', t.unread ? 'text-ink' : 'text-ink-3')}>
+                {!t.last_inbound && <span className="text-ink-3">You: </span>}
+                {t.last_subject ? `${t.last_subject} — ` : ''}{t.last_body}
               </span>
             </button>
           </li>
         ))}
       </ul>
-    </Card>
+    </div>
   );
 }
 
@@ -172,21 +157,21 @@ function Conversation({ familyId, onBack }: { familyId: string; onBack: () => vo
   const unfilled = /\{\{\w+\}\}/.test(draft);
 
   return (
-    <Card className="flex min-h-[60dvh] flex-col overflow-hidden lg:h-[calc(100dvh-180px)]">
-      <div className="flex items-center gap-2 border-b border-line px-3 py-2.5">
+    <div className="card flex min-h-[60dvh] flex-col overflow-hidden lg:h-[calc(100dvh-220px)]">
+      <div className="flex items-center gap-2 border-b border-line px-4 py-3">
         <Button size="sm" variant="ghost" className="lg:hidden" aria-label="Back to conversations" onClick={onBack}>
           <ArrowLeft className="size-4" aria-hidden />
         </Button>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold">{thread?.family_name ?? 'Conversation'}</p>
-          {thread?.guardian && <p className="truncate text-[12.5px] text-ink-3">{thread.guardian}</p>}
+          <h2 className="truncate font-display text-[19px] leading-tight">{thread?.family_name ?? 'Conversation'}</h2>
+          {thread?.guardian && <p className="truncate text-[13px] text-ink-3">{thread.guardian}</p>}
         </div>
-        <Link href={`/people?id=${familyId}`} className="rounded-[var(--radius-md)] px-2.5 py-1.5 text-[13px] text-accent-text hover:bg-surface-2">
+        <Link href={`/people?id=${familyId}`} className="rounded-[var(--radius-md)] px-2.5 py-2 text-[13px] font-semibold text-accent-text hover:underline">
           Family record
         </Link>
       </div>
 
-      <div className="flex-1 space-y-3 overflow-y-auto bg-surface-2/40 p-4" aria-live="polite">
+      <div className="flex-1 space-y-3 overflow-y-auto bg-canvas p-4" aria-live="polite">
         {messages.isLoading && <Skeleton className="h-24" />}
         {messages.error && <ErrorState error={messages.error} />}
         {messages.data?.map((m, n) => {
@@ -194,19 +179,19 @@ function Conversation({ familyId, onBack }: { familyId: string; onBack: () => vo
           const newDay = !prev || relativeDay(prev.sent_at) !== relativeDay(m.sent_at);
           return (
             <React.Fragment key={m.id}>
-              {newDay && <p className="pt-2 text-center text-[11.5px] font-medium uppercase tracking-[0.06em] text-ink-3">{relativeDay(m.sent_at)}</p>}
+              {newDay && <p className="pt-2 text-center text-[12.5px] font-semibold text-ink-3">{relativeDay(m.sent_at)}</p>}
               <div className={cn('flex', m.inbound ? 'justify-start' : 'justify-end')}>
-                <div className={cn('max-w-[85%] rounded-[var(--radius-lg)] px-3.5 py-2.5 text-sm shadow-xs',
-                  m.inbound ? 'rounded-bl-sm border border-line bg-surface' : 'rounded-br-sm bg-accent text-on-accent')}>
+                <div className={cn('max-w-[85%] rounded-[var(--radius-lg)] px-3.5 py-2.5 text-[14.5px]',
+                  m.inbound ? 'rounded-bl-sm border border-line bg-surface' : 'rounded-br-sm bg-ink text-ink-invert')}>
                   {m.is_request && (
-                    <Link href="/requests" className={cn('mb-1 inline-flex items-center gap-1 text-[11.5px] font-medium underline-offset-2 hover:underline',
-                      m.inbound ? 'text-accent-text' : 'text-on-accent')}>
-                      <ClipboardList className="size-3" aria-hidden /> Request{m.inbound ? ' · handle in Requests' : ''}
+                    <Link href="/requests" className={cn('mb-1 inline-flex items-center gap-1 text-[12px] font-semibold underline-offset-2 hover:underline',
+                      m.inbound ? 'text-accent-text' : 'text-ink-invert')}>
+                      Request{m.inbound ? ' · handle in Requests' : ''}
                     </Link>
                   )}
-                  {m.subject && <p className="mb-1 font-medium">{m.subject}</p>}
+                  {m.subject && <p className="mb-1 font-semibold">{m.subject}</p>}
                   <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                  <p className={cn('mt-1.5 text-[11.5px]', m.inbound ? 'text-ink-3' : 'text-on-accent opacity-80')}>
+                  <p className={cn('mt-1.5 text-[12px]', m.inbound ? 'text-ink-3' : 'text-ink-invert opacity-75')}>
                     {m.sender ?? (m.inbound ? thread?.family_name : 'Studio')} · {time(m.sent_at)}
                   </p>
                 </div>
@@ -238,7 +223,7 @@ function Conversation({ familyId, onBack }: { familyId: string; onBack: () => vo
           </Button>
         </div>
       </form>
-    </Card>
+    </div>
   );
 }
 
@@ -246,29 +231,28 @@ function BroadcastList() {
   const rows = useRows<I.Broadcast>(['broadcasts'], I.BROADCASTS);
   const [open, setOpen] = React.useState<I.Broadcast | null>(null);
   return (
-    <Card className="overflow-hidden">
-      {rows.isLoading && <div className="space-y-2 p-3">{[0,1,2].map(i => <Skeleton key={i} className="h-16" />)}</div>}
-      {rows.data?.length === 0 && <EmptyState icon={<Megaphone className="size-5" />} title="Nothing sent to groups yet" />}
+    <section>
+      <SectionHead title="Sent to groups" meta="Open one to see who has read it" />
+      {rows.isLoading && <div className="space-y-2 pt-3">{[0,1,2].map(i => <Skeleton key={i} className="h-16" />)}</div>}
+      {rows.data?.length === 0 && <EmptyState title="Nothing sent to groups yet" body="Message a class or the whole studio from New message." />}
       <ul className="divide-y divide-line">
         {rows.data?.map(b => (
           <li key={b.id}>
-           <button className="block w-full px-4 py-3 text-left hover:bg-surface-2" onClick={() => setOpen(b)}>
-            <div className="flex items-center gap-2">
-              {b.kind === 'studio_announcement'
-                ? <Badge tone="violet" icon={<Megaphone className="size-3" aria-hidden />}>Whole studio</Badge>
-                : <Badge tone="info" icon={<Users className="size-3" aria-hidden />}>{b.class_name}</Badge>}
-              {b.scheduled && <Badge tone="caution" icon={<Clock className="size-3" aria-hidden />}>Sends {relativeDay(b.sent_at)} {time(b.sent_at)}</Badge>}
-              <span className="ml-auto text-[12px] text-ink-3">{relativeDay(b.sent_at)}</span>
+           <button className="block w-full px-1 py-3 text-left hover:bg-surface-2/60" onClick={() => setOpen(b)}>
+            <div className="flex flex-wrap items-baseline gap-x-2">
+              <span className="text-[13px] font-semibold text-ink-2">{b.kind === 'studio_announcement' ? 'Whole studio' : b.class_name}</span>
+              {b.scheduled && <><Word tone="caution">Scheduled</Word><span className="text-[13px] text-caution">{relativeDay(b.sent_at)} {time(b.sent_at)}</span></>}
+              <span className="ml-auto text-[12.5px] text-ink-3">{relativeDay(b.sent_at)}</span>
             </div>
-            {b.subject && <p className="mt-1.5 font-medium">{b.subject}</p>}
-            <p className="mt-0.5 line-clamp-3 text-sm text-ink-2">{b.body}</p>
-            {b.sender && <p className="mt-1 text-[12px] text-ink-3">From {b.sender} · tap to see who has read it</p>}
+            {b.subject && <p className="mt-1 font-semibold">{b.subject}</p>}
+            <p className="mt-0.5 line-clamp-2 text-[14px] text-ink-2">{b.body}</p>
+            {b.sender && <p className="mt-1 text-[12.5px] text-ink-3">From {b.sender}</p>}
            </button>
           </li>
         ))}
       </ul>
       {open && <ReachSheet message={open} onClose={() => setOpen(null)} />}
-    </Card>
+    </section>
   );
 }
 
@@ -291,15 +275,15 @@ export function ReachSheet({ message, onClose }: { message: { id: string; subjec
         : reach.data ? `${seen} of ${rows.length} famil${rows.length === 1 ? 'y has' : 'ies have'} seen this` : undefined}
       onClose={onClose} onSave={() => remind.mutate()} saving={remind.isPending} error={remind.error}
       canSave={!message.scheduled && waiting > 0 && !done} saveLabel={waiting ? `Remind the ${waiting} who haven’t` : 'Everyone has seen it'}>
-      {done && <p role="status" className="flex items-center gap-2 text-sm"><CheckCircle2 className="size-4 text-positive" aria-hidden /> {done}</p>}
+      {done && <div role="status"><Notice word="Reminded" tone="positive" title={done} /></div>}
       {reach.isLoading && <Skeleton className="h-24" />}
-      {noLogin > 0 && <p className="text-[12.5px] text-ink-3">{noLogin} famil{noLogin === 1 ? 'y has' : 'ies have'} not signed up to the app, so cannot see messages yet.</p>}
-      <ul className="max-h-72 divide-y divide-line overflow-y-auto rounded-[var(--radius-md)] border border-line">
+      {noLogin > 0 && <p className="text-[13px] text-ink-3">{noLogin} famil{noLogin === 1 ? 'y has' : 'ies have'} not signed up to the app, so cannot see messages yet.</p>}
+      <ul className="max-h-72 divide-y divide-line overflow-y-auto border-y border-line">
         {rows.map(r => (
-          <li key={r.family_id} className="flex items-center justify-between px-3 py-2 text-sm">
+          <li key={r.family_id} className="flex min-h-[40px] items-center justify-between gap-3 py-2 text-[14px]">
             <span>{r.family_name}</span>
-            {r.seen ? <Badge tone="positive">Seen {r.seen_at ? relativeDay(r.seen_at) : ''}</Badge>
-              : r.has_login ? <Badge tone="caution">Not yet</Badge> : <Badge tone="neutral">No app login</Badge>}
+            {r.seen ? <span className="text-[13px] text-positive">Seen {r.seen_at ? relativeDay(r.seen_at) : ''}</span>
+              : r.has_login ? <span className="text-[13px] font-semibold text-caution">Not yet</span> : <span className="text-[13px] text-ink-3">No app login</span>}
           </li>
         ))}
       </ul>
@@ -312,25 +296,23 @@ function TemplateList() {
   const removing = useRemoving();
   const [editing, setEditing] = React.useState<I.Template | 'new' | null>(null);
   return (
-    <Card className="overflow-hidden">
-      <div className="flex items-center gap-2 border-b border-line px-4 py-2.5">
-        <p className="flex-1 text-[13px] text-ink-2">Reusable wording. {'{{guardian_name}}'} fills in when you use one.</p>
-        <Button size="sm" onClick={() => setEditing('new')}><Plus className="size-4" aria-hidden /> New</Button>
-      </div>
-      {rows.isLoading && <Skeleton className="m-3 h-16" />}
-      {rows.data?.length === 0 && <EmptyState icon={<FileText className="size-5" />} title="No templates yet" />}
+    <section>
+      <SectionHead title="Templates" meta={<>{'{{guardian_name}}'} fills in when you use one</>}
+        action={<Button size="sm" variant="ghost" onClick={() => setEditing('new')}><Plus className="size-4" aria-hidden /> New template</Button>} />
+      {rows.isLoading && <Skeleton className="mt-3 h-16" />}
+      {rows.data?.length === 0 && <EmptyState title="No templates yet" body="Save wording you send often, like a trial follow-up." />}
       <ul className="divide-y divide-line">
         {rows.data?.filter(t => !removing(t.id)).map(t => (
           <li key={t.id}>
-            <button onClick={() => setEditing(t)} className="w-full px-4 py-3 text-left hover:bg-surface-2">
-              <span className="block font-medium">{t.name}</span>
-              <span className="mt-0.5 line-clamp-2 block text-[13px] text-ink-2">{t.body}</span>
+            <button onClick={() => setEditing(t)} className="w-full px-1 py-3 text-left hover:bg-surface-2/60">
+              <span className="block font-semibold">{t.name}</span>
+              <span className="mt-0.5 line-clamp-2 block text-[13.5px] text-ink-3">{t.body}</span>
             </button>
           </li>
         ))}
       </ul>
       {editing && <TemplateSheet template={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
-    </Card>
+    </section>
   );
 }
 
@@ -425,11 +407,10 @@ function Composer({ onClose, onSentDirect }: { onClose: () => void; onSentDirect
 
   if (sent) {
     return (
-      <RecordSheet title="Sent" onClose={onClose} onSave={onClose} saveLabel="Done">
-        <div className="flex items-start gap-3">
-          <CheckCircle2 className="mt-0.5 size-5 text-positive" aria-hidden />
-          <p className="text-sm text-ink-2">{sent.startsWith('scheduled') ? `Message ${sent}.` : `Delivered in the app to ${sent}, and kept in each family’s history.`}</p>
-        </div>
+      <RecordSheet title="New message" onClose={onClose} onSave={onClose} saveLabel="Done">
+        <Notice word={sent.startsWith('scheduled') ? 'Scheduled' : 'Sent'} tone="positive"
+          title={sent.startsWith('scheduled') ? `Message ${sent}.` : `Delivered in the app to ${sent}`}
+          detail={sent.startsWith('scheduled') ? undefined : 'Kept in each family’s history.'} />
       </RecordSheet>
     );
   }
@@ -441,8 +422,8 @@ function Composer({ onClose, onSentDirect }: { onClose: () => void; onSentDirect
       <div role="radiogroup" aria-label="Who to" className="grid grid-cols-3 gap-1 rounded-[var(--radius-md)] bg-surface-2 p-1">
         {([['family', 'A family'], ['class', 'A class'], ['studio', 'Everyone']] as const).map(([k, l]) => (
           <button key={k} role="radio" aria-checked={audience === k} onClick={() => setAudience(k)}
-            className={cn('h-9 rounded-[calc(var(--radius-md)-2px)] text-[13px]',
-              audience === k ? 'bg-surface font-medium shadow-xs' : 'text-ink-2')}>{l}</button>
+            className={cn('min-h-[40px] rounded-[calc(var(--radius-md)-2px)] text-[14px]',
+              audience === k ? 'border border-line-strong bg-surface font-semibold text-ink' : 'text-ink-2 hover:text-ink')}>{l}</button>
         ))}
       </div>
 
@@ -463,9 +444,8 @@ function Composer({ onClose, onSentDirect }: { onClose: () => void; onSentDirect
         </Field>
       )}
       {audience === 'studio' && (
-        <p className="rounded-[var(--radius-md)] bg-caution-soft p-3 text-[13px] text-ink">
-          Goes to every family{familyCount ? ` (${familyCount})` : ''} and every teacher. Save it for things everyone needs.
-        </p>
+        <Notice word="Everyone" tone="caution" title={`Every family${familyCount ? ` (${familyCount})` : ''} and every teacher`}
+          detail="Save it for things everyone needs." />
       )}
 
       <Select aria-label="Start from a template" value=""
@@ -486,8 +466,8 @@ function Composer({ onClose, onSentDirect }: { onClose: () => void; onSentDirect
         <Input id="cm-at" type="datetime-local" value={later} onChange={e => setLater(e.target.value)}
                min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)} />
       </Field>
-      <p className="flex items-center gap-1.5 text-[12.5px] text-ink-3">
-        <Mail className="size-3.5" aria-hidden /> Delivered in the app. Email and text delivery are not connected yet.
+      <p className="text-[13px] text-ink-3">
+        Delivered in the app. Email and text delivery aren’t connected yet.
       </p>
     </RecordSheet>
   );

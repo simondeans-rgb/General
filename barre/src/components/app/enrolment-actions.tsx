@@ -7,7 +7,8 @@ import { RecordSheet } from '@/components/app/record-sheet';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Badge, Button, Field, Input, Select, Skeleton } from '@/components/ui';
+import { Button, Field, Input, Notice, Select, Skeleton } from '@/components/ui';
+import { Word } from './session-row';
 import * as C from '@/lib/repos/classes';
 import { ageFrom, dateShort, time } from '@/lib/format';
 
@@ -67,19 +68,17 @@ export function EnrolSheet({ classId, className, full, onClose }: {
         : wait.mutate([classId, studentId, note])}>
 
       {full && mode === 'enrol' && (
-        <p className="rounded-[var(--radius-md)] bg-caution-soft p-3 text-[13px] text-ink-2">
-          This class is full. Enrolling will be refused — add them to the waiting
-          list instead and they are offered the next place automatically.
-        </p>
+        <Notice word="Full" tone="caution" title="Enrolling will be refused"
+          detail="Add them to the waiting list instead. They are offered the next place automatically." />
       )}
 
       <div role="tablist" aria-label="What to do"
-           className="inline-flex rounded-[var(--radius-md)] border border-line bg-surface-2 p-0.5">
+           className="grid grid-cols-2 gap-1 rounded-[var(--radius-md)] bg-surface-2 p-1">
         {([['enrol', 'Give a place'], ['wait', 'Waiting list']] as const).map(([m, label]) => (
           <button key={m} role="tab" aria-selected={mode === m} onClick={() => setMode(m)}
             className={mode === m
-              ? 'min-h-[34px] rounded-[7px] bg-surface px-3 text-[13px] font-medium text-ink shadow-xs'
-              : 'min-h-[34px] rounded-[7px] px-3 text-[13px] font-medium text-ink-2 hover:text-ink'}>
+              ? 'min-h-[40px] rounded-[calc(var(--radius-md)-2px)] border border-line-strong bg-surface px-3 text-[14px] font-semibold text-ink'
+              : 'min-h-[40px] rounded-[calc(var(--radius-md)-2px)] px-3 text-[14px] text-ink-2 hover:text-ink'}>
             {label}
           </button>
         ))}
@@ -133,21 +132,20 @@ export function WithdrawSheet({ enrolmentId, name, onClose }: {
 
   if (moved) {
     return (
-      <RecordSheet title="Moved" subtitle={name} onClose={onClose} onSave={onClose} saveLabel="Done" canSave>
-        <p className="text-sm text-ink-2">{name} is now in {moved}. Their history comes with them, and the place they left
-          has been offered to the waiting list if anyone is waiting.</p>
+      <RecordSheet title={name} onClose={onClose} onSave={onClose} saveLabel="Done" canSave>
+        <Notice word="Moved" title={`${name} is now in ${moved}`}
+          detail="Their history comes with them. The place they left goes to the waiting list, if anyone is waiting." />
       </RecordSheet>
     );
   }
   if (offered !== undefined) {
     return (
-      <RecordSheet title="Place given up" subtitle={name} onClose={onClose}
+      <RecordSheet title={name} onClose={onClose}
         onSave={onClose} saveLabel="Done" canSave>
-        <p className="text-sm text-ink-2">
-          {offered
-            ? 'The place has been offered to the person who has waited longest. You will see them as “Offered” on the waiting list.'
-            : 'Nobody is waiting for this class, so the place is simply open.'}
-        </p>
+        <Notice word="Withdrawn" title="The place is free"
+          detail={offered
+            ? 'It has been offered to whoever has waited longest. They show as Offered on the waiting list.'
+            : 'Nobody is waiting for this class, so the place is open.'} />
       </RecordSheet>
     );
   }
@@ -161,7 +159,7 @@ export function WithdrawSheet({ enrolmentId, name, onClose }: {
       <div role="radiogroup" aria-label="What is happening" className="grid grid-cols-2 gap-1 rounded-[var(--radius-md)] bg-surface-2 p-1">
         {([['leave', 'Leaving this class'], ['move', 'Moving to another']] as const).map(([k, l]) => (
           <button key={k} role="radio" aria-checked={mode === k} onClick={() => setMode(k)}
-            className={`h-9 rounded-[calc(var(--radius-md)-2px)] text-[13px] ${mode === k ? 'bg-surface font-medium shadow-xs' : 'text-ink-2'}`}>{l}</button>
+            className={`min-h-[40px] rounded-[calc(var(--radius-md)-2px)] text-[14px] ${mode === k ? 'border border-line-strong bg-surface font-semibold text-ink' : 'text-ink-2 hover:text-ink'}`}>{l}</button>
         ))}
       </div>
       {mode === 'move' && (
@@ -203,13 +201,13 @@ export function WaitlistActions({ entry }: {
             <Clock className="size-3.5" aria-hidden /> Offer
           </Button>
         )}
-        <Button size="sm" variant="primary" loading={accept.isPending}
+        <Button size="sm" loading={accept.isPending}
                 onClick={() => accept.mutate([entry.id])}>
           <Check className="size-3.5" aria-hidden /> Took it
         </Button>
-        <Button size="sm" variant="danger" loading={decline.isPending}
+        <Button size="sm" variant="ghost" loading={decline.isPending}
                 aria-label={`${who} declined`} onClick={() => decline.mutate([entry.id, null])}>
-          <X className="size-3.5" aria-hidden />
+          <X className="size-3.5" aria-hidden /> Declined
         </Button>
       </div>
       {err != null && (
@@ -270,7 +268,7 @@ export function BookTrialSheet({ classId, className, onClose }: {
       <div role="radiogroup" aria-label="Which child" className="grid grid-cols-2 gap-1 rounded-[var(--radius-md)] bg-surface-2 p-1">
         {([['new', 'A new child'], ['existing', 'Already at the school']] as const).map(([k, l]) => (
           <button key={k} role="radio" aria-checked={mode === k} onClick={() => setMode(k)}
-            className={`h-9 rounded-[calc(var(--radius-md)-2px)] text-[13px] ${mode === k ? 'bg-surface font-medium shadow-xs' : 'text-ink-2'}`}>{l}</button>
+            className={`min-h-[40px] rounded-[calc(var(--radius-md)-2px)] text-[14px] ${mode === k ? 'border border-line-strong bg-surface font-semibold text-ink' : 'text-ink-2 hover:text-ink'}`}>{l}</button>
         ))}
       </div>
       {mode === 'existing' ? (
@@ -293,7 +291,7 @@ export function BookTrialSheet({ classId, className, onClose }: {
             <Field label="Phone" htmlFor="tn-p" required><Input id="tn-p" type="tel" value={child.contact_phone} onChange={set('contact_phone')} /></Field>
             <Field label="Email" htmlFor="tn-e"><Input id="tn-e" type="email" value={child.contact_email} onChange={set('contact_email')} /></Field>
           </div>
-          <p className="text-[12.5px] text-ink-3">
+          <p className="text-[13px] text-ink-3">
             The phone number is used as the emergency contact unless you add a different one below. The child appears on the
             teacher’s register, with this contact, from the moment they are booked.
           </p>
@@ -307,9 +305,12 @@ export function BookTrialSheet({ classId, className, onClose }: {
   );
 }
 
-const TRIAL_TONE: Record<string, 'neutral' | 'info' | 'accent' | 'caution' | 'positive'> = {
-  requested: 'neutral', booked: 'info', attended: 'accent',
-  missed: 'caution', converted: 'positive', cancelled: 'neutral',
+const TRIAL_TONE: Record<string, 'ink' | 'muted' | 'caution' | 'positive'> = {
+  requested: 'muted', booked: 'ink', attended: 'ink',
+  missed: 'caution', converted: 'positive', cancelled: 'muted',
+};
+const TRIAL_WORD: Record<string, string> = {
+  requested: 'Requested', booked: 'Booked', attended: 'Came', missed: 'No show', converted: 'Joined', cancelled: 'Cancelled',
 };
 
 /** What happened after a trial — the step the funnel most often loses. */
@@ -322,7 +323,7 @@ export function TrialActions({ trial }: { trial: C.TrialRow }) {
   return (
     <div>
       <div className="flex flex-wrap items-center gap-1.5">
-        <Badge tone={TRIAL_TONE[trial.status] ?? 'neutral'}>{trial.status}</Badge>
+        <Word tone={TRIAL_TONE[trial.status] ?? 'muted'} className="mr-1 inline-block w-[4.75rem]">{TRIAL_WORD[trial.status] ?? trial.status}</Word>
         {!settled && (
           <>
             {trial.status !== 'attended' && (
@@ -333,7 +334,7 @@ export function TrialActions({ trial }: { trial: C.TrialRow }) {
               <Button size="sm" loading={outcome.isPending}
                       onClick={() => outcome.mutate([trial.id, 'missed', null])}>No show</Button>
             )}
-            <Button size="sm" variant="primary" loading={convert.isPending}
+            <Button size="sm" loading={convert.isPending}
                     onClick={() => convert.mutate([trial.id, null])}>
               <UserPlus className="size-3.5" aria-hidden /> Joining
             </Button>

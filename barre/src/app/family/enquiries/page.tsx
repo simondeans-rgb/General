@@ -2,13 +2,14 @@
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { MessageSquarePlus, Check, Clock, CheckCircle2, HeartPulse } from 'lucide-react';
+import { MessageSquarePlus } from 'lucide-react';
+import { cn } from '@/lib/cn';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import {
-  Badge, Button, Card, CardHeader, EmptyState, ErrorState, Field, Input, Select, Skeleton, type Tone,
+  Button, EmptyState, ErrorState, Field, Input, Select, Skeleton, type Tone,
 } from '@/components/ui';
 import * as H from '@/lib/repos/hub';
 import { relativeDay } from '@/lib/format';
@@ -17,6 +18,7 @@ const KIND_LABEL: Record<string, string> = {
   question: 'Question', private_lesson: 'Private lesson', medical_update: 'Medical update',
   event_interest: 'Event', absence: 'Absence', other: 'Other',
 };
+const STATUS_TEXT: Record<string, string> = { caution: 'text-caution', info: 'text-info', positive: 'text-positive', neutral: 'text-ink-2' };
 const STATUS: Record<string, { label: string; tone: Tone }> = {
   open:        { label: 'Waiting on the studio', tone: 'caution' },
   in_progress: { label: 'Being looked at',       tone: 'info' },
@@ -31,42 +33,44 @@ export default function ParentEnquiries() {
   return (
     <Shell title="Ask the studio" allow={['guardian']}
       actions={<Button size="sm" variant="primary" onClick={() => setAsking(true)}>
-        <MessageSquarePlus className="size-4" aria-hidden /> New
+        <MessageSquarePlus className="size-4" aria-hidden /> Ask a question
       </Button>}>
-      <div className="mx-auto max-w-2xl space-y-4">
-        {requests.isLoading && <Card className="space-y-3 p-4">{[0,1].map(i => <Skeleton key={i} className="h-20" />)}</Card>}
-        {requests.error && <ErrorState error={requests.error} onRetry={() => requests.refetch()} />}
+      <div className="mx-auto max-w-2xl">
+        {requests.isLoading && <div className="space-y-3">{[0, 1].map(i => <Skeleton key={i} className="h-20" />)}</div>}
+        {requests.error != null && <ErrorState error={requests.error} onRetry={() => requests.refetch()} />}
         {requests.data?.length === 0 && !requests.isLoading && (
-          <Card><EmptyState icon={<MessageSquarePlus className="size-5" />} title="Nothing asked yet"
+          <EmptyState title="Nothing asked yet"
             body="Questions about classes, uniform, private lessons or medical details all go here."
-            action={<Button variant="primary" onClick={() => setAsking(true)}>Ask a question</Button>} /></Card>
+            action={<Button onClick={() => setAsking(true)}>Ask a question</Button>} />
         )}
 
-        {requests.data?.map(r => {
-          const s = STATUS[r.status] ?? STATUS.open!;
-          return (
-            <Card key={r.id}>
-              <div className="p-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge tone="neutral">{KIND_LABEL[r.kind] ?? r.kind}</Badge>
-                  <Badge tone={s.tone}>{s.label}</Badge>
-                  {r.student_name && <span className="text-[12.5px] text-ink-3">about {r.student_name}</span>}
-                  <span className="ml-auto text-[12.5px] text-ink-3">{relativeDay(r.created_at)}</span>
-                </div>
-                <h2 className="mt-2 font-semibold">{r.subject}</h2>
-                <p className="mt-1 text-sm leading-relaxed text-ink-2">{r.body}</p>
-                {r.answer && (
-                  <div className="mt-3 rounded-[var(--radius-md)] border-l-2 border-positive bg-positive-soft/50 p-3">
-                    <p className="flex items-center gap-1.5 text-[12px] font-medium uppercase tracking-[0.05em] text-positive">
-                      <CheckCircle2 className="size-3.5" aria-hidden /> The studio replied
-                    </p>
-                    <p className="mt-1 text-sm">{r.answer}</p>
+        {!!requests.data?.length && (
+          <ul className="divide-y divide-line border-t-2 border-ink">
+            {requests.data.map(r => {
+              const s = STATUS[r.status] ?? STATUS.open!;
+              return (
+                <li key={r.id} className="py-4">
+                  <p className="text-[13px] text-ink-3">
+                    <span className="font-semibold text-ink-2">{KIND_LABEL[r.kind] ?? r.kind}</span>
+                    {' · '}<span className={cn('font-semibold', STATUS_TEXT[s.tone])}>{s.label}</span>
+                    {r.student_name && <> · about {r.student_name}</>}
+                  </p>
+                  <div className="mt-0.5 flex items-baseline gap-3">
+                    <h2 className="min-w-0 flex-1 font-semibold leading-snug">{r.subject}</h2>
+                    <span className="shrink-0 text-[13px] text-ink-3">{relativeDay(r.created_at)}</span>
                   </div>
-                )}
-              </div>
-            </Card>
-          );
-        })}
+                  <p className="mt-1 text-[14.5px] leading-relaxed text-ink-2">{r.body}</p>
+                  {r.answer && (
+                    <div className="mt-3 border-l-2 border-positive pl-3">
+                      <p className="text-[13px] font-semibold text-positive">The studio replied</p>
+                      <p className="mt-0.5 text-[15px]">{r.answer}</p>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
 
       {asking && <AskDialog onClose={() => setAsking(false)} />}
@@ -102,11 +106,9 @@ function AskDialog({ onClose }: { onClose: () => void }) {
         className="max-h-[88dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-[var(--radius-xl)]
                    border border-line bg-surface p-4 pb-safe shadow-lg sm:rounded-[var(--radius-xl)]">
         {done ? (
-          <div className="py-4 text-center">
-            <span className="mx-auto mb-3 grid size-11 place-items-center rounded-full bg-positive-soft text-positive" aria-hidden>
-              <Check className="size-5" />
-            </span>
-            <p id="ask-t" className="font-medium">Sent to the studio</p>
+          <div className="py-2">
+            <p className="font-display text-[22px] uppercase leading-none tracking-[-0.01em] [font-stretch:80%]">Sent</p>
+            <p id="ask-t" className="mt-1.5 font-semibold">Sent to the studio</p>
             <p className="mt-1 text-sm text-ink-2">You will see the reply here.</p>
             <Button className="mt-4 w-full" variant="primary" onClick={onClose}>Done</Button>
           </div>
@@ -131,10 +133,9 @@ function AskDialog({ onClose }: { onClose: () => void }) {
                 </Select>
               </Field>
               {kind === 'medical_update' && (
-                <p className="flex gap-2 rounded-[var(--radius-md)] bg-caution-soft p-3 text-[13px] text-ink-2">
-                  <HeartPulse className="mt-0.5 size-4 shrink-0 text-caution" aria-hidden />
-                  <span>Studio staff update the medical record themselves so there is a record of who
-                  changed what. Tell them here and they will make the change.</span>
+                <p className="border-l-2 border-caution pl-3 text-[13.5px] text-ink-2">
+                  Studio staff update the medical record themselves, so there is a record of who
+                  changed what. Tell them here and they’ll make the change.
                 </p>
               )}
               <Field label="Subject" htmlFor="ask-subject" required>

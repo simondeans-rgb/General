@@ -1,17 +1,13 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
-import { CalendarX2, ChevronRight, MapPin, User } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
-import { Badge, Card, EmptyState, Skeleton, ErrorState, type Tone } from '@/components/ui';
+import { EmptyState, Skeleton, ErrorState } from '@/components/ui';
+import { SectionHead, SessionRow } from '@/app/family/_parts/ui';
 import * as H from '@/lib/repos/hub';
 import { time, relativeDay, dateLong, isoDate, dayRange } from '@/lib/format';
-import { cn } from '@/lib/cn';
 
-const TONES: Record<string, Tone> = {
-  violet:'violet', amber:'amber', teal:'teal', rose:'rose', indigo:'indigo', lime:'lime' };
 
 export default function StudentTimetable() {
   const [from] = React.useMemo(() => dayRange(0), []);
@@ -28,62 +24,33 @@ export default function StudentTimetable() {
   }, [rows.data]);
 
   return (
-    <Shell title="Timetable" subtitle="Your classes and anything you're down for" allow={['student']}>
-      <div className="mx-auto max-w-lg space-y-4">
-        {rows.isLoading && <Card className="space-y-3 p-4">{[0,1,2].map(i => <Skeleton key={i} className="h-14" />)}</Card>}
-        {rows.error && <ErrorState error={rows.error} onRetry={() => rows.refetch()} />}
+    <Shell title="Timetable" subtitle="Your classes and anything you’re down for" allow={['student']}>
+      <div className="mx-auto max-w-2xl space-y-10">
+        {rows.isLoading && <div className="space-y-3">{[0, 1, 2].map(i => <Skeleton key={i} className="h-14" />)}</div>}
+        {rows.error != null && <ErrorState error={rows.error} onRetry={() => rows.refetch()} />}
         {byDay.length === 0 && !rows.isLoading && (
-          <Card><EmptyState icon={<CalendarX2 className="size-5" />} title="Nothing scheduled"
-            body="Your classes will show here once you're enrolled." /></Card>
+          <EmptyState title="Nothing scheduled" body="Your classes show here once you’re enrolled." />
         )}
-        {byDay.map(([day, list]) => (
-          <Card key={day}>
-            <div className="flex items-baseline gap-2 border-b border-line px-4 py-2.5">
-              <h2 className="font-semibold">{relativeDay(list[0].starts_at)}</h2>
-              <span className="text-[13px] text-ink-3">{dateLong(list[0].starts_at)}</span>
-            </div>
-            <ul className="divide-y divide-line">
-              {list.map((s, i) => {
-                const cancelled = s.status === 'cancelled';
-                const isEvent = s.entry_kind === 'event';
-                // A class row opens the class, where its videos, music and
-                // handouts live. An event has no class behind it.
-                const body = (
-                  <>
-                    <span className={cn('tnum w-14 shrink-0 font-semibold', cancelled && 'line-through')}>
-                      {time(s.starts_at)}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex flex-wrap items-center gap-2">
-                        <span className={cn('font-medium', cancelled && 'line-through')}>{s.name}</span>
-                        {isEvent
-                          ? <Badge tone="indigo">Event</Badge>
-                          : s.style && <Badge tone={TONES[s.colour] ?? 'neutral'}>{s.style}</Badge>}
-                        {cancelled && <Badge tone="critical">Cancelled</Badge>}
-                      </span>
-                      <span className="mt-0.5 flex flex-wrap items-center gap-x-3 text-[12.5px] text-ink-2">
-                        {s.teacher && <span className="inline-flex items-center gap-1">
-                          <User className="size-3.5" aria-hidden />{s.teacher}</span>}
-                        {(s.room || s.location) && <span className="inline-flex items-center gap-1">
-                          <MapPin className="size-3.5" aria-hidden />{[s.location, s.room].filter(Boolean).join(' · ')}</span>}
-                      </span>
-                    </span>
-                    {s.class_id && <ChevronRight className="size-4 shrink-0 self-center text-ink-3" aria-hidden />}
-                  </>
-                );
-                const row = 'flex items-start gap-3 px-4 py-3';
-                return (
-                  <li key={`${s.id}-${i}`} className={cn(cancelled && 'opacity-60')}>
-                    {s.class_id
-                      ? <Link href={`/class/?id=${s.class_id}`} className={cn(row, 'hover:bg-surface-2')}
-                              aria-label={`${s.name}, open class`}>{body}</Link>
-                      : <div className={row}>{body}</div>}
-                  </li>
-                );
-              })}
-            </ul>
-          </Card>
-        ))}
+        {byDay.map(([day, list]) => {
+          const rel = relativeDay(list[0].starts_at);
+          const long = dateLong(list[0].starts_at);
+          return (
+            <section key={day} aria-label={long}>
+              <SectionHead title={rel === 'Today' || rel === 'Tomorrow' ? rel : long} meta={rel === 'Today' || rel === 'Tomorrow' ? long : undefined} />
+              <ul className="divide-y divide-line">
+                {list.map((s, i) => (
+                  // A class row opens the class, where its videos, music and
+                  // handouts live. An event has no class behind it.
+                  <SessionRow key={`${s.id}-${i}`} time={time(s.starts_at)} name={s.name}
+                    href={s.class_id ? `/class/?id=${s.class_id}` : undefined}
+                    cancelled={s.status === 'cancelled'}
+                    style={s.entry_kind === 'event' ? null : s.style} colour={s.colour}
+                    meta={[s.entry_kind === 'event' ? 'Event' : null, s.teacher, [s.location, s.room].filter(Boolean).join(' · ')]} />
+                ))}
+              </ul>
+            </section>
+          );
+        })}
       </div>
     </Shell>
   );

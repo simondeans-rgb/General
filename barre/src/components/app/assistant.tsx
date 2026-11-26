@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { Search, Sparkles, CornerDownLeft, ArrowRight, Users, User, GraduationCap, Receipt, BookOpen } from 'lucide-react';
+import { Search, CornerDownLeft, ArrowRight } from 'lucide-react';
 import { useRows } from '@/lib/query';
 import { SEARCH, type Hit } from '@/lib/repos/search';
 import { useSession } from '@/lib/auth/session';
@@ -16,7 +16,6 @@ import { cn } from '@/lib/cn';
  * an AI answer.
  */
 const HIT_LABEL: Record<Hit['kind'], string> = { family: 'Family', student: 'Student', staff: 'Staff', invoice: 'Invoice', class: 'Class' };
-const HIT_ICON: Record<Hit['kind'], React.ElementType> = { family: Users, student: User, staff: GraduationCap, invoice: Receipt, class: BookOpen };
 
 export function AssistantLauncher() {
   const { session } = useSession();
@@ -57,9 +56,9 @@ export function AssistantLauncher() {
   return (
     <>
       <button onClick={() => setOpen(true)} aria-label="Ask or jump (Command K)"
-        className="hidden h-9 items-center gap-2 rounded-full border border-line bg-surface px-3 text-[13px] text-ink-3 hover:text-ink sm:flex">
+        className="hidden h-9 items-center gap-2 rounded-[var(--radius-md)] border border-line-strong bg-surface px-3 text-[13px] text-ink-3 hover:border-ink-3 hover:text-ink sm:flex">
         <Search className="size-4" aria-hidden /> Ask or jump
-        <kbd className="rounded border border-line bg-surface-2 px-1.5 text-[11px]">⌘K</kbd>
+        <kbd className="rounded-[var(--radius-sm)] bg-surface-2 px-1.5 text-[11px] font-semibold text-ink-2">⌘K</kbd>
       </button>
       <button onClick={() => setOpen(true)} aria-label="Ask or jump"
         className="grid size-10 place-items-center rounded-full text-ink-2 hover:bg-surface-2 sm:hidden">
@@ -70,7 +69,7 @@ export function AssistantLauncher() {
         <div className="fixed inset-0 z-[70] flex items-start justify-center bg-ink/30 p-3 pt-[12dvh]" onClick={() => setOpen(false)}>
           <div role="dialog" aria-modal="true" aria-label="Ask or jump" onClick={e => e.stopPropagation()}
             className="w-full max-w-lg overflow-hidden rounded-[var(--radius-xl)] border border-line bg-surface shadow-lg">
-            <div className="flex items-center gap-2 border-b border-line px-4">
+            <div className="flex items-center gap-2 border-b-2 border-ink px-4">
               <Search className="size-4 text-ink-3" aria-hidden />
               <input ref={input} value={q} onChange={e => { setQ(e.target.value); setActive(0); }}
                 role="combobox" aria-expanded="true" aria-controls="ask-list" aria-label="Ask a question about the studio"
@@ -86,12 +85,11 @@ export function AssistantLauncher() {
               {views.map((v, n) => (
                 <li key={v.href + v.question} role="option" aria-selected={n === active}>
                   <button onClick={() => go(v.href)} onMouseEnter={() => setActive(n)}
-                    className={cn('flex w-full items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-left',
+                    className={cn('flex min-h-12 w-full items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-left',
                       n === active && 'bg-surface-2')}>
-                    {v.kind && React.createElement(HIT_ICON[v.kind], { className: 'size-4 shrink-0 text-ink-3', 'aria-hidden': true })}
                     <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-medium">{v.question}</span>
-                      <span className="block text-[12.5px] text-ink-3">{v.answer}</span>
+                      <span className="block text-[14.5px] font-semibold">{v.question}</span>
+                      <span className="block text-[13px] text-ink-3">{v.answer}</span>
                     </span>
                     {n === active ? <CornerDownLeft className="size-4 text-ink-3" aria-hidden /> : <ArrowRight className="size-4 text-ink-3" aria-hidden />}
                   </button>
@@ -100,9 +98,8 @@ export function AssistantLauncher() {
             </ul>
             {/* Honest about the gap: no generated answers without a backend. */}
             {!assistant.available && (
-              <div className="flex items-start gap-2.5 border-t border-line bg-surface-2 px-4 py-3">
-                <Sparkles className="mt-0.5 size-4 shrink-0 text-accent-text" aria-hidden />
-                <p className="text-[12.5px] text-ink-2">
+              <div className="border-t border-line px-4 py-3">
+                <p className="text-[13px] text-ink-3">
                   {q && !views.length ? 'No saved view answers that yet. ' : ''}
                   The studio assistant is not connected. When it is, it will answer free-text questions from your
                   studio’s data — seeing only what you can see — and show where each answer came from.

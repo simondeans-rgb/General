@@ -2,12 +2,12 @@
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CornerUpLeft, Megaphone, MessageSquare, Send, Users, X } from 'lucide-react';
+import { CornerUpLeft, Send, X } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Badge, Button, Card, EmptyState, ErrorState, Skeleton } from '@/components/ui';
+import { Button, Card, EmptyState, ErrorState, Skeleton } from '@/components/ui';
 import * as I from '@/lib/repos/inbox';
 import { relativeDay, time } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -55,26 +55,26 @@ export default function FamilyMessages() {
   return (
     <Shell title="Messages" allow={['guardian']}>
       <div className="mx-auto max-w-lg">
-        <div role="tablist" aria-label="Messages" className="mb-3 grid grid-cols-2 gap-1 rounded-[var(--radius-md)] bg-surface-2 p-1">
+        <div role="tablist" aria-label="Messages" className="mb-4 flex gap-6 border-b border-line">
           {([['studio', 'The studio', unreadConv.length], ['notices', 'Class notices', unreadNotices.length]] as const).map(([k, l, n]) => (
             <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
-              className={cn('flex min-h-[40px] items-center justify-center gap-1.5 rounded-[calc(var(--radius-md)-2px)] text-sm',
-                tab === k ? 'bg-surface font-medium shadow-xs' : 'text-ink-2')}>
+              className={cn('-mb-px flex min-h-[44px] items-center gap-1.5 border-b-2 px-0.5 text-[15px]',
+                tab === k ? 'border-accent font-semibold text-ink' : 'border-transparent text-ink-3 hover:text-ink')}>
               {l}
-              {n > 0 && <span className="tnum rounded-full bg-accent px-1.5 text-[11px] font-semibold text-on-accent">
+              {n > 0 && <span className="tnum text-[13px] font-semibold text-ink">
                 {n}<span className="sr-only"> unread</span></span>}
             </button>
           ))}
         </div>
 
         {tab === 'studio' && (
-          <Card className="flex h-[calc(100dvh-218px-env(safe-area-inset-bottom))] min-h-[360px] flex-col overflow-hidden lg:h-[calc(100dvh-170px)]">
-            <div className="flex-1 space-y-3 overflow-y-auto overscroll-contain bg-surface-2/40 p-4" aria-live="polite">
+          <Card className="flex h-[calc(100dvh-226px-env(safe-area-inset-bottom))] min-h-[360px] flex-col overflow-hidden lg:h-[calc(100dvh-170px)]">
+            <div className="flex-1 space-y-3 overflow-y-auto overscroll-contain p-4" aria-live="polite">
               {conv.isLoading && <Skeleton className="h-24" />}
               {conv.error && <ErrorState error={conv.error} onRetry={() => conv.refetch()} />}
               {conv.data?.length === 0 && (
-                <EmptyState icon={<MessageSquare className="size-5" />} title="Ask the studio anything"
-                  body="Questions, changes of plan, a heads-up about an absence — the office replies here." />
+                <EmptyState title="Ask the studio anything"
+                  body="Questions, changes of plan, a heads-up about an absence. The office replies here." />
               )}
               {conv.data?.map((m, n) => {
                 const prev = conv.data![n - 1];
@@ -83,17 +83,17 @@ export default function FamilyMessages() {
                 const mine = m.inbound;
                 return (
                   <React.Fragment key={m.id}>
-                    {newDay && <p className="pt-1 text-center text-[11.5px] font-medium uppercase tracking-[0.06em] text-ink-3">{relativeDay(m.sent_at)}</p>}
+                    {newDay && <p className="pt-1 text-center text-[12.5px] font-semibold text-ink-3">{relativeDay(m.sent_at)}</p>}
                     <div className={cn('flex', mine ? 'justify-end' : 'justify-start')}>
-                      <div className={cn('max-w-[85%] rounded-[var(--radius-lg)] px-3.5 py-2.5 text-[15px] shadow-xs',
-                        mine ? 'rounded-br-sm bg-accent text-on-accent' : 'rounded-bl-sm border border-line bg-surface')}>
+                      <div className={cn('max-w-[85%] rounded-[var(--radius-lg)] px-3.5 py-2.5 text-[15px]',
+                        mine ? 'rounded-br-sm bg-accent-soft text-ink' : 'rounded-bl-sm border border-line bg-surface')}>
                         {m.subject && <p className="mb-1 font-medium">{m.subject}</p>}
                         <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                        <p className={cn('mt-1.5 flex items-center gap-2 text-[11.5px]', mine ? 'text-on-accent opacity-80' : 'text-ink-3')}>
+                        <p className={cn('mt-1.5 flex items-center gap-2 text-[11.5px]', 'text-ink-3')}>
                           <span>{mine ? (m.sender ?? 'You') : (m.sender ?? 'The studio')} · {time(m.sent_at)}</span>
                           {!mine && !m.is_request && (
                             <button type="button" onClick={() => { setReplyTo(m); box.current?.focus(); }}
-                              className="ml-auto inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 font-medium text-accent-text hover:bg-surface-2"
+                              className="ml-auto inline-flex min-h-[32px] items-center gap-1 rounded-full px-2 font-semibold text-accent-text hover:bg-surface-3"
                               aria-label={`Reply to ${m.sender ?? 'the studio'}`}>
                               <CornerUpLeft className="size-3" aria-hidden /> Reply
                             </button>
@@ -133,24 +133,25 @@ export default function FamilyMessages() {
         )}
 
         {tab === 'notices' && (
-          <div className="space-y-3">
-            {notices.isLoading && [0,1].map(i => <Skeleton key={i} className="h-24" />)}
-            {notices.data?.length === 0 && <Card><EmptyState icon={<Megaphone className="size-5" />}
-              title="No notices" body="Announcements and messages to your children’s classes appear here." /></Card>}
-            {notices.data?.map(b => (
-              <Card key={b.id} className="p-4">
-                <div className="flex items-center gap-2">
-                  {b.kind === 'studio_announcement'
-                    ? <Badge tone="violet" icon={<Megaphone className="size-3" aria-hidden />}>Studio</Badge>
-                    : <Badge tone="info" icon={<Users className="size-3" aria-hidden />}>{b.class_name}</Badge>}
-                  {!b.read_by_me && <Badge tone="accent">New</Badge>}
-                  <span className="ml-auto text-[12px] text-ink-3">{relativeDay(b.sent_at)}</span>
-                </div>
-                {b.subject && <h2 className="mt-2 font-semibold">{b.subject}</h2>}
-                <p className="mt-1 whitespace-pre-wrap text-[15px] text-ink-2">{b.body}</p>
-                {b.sender && <p className="mt-2 text-[12.5px] text-ink-3">{b.sender}</p>}
-              </Card>
-            ))}
+          <div>
+            {notices.isLoading && <div className="space-y-3">{[0, 1].map(i => <Skeleton key={i} className="h-20" />)}</div>}
+            {notices.data?.length === 0 && <EmptyState
+              title="No notices" body="Announcements to your children’s classes show here." />}
+            <ul className="divide-y divide-line border-t-2 border-ink">
+              {notices.data?.map(b => (
+                <li key={b.id} className="py-4">
+                  {!b.read_by_me && <p className="mb-1 font-display text-[15px] uppercase leading-none tracking-[-0.01em] text-accent-text [font-stretch:80%]">New</p>}
+                  <div className="flex items-baseline gap-3">
+                    <h2 className="min-w-0 flex-1 font-semibold leading-snug">{b.subject || (b.kind === 'studio_announcement' ? 'From the studio' : b.class_name)}</h2>
+                    <span className="shrink-0 text-[13px] text-ink-3">{relativeDay(b.sent_at)}</span>
+                  </div>
+                  <p className="mt-1 whitespace-pre-wrap text-[15px] text-ink-2">{b.body}</p>
+                  <p className="mt-2 text-[13px] text-ink-3">
+                    {[b.kind === 'studio_announcement' ? 'Everyone at the studio' : b.class_name, b.sender].filter(Boolean).join(' · ')}
+                  </p>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>

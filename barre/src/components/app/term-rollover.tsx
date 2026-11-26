@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, AlertTriangle } from 'lucide-react';
 import { RecordSheet } from '@/components/app/record-sheet';
 import { Field, Select } from '@/components/ui';
 import { useRows } from '@/lib/query';
@@ -23,15 +22,14 @@ function useCopy(onDone: (r: C.CopyResult) => void) {
 function Result({ r }: { r: C.CopyResult }) {
   return (
     <div className="space-y-2 text-sm">
-      <p className="flex items-center gap-2"><CheckCircle2 className="size-4 text-positive" aria-hidden />
+      <p><span className="font-semibold text-positive">Done.</span>{' '}
         {r.classes} class{r.classes === 1 ? '' : 'es'} set up, with {r.sessions} sessions.
         {r.enrolled > 0 && ` ${r.enrolled} students carried over.`}</p>
       {r.skipped > 0 && <p className="text-ink-2">{r.skipped} were already in that term and were left alone.</p>}
       {r.not_fitted.length > 0 && (
-        <div className="rounded-[var(--radius-md)] bg-caution-soft p-3">
-          <p className="flex items-center gap-1.5 font-medium"><AlertTriangle className="size-4 text-caution" aria-hidden />
-            No room for {r.not_fitted.length}:</p>
-          <ul className="mt-1 list-disc pl-5 text-[13px] text-ink-2">
+        <div className="border-l-2 border-caution py-1 pl-3">
+          <p className="font-semibold"><span className="text-caution">No room</span> for {r.not_fitted.length}:</p>
+          <ul className="mt-1 list-disc pl-5 text-[13.5px] text-ink-2">
             {r.not_fitted.map((n, i) => <li key={i}>{n.student} — {n.class}</li>)}
           </ul>
         </div>
@@ -57,7 +55,7 @@ export function TermRollover({ fromTerm, classes, onClose }: { fromTerm: C.TermR
       saveLabel={`Copy ${picked.size} class${picked.size === 1 ? '' : 'es'}`}
       onSave={() => copy.mutate({ ids: [...picked], term: target, reenrol })}>
       {targets.length === 0 ? (
-        <p className="text-sm text-ink-2">Add the next term first, in Studio → Terms, with its dates and breaks. Then come back here.</p>
+        <p className="text-sm text-ink-2">Add the next term first, in School settings → Terms, with its dates and breaks. Then come back here.</p>
       ) : (
         <>
           <Field label="Into" htmlFor="ro-term" hint="Sessions are laid down between its dates, skipping its breaks.">
@@ -66,19 +64,19 @@ export function TermRollover({ fromTerm, classes, onClose }: { fromTerm: C.TermR
             </Select>
           </Field>
           <label className="flex items-start gap-2.5 text-sm">
-            <input type="checkbox" className="mt-0.5 size-4 accent-[var(--accent)]" checked={reenrol} onChange={e => setReenrol(e.target.checked)} />
-            <span>Carry the students over too<span className="block text-[12.5px] text-ink-3">Longest-standing first, never beyond a class’s places. Anyone who does not fit is listed.</span></span>
+            <input type="checkbox" className="mt-0.5 size-5 shrink-0 accent-[var(--color-accent)]" checked={reenrol} onChange={e => setReenrol(e.target.checked)} />
+            <span className="font-semibold">Carry the students over too<span className="block text-[13px] font-normal text-ink-3">Longest-standing first, never beyond a class’s places. Anyone who does not fit is listed.</span></span>
           </label>
-          <fieldset className="rounded-[var(--radius-md)] border border-line">
-            <legend className="mx-3 px-1 text-[13px] font-medium text-ink-2">Classes</legend>
+          <fieldset>
+            <legend className="w-full border-b-2 border-ink pb-1.5 text-[14px] font-semibold">Classes <span className="font-normal text-ink-3">{picked.size} of {classes.length} chosen</span></legend>
             <ul className="max-h-60 divide-y divide-line overflow-y-auto">
               {classes.map(c => (
                 <li key={c.id}>
-                  <label className="flex items-center gap-2.5 px-3 py-2 text-sm">
-                    <input type="checkbox" className="size-4 accent-[var(--accent)]" checked={picked.has(c.id)}
+                  <label className="flex min-h-11 items-center gap-2.5 py-2 text-sm">
+                    <input type="checkbox" className="size-5 shrink-0 accent-[var(--color-accent)]" checked={picked.has(c.id)}
                       onChange={e => setPicked(p => { const n = new Set(p); e.target.checked ? n.add(c.id) : n.delete(c.id); return n; })} />
                     <span className="min-w-0 flex-1 truncate">{c.name}</span>
-                    <span className="text-[12.5px] text-ink-3">{c.enrolled} students</span>
+                    <span className="tnum text-[13px] text-ink-3">{c.enrolled} students</span>
                   </label>
                 </li>
               ))}

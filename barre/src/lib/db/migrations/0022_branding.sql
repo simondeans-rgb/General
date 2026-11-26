@@ -2,7 +2,7 @@
 -- 0022 · A school's own brand
 -- ----------------------------------------------------------------------------
 -- Each school shows its own name, logo and colour to its people, "powered by
--- Sanaa". The owner sets them (studio_write already limits updates to
+-- Swayvo". The owner sets them (studio_write already limits updates to
 -- owners; a suspended school cannot change them).
 --
 -- The logo is stored as a raster image. Uploads are redrawn to PNG in the

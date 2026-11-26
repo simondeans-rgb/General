@@ -50,7 +50,7 @@ export function SchoolSwitcher({ className }: { className?: string }) {
           qc.invalidateQueries();
           router.push(HOME[role] ?? '/');
         }}
-        className="min-w-0 flex-1 truncate rounded-[var(--radius-sm)] border border-line bg-surface px-2 py-1">
+        className="h-9 min-w-0 flex-1 truncate rounded-[var(--radius-md)] border border-line-strong bg-surface px-2 text-[14px] font-medium focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12">
         {list.map(s => <option key={s.studio_id} value={s.studio_id}>{s.name}</option>)}
       </select>
     </label>

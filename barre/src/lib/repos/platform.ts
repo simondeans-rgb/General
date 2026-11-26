@@ -1,4 +1,4 @@
-/* The Sanaa console. Everything here is account-level: a school's plan,
+/* The Swayvo console. Everything here is account-level: a school's plan,
    status, owner and counts. The database will not return a child to it. */
 
 export type School = {

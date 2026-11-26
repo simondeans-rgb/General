@@ -17,11 +17,11 @@ Where this build departs from the brief, or interprets it, and why.
 | Credit is applied to the oldest open invoice automatically | Manual allocation | Fewer steps for the office; every allocation is still a visible row. |
 | Notifications say *that* health details changed, never what | Including the detail | Notifications are shown on lock screens and in lists; health data is special-category. |
 | Reports are a handful of rates with their sample size, two small charts | A dashboard of charts | Owners steer by five numbers; each links to the rows behind it. |
-| Sanaa staff see account facts only; inside a school only with the owner's time-limited, read-only, logged grant, never health records | Unrestricted operator access | Under UK GDPR Sanaa is the schools' data processor. Schools can be told, truthfully, that Sanaa cannot browse their children's records. |
-| Sanaa creates schools and invites owners | Self-serve sign-up | Direct sales first; the invitation path already supports adding self-serve later. |
+| Swayvo staff see account facts only; inside a school only with the owner's time-limited, read-only, logged grant, never health records | Unrestricted operator access | Under UK GDPR Swayvo is the schools' data processor. Schools can be told, truthfully, that Swayvo cannot browse their children's records. |
+| Swayvo creates schools and invites owners | Self-serve sign-up | Direct sales first; the invitation path already supports adding self-serve later. |
 | Suspended and cancelled schools stay readable, with export, for 30 days | Locking everyone out | Families mid-term are not punished for the studio's billing, and a leaving school can take its data. |
 | Plan limits stop additions, never delete | Enforcing by removal | Downgrading must never cost a school its records. |
-| Platform staff see counts by role, not names, of a school's people | A full member list | Names of parents and children are the school's data, not Sanaa's. |
+| Platform staff see counts by role, not names, of a school's people | A full member list | Names of parents and children are the school's data, not Swayvo's. |
 | Teachers see a child's allergies, conditions, medication and emergency plan, with a marker for any recorded need (red for urgent, amber otherwise) | Only the allergy line, only for children flagged urgent | Owner's request: a teacher needs the asthma and the inhaler as much as the allergy. GP details still stay with the office. |
 | One brand colour per school, used exactly; readability comes from choosing white or black text on it, and deepening only links and outlines | Full theme control, or substituting a darker colour | The school's own hex appears exactly as in its guidelines, and the app still cannot be made unreadable. |
 | Logos are redrawn to a 256px PNG before saving | Storing the uploaded file as-is | Removes SVG scripts and photo metadata, keeps every page fast. |
@@ -44,8 +44,8 @@ Where this build departs from the brief, or interprets it, and why.
 | Two school styles, Classic and Urban, set the canvas (surfaces, type, corners, dark or light); the school's main and second colour go on top | Free-form theming | Every school looks like itself, and no combination can become unreadable: link and button text are fitted to the style's surface. |
 | Fonts are self-hosted (Inter, Cormorant Garamond, Archivo) | Loading from Google Fonts | No third-party requests from families' phones; works offline. |
 | Switching style keeps a school's own colours, and swaps only if it was using the old style's preset | Always resetting | A school's brand colour survives a change of style. |
-| The product is Sanaa; its wordmark is fixed outlines in Sanaa's own colours (eucalyptus or ivory, terracotta full stop) on every screen | Rendering the name in the school's colours or live font | The Sanaa logo looks the same whatever the school's theme; schools' own logo and colours sit alongside it. |
-| Sanaa's palette (eucalyptus #0B3B34, ivory #F6F2EA, terracotta #C86A4F) and Fraunces headings are the default Classic look | A neutral default | A school that changes nothing still looks finished. |
+| The product is Swayvo; its wordmark is fixed outlines in Swayvo's own colours (eucalyptus or ivory, terracotta full stop) on every screen | Rendering the name in the school's colours or live font | The Swayvo logo looks the same whatever the school's theme; schools' own logo and colours sit alongside it. |
+| Swayvo's palette (eucalyptus #0B3B34, ivory #F6F2EA, terracotta #C86A4F) and Fraunces headings are the default Classic look | A neutral default | A school that changes nothing still looks finished. |
 | Monthly-priced classes are billed by month runs only; term runs bill term and course fees | One run billing everything, months × price | Schools on monthly fees expect a monthly invoice (and, later, a monthly Direct Debit). Each month is billed once. |
 | A family's own discount is applied after the school rule (sibling or multi-class), not instead of it | Taking the larger | A bursary is agreed for a family's circumstances and should not disappear because a sibling rule also applies. **To confirm with the owner.** |
 | Families see a bursary only as "Discount" | Showing the reason | Discretion: the reason is the office's business. |
@@ -66,3 +66,10 @@ Where this build departs from the brief, or interprets it, and why.
 | Office navigation is five areas plus Settings, each with its screens as tabs | Fourteen flat items | Findability; every screen is two taps away on a phone. |
 | The demo loads its schema and sample school only when it builds the database | Bundling them with every page | Cuts each page's first download by about a third; irrelevant once hosted. |
 
+| The product is **Swayvo**, direction B "Counts" with E's notices (approved 26 Nov 2026) | Sotto, Solemi, Sanaa, Choreogia; directions A, C, D, E | Highest naming score with no conflicts found; the eight-count speaks to every style. See docs/brand/. |
+| The logo geometry lives in code (src/lib/swayvo-logo.ts) and every asset is generated from it | Hand-exported files | The app and the files can never drift apart. |
+| Count blue is the product's accent, replaced by a school's own colour inside that school | Swayvo blue everywhere | Schools stay recognisably themselves; Swayvo signs off as "powered by". |
+| Classic and Urban school styles are kept, rebuilt as Swayvo's light and dark looks | Dropping school styles | Schools chose them; both now share one design system. |
+| Changes families must not miss are set as words in display type (MOVED, CANCELLED, DUE) | Coloured badges | Clearest on a phone, and never colour alone. |
+| Database messages were renamed in place (no migration) | A new migration | No production database exists yet; when one does, renames need a migration. |
+| Technical identifiers keep their original names (storage keys, calendar event ids, the `barre` folder) | Renaming everything | Renaming them would break existing demo data and subscribed calendars for no user benefit. |

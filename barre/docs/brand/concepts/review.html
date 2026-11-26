@@ -1,0 +1,170 @@
+<title>Brand Direction Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a single reading column (~68ch) for argument, widening to full width for the concept cards and comparison tables. */
+:root {
+  --bg: #f3f4f1; --surface: #ffffff; --ink: #191c1a; --muted: #555d58; --line: #d9ddd6;
+  --accent: #1f4d3f; --accent-soft: #e2ece6; --flag: #9b3b1f; --flag-soft: #f6e6df;
+  --a: #f2c230; --b: #2638f0; --c: #ff9f5a; --d: #7a1e2b; --e: #ff48b0;
+  --display: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --body: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121513; --surface: #1b1f1c; --ink: #eef1ec; --muted: #a8b0aa; --line: #2f3531;
+  --accent: #8fd1b6; --accent-soft: #1e2d26; --flag: #f0a084; --flag-soft: #33221b; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #121513; --surface: #1b1f1c; --ink: #eef1ec; --muted: #a8b0aa; --line: #2f3531;
+  --accent: #8fd1b6; --accent-soft: #1e2d26; --flag: #f0a084; --flag-soft: #33221b; color-scheme: dark }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 16px/1.55 var(--body); margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+main { max-width: 1120px; margin: 0 auto; padding-block: 48px 96px; display: grid; gap: 64px; }
+.col { max-width: 68ch; }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+h1 { font: 800 clamp(34px, 6vw, 56px)/1.02 var(--display); letter-spacing: -.03em; margin: 0 0 16px; text-wrap: balance; }
+h2 { font: 700 clamp(24px, 3.4vw, 32px)/1.15 var(--display); letter-spacing: -.02em; margin: 0 0 14px; text-wrap: balance; }
+h3 { font: 700 19px/1.3 var(--display); margin: 0 0 6px; }
+p { margin: 0 0 12px; }
+.lede { font-size: 19px; color: var(--ink); }
+.muted { color: var(--muted); }
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tablewrap { overflow-x: auto; border-top: 1px solid var(--ink); }
+table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 14.5px; }
+th, td { text-align: left; padding: 10px 12px 10px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 500 12px/1.3 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+td.n, th.n { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+tr.total td { font-weight: 700; border-bottom: 2px solid var(--ink); }
+.lead td:first-child { font-weight: 700; }
+.flag { color: var(--flag); }
+.concepts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+.concept { background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; min-width: 0; }
+.concept img { display: block; width: 100%; height: auto; aspect-ratio: 1200 / 683; object-fit: cover; border-bottom: 1px solid var(--line); }
+.concept .body { padding: 18px 18px 20px; display: grid; gap: 10px; flex: 1; }
+.concept .tag { display: flex; align-items: center; gap: 8px; font: 500 12px/1 var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.swatch { width: 14px; height: 4px; display: inline-block; }
+.concept dl { display: grid; grid-template-columns: 7.5em 1fr; gap: 4px 10px; margin: 0; font-size: 14px; }
+.concept dt { color: var(--muted); }
+.concept dd { margin: 0; }
+.open { margin-top: auto; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; text-decoration: none; padding: 10px 0 0; border-top: 1px solid var(--line); }
+.open:hover { text-decoration: underline; }
+.rec { background: var(--accent-soft); border-left: 4px solid var(--accent); padding: 24px clamp(16px, 3vw, 32px); }
+.rec ol { margin: 8px 0 0; padding-left: 1.2em; display: grid; gap: 6px; }
+.decide { border-top: 1px solid var(--ink); padding-top: 20px; }
+.decide ol { padding-left: 1.2em; display: grid; gap: 6px; margin: 0; }
+.note { font-size: 14px; color: var(--muted); }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px 48px; }
+.kv { border-top: 1px solid var(--line); padding-top: 10px; }
+.kv b { display: block; font: 500 12px/1.3 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+</style>
+
+<main>
+  <header class="col">
+    <p class="eyebrow">Swayvo · brand and product direction · 26 November 2026</p>
+    <h1>Swayvo: three directions</h1>
+    <p class="lede">You chose the name. Here are three complete, deliberately different ways Swayvo could look, sound and feel, each built against the same seven screens and the same school so you can compare like with like. Choose one, or a combination, and we start building on the preview site.</p>
+  </header>
+
+  <section>
+    <div class="col">
+      <p class="eyebrow">The Swayvo concepts</p>
+      <h2>Open each board to see the identity and the product</h2>
+      <p class="muted">Each board: logo suite and app icon, colour and type, graphic language, seven screens (sign-in, owner today, teacher register, student progress, parent home, timetable, payment) and three marketing pieces.</p>
+    </div>
+    <div class="concepts">
+      <article class="concept">
+        <img src="b-cover.jpg" alt="Concept B cover: the swayvo wordmark and eight-beat mark on ultramarine blue, headline Five, six, seven, eight.">
+        <div class="body">
+          <p class="tag"><span class="swatch" style="background:var(--b)"></span>Concept B · Counts</p>
+          <h3>Sporty, rhythmic, confident</h3>
+          <p>Every dancer counts in eights. An eight-beat bar is the logo, the progress meter and the rhythm of the week. Bold ultramarine, wide headline type, big numbers where a decision hangs on them.</p>
+          <dl><dt>Feels like</dt><dd>A great sports app for dance</dd><dt>Tagline</dt><dd>Five, six, seven, eight.</dd><dt>Strongest for</dt><dd>Teachers, teens, recognition</dd></dl>
+          <a class="open" href="concept-b.html">Open concept B →</a>
+        </div>
+      </article>
+      <article class="concept">
+        <img src="d-cover.jpg" alt="Concept D cover: a condensed swayvo wordmark whose v repeats in fading grey echoes, beside a black-and-white motion photograph.">
+        <div class="body">
+          <p class="tag"><span class="swatch" style="background:var(--d)"></span>Concept D · Echo</p>
+          <h3>Editorial, poised, premium</h3>
+          <p>Early motion photography showed a body as overlapping exposures. The "v" leaves fading echoes; progress shows where a skill was and where it is now. Black and white photography, one oxblood accent, magazine-style titles.</p>
+          <dl><dt>Feels like</dt><dd>A dance company's season brochure</dd><dt>Tagline</dt><dd>Every move leaves a mark.</dd><dt>Strongest for</dt><dd>Owners, adults, premium schools</dd></dl>
+          <a class="open" href="concept-d.html">Open concept D →</a>
+        </div>
+      </article>
+      <article class="concept">
+        <img src="e-cover.jpg" alt="Concept E cover: a teal swayvo wordmark with a swash under the letters and a pink disc overprinting the o, beside the headline The school noticeboard, printed in two inks.">
+        <div class="body">
+          <p class="tag"><span class="swatch" style="background:var(--e)"></span>Concept E · Press</p>
+          <h3>Communal, inky, full of life</h3>
+          <p>Posters, battle flyers and recital programmes printed in two riso inks that overlap to make a third. Swayvo is the school's noticeboard: changes are set as big type ("MOVED", "CANCELLED"), not badges. Calm flat ink inside the product.</p>
+          <dl><dt>Feels like</dt><dd>An arts festival or indie record label</dd><dt>Tagline</dt><dd>See you in class.</dd><dt>Strongest for</dt><dd>Parents, students, community</dd></dl>
+          <a class="open" href="concept-e.html">Open concept E →</a>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section>
+    <div class="col">
+      <p class="eyebrow">Comparison</p>
+      <h2>How the three Swayvo directions compare</h2>
+      <p class="muted">The team's judgement of the boards, out of 10: a way to make trade-offs visible, not a measurement.</p>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Criterion</th><th class="n">B · Counts</th><th class="n">D · Echo</th><th class="n">E · Press</th><th>What decides it</th></tr></thead>
+        <tbody>
+          <tr><td>Strategic fit</td><td class="n">9</td><td class="n">8</td><td class="n">8</td><td>B's shared count spans every style and role; D speaks to progress; E to community.</td></tr>
+          <tr><td>Originality</td><td class="n">8</td><td class="n">8</td><td class="n">9</td><td>Nothing in software looks like E; D's echo is rare outside fashion.</td></tr>
+          <tr><td>Visual sophistication</td><td class="n">8</td><td class="n">9</td><td class="n">7</td><td>D is the most refined; E is loud by design and harder to keep tidy.</td></tr>
+          <tr><td>Memorability</td><td class="n">9</td><td class="n">7</td><td class="n">9</td><td>B's blue and E's pink-on-teal are recognisable across a room; D is subtler.</td></tr>
+          <tr><td>Emotional connection</td><td class="n">8</td><td class="n">7</td><td class="n">9</td><td>E feels like the school's own culture; D can feel cool for young children.</td></tr>
+          <tr><td>Commercial credibility with owners</td><td class="n">8</td><td class="n">9</td><td class="n">7</td><td>D looks the most expensive; E needs its calm product screens to reassure owners.</td></tr>
+          <tr><td>Appeal across roles and ages</td><td class="n">8</td><td class="n">7</td><td class="n">8</td><td>D is strongest with adults; B and E carry teens and families too.</td></tr>
+          <tr><td>Everyday usability</td><td class="n">8</td><td class="n">8</td><td class="n">7</td><td>B and D keep screens quiet; E's dense phone screens need tightening.</td></tr>
+          <tr><td>Accessibility</td><td class="n">8</td><td class="n">7</td><td class="n">7</td><td>D's oxblood action colour sits close to "critical" red; E's inks sit near status colours (needs colour-blind testing).</td></tr>
+          <tr><td>Production and scalability</td><td class="n">8</td><td class="n">7</td><td class="n">6</td><td>D and E depend on commissioned photography (and E on a riso duotone pipeline and consented photos).</td></tr>
+          <tr class="total"><td>Overall judgement</td><td class="n">8.2</td><td class="n">7.7</td><td class="n">7.7</td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="rec">
+    <p class="eyebrow">Recommendation</p>
+    <h2>B · Counts remains the strongest all-rounder; E is the bold alternative</h2>
+    <p><strong>B · Counts</strong> is the most complete system for a product used daily by four kinds of people: clear, energetic, recognisable, and easy to build on. The refinements from the first round still apply (quieter office screens, warmer student and parent words, a stronger mark, a narrower type width in lists).</p>
+    <p><strong>E · Press</strong> is the most original and the most "dance culture". Choose it if you want Swayvo to feel like a community brand first and software second. It needs a strong photography pipeline and careful work to keep owner screens calm.</p>
+    <p><strong>D · Echo</strong> is the most premium. Choose it if you are selling first to established, high-end schools and adult studios. Its quiet palette is weaker for children and for scanning a busy timetable.</p>
+    <p>A coherent combination we would support: <strong>B's system with E's notices</strong>. Keep B's identity, colour and beat bar, and borrow E's idea that changes and announcements are set as bold type ("MOVED", "CANCELLED", "DUE 4 DEC") instead of badges. That gives parents the clearest notices of any version.</p>
+  </section>
+
+  <section class="decide">
+    <p class="eyebrow">Your decision</p>
+    <h2>Which direction should we build?</h2>
+    <div class="col">
+      <ol>
+        <li>B · Counts, refined (recommended)</li>
+        <li>B · Counts with E's notices</li>
+        <li>D · Echo</li>
+        <li>E · Press</li>
+        <li>A combination you describe</li>
+      </ol>
+      <p style="margin-top:14px">Once you choose, we write the brand guidelines, build the design system, rename the product (display name and assets only, not technical identifiers), and redesign every screen on the preview site first. The live demo stays as it is until you say merge.</p>
+      <p class="note">Before launch, Swayvo still needs official trademark searches (UK IPO, EUIPO, USPTO, WIPO; classes 9, 41, 42) and a domain: swayvo.com looked parked; .app and .co.uk looked free.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="col">
+      <p class="eyebrow">Earlier round</p>
+      <h2>Concepts with other names</h2>
+      <p class="muted">From the first round, before you chose Swayvo. Kept for reference: <a href="concept-a.html">A · Sotto, Marked</a> (calm, spike-tape marks) and <a href="concept-c.html">C · Solemi, The Arc</a> (warm, the arc of progress). Their best ideas (A's restraint, C's warmth) are already folded into the B refinements.</p>
+      <p class="note">The design team and user perspectives in this work are simulated professional judgement. No real users were interviewed; the boards are design concepts, not tested products.</p>
+    </div>
+  </section>
+</main>

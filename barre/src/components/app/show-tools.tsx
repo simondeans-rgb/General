@@ -3,12 +3,12 @@
 import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ClipboardCheck, HeartPulse, Printer, Shirt, Ticket, X } from 'lucide-react';
+import { ClipboardCheck, HeartPulse, Printer, X } from 'lucide-react';
 import { useRows } from '@/lib/query';
 import { runAs, readAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import { DetailSection } from '@/components/app/detail-panel';
-import { Badge, Button, ErrorState, Input, Select, type Tone } from '@/components/ui';
+import { Button, ErrorState, Input, Select, type Tone } from '@/components/ui';
 import * as E from '@/lib/repos/events';
 import { dateLong, money, time } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -41,15 +41,14 @@ export function CostumeSection({ eventId, routines }: { eventId: string; routine
       {items.map(([id, it]) => {
         const sized = it.lines.filter(l => l.size).length;
         return (
-          <details key={id} className="mb-2 rounded-[var(--radius-md)] border border-line">
-            <summary className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm">
-              <Shirt className="size-4 text-ink-3" aria-hidden />
-              <span className="min-w-0 flex-1"><b>{it.name}</b>{it.routine ? ` · ${it.routine}` : ''}</span>
-              <span className="text-[12px] text-ink-3">{sized}/{it.lines.length} sizes</span>
+          <details key={id} className="border-b border-line">
+            <summary className="flex min-h-[44px] cursor-pointer items-center gap-2 py-2 text-[14px]">
+              <span className="min-w-0 flex-1"><b className="font-semibold">{it.name}</b>{it.routine ? <span className="text-ink-3"> · {it.routine}</span> : ''}</span>
+              <span className={cn('text-[13px] tnum', sized < it.lines.length ? 'font-semibold text-caution' : 'text-ink-3')}>{sized} of {it.lines.length} sizes</span>
             </summary>
-            <ul className="divide-y divide-line border-t border-line text-[13px]">
+            <ul className="divide-y divide-line border-t border-line pb-2 pl-3 text-[13.5px]">
               {it.lines.map(l => (
-                <li key={l.student_id} className="flex items-center gap-2 px-3 py-1.5">
+                <li key={l.student_id} className="flex items-center gap-2 py-1.5">
                   <span className="min-w-0 flex-1 truncate">{l.dancer}</span>
                   <span className={cn('w-20 shrink-0', !l.size && 'text-ink-3')}>{l.size ?? 'No size'}</span>
                   <Select aria-label={`${it.name} for ${l.dancer}`} className="h-8 w-32 text-[12.5px]" value={l.status}
@@ -62,15 +61,15 @@ export function CostumeSection({ eventId, routines }: { eventId: string; routine
           </details>
         );
       })}
-      <p className="text-[12.5px] text-ink-3">Families give sizes from their app. Status here is for the office.</p>
-      <div className="mt-2 grid grid-cols-2 gap-1.5">
+      <p className="mt-2 text-[13px] text-ink-3">Families give sizes from their app. Status here is for the office.</p>
+      <div className="mt-3 grid grid-cols-2 gap-2">
         <Input aria-label="Costume item" placeholder="Item, e.g. Red waistcoat" value={f.name} onChange={e => setF({ ...f, name: e.target.value })} />
         <Select aria-label="For routine" value={f.routine} onChange={e => setF({ ...f, routine: e.target.value })}>
           <option value="">Everyone in the show</option>
           {routines.map(r => <option key={r.id} value={r.id}>{r.title}</option>)}
         </Select>
       </div>
-      <Button size="sm" className="mt-1.5" disabled={!f.name.trim()}
+      <Button size="sm" className="mt-2" disabled={!f.name.trim()}
         onClick={() => { write.mutate({ sql: E.ADD_COSTUME, params: [eventId, f.routine || null, f.name, Math.round(Number(f.price || 0) * 100)] }); setF({ name: '', routine: '', price: '' }); }}>
         Add costume item
       </Button>
@@ -98,38 +97,41 @@ function RehearsalRegister({ rehearsal, onClose }: { rehearsal: E.Rehearsal; onC
   const write = useWrite();
   const marked = rows.data?.filter(r => r.status).length ?? 0;
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 sm:items-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 sm:items-center sm:p-6" onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-labelledby="rr-t" onClick={e => e.stopPropagation()}
-        className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-t-[var(--radius-xl)] border border-line bg-surface p-4 pb-safe shadow-lg sm:rounded-[var(--radius-xl)]">
-        <div className="mb-3 flex items-start justify-between gap-2">
-          <div>
-            <h2 id="rr-t" className="text-lg font-semibold">{rehearsal.title}</h2>
-            <p className="text-[13px] text-ink-2">{dateLong(rehearsal.starts_at)}, {time(rehearsal.starts_at)} · {marked}/{rows.data?.length ?? 0} marked</p>
+        className="flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-[var(--radius-xl)] border border-line bg-surface shadow-lg sm:rounded-[var(--radius-xl)]">
+        <div className="flex items-start gap-3 border-b border-line px-5 pb-3 pt-4">
+          <div className="min-w-0 flex-1">
+            <h2 id="rr-t" className="font-display text-[20px] leading-tight">{rehearsal.title}</h2>
+            <p className="mt-1 text-[13.5px] text-ink-3">{dateLong(rehearsal.starts_at)}, {time(rehearsal.starts_at)} · <span className="tnum">{marked} of {rows.data?.length ?? 0}</span> marked</p>
           </div>
-          <button onClick={onClose} aria-label="Close" className="grid size-9 place-items-center rounded-full hover:bg-surface-2"><X className="size-4" aria-hidden /></button>
+          <Button size="sm" variant="ghost" onClick={onClose} aria-label="Close" className="-mr-2 -mt-1"><X className="size-4" aria-hidden /></Button>
         </div>
-        {write.error != null && <ErrorState error={write.error} />}
-        {rows.error && <ErrorState error={rows.error} />}
-        {rows.data?.length === 0 && <p className="text-sm text-ink-2">No confirmed dancers yet.</p>}
-        <ul className="divide-y divide-line">
-          {rows.data?.map(r => (
-            <li key={r.student_id} className="flex items-center gap-2 py-2">
-              <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-1.5 font-medium">{r.first_name} {r.last_name}
-                  {r.has_medical && <HeartPulse className={cn('size-3.5', r.requires_alert ? 'text-critical' : 'text-caution')}
-                    aria-label={r.requires_alert ? 'Medical alert' : 'Medical information'} />}</span>
-                {r.routines && <span className="block truncate text-[12px] text-ink-3">{r.routines}</span>}
-              </span>
-              <div role="group" aria-label={`Mark ${r.first_name}`} className="flex gap-1">
-                {MARKS.map(([k, v]) => (
-                  <button key={k} aria-pressed={r.status === k} onClick={() => write.mutate({ sql: E.MARK_REHEARSAL, params: [rehearsal.id, r.student_id, k] })}
-                    className={cn('h-9 rounded-full border px-2.5 text-[12.5px]', r.status === k
-                      ? k === 'absent' ? 'border-critical bg-critical-soft text-critical' : 'border-accent bg-accent text-on-accent' : 'border-line')}>{v}</button>
-                ))}
-              </div>
-            </li>
-          ))}
-        </ul>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-2 pb-safe">
+          {write.error != null && <ErrorState error={write.error} />}
+          {rows.error && <ErrorState error={rows.error} />}
+          {rows.data?.length === 0 && <p className="py-4 text-[14px] text-ink-2">No confirmed dancers yet.</p>}
+          <ul className="divide-y divide-line">
+            {rows.data?.map(r => (
+              <li key={r.student_id} className="flex items-center gap-3 py-2.5">
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold">{r.first_name} {r.last_name}</span>
+                  {r.has_medical && <span className={cn('block text-[12.5px] font-semibold', r.requires_alert ? 'text-critical' : 'text-caution')}>
+                    <HeartPulse className="mr-1 inline size-3.5 align-[-2px]" aria-hidden />{r.requires_alert ? 'Medical alert' : 'Medical information'}</span>}
+                  {r.routines && <span className="block truncate text-[12.5px] text-ink-3">{r.routines}</span>}
+                </span>
+                <div role="group" aria-label={`Mark ${r.first_name}`} className="flex gap-1">
+                  {MARKS.map(([k, v]) => (
+                    <button key={k} aria-pressed={r.status === k} onClick={() => write.mutate({ sql: E.MARK_REHEARSAL, params: [rehearsal.id, r.student_id, k] })}
+                      className={cn('h-11 min-w-[3.25rem] rounded-[var(--radius-md)] border px-2.5 text-[13px] font-semibold', r.status === k
+                        ? k === 'absent' ? 'border-critical bg-critical text-surface' : k === 'late' ? 'border-caution bg-caution text-surface' : 'border-positive bg-positive text-surface'
+                        : 'border-line-strong text-ink-2 hover:border-ink-3')}>{v}</button>
+                  ))}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   );
@@ -164,25 +166,24 @@ export function TicketSection({ eventId }: { eventId: string }) {
   return (
     <DetailSection title="Tickets">
       {write.error != null && <ErrorState error={write.error} />}
-      <ul className="space-y-1 text-sm">
+      <ul className="divide-y divide-line text-[14px]">
         {rows.data?.map(t => (
-          <li key={t.id} className="flex items-center gap-2">
-            <Ticket className="size-4 text-ink-3" aria-hidden />
-            <span className="min-w-0 flex-1">{t.name} · {money(t.price_minor)}</span>
-            <span className="tnum text-[12.5px] text-ink-2">{t.sold} sold{t.left != null ? ` · ${t.left} left` : ''}</span>
+          <li key={t.id} className="flex min-h-[40px] items-center gap-2 py-1.5">
+            <span className="min-w-0 flex-1"><span className="font-semibold">{t.name}</span> <span className="text-ink-3 tnum">{money(t.price_minor)}</span></span>
+            <span className="tnum text-[13px] text-ink-2">{t.sold} sold{t.left != null ? ` · ${t.left} left` : ''}</span>
           </li>
         ))}
       </ul>
-      <div className="mt-2 grid grid-cols-4 gap-1.5">
+      <div className="mt-3 grid grid-cols-4 gap-2">
         <Input aria-label="Ticket name" className="col-span-2" value={f.name} onChange={e => setF({ ...f, name: e.target.value })} />
         <Input aria-label="Price in pounds" type="number" min={0} step={0.5} placeholder="£" value={f.price} onChange={e => setF({ ...f, price: e.target.value })} />
         <Input aria-label="Seats" type="number" min={1} placeholder="Seats" value={f.cap} onChange={e => setF({ ...f, cap: e.target.value })} />
       </div>
-      <Button size="sm" className="mt-1.5" disabled={!f.name.trim() || f.price === ''}
+      <Button size="sm" className="mt-2" disabled={!f.name.trim() || f.price === ''}
         onClick={() => { write.mutate({ sql: E.ADD_TICKET_TYPE, params: [eventId, f.name, Math.round(Number(f.price) * 100), f.cap ? Number(f.cap) : null, Number(f.max) || 6] }); setF({ name: 'Child', price: '', cap: '', max: '6' }); }}>
         Add ticket type
       </Button>
-      <p className="mt-1 text-[12.5px] text-ink-3">Families book from their Events page; tickets go on their account until card payment is switched on.</p>
+      <p className="mt-2 text-[13px] text-ink-3">Families book from their Events page; tickets go on their account until card payment is switched on.</p>
     </DetailSection>
   );
 }
@@ -196,20 +197,21 @@ export function BuyTickets({ eventId }: { eventId: string }) {
   if (!rows.data?.length) return null;
   const have = (mine.data ?? []).filter(t => t.event_id === eventId);
   return (
-    <div className="mt-3 space-y-2 rounded-[var(--radius-md)] bg-surface-2 p-3">
-      <p className="flex items-center gap-1.5 text-sm font-medium"><Ticket className="size-4" aria-hidden /> Tickets for family and friends</p>
-      {have.length > 0 && <p className="text-[13px] text-positive">You have {have.map(t => `${t.quantity} × ${t.name}`).join(', ')}.</p>}
+    <div className="space-y-2 border-t border-line pt-3">
+      <p className="font-semibold">Tickets for family and friends</p>
+      {have.length > 0 && <p className="text-[14px]"><span className="font-semibold text-positive">Booked:</span> {have.map(t => `${t.quantity} × ${t.name}`).join(', ')}.</p>}
       {rows.data.map(t => (
-        <div key={t.id} className="flex items-center gap-2 text-sm">
-          <span className="min-w-0 flex-1">{t.name} · {money(t.price_minor)}{t.left != null && t.left < 20 ? <Badge tone="caution">{t.left} left</Badge> : null}</span>
-          <Input aria-label={`How many ${t.name} tickets`} type="number" min={1} max={t.per_family_max} className="h-9 w-16"
+        <div key={t.id} className="flex items-center gap-2 text-[14.5px]">
+          <span className="min-w-0 flex-1">{t.name} <span className="tnum font-semibold">{money(t.price_minor)}</span>
+            {t.left != null && t.left < 20 ? <span className="block text-[13px] font-semibold text-caution">{t.left === 0 ? 'Sold out' : `${t.left} left`}</span> : null}</span>
+          <Input aria-label={`How many ${t.name} tickets`} type="number" min={1} max={t.per_family_max} className="h-10 w-16"
             value={n[t.id] ?? 1} onChange={e => setN({ ...n, [t.id]: Number(e.target.value) })} />
           <Button size="sm" disabled={t.left === 0} loading={write.isPending}
             onClick={() => write.mutate({ sql: E.BOOK_TICKETS, params: [t.id, n[t.id] ?? 1] })}>Book</Button>
         </div>
       ))}
       {write.error != null && <ErrorState error={write.error} />}
-      <p className="text-[12px] text-ink-3">Added to your account to pay with your next invoice.</p>
+      <p className="text-[13px] text-ink-3">Added to your account, to pay with your next invoice.</p>
     </div>
   );
 }
@@ -220,13 +222,13 @@ export function MyCostumes({ eventId }: { eventId: string }) {
   const write = useWrite();
   if (!rows.data?.length) return null;
   return (
-    <div className="space-y-1.5 border-t border-line px-4 py-3 text-[13px]">
-      <p className="flex items-center gap-1.5 font-medium"><Shirt className="size-4" aria-hidden /> Costume sizes</p>
+    <div className="space-y-2 border-t border-line pt-3 text-[14.5px]">
+      <p className="font-semibold">Costume sizes</p>
       {rows.data.map(c => (
         <div key={c.id + c.student_id} className="flex items-center gap-2">
           <span className="min-w-0 flex-1">{c.first_name} · {c.name}
             {c.status && c.status !== 'needed' && <span className="text-ink-3"> · {COSTUME_STATUS.find(s => s[0] === c.status)?.[1]}</span>}</span>
-          <Select aria-label={`${c.name} size for ${c.first_name}`} className="h-9 w-32 text-[13px]" value={c.size ?? ''}
+          <Select aria-label={`${c.name} size for ${c.first_name}`} className="h-10 w-36" value={c.size ?? ''}
             onChange={e => write.mutate({ sql: E.SET_COSTUME_SIZE, params: [c.id, c.student_id, e.target.value || null] })}>
             <option value="">Choose size…</option>
             {c.sizes.map(s => <option key={s} value={s}>{s}</option>)}

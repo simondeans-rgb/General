@@ -5,12 +5,12 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, CheckCircle2, Send } from 'lucide-react';
+import { ArrowLeft, Check, ChevronDown } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Badge, Button, Card, EmptyState, ErrorState, Input, Skeleton } from '@/components/ui';
+import { Beats, Button, EmptyState, ErrorState, Input, Notice, Skeleton } from '@/components/ui';
 import * as P from '@/lib/repos/progress';
 import * as T from '@/lib/repos/teaching';
 import { time, dateLong } from '@/lib/format';
@@ -59,7 +59,7 @@ function ClassFeedback() {
     },
     onSuccess: ({ n, share }) => {
       setDrafts({}); setOpen(null);
-      setDone(share ? 'Shared with families. They have been told.' : `${n} draft${n === 1 ? '' : 's'} saved — nothing is shared yet.`);
+      setDone(share ? 'Families can see it now, and have been told.' : `${n} draft${n === 1 ? '' : 's'} saved — nothing is shared yet.`);
       qc.invalidateQueries({ queryKey: ['db'] });
     },
   });
@@ -67,70 +67,85 @@ function ClassFeedback() {
   const unshared = (kids.data ?? []).filter(k => (k.going_well || k.work_on) && !k.shared).length;
 
   return (
-    <Shell title={m ? `Feedback: ${m.name}` : 'Class feedback'} subtitle={m ? `${dateLong(m.starts_at)} · ${time(m.starts_at)}` : undefined}
+    <Shell title={m ? m.name : 'Class feedback'} subtitle={m ? `Feedback · ${dateLong(m.starts_at)} · ${time(m.starts_at)}` : undefined}
       allow={['owner', 'admin', 'teacher']}
       actions={<Link href={`/teach/register/?session=${sessionId}`} aria-label="Back to the register"
-        className="grid size-9 place-items-center rounded-full text-ink-2 hover:bg-surface-2"><ArrowLeft className="size-4" aria-hidden /></Link>}>
-      <div className="mx-auto max-w-2xl space-y-4">
-        {done && <p role="status" className="flex items-center gap-2 rounded-[var(--radius-md)] bg-positive-soft px-3 py-2 text-[13px]">
-          <CheckCircle2 className="size-4 text-positive" aria-hidden /> {done}</p>}
+        className="grid size-11 place-items-center rounded-full text-ink-2 hover:bg-surface-2"><ArrowLeft className="size-5" aria-hidden /></Link>}>
+      <div className="mx-auto max-w-2xl space-y-6">
+        {done && <div role="status"><Notice word={done.includes('draft') ? 'Saved' : 'Shared'} tone="positive" title={done} /></div>}
         {save.error != null && <ErrorState error={save.error} />}
         {kids.isLoading && <Skeleton className="h-40" />}
-        {kids.data && list.length === 0 && <Card><EmptyState title="Nobody to give feedback to" body="Take the register first." /></Card>}
-        <Card>
-          <ul className="divide-y divide-line">
-            {list.map(k => {
-              const d = drafts[k.student_id];
-              const isOpen = open === k.student_id;
-              const has = d && (d.going_well.length || d.work_on.length || d.note.trim() || Object.keys(d.skills).length);
-              return (
-                <li key={k.student_id}>
-                  <button className={cn('flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-surface-2', isOpen && 'bg-surface-2')}
-                          aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : k.student_id)}>
-                    <span className="min-w-0 flex-1 font-medium">{k.first_name} {k.last_name}</span>
-                    {has ? <Badge tone="info">Edited</Badge> : k.shared ? <Badge tone="positive">Shared</Badge>
-                      : (k.going_well || k.work_on) ? <Badge tone="neutral">Draft</Badge> : null}
-                  </button>
-                  {isOpen && (
-                    <div className="space-y-3 bg-surface-2/50 px-4 pb-4">
-                      {(['going_well', 'work_on'] as const).map(kind => (
-                        <div key={kind}>
-                          <p className="mb-1 text-[12px] font-semibold text-ink-3">{kind === 'going_well' ? 'Going well' : 'To work on'}</p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {chips.data?.filter(c => c.kind === kind).map(c => {
-                              const on = d?.[kind].includes(c.label);
-                              return (
-                                <button key={c.id} aria-pressed={!!on} onClick={() => toggle(k.student_id, kind, c.label)}
-                                  className={cn('rounded-full border px-3 py-1 text-[13px]',
-                                    on ? 'border-accent bg-accent text-on-accent' : 'border-line bg-surface hover:bg-surface-2')}>
-                                  {on && <Check className="mr-1 inline size-3" aria-hidden />}{c.label}
-                                </button>
-                              );
-                            })}
+        {kids.data && list.length === 0 && <EmptyState title="Nobody to give feedback to" body="Take the register first. Feedback is for the children who were there."
+          action={<Link href={`/teach/register/?session=${sessionId}`}><Button tabIndex={-1}>Open register</Button></Link>} />}
+
+        {list.length > 0 && (
+          <section aria-labelledby="fb-h">
+            <div className="mb-1 flex items-center gap-3 border-b-2 border-ink pb-2">
+              <h2 id="fb-h" className="section-title flex-1">Tap a child, tap what fits</h2>
+              <span className="tnum text-[13px] text-ink-3">{drafted} of {list.length} done</span>
+              <Beats value={drafted} max={list.length} label={`${drafted} of ${list.length} have feedback`} />
+            </div>
+            <ul className="divide-y divide-line">
+              {list.map(k => {
+                const d = drafts[k.student_id];
+                const isOpen = open === k.student_id;
+                const has = d && (d.going_well.length || d.work_on.length || d.note.trim() || Object.keys(d.skills).length);
+                const state = has ? ['Not saved yet', 'text-accent-text font-semibold'] : k.shared ? ['Shared', 'text-positive font-semibold']
+                  : (k.going_well || k.work_on) ? ['Draft', 'text-ink-2'] : null;
+                return (
+                  <li key={k.student_id}>
+                    <button className="flex min-h-14 w-full items-center gap-3 py-3 text-left hover:bg-surface-2/60"
+                            aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : k.student_id)}>
+                      <span className="min-w-0 flex-1 text-[16px] font-semibold">{k.first_name} {k.last_name}</span>
+                      {state && <span className={cn('text-[13px]', state[1])}>{state[0]}</span>}
+                      <ChevronDown className={cn('size-4 shrink-0 text-ink-3 transition-transform', isOpen && 'rotate-180')} aria-hidden />
+                    </button>
+                    {isOpen && (
+                      <div className="space-y-4 pb-5">
+                        {(['going_well', 'work_on'] as const).map(kind => (
+                          <div key={kind} role="group" aria-label={kind === 'going_well' ? 'Going well' : 'To work on'}>
+                            <p className="mb-1.5 text-[13px] font-semibold text-ink-2">{kind === 'going_well' ? 'Going well' : 'To work on'}</p>
+                            <div className="flex flex-wrap gap-2">
+                              {chips.data?.filter(c => c.kind === kind).map(c => {
+                                const on = d?.[kind].includes(c.label);
+                                return (
+                                  <button key={c.id} aria-pressed={!!on} onClick={() => toggle(k.student_id, kind, c.label)}
+                                    className={cn('inline-flex min-h-10 items-center rounded-full border px-3.5 text-[14px] font-medium',
+                                      on ? 'border-ink bg-ink text-surface' : 'border-line-strong bg-surface text-ink hover:bg-surface-2')}>
+                                    {on && <Check className="mr-1 size-3.5" aria-hidden />}{c.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                      <Input aria-label={`A note for ${k.first_name}`} placeholder="Anything else (optional)" value={d?.note ?? ''}
-                             onChange={e => upd(k.student_id, x => ({ ...x, note: e.target.value }))} />
-                      <SkillPicker studentId={k.student_id} value={d?.skills ?? {}}
-                                   onChange={sk => upd(k.student_id, x => ({ ...x, skills: sk }))} />
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </Card>
-        <div className="flex gap-2">
-          <Button className="flex-1" disabled={!touched.length} loading={save.isPending && save.variables === false} onClick={() => save.mutate(false)}>
-            Save {touched.length || ''} draft{touched.length === 1 ? '' : 's'}
-          </Button>
-          <Button className="flex-1" variant="primary" disabled={!touched.length && !unshared} loading={save.isPending && save.variables === true}
-                  onClick={() => save.mutate(true)}>
-            <Send className="size-4" aria-hidden /> Share with families
-          </Button>
-        </div>
-        <p className="text-center text-[12.5px] text-ink-3">{drafted} of {list.length} have feedback for this class.</p>
+                        ))}
+                        <Input aria-label={`A note for ${k.first_name}`} placeholder="Anything else (optional)" value={d?.note ?? ''}
+                               onChange={e => upd(k.student_id, x => ({ ...x, note: e.target.value }))} />
+                        <SkillPicker studentId={k.student_id} value={d?.skills ?? {}}
+                                     onChange={sk => upd(k.student_id, x => ({ ...x, skills: sk }))} />
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+
+        {list.length > 0 && (
+          <div className="space-y-2 border-t border-line pt-4">
+            <div className="flex flex-col-reverse gap-2 sm:flex-row">
+              <Button className="sm:flex-1" size="lg" disabled={!touched.length} loading={save.isPending && save.variables === false} onClick={() => save.mutate(false)}>
+                Save {touched.length || ''} draft{touched.length === 1 ? '' : 's'}
+              </Button>
+              <Button className="sm:flex-1" size="lg" variant="primary" disabled={!touched.length && !unshared} loading={save.isPending && save.variables === true}
+                      onClick={() => save.mutate(true)}>
+                Share with families
+              </Button>
+            </div>
+            <p className="text-[13px] text-ink-3">Nothing reaches a family until you share.{unshared ? ` ${unshared} saved draft${unshared === 1 ? '' : 's'} waiting.` : ''}</p>
+          </div>
+        )}
       </div>
     </Shell>
   );
@@ -145,14 +160,14 @@ function SkillPicker({ studentId, value, onChange }: { studentId: string; value:
   return (
     <div className="flex flex-wrap items-center gap-2 text-sm">
       <select aria-label="Skill" value={skill} onChange={e => setSkill(e.target.value)}
-        className="h-8 rounded-[var(--radius-md)] border border-line bg-surface px-2 text-[13px]">
+        className="h-10 rounded-[var(--radius-md)] border border-line-strong bg-surface px-3 text-[14px]">
         <option value="">Move a skill on…</option>
         {skills.data.map(s => <option key={s.skill_id} value={s.skill_id}>{s.skill}{s.level ? ` (${P.LEVELS.find(l => l.key === s.level)?.label})` : ''}</option>)}
       </select>
       {cur && P.LEVELS.slice(1).map(l => (
         <button key={l.key} aria-pressed={value[cur.skill_id] === l.key}
           onClick={() => onChange({ ...value, [cur.skill_id]: l.key })}
-          className={cn('rounded-full border px-2.5 py-0.5 text-[12.5px]', value[cur.skill_id] === l.key ? 'border-accent bg-accent text-on-accent' : 'border-line bg-surface')}>
+          className={cn('inline-flex min-h-10 items-center rounded-full border px-3.5 text-[14px] font-medium', value[cur.skill_id] === l.key ? 'border-ink bg-ink text-surface' : 'border-line-strong bg-surface')}>
           {l.label}
         </button>
       ))}

@@ -8,7 +8,7 @@ import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import {
-  Button, Card, CardHeader, EmptyState, ErrorState, Field, Input, Skeleton,
+  Button, ErrorState, Field, Input, Skeleton,
 } from '@/components/ui';
 import * as T from '@/lib/repos/teaching';
 import { relativeDay, time } from '@/lib/format';
@@ -33,24 +33,23 @@ export function ClassNotices({ classId, className, canPost }: {
 
   return (
     <>
-      <Card id="notices">
-        <CardHeader
-          title="Notices"
-          subtitle={canPost ? 'Homework, kit, reminders — everyone in the class sees these.' : undefined}
-          action={canPost
-            ? <Button size="sm" variant="primary" onClick={() => setComposing(true)}>
-                <Megaphone className="size-4" aria-hidden /> Post
+      <section id="notices" aria-labelledby="notices-h">
+        <div className="mb-1 flex items-center gap-3 border-b-2 border-ink pb-2">
+          <h2 id="notices-h" className="section-title min-w-0 flex-1">Notices</h2>
+          {canPost
+            ? <Button size="sm" onClick={() => setComposing(true)}>
+                <Megaphone className="size-4" aria-hidden /> Post a notice
               </Button>
-            : undefined}
-        />
+            : <span className="text-[13px] text-ink-3">From the teacher to the class</span>}
+        </div>
+        {canPost && <p className="pt-2 text-[13px] text-ink-3">Homework, kit, reminders. Everyone in the class and their parents see these.</p>}
 
-        {rows.isPending && <div className="space-y-3 p-4">{[0,1].map(i => <Skeleton key={i} className="h-14" />)}</div>}
-        {rows.error && <div className="p-4"><ErrorState error={rows.error} onRetry={() => rows.refetch()} /></div>}
+        {rows.isPending && <div className="space-y-3 pt-3">{[0, 1].map(i => <Skeleton key={i} className="h-14" />)}</div>}
+        {rows.error && <div className="pt-3"><ErrorState error={rows.error} onRetry={() => rows.refetch()} /></div>}
         {!rows.isPending && rows.data?.length === 0 && (
-          <EmptyState icon={<Megaphone className="size-5" />} title="No notices"
-            body={canPost
-              ? 'Set homework, or tell the class what to bring next week.'
-              : 'Anything your teacher sends the class will appear here.'} />
+          <p className="py-3 text-[14.5px] text-ink-3">{canPost
+              ? 'No notices yet. Set homework, or tell the class what to bring next week.'
+              : 'No notices yet. Anything the teacher sends the class shows here.'}</p>
         )}
 
         {(rows.data?.length ?? 0) > 0 && (
@@ -60,7 +59,7 @@ export function ClassNotices({ classId, className, canPost }: {
             ))}
           </ul>
         )}
-      </Card>
+      </section>
 
       {(composing || editing) && (
         <Compose classId={classId} className={className} notice={editing}
@@ -83,16 +82,12 @@ function NoticeRow({ n, canManage, onEdit }: {
   if (removing(n.id)) return null;
 
   return (
-    <li className="px-4 py-3.5">
+    <li className="py-3.5">
       <div className="flex items-start gap-3">
-        <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-[var(--radius-md)]
-                                     bg-accent-soft text-accent-ink">
-          <Megaphone className="size-4" />
-        </span>
         <div className="min-w-0 flex-1">
-          {n.subject && <p className="font-medium">{n.subject}</p>}
-          <p className="whitespace-pre-line text-sm leading-relaxed text-ink-2">{n.body}</p>
-          <p className="mt-1 text-[12px] text-ink-3">
+          {n.subject && <p className="font-semibold">{n.subject}</p>}
+          <p className="whitespace-pre-line text-[14.5px] leading-relaxed text-ink-2">{n.body}</p>
+          <p className="mt-1 text-[13px] text-ink-3">
             {n.sent_by_name ?? 'The studio'} · {relativeDay(n.sent_at)} at {time(n.sent_at)}
           </p>
         </div>
@@ -159,7 +154,7 @@ function Compose({ classId, className, notice, onClose }: {
               className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
                          focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
           </Field>
-          <p className="rounded-[var(--radius-md)] bg-surface-2 p-3 text-[12.5px] text-ink-2">
+          <p className="text-[13px] text-ink-3">
             Notices go one way. If a parent needs to reply they contact the studio, so
             the conversation stays on record.
           </p>

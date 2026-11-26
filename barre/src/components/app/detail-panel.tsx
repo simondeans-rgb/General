@@ -38,13 +38,13 @@ export function DetailPanel({
         className={cn(
           'fixed inset-x-0 bottom-0 z-50 max-h-[88dvh] overflow-y-auto rounded-t-[var(--radius-xl)]',
           'border-t border-line bg-surface shadow-lg pb-safe',
-          'lg:static lg:z-auto lg:max-h-none lg:rounded-[var(--radius-lg)] lg:border lg:shadow-none',
+          'lg:sticky lg:top-4 lg:z-auto lg:max-h-[calc(100dvh-2rem)] lg:rounded-[var(--radius-lg)] lg:border lg:shadow-md',
         )}
       >
-        <div className="sticky top-0 z-10 flex items-start gap-3 border-b border-line bg-surface/95 px-4 py-3 backdrop-blur">
+        <div className="sticky top-0 z-10 flex items-start gap-3 border-b border-line bg-surface px-5 pb-3 pt-4">
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-[17px] font-semibold tracking-tight">{title}</h2>
-            {subtitle && <div className="truncate text-[13px] text-ink-2">{subtitle}</div>}
+            <h2 className="truncate font-display text-[20px] leading-tight">{title}</h2>
+            {subtitle && <div className="mt-1 truncate text-[13.5px] text-ink-3">{subtitle}</div>}
           </div>
           {actions}
           <button onClick={onClose} aria-label="Close details"
@@ -52,7 +52,7 @@ export function DetailPanel({
             <X className="size-4" aria-hidden />
           </button>
         </div>
-        <div className="p-4">{children}</div>
+        <div className="px-5 py-4">{children}</div>
       </aside>
     </>
   );
@@ -62,9 +62,9 @@ export function DetailSection({ title, children, action }: {
   title: string; children: React.ReactNode; action?: React.ReactNode;
 }) {
   return (
-    <section className="mb-5 last:mb-0">
-      <div className="mb-2 flex items-center gap-2">
-        <h3 className="text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-3">{title}</h3>
+    <section className="mb-7 last:mb-0">
+      <div className="mb-2 flex min-h-[28px] items-center gap-2 border-b border-ink pb-1.5">
+        <h3 className="section-title text-[14px]">{title}</h3>
         {action && <div className="ml-auto">{action}</div>}
       </div>
       {children}
@@ -74,9 +74,9 @@ export function DetailSection({ title, children, action }: {
 
 export function KeyValue({ rows }: { rows: [string, React.ReactNode][] }) {
   return (
-    <dl className="space-y-1.5">
+    <dl className="divide-y divide-line">
       {rows.map(([k, v]) => (
-        <div key={k} className="flex gap-3 text-sm">
+        <div key={k} className="flex gap-3 py-2 text-[14px]">
           <dt className="w-28 shrink-0 text-ink-3">{k}</dt>
           <dd className="min-w-0 flex-1 break-words">{v ?? <span className="text-ink-3">—</span>}</dd>
         </div>

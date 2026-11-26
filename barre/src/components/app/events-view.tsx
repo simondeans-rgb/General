@@ -2,22 +2,18 @@
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Trophy, MapPin, Clock, Check, CalendarClock, Users } from 'lucide-react';
+import { cn } from '@/lib/cn';
 import { Shell } from './shell';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession, type Role } from '@/lib/auth/session';
 import {
-  Badge, Button, Card, EmptyState, ErrorState, Field, Input, Select, Skeleton, type Tone,
+  Button, EmptyState, ErrorState, Field, Input, Select, Skeleton, type Tone,
 } from '@/components/ui';
 import * as H from '@/lib/repos/hub';
 import { BuyTickets, MyCostumes } from '@/components/app/show-tools';
 import { money, time, relativeDay, dateLong, dateShort } from '@/lib/format';
 
-const KIND_TONE: Record<string, Tone> = {
-  competition: 'amber', show: 'violet', exam: 'critical',
-  workshop: 'teal', private_lesson: 'indigo', rehearsal: 'neutral', social: 'lime',
-};
 const KIND_LABEL: Record<string, string> = {
   competition: 'Competition', show: 'Show', exam: 'Exam', workshop: 'Workshop',
   private_lesson: 'Private lesson', rehearsal: 'Rehearsal', social: 'Social',
@@ -50,95 +46,93 @@ export function EventsView({ allow, title }: { allow: Role[]; title: string }) {
 
   return (
     <Shell title={title} subtitle="Competitions, shows, exams and private lessons" allow={allow}>
-      <div className="mx-auto max-w-2xl space-y-4">
-        {events.isLoading && <Card className="space-y-3 p-4">{[0,1,2].map(i => <Skeleton key={i} className="h-24" />)}</Card>}
-        {events.error && <ErrorState error={events.error} onRetry={() => events.refetch()} />}
+      <div className="mx-auto max-w-2xl">
+        {events.isLoading && <div className="space-y-3">{[0, 1, 2].map(i => <Skeleton key={i} className="h-24" />)}</div>}
+        {events.error != null && <ErrorState error={events.error} onRetry={() => events.refetch()} />}
         {events.data?.length === 0 && !events.isLoading && (
-          <Card><EmptyState icon={<Trophy className="size-5" />} title="Nothing in the diary"
-            body="Competitions, shows and workshops will appear here when the studio adds them." /></Card>
+          <EmptyState title="Nothing in the diary"
+            body="Competitions, shows and workshops show here when the studio adds them." />
         )}
 
+        <ul className="divide-y divide-line border-t-2 border-ink">
         {events.data?.map(e => {
           const mine = e.my_status ? STATUS[e.my_status] : null;
           const closed = e.entries_close_on && new Date(e.entries_close_on) < new Date();
           const full = e.capacity != null && e.going >= e.capacity;
+          const d = new Date(e.starts_at);
           return (
-            <Card key={e.id}>
-              <div className="p-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge tone={KIND_TONE[e.kind] ?? 'neutral'}>{KIND_LABEL[e.kind] ?? e.kind}</Badge>
-                  {mine && <Badge tone={mine.tone}>{mine.label}</Badge>}
+            <li key={e.id} className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-x-4 py-5">
+              <p aria-hidden className="text-center leading-none">
+                <span className="block font-display text-[30px] tnum">{new Intl.DateTimeFormat('en-GB', { day: 'numeric', timeZone: 'Europe/London' }).format(d)}</span>
+                <span className="mt-1 block text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-3">{new Intl.DateTimeFormat('en-GB', { month: 'short', timeZone: 'Europe/London' }).format(d)}</span>
+              </p>
+              <article className="min-w-0 space-y-3">
+                <div>
+                  <p className="text-[13px] text-ink-3">
+                    <span className="font-semibold text-ink-2">{KIND_LABEL[e.kind] ?? e.kind}</span>
+                    {mine && <> · <span className={cn('font-semibold', STATUS_TEXT[mine.tone])}>{mine.label}</span></>}
+                  </p>
+                  <h2 className="mt-0.5 font-display text-[19px] leading-tight">{e.title}</h2>
+                  <p className="mt-1 text-[14px] text-ink-2">
+                    {['Today', 'Tomorrow'].includes(relativeDay(e.starts_at)) ? `${relativeDay(e.starts_at)}, ` : ''}{dateLong(e.starts_at)} · {time(e.starts_at)}{e.venue ? ` · ${e.venue}` : ''}
+                  </p>
+                  {e.description && <p className="mt-2 text-[14.5px] leading-relaxed text-ink-2">{e.description}</p>}
+                  <dl className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[13.5px]">
+                    {e.cost_minor != null && (
+                      <div><dt className="inline text-ink-3">Cost </dt>
+                        <dd className="inline font-semibold tnum">{money(e.cost_minor)}</dd></div>)}
+                    {e.capacity != null && (
+                      <div><dt className="inline text-ink-3">Places </dt>
+                        <dd className="inline font-semibold tnum">{e.going} of {e.capacity}{full ? ' · full' : ''}</dd></div>)}
+                    {e.entries_close_on && (
+                      <div><dt className="inline text-ink-3">Entries close </dt>
+                        <dd className="inline font-semibold">{dateShort(e.entries_close_on)}</dd></div>)}
+                    {e.teacher && (
+                      <div><dt className="inline text-ink-3">With </dt>
+                        <dd className="inline font-semibold">{e.teacher}</dd></div>)}
+                  </dl>
                 </div>
-                <h2 className="mt-2 text-[17px] font-semibold tracking-tight">{e.title}</h2>
-                <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[13px] text-ink-2">
-                  <span className="inline-flex items-center gap-1">
-                    <CalendarClock className="size-3.5" aria-hidden />
-                    {relativeDay(e.starts_at)}, {dateLong(e.starts_at)}
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <Clock className="size-3.5" aria-hidden />{time(e.starts_at)}
-                  </span>
-                  {e.venue && <span className="inline-flex items-center gap-1">
-                    <MapPin className="size-3.5" aria-hidden />{e.venue}</span>}
-                </p>
-                {e.description && <p className="mt-2.5 text-sm leading-relaxed text-ink-2">{e.description}</p>}
 
-                <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-[13px]">
-                  {e.cost_minor != null && (
-                    <div><dt className="inline text-ink-3">Cost </dt>
-                      <dd className="inline font-medium">{money(e.cost_minor)}</dd></div>)}
-                  {e.capacity != null && (
-                    <div><dt className="inline text-ink-3">Places </dt>
-                      <dd className="inline font-medium">{e.going} of {e.capacity}</dd></div>)}
-                  {e.entries_close_on && (
-                    <div><dt className="inline text-ink-3">Entries close </dt>
-                      <dd className="inline font-medium">{dateShort(e.entries_close_on)}</dd></div>)}
-                  {e.teacher && (
-                    <div><dt className="inline text-ink-3">With </dt>
-                      <dd className="inline font-medium">{e.teacher}</dd></div>)}
-                </dl>
-              </div>
-
-              {answer.error != null && <div className="px-4 pb-3"><ErrorState error={answer.error} /></div>}
-              {e.kind !== 'private_lesson' && !mine && (
-                <div className="border-t border-line p-3">
-                  {!e.requests_open || closed || full ? (
-                    <p className="text-[13px] text-ink-3">
+                {answer.error != null && <ErrorState error={answer.error} />}
+                {e.kind !== 'private_lesson' && !mine && (
+                  !e.requests_open || closed || full ? (
+                    <p className="text-[13.5px] text-ink-3">
                       {full ? 'This one is full.' : closed ? 'Entries have closed.' : 'Not taking requests.'}
-                      {' '}Message the studio if you would still like to be considered.
+                      {' '}Message the studio if you’d still like to be considered.
                     </p>
                   ) : (
-                    <Button size="sm" onClick={() => setAsking(e)}>Ask to take part</Button>
-                  )}
-                </div>
-              )}
-              {e.my_invite && allow.includes('guardian') && (
-                <div className="flex flex-wrap items-center gap-2 border-t border-line p-3">
-                  <span className="text-[13px] text-ink-2">{e.my_student ?? 'Your child'} is invited.</span>
-                  <Button size="sm" variant="primary" onClick={() => answer.mutate({ id: e.my_invite!, yes: true })}>We’ll be there</Button>
-                  <Button size="sm" variant="ghost" onClick={() => answer.mutate({ id: e.my_invite!, yes: false })}>Not this time</Button>
-                </div>
-              )}
-              {(e.rehearsals?.length || (e.my_status === 'confirmed' && e.routines?.length)) ? (
-                <div className="space-y-1 border-t border-line px-4 py-3 text-[13px]">
-                  {e.rehearsals?.map((r, i) => <p key={i}><b>{r.title}</b> · {dateLong(r.starts_at)}, {time(r.starts_at)}</p>)}
-                  {e.my_status === 'confirmed' && e.routines?.map((r, i) => (
-                    <p key={i}>Dance {r.position}: <b>{r.title}</b>{r.costume ? ` — costume: ${r.costume}` : ''}</p>
-                  ))}
-                </div>
-              ) : null}
-              {allow.includes('guardian') && e.my_status === 'confirmed' && <MyCostumes eventId={e.id} />}
-              {allow.includes('guardian') && (e.kind === 'show' || e.kind === 'competition') && new Date(e.starts_at) > new Date() && (
-                <div className="px-4 pb-3"><BuyTickets eventId={e.id} /></div>
-              )}
-              {mine?.tone === 'caution' && e.my_status === 'requested' && (
-                <p className="border-t border-line px-4 py-2.5 text-[12.5px] text-ink-3">
-                  The studio has your request{e.my_student ? ` for ${e.my_student}` : ''} and will confirm.
-                </p>
-              )}
-            </Card>
+                    <Button onClick={() => setAsking(e)}>Ask to take part</Button>
+                  )
+                )}
+                {e.my_invite && allow.includes('guardian') && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="w-full text-[14px] font-semibold">{e.my_student ?? 'Your child'} is invited.</span>
+                    <Button variant="primary" onClick={() => answer.mutate({ id: e.my_invite!, yes: true })}>We’ll be there</Button>
+                    <Button variant="ghost" onClick={() => answer.mutate({ id: e.my_invite!, yes: false })}>Not this time</Button>
+                  </div>
+                )}
+                {(e.rehearsals?.length || (e.my_status === 'confirmed' && e.routines?.length)) ? (
+                  <ul className="space-y-1 border-t border-line pt-3 text-[14px]">
+                    {e.rehearsals?.map((r, i) => <li key={i}><span className="font-semibold">{r.title}</span> <span className="text-ink-3">· {dateLong(r.starts_at)}, {time(r.starts_at)}</span></li>)}
+                    {e.my_status === 'confirmed' && e.routines?.map((r, i) => (
+                      <li key={i}>Dance {r.position}: <span className="font-semibold">{r.title}</span>{r.costume ? <span className="text-ink-3"> · costume: {r.costume}</span> : ''}</li>
+                    ))}
+                  </ul>
+                ) : null}
+                {allow.includes('guardian') && e.my_status === 'confirmed' && <MyCostumes eventId={e.id} />}
+                {allow.includes('guardian') && (e.kind === 'show' || e.kind === 'competition') && new Date(e.starts_at) > new Date() && (
+                  <BuyTickets eventId={e.id} />
+                )}
+                {e.my_status === 'requested' && (
+                  <p className="text-[13px] text-ink-3">
+                    The studio has your request{e.my_student ? ` for ${e.my_student}` : ''} and will confirm.
+                  </p>
+                )}
+              </article>
+            </li>
           );
         })}
+        </ul>
       </div>
 
       {asking && (
@@ -149,6 +143,10 @@ export function EventsView({ allow, title }: { allow: Role[]; title: string }) {
     </Shell>
   );
 }
+
+const STATUS_TEXT: Record<string, string> = {
+  caution: 'text-caution', positive: 'text-positive', info: 'text-info', neutral: 'text-ink-2',
+};
 
 function RequestDialog({ event, children, onClose, onDone }: {
   event: H.EventRow; children: { id: string; first_name: string; last_name: string }[];
@@ -170,11 +168,9 @@ function RequestDialog({ event, children, onClose, onDone }: {
         className="max-h-[88dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-[var(--radius-xl)]
                    border border-line bg-surface p-4 pb-safe shadow-lg sm:rounded-[var(--radius-xl)]">
         {done ? (
-          <div className="py-4 text-center">
-            <span className="mx-auto mb-3 grid size-11 place-items-center rounded-full bg-positive-soft text-positive" aria-hidden>
-              <Check className="size-5" />
-            </span>
-            <p id="ask-title" className="font-medium">Request sent</p>
+          <div className="py-2">
+            <p className="font-display text-[22px] uppercase leading-none tracking-[-0.01em] [font-stretch:80%]">Sent</p>
+            <p id="ask-title" className="mt-1.5 font-semibold">Request sent</p>
             <p className="mt-1 text-sm text-ink-2">
               The studio will confirm. Nothing is booked until they do.
             </p>
@@ -193,7 +189,7 @@ function RequestDialog({ event, children, onClose, onDone }: {
                 </Field>
               )}
               <Field label="Anything the studio should know" htmlFor="ask-note"
-                     hint="Optional — availability, which piece, that sort of thing.">
+                     hint="Optional. Availability, which piece, that sort of thing.">
                 <Input id="ask-note" value={note} onChange={e => setNote(e.target.value)}
                        placeholder="Free most evenings except Thursday" />
               </Field>

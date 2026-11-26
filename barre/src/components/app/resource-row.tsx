@@ -2,9 +2,7 @@
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  PlayCircle, Music2, FileText, Link2, ExternalLink, Download, Trash2,
-} from 'lucide-react';
+import { ExternalLink, Download, Trash2 } from 'lucide-react';
 import { Button, ErrorState } from '@/components/ui';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
@@ -12,7 +10,6 @@ import * as H from '@/lib/repos/hub';
 import { storage, formatBytes } from '@/lib/storage';
 import { cn } from '@/lib/cn';
 
-const ICON = { video: PlayCircle, audio: Music2, document: FileText, link: Link2 } as const;
 const KIND_LABEL = { video: 'Video', audio: 'Track', document: 'Document', link: 'Link' } as const;
 
 export const mmss = (s: number | null) => {
@@ -36,7 +33,6 @@ export function ResourceRow({ r, canManage }: {
 }) {
   const { session } = useSession();
   const qc = useQueryClient();
-  const Icon = ICON[r.kind] ?? FileText;
   const length = mmss(r.duration_sec);
   const isFile = !!r.storage_path;
 
@@ -68,23 +64,13 @@ export function ResourceRow({ r, canManage }: {
   return (
     <li className="px-4 py-3.5">
       <div className="flex items-start gap-3">
-        <span aria-hidden className={cn('grid size-10 shrink-0 place-items-center rounded-[var(--radius-md)]',
-          r.kind === 'video' ? 'bg-violet-soft text-violet'
-          : r.kind === 'audio' ? 'bg-amber-soft text-amber'
-          : 'bg-surface-2 text-ink-2')}>
-          <Icon className="size-5" />
-        </span>
-
         <div className="min-w-0 flex-1">
-          <p className="font-medium">{r.title}</p>
-          {r.description && <p className="mt-0.5 text-[13px] leading-relaxed text-ink-2">{r.description}</p>}
-          <p className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-[12.5px] text-ink-3">
-            <span>{KIND_LABEL[r.kind] ?? r.kind}</span>
-            {r.category && <span>{r.category}</span>}
-            {r.scope_label && <span>{r.scope_label}</span>}
-            {length && <span className="tnum">{length}</span>}
-            {r.size_bytes != null && <span className="tnum">{formatBytes(r.size_bytes)}</span>}
-            {r.added_by && <span>added by {r.added_by}</span>}
+          <p className="font-semibold">{r.title}</p>
+          {r.description && <p className="mt-0.5 text-[14px] leading-relaxed text-ink-2">{r.description}</p>}
+          <p className="mt-0.5 text-[13px] text-ink-3">
+            <span className={cn('font-semibold', r.kind === 'video' || r.kind === 'audio' ? 'text-ink-2' : 'text-ink-3')}>{KIND_LABEL[r.kind] ?? r.kind}</span>
+            {[r.category, r.scope_label, length, r.size_bytes != null ? formatBytes(r.size_bytes) : null, r.added_by ? `added by ${r.added_by}` : null]
+              .filter(Boolean).map((t, i) => <span key={i} className="tnum"> · {t}</span>)}
           </p>
         </div>
 
@@ -100,7 +86,7 @@ export function ResourceRow({ r, canManage }: {
             </Button>
           )}
           {canManage && (
-            <Button size="sm" variant="ghost" aria-label={`Remove ${r.title}`}
+            <Button size="sm" variant="ghost" className="size-10 p-0" aria-label={`Remove ${r.title}`}
                     loading={remove.isPending} onClick={() => remove.mutate()}>
               <Trash2 className="size-4" aria-hidden />
             </Button>

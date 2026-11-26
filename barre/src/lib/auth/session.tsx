@@ -27,9 +27,9 @@ export type Persona = {
 
 /** Grouped for the sign-in page and the switcher: the operator first. */
 export const PERSONA_GROUPS = () => [
-  { title: 'You, running Sanaa', blurb: 'The platform console: every school, its plan, status and owner.',
+  { title: 'You, running Swayvo', blurb: 'The platform console: every school, its plan, status and owner.',
     people: PERSONAS.filter(p => p.role === 'platform') },
-  { title: 'Northstar Dance Academy', blurb: 'A school using Sanaa, seen by each of its people.',
+  { title: 'Northstar Dance Academy', blurb: 'A school using Swayvo, seen by each of its people.',
     people: PERSONAS.filter(p => p.role !== 'platform') },
 ];
 
@@ -44,17 +44,17 @@ export const PERSONAS: Persona[] = [
     blurb: 'Three children at the studio. Sees her family and nobody else’s.' },
   { userId: uid(NS.user, 40), name: 'Amir Wright', role: 'student', title: 'Student',
     blurb: 'Fifteen, and old enough for his own login — which his mum approved.' },
-  { userId: uid(NS.user, 190), name: 'Jordan Ellis', role: 'platform', title: 'Sanaa platform admin',
-    blurb: 'Runs Sanaa itself: every school’s account, plan and owner — but no child’s records.' },
+  { userId: uid(NS.user, 190), name: 'Jordan Ellis', role: 'platform', title: 'Swayvo platform admin',
+    blurb: 'Runs Swayvo itself: every school’s account, plan and owner — but no child’s records.' },
 ];
 
-/** Sanaa support looking at one school, read-only, under its owner's grant. */
+/** Swayvo support looking at one school, read-only, under its owner's grant. */
 export type SupportView = { studioId: string; studioName: string; until: string };
 
 type Stored = { userId: string; role: Role; name: string; support?: SupportView; studio?: string };
 
 /**
- * `session.role` is the role the app should behave as. For Sanaa staff
+ * `session.role` is the role the app should behave as. For Swayvo staff
  * viewing a school that is 'admin' — so every office screen works as it
  * would for the school — while `platform` stays true and the database keeps
  * the view read-only (migration 0019).
@@ -73,7 +73,7 @@ type Ctx = {
 };
 
 const SessionContext = React.createContext<Ctx | null>(null);
-const KEY = 'barre.session.v1';
+const KEY = `barre.session.v1${process.env.NEXT_PUBLIC_SITE_KEY ? '.' + process.env.NEXT_PUBLIC_SITE_KEY : ''}`;
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [stored, setStored] = React.useState<Stored | null>(null);

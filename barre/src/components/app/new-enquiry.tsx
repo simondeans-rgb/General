@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { RecordSheet } from '@/components/app/record-sheet';
-import { Field, Input, Select } from '@/components/ui';
+import { Field, Input, Notice, Select } from '@/components/ui';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
@@ -21,8 +21,8 @@ export function NewEnquirySheet({ onClose }: { onClose: () => void }) {
     mutationFn: () => runAs(session, q => q(C.CREATE_ENQUIRY, [f.name, f.phone, f.email, f.child, f.dob || null, f.cls || null, f.source, f.next || null])),
     onSuccess: () => { setSaved(true); qc.invalidateQueries({ queryKey: ['db'] }); },
   });
-  if (saved) return <RecordSheet title="Enquiry saved" onClose={onClose} onSave={onClose} saveLabel="Done">
-    <p className="text-sm text-ink-2">{f.name} is in the pipeline. Book their trial from the class when you are ready.</p></RecordSheet>;
+  if (saved) return <RecordSheet title="New enquiry" onClose={onClose} onSave={onClose} saveLabel="Done">
+    <Notice word="Saved" tone="positive" title={`${f.name} is in the pipeline`} detail="Book their trial from the class when you’re ready." /></RecordSheet>;
   return (
     <RecordSheet title="New enquiry" subtitle="A phone call, an email or someone at the door" onClose={onClose}
       saving={save.isPending} error={save.error} canSave={f.name.trim().length > 1 && (f.phone.trim() !== '' || f.email.includes('@'))}

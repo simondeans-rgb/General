@@ -1,14 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronRight, FolderOpen, GraduationCap } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
-import { Badge, Card, CardHeader, EmptyState, ErrorState, Skeleton, type Tone } from '@/components/ui';
+import { EmptyState, ErrorState, Skeleton } from '@/components/ui';
 import * as H from '@/lib/repos/hub';
+import { cn } from '@/lib/cn';
 
-const TONES: Record<string, Tone> = {
-  violet:'violet', amber:'amber', teal:'teal', rose:'rose', indigo:'indigo', lime:'lime' };
+const HUE: Record<string, string> = {
+  violet: 'bg-violet', amber: 'bg-amber', teal: 'bg-teal', rose: 'bg-rose', indigo: 'bg-indigo', lime: 'bg-lime' };
 
 type Row = { id: string; name: string; style: string | null; colour: string | null; resources: number };
 
@@ -19,44 +20,40 @@ export default function TeachMaterial() {
   return (
     <Shell title="Material" subtitle="Videos, music and notes, class by class"
            allow={['owner', 'admin', 'teacher']}>
-      <div className="mx-auto max-w-2xl space-y-4">
-        {rows.isLoading && <Card className="space-y-3 p-4">{[0,1,2].map(i => <Skeleton key={i} className="h-12" />)}</Card>}
-        {rows.error && <ErrorState error={rows.error} onRetry={() => rows.refetch()} />}
-
-        {rows.data?.length === 0 && !rows.isLoading && (
-          <Card><EmptyState icon={<GraduationCap className="size-5" />} title="No classes assigned to you"
-            body="Once you are down as the teacher or assistant on a class, it will appear here." /></Card>
-        )}
-
-        {(rows.data?.length ?? 0) > 0 && (
-          <Card>
-            <CardHeader title="Your classes"
-              subtitle="Open one to share a routine video, the term's music or a handout." />
-            <ul className="divide-y divide-line">
-              {rows.data!.map(c => (
-                <li key={c.id}>
-                  <Link href={`/class/?id=${c.id}`}
-                        className="flex items-center gap-3 px-4 py-3.5 hover:bg-surface-2">
-                    <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-[var(--radius-md)] bg-surface-2 text-ink-2">
-                      <FolderOpen className="size-4.5" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium">{c.name}</span>
-                        {c.style && <Badge tone={TONES[c.colour ?? ''] ?? 'neutral'}>{c.style}</Badge>}
+      <div className="mx-auto max-w-2xl">
+        {rows.error != null && <ErrorState error={rows.error} onRetry={() => rows.refetch()} />}
+        <section aria-labelledby="mat-h">
+          <div className="mb-1 flex items-baseline gap-3 border-b-2 border-ink pb-2">
+            <h2 id="mat-h" className="section-title flex-1">Your classes</h2>
+            {!!rows.data?.length && <span className="text-[13px] text-ink-3">{rows.data.length}</span>}
+          </div>
+          {rows.isLoading && <div className="space-y-3 pt-3">{[0,1,2].map(i => <Skeleton key={i} className="h-12" />)}</div>}
+          {rows.data?.length === 0 && (
+            <EmptyState title="No classes yet"
+              body="When the office puts you down as teacher or assistant on a class, it appears here." />
+          )}
+          <ul className="divide-y divide-line">
+            {rows.data?.map(c => (
+              <li key={c.id}>
+                <Link href={`/class/?id=${c.id}`}
+                      className="grid min-h-14 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 py-3 hover:bg-surface-2/60">
+                  <span className="min-w-0">
+                    <span className="block truncate font-semibold">{c.name}</span>
+                    {c.style && (
+                      <span className="flex items-center gap-1.5 text-[13px] text-ink-3">
+                        <span aria-hidden className={cn('size-2 rounded-[2px]', HUE[c.colour ?? ''] ?? 'bg-surface-3')} />{c.style}
                       </span>
-                      <span className="mt-0.5 block text-[12.5px] text-ink-2">
-                        {c.resources === 0 ? 'Nothing shared yet'
-                          : `${c.resources} item${c.resources === 1 ? '' : 's'} shared`}
-                      </span>
-                    </span>
-                    <ChevronRight className="size-4 shrink-0 text-ink-3" aria-hidden />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        )}
+                    )}
+                  </span>
+                  <span className={cn('tnum text-right text-[13.5px]', c.resources ? 'text-ink-2' : 'text-ink-3')}>
+                    {c.resources === 0 ? 'Nothing shared' : `${c.resources} item${c.resources === 1 ? '' : 's'}`}
+                  </span>
+                  <ChevronRight className="size-4 shrink-0 text-ink-3" aria-hidden />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
       </div>
     </Shell>
   );
