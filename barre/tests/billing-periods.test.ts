@@ -118,7 +118,8 @@ describe('public forms (R-048)', () => {
   it('need the privacy confirmation, record contact consent, and are rate limited', async () => {
     await asUser(null as any, async (q, svc) => {
       const [{ slug }] = await svc(`select slug from studio where id = $1`, [STUDIO_ID]);
-      const [slot] = await q(`select * from app.public_trial_sessions($1)`, [slug]);
+      // A class with room for six bookings, so the rate limit (five) is what refuses the sixth.
+      const [slot] = await q(`select * from app.public_trial_sessions($1) where places_left >= 6 order by starts_at limit 1`, [slug]);
       const base = { contact_name: 'Jo Bloggs', contact_email: 'jo@example.com', contact_phone: '07700 900222', child_dob: '2017-05-05' };
       expect(await expectRejected(() => q(`select app.public_book_trial($1, $2, $3::jsonb)`,
         [slug, slot.session_id, JSON.stringify({ ...base, child_name: 'Kid Zero' })]))).toMatch(/privacy|how the school uses/);
