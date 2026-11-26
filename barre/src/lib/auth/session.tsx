@@ -73,7 +73,7 @@ type Ctx = {
 };
 
 const SessionContext = React.createContext<Ctx | null>(null);
-const KEY = 'barre.session.v1';
+const KEY = `barre.session.v1${process.env.NEXT_PUBLIC_SITE_KEY ? '.' + process.env.NEXT_PUBLIC_SITE_KEY : ''}`;
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [stored, setStored] = React.useState<Stored | null>(null);

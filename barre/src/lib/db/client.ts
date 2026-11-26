@@ -24,7 +24,10 @@ export type Query = <T = Row>(sql: string, params?: unknown[]) => Promise<T[]>;
 
 export type Session = { userId: string; role: string; studio?: string } | null;
 
-const STORAGE = 'idb://barre-demo-v1';
+// The live demo and the preview share one web address, so each keeps its own
+// database; otherwise a preview with a newer schema would wipe the live one.
+const SITE = process.env.NEXT_PUBLIC_SITE_KEY ?? '';
+const STORAGE = `idb://barre-demo-v1${SITE ? '-' + SITE : ''}`;
 
 /**
  * The demo database is persisted in the browser, so a returning visitor keeps

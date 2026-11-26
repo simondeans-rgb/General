@@ -65,6 +65,15 @@ So when Marcus cannot see another teacher's students, that is the database
 refusing him — not this interface choosing not to render them. `Studio → Reset
 demo data` puts it back.
 
+## Versions and previews
+
+- **Live demo** — `/General/studio/`, built from the default branch. Changes reach it only by merging.
+- **Preview** — `/General/studio-next/`, the work in progress on the `studio` branch. It keeps its own
+  demo database and sign-in, so trying the preview never disturbs the live demo. Build it with
+  `NEXT_PUBLIC_BASE_PATH=/General/studio-next NEXT_PUBLIC_SITE_KEY=next npm run build && node scripts/copy-export.mjs studio-next`.
+- **`sanaa-v1`** — a frozen branch marking the version that was live before the next round of
+  significant changes. Nothing is pushed to it; compare against it or restore from it.
+
 ## Running it locally
 
 ```bash
