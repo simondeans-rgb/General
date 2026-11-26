@@ -2,7 +2,7 @@
   "name": "barre",
   "version": "0.1.0",
   "private": true,
-  "description": "Barre — the operating system for running a dance studio",
+  "description": "Barre \u2014 the operating system for running a dance studio",
   "scripts": {
     "dev": "node scripts/copy-pglite.mjs && next dev",
     "build": "node scripts/build-migrations.mjs && node scripts/copy-pglite.mjs && next build",
@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "db:reset": "node scripts/build-migrations.mjs && tsx scripts/db-reset.mts",
     "db:seed": "tsx scripts/db-seed.mts",
-    "export:demo": "next build && node scripts/copy-export.mjs"
+    "export:demo": "next build && node scripts/copy-export.mjs",
+    "a11y": "tsx scripts/a11y.mts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.7",
@@ -51,6 +52,7 @@
     "@types/pg": "^8.15.6",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.1",
+    "axe-core": "^4.10.2",
     "pg": "^8.16.3",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.20.6",

@@ -19,6 +19,7 @@ import {
 } from '@/components/ui';
 import * as S from '@/lib/repos/setup';
 import { dateShort } from '@/lib/format';
+import { cn } from '@/lib/cn';
 
 const STYLE_TONES: Tone[] = ['violet', 'amber', 'teal', 'rose', 'indigo', 'lime'];
 const TIMEZONES = ['Europe/London', 'Europe/Dublin', 'Europe/Paris', 'America/New_York',
@@ -35,23 +36,42 @@ function useSetupWrite(sql: string, onDone?: () => void) {
   });
 }
 
+const TABS = [['school', 'School'], ['places', 'Places'], ['terms', 'Terms'], ['teaching', 'Teaching'], ['money', 'Money']] as const;
+type Tab = typeof TABS[number][0];
+
+/** Settings in five tabs, so each area is one tap away (R-053). */
 export default function StudioSettings() {
+  const [tab, setTab] = React.useState<Tab>('school');
+  React.useEffect(() => {
+    const read = () => { const h = window.location.hash.slice(1); if (TABS.some(t => t[0] === h)) setTab(h as Tab); };
+    read();
+    window.addEventListener('hashchange', read);
+    return () => window.removeEventListener('hashchange', read);
+  }, []);
+  const go = (t: Tab) => { setTab(t); history.replaceState(null, '', `#${t}`); };
   return (
-    <Shell title="Studio" subtitle="Everything a timetable is built from"
+    <Shell title="School settings" subtitle="Everything a timetable is built from"
            allow={['owner', 'admin']}>
       <div className="mx-auto max-w-3xl space-y-5">
-        <StudioDetails />
-        <Locations />
-        <Rooms />
-        <Terms />
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Styles />
-          <Levels />
+        <div role="tablist" aria-label="Settings" className="-mx-1 flex gap-1 overflow-x-auto px-1">
+          {TABS.map(([k, l]) => (
+            <button key={k} role="tab" aria-selected={tab === k} aria-controls={`st-panel-${k}`} id={`st-tab-${k}`} onClick={() => go(k)}
+              className={cn('h-9 shrink-0 rounded-full px-3.5 text-[13px]', tab === k ? 'bg-ink font-medium text-surface' : 'text-ink-2 hover:bg-surface-2')}>
+              {l}
+            </button>
+          ))}
         </div>
-        <FrameworkSettings />
-        <ChipSettings />
-        <PackSettings />
-        <AboutDemo />
+        <div role="tabpanel" id={`st-panel-${tab}`} aria-labelledby={`st-tab-${tab}`} className="space-y-5">
+          {tab === 'school' && <><StudioDetails /><AboutDemo /></>}
+          {tab === 'places' && <><Locations /><Rooms /></>}
+          {tab === 'terms' && <Terms />}
+          {tab === 'teaching' && <>
+            <div className="grid gap-5 sm:grid-cols-2"><Styles /><Levels /></div>
+            <FrameworkSettings />
+            <ChipSettings />
+          </>}
+          {tab === 'money' && <PackSettings />}
+        </div>
       </div>
     </Shell>
   );
@@ -80,6 +100,7 @@ function StudioDetails() {
           <Fact label="Timezone" value={s.timezone} />
           <Fact label="Email" value={s.contact_email ?? 'Not set'} />
           <Fact label="Phone" value={s.contact_phone ?? 'Not set'} />
+          <Fact label="Privacy notice" value={s.privacy_notice_url ?? 'Not set — add it for your public booking page'} />
         </dl>
       )}
       {!isOwner && (
@@ -106,12 +127,13 @@ function StudioSheet({ studio, onClose }: { studio: S.StudioRow; onClose: () => 
   const [tz, setTz] = React.useState(studio.timezone);
   const [email, setEmail] = React.useState(studio.contact_email ?? '');
   const [phone, setPhone] = React.useState(studio.contact_phone ?? '');
+  const [privacy, setPrivacy] = React.useState(studio.privacy_notice_url ?? '');
   const save = useSetupWrite(S.UPDATE_STUDIO, onClose);
 
   return (
     <RecordSheet title="Studio details" onClose={onClose} error={save.error}
-      saving={save.isPending} canSave={name.trim().length >= 2}
-      onSave={() => save.mutate([studio.id, name.trim(), tz, email, phone])}>
+      saving={save.isPending} canSave={name.trim().length >= 2 && (!privacy.trim() || /^https?:\/\//.test(privacy.trim()))}
+      onSave={() => save.mutate([studio.id, name.trim(), tz, email, phone, privacy])}>
       <Field label="Name" htmlFor="st-name" required>
         <Input id="st-name" value={name} onChange={e => setName(e.target.value)} />
       </Field>
@@ -127,6 +149,11 @@ function StudioSheet({ studio, onClose }: { studio: S.StudioRow; onClose: () => 
       </Field>
       <Field label="Contact phone" htmlFor="st-phone">
         <Input id="st-phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} />
+      </Field>
+      <Field label="Privacy notice link" htmlFor="st-privacy"
+             hint="Shown on your public booking page, where families give their details.">
+        <Input id="st-privacy" type="url" value={privacy} onChange={e => setPrivacy(e.target.value)}
+               placeholder="https://yourstudio.co.uk/privacy" />
       </Field>
     </RecordSheet>
   );

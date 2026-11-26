@@ -10,6 +10,71 @@ import * as C from '@/lib/repos/classes';
 import { TrialActions } from '@/components/app/enrolment-actions';
 import { dateShort, ageFrom, time, relativeDay } from '@/lib/format';
 import { cn } from '@/lib/cn';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { runAs } from '@/lib/db/client';
+import { useSession } from '@/lib/auth/session';
+
+type Enq = { id: string; stage: string; contact_name: string; contact_email: string; contact_phone: string; child_name: string;
+  child_dob: string; source: string; next_action_on: string | null; class_name: string | null };
+const COLUMNS: { key: string; label: string; stages: string[] }[] = [
+  { key: 'enquiry', label: 'Enquiry', stages: ['enquiry'] },
+  { key: 'trial_booked', label: 'Trial booked', stages: ['trial_requested', 'trial_booked'] },
+  { key: 'trial_attended', label: 'Tried a class', stages: ['trial_attended'] },
+  { key: 'follow_up', label: 'Follow up', stages: ['follow_up', 'trial_missed'] },
+  { key: 'enrolled', label: 'Enrolled', stages: ['enrolled'] },
+  { key: 'closed_lost', label: 'Closed', stages: ['closed_lost'] },
+];
+
+/** The pipeline as a board, by stage (R-032). */
+function Board({ rows }: { rows: Enq[] }) {
+  const { session } = useSession();
+  const qc = useQueryClient();
+  const [drag, setDrag] = React.useState<Enq | null>(null);
+  const [over, setOver] = React.useState<string | null>(null);
+  const move = useMutation({
+    mutationFn: (v: { e: Enq; stage: string }) => runAs(session, q => q(C.SET_ENQUIRY_STAGE, [v.e.id, v.stage, v.e.next_action_on])),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['db'] }),
+  });
+  return (
+    <div className="p-3">
+      {move.error != null && <div className="mb-2"><ErrorState error={move.error} /></div>}
+      <div className="flex gap-3 overflow-x-auto pb-2">
+        {COLUMNS.map(col => {
+          const list = rows.filter(r => col.stages.includes(r.stage));
+          return (
+            <section key={col.key} aria-label={`${col.label}, ${list.length}`}
+              onDragOver={e => { if (drag) { e.preventDefault(); setOver(col.key); } }} onDragLeave={() => setOver(null)}
+              onDrop={e => { e.preventDefault(); if (drag && !col.stages.includes(drag.stage)) move.mutate({ e: drag, stage: col.key }); setDrag(null); setOver(null); }}
+              className={cn('flex w-60 shrink-0 flex-col rounded-[var(--radius-lg)] bg-surface-2 p-2', over === col.key && 'ring-2 ring-accent-line')}>
+              <h3 className="flex items-center justify-between px-1 pb-2 text-[12.5px] font-semibold uppercase tracking-[0.05em] text-ink-3">
+                {col.label}<span className="tnum">{list.length}</span>
+              </h3>
+              <ul className="space-y-2">
+                {list.map(e => {
+                  const overdue = e.next_action_on && new Date(e.next_action_on) < new Date() && !['enrolled', 'closed_lost'].includes(e.stage);
+                  return (
+                    <li key={e.id} draggable onDragStart={() => setDrag(e)} onDragEnd={() => { setDrag(null); setOver(null); }}
+                      className="cursor-grab rounded-[var(--radius-md)] border border-line bg-surface p-2.5 shadow-xs active:cursor-grabbing">
+                      <p className="font-medium leading-tight">{e.child_name}</p>
+                      <p className="mt-0.5 truncate text-[12px] text-ink-2">{e.class_name ?? 'No class chosen'} · {e.contact_name}</p>
+                      {overdue && <p className="mt-1 text-[12px] font-medium text-critical">Overdue {dateShort(e.next_action_on!)}</p>}
+                      <label className="mt-1.5 flex items-center gap-1 text-[11.5px] text-ink-3">Move to
+                        <select value={col.key} onChange={x => move.mutate({ e, stage: x.target.value })}
+                          className="min-w-0 flex-1 rounded border border-line bg-surface px-1 py-0.5 text-[12px] text-ink">
+                          {COLUMNS.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
+                        </select>
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 const STAGE: Record<string, { label: string; tone: Tone }> = {
   enquiry:         { label: 'Enquiry',        tone: 'neutral' },
@@ -24,6 +89,7 @@ const STAGE: Record<string, { label: string; tone: Tone }> = {
 
 export default function EnrolmentPage() {
   const [newEnquiry, setNewEnquiry] = React.useState(false);
+  const [view, setView] = React.useState<'board' | 'list'>('board');
   const funnel = useRow<{ total: number; booked: number; attended: number; converted: number; lost: number }>(
     ['funnel'], C.FUNNEL);
   const enquiries = useRows<{ id: string; stage: string; contact_name: string; contact_email: string;
@@ -35,7 +101,7 @@ export default function EnrolmentPage() {
   const rate = f && f.total > 0 ? Math.round((f.converted / f.total) * 1000) / 10 : null;
 
   return (
-    <Shell title="Enrolment" subtitle="From first enquiry to a place in a class" allow={['owner', 'admin']}
+    <Shell title="Enrolment" help={<>Everyone who might join: enquiries, trial classes and waiting lists, by stage. Share your public booking link so families can book a trial themselves; you’re told when they do.</>} subtitle="From first enquiry to a place in a class" allow={['owner', 'admin']}
       actions={<Button size="sm" variant="primary" onClick={() => setNewEnquiry(true)}>
         <Plus className="size-4" aria-hidden /> New enquiry
       </Button>}>
@@ -57,12 +123,19 @@ export default function EnrolmentPage() {
 
         <Card>
           <CardHeader title="Pipeline"
-            subtitle="Ordered by what needs doing next, not by when it arrived" />
+            subtitle={view === 'board' ? 'Drag a card to move it on, or use its menu.' : 'Ordered by what needs doing next, not by when it arrived'}
+            action={<div role="tablist" aria-label="Pipeline view" className="inline-flex rounded-[var(--radius-md)] border border-line p-0.5">
+              {(['board', 'list'] as const).map(v => (
+                <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)}
+                  className={cn('h-8 rounded-[7px] px-3 text-[12.5px] font-medium capitalize', view === v ? 'bg-accent-soft text-accent-ink' : 'text-ink-2')}>{v}</button>
+              ))}
+            </div>} />
+          {view === 'board' && enquiries.data && <Board rows={enquiries.data} />}
           {enquiries.isLoading && <div className="space-y-3 p-4">{[0,1,2].map(i => <Skeleton key={i} className="h-16" />)}</div>}
           {enquiries.error && <div className="p-4"><ErrorState error={enquiries.error} /></div>}
           {enquiries.data?.length === 0 && <EmptyState icon={<Route className="size-5" />}
             title="No enquiries yet" body="New enquiries from your website or walk-ins will appear here." />}
-          <ul className="divide-y divide-line">
+          {view === 'list' && <ul className="divide-y divide-line">
             {enquiries.data?.map(e => {
               const stage = STAGE[e.stage] ?? STAGE.enquiry!;
               const overdue = e.next_action_on && new Date(e.next_action_on) < new Date();
@@ -97,7 +170,7 @@ export default function EnrolmentPage() {
                 </li>
               );
             })}
-          </ul>
+          </ul>}
         </Card>
       </div>
     </Shell>

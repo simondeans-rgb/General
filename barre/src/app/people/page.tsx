@@ -41,9 +41,9 @@ function People() {
     families: 'New family', students: 'Add a child', staff: 'Add a teacher' };
 
   return (
-    <Shell title="People" allow={['owner', 'admin']}
+    <Shell title="People" help={<>Families, students and staff. Import a spreadsheet to get started, then invite families to the app. Medical details are shown to teachers only as allergies and the emergency plan.</>} allow={['owner', 'admin']}
       actions={<div className="flex gap-2">
-        {tab !== 'staff' && <Button size="sm" onClick={() => setImporting(true)}>
+        {tab !== 'staff' && <Button size="sm" aria-label="Import" onClick={() => setImporting(true)}>
           <Upload className="size-4" aria-hidden /> <span className="hidden sm:inline">Import</span>
         </Button>}
         <Button size="sm" variant="primary" onClick={() => setAdding(true)}>

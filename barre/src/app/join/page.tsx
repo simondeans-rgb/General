@@ -6,12 +6,12 @@ import { useSearchParams } from 'next/navigation';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { CheckCircle2, MapPin } from 'lucide-react';
 import { readAs, runAs } from '@/lib/db/client';
-import { SchoolMark, PoweredBy, useSchoolTheme } from '@/components/app/brand';
+import { SchoolMark, PoweredBy, useSchoolTheme, logoFor, SchoolHero } from '@/components/app/brand';
 import { Button, Card, EmptyState, ErrorState, Field, Input, Skeleton } from '@/components/ui';
 import { money, dateLong, time } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
-type School = { name: string; brand_colour: string | null; logo_url: string | null; open: boolean; theme: string; brand_secondary: string | null };
+type School = { name: string; brand_colour: string | null; logo_url: string | null; open: boolean; theme: string; brand_secondary: string | null; privacy_notice_url: string | null; hero_url: string | null; logo_light_url: string | null };
 type Slot = { session_id: string; class_name: string; style: string | null; starts_at: string; ends_at: string;
   age_min: number | null; age_max: number | null; location: string | null; trial_price_minor: number | null; places_left: number };
 
@@ -35,8 +35,9 @@ function Join() {
 
   const [age, setAge] = React.useState('');
   const [pick, setPick] = React.useState<Slot | null>(null);
-  const [form, setForm] = React.useState({ contact_name: '', contact_email: '', contact_phone: '', child_name: '', child_dob: '', website: '' });
+  const [form, setForm] = React.useState({ contact_name: '', contact_email: '', contact_phone: '', child_name: '', child_dob: '', website: '', privacy_ack: false, marketing: false });
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, [k]: e.target.value }));
+  const tick = (k: 'privacy_ack' | 'marketing') => (v: boolean) => setForm(f => ({ ...f, [k]: v }));
   const book = useMutation({
     mutationFn: () => runAs(null, q => q(`select app.public_book_trial($1, $2, $3::jsonb)`, [slug, pick!.session_id, JSON.stringify(form)])),
   });
@@ -44,7 +45,7 @@ function Join() {
   const n = Number(age);
   const shown = (slots.data ?? []).filter(s => !age || ((s.age_min == null || n >= s.age_min) && (s.age_max == null || n <= s.age_max)));
   const s = school.data;
-  const ready = form.contact_name.trim() && form.child_name.trim() && form.child_dob && form.contact_phone.trim() && /@.+\./.test(form.contact_email);
+  const ready = form.contact_name.trim() && form.child_name.trim() && form.child_dob && form.contact_phone.trim() && /@.+\./.test(form.contact_email) && form.privacy_ack;
 
   return (
     <main className="min-h-dvh bg-surface-2 px-4 py-8">
@@ -53,9 +54,10 @@ function Join() {
         {school.isLoading && <Skeleton className="h-24" />}
         {school.error && <ErrorState error={school.error} />}
         {slug && school.data === null && <Card className="p-6"><EmptyState title="School not found" body="Check the link, or ask the school for theirs." /></Card>}
+        {s && <SchoolHero src={s.hero_url} name={s.name} />}
         {s && (
           <header className="flex items-center gap-3">
-            <SchoolMark name={s.name} logo={s.logo_url} className="size-12" />
+            <SchoolMark name={s.name} logo={logoFor(s)} className="size-12" />
             <div>
               <h1 className="text-[22px] font-semibold tracking-tight">{s.name}</h1>
               <p className="text-sm text-ink-2">Book a trial class</p>
@@ -121,16 +123,16 @@ function Join() {
                 {/* Honeypot: hidden from people, filled in by bots. */}
                 <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden className="absolute -left-[9999px] size-px opacity-0"
                        value={form.website} onChange={set('website')} />
+                <Consent school={s!} ack={form.privacy_ack} marketing={form.marketing} onAck={tick('privacy_ack')} onMarketing={tick('marketing')} who="you and your child" />
                 {book.error != null && <ErrorState error={book.error} />}
                 <Button variant="primary" className="w-full" disabled={!ready} loading={book.isPending} onClick={() => book.mutate()}>
                   Book {pick.class_name}, {dateLong(pick.starts_at)}
                 </Button>
-                <p className="text-[12.5px] text-ink-3">The school uses these details to arrange the trial and to contact you in an emergency.</p>
               </Card>
             )}
           </>
         )}
-        {s?.open && !book.isSuccess && <AdultDropIn slug={slug} />}
+        {s?.open && !book.isSuccess && <AdultDropIn slug={slug} school={s} />}
         <PoweredBy className="justify-center" />
       </div>
     </main>
@@ -140,24 +142,26 @@ function Join() {
 type DropIn = { session_id: string; class_name: string; starts_at: string; price_minor: number; places_left: number };
 
 /** Adults book a single class for themselves (R-034). */
-function AdultDropIn({ slug }: { slug: string }) {
+function AdultDropIn({ slug, school }: { slug: string; school: School }) {
   const rows = useQuery({ queryKey: ['public-dropins', slug],
     queryFn: () => readAs<DropIn>(null, `select * from app.public_drop_in_sessions($1)`, [slug]) });
   const [pick, setPick] = React.useState<DropIn | null>(null);
-  const [f, setF] = React.useState({ name: '', email: '', phone: '', emergency_name: '', emergency_phone: '', website: '' });
+  const [f, setF] = React.useState({ name: '', email: '', phone: '', emergency_name: '', emergency_phone: '', website: '', privacy_ack: false, marketing: false });
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF(x => ({ ...x, [k]: e.target.value }));
   const book = useMutation({
-    mutationFn: () => runAs(null, q => q(`select app.public_adult_drop_in($1, $2, $3::jsonb)`, [slug, pick!.session_id, JSON.stringify(f)])),
+    mutationFn: async () => (await runAs(null, q => q<{ r: string }>(`select app.public_adult_drop_in($1, $2, $3::jsonb) r`, [slug, pick!.session_id, JSON.stringify(f)])))[0]?.r,
   });
   if (!rows.data?.length) return null;
   if (book.isSuccess) return (
     <Card className="p-6 text-center">
       <CheckCircle2 className="mx-auto mb-2 size-8 text-positive" aria-hidden />
       <h2 className="text-lg font-semibold">See you at {pick!.class_name}</h2>
-      <p className="mt-1 text-sm text-ink-2">{dateLong(pick!.starts_at)} at {time(pick!.starts_at)}. {money(pick!.price_minor)} — pay on the night or online once the school sends your invoice.</p>
+      <p className="mt-1 text-sm text-ink-2">{dateLong(pick!.starts_at)} at {time(pick!.starts_at)}. {book.data === 'held'
+        ? `Your place is held for 30 minutes. The school will send your ${money(pick!.price_minor)} invoice now — the place is confirmed once it is paid.`
+        : `${money(pick!.price_minor)} — pay on the night or online once the school sends your invoice.`}</p>
     </Card>
   );
-  const ok = f.name.trim() && /@.+\./.test(f.email) && f.phone.trim() && f.emergency_phone.trim();
+  const ok = f.name.trim() && /@.+\./.test(f.email) && f.phone.trim() && f.emergency_phone.trim() && f.privacy_ack;
   return (
     <Card>
       <div className="p-4 pb-2"><h2 className="font-semibold">Adults: drop in</h2><p className="text-[13px] text-ink-2">Book a single class for yourself. No commitment.</p></div>
@@ -185,6 +189,8 @@ function AdultDropIn({ slug }: { slug: string }) {
             <Field label="Their phone" htmlFor="ad-ep" required><Input id="ad-ep" type="tel" value={f.emergency_phone} onChange={set('emergency_phone')} /></Field>
           </div>
           <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden className="absolute -left-[9999px] size-px opacity-0" value={f.website} onChange={set('website')} />
+          <Consent school={school} ack={f.privacy_ack} marketing={f.marketing} who="you"
+                   onAck={v => setF(x => ({ ...x, privacy_ack: v }))} onMarketing={v => setF(x => ({ ...x, marketing: v }))} />
           {book.error != null && <ErrorState error={book.error} />}
           <Button variant="primary" className="w-full" disabled={!ok} loading={book.isPending} onClick={() => book.mutate()}>
             Book {pick.class_name}, {money(pick.price_minor)}
@@ -192,5 +198,31 @@ function AdultDropIn({ slug }: { slug: string }) {
         </div>
       )}
     </Card>
+  );
+}
+
+/**
+ * Said at the point of collection (R-048): who holds the details, why, and
+ * where to read more. Contact for news is a separate choice, off by default.
+ */
+function Consent({ school, ack, marketing, onAck, onMarketing, who }: {
+  school: School; ack: boolean; marketing: boolean; onAck: (v: boolean) => void; onMarketing: (v: boolean) => void; who: string;
+}) {
+  return (
+    <div className="space-y-2 rounded-xl bg-surface-2 p-3 text-[13px] text-ink-2">
+      <p>
+        <strong className="text-ink">{school.name}</strong> keeps these details about {who} to arrange the class, to reach someone in an emergency,
+        and to follow up afterwards. Sanaa stores them for the school. If you don’t join, they are deleted after 90 days.
+        {school.privacy_notice_url && <> <a href={school.privacy_notice_url} target="_blank" rel="noreferrer" className="font-medium text-accent-text underline">Read the school’s privacy notice</a>.</>}
+      </p>
+      <label className="flex items-start gap-2">
+        <input type="checkbox" className="mt-0.5 size-4 accent-[var(--color-accent)]" checked={ack} onChange={e => onAck(e.target.checked)} />
+        <span>I have read how the school uses these details <span className="text-critical" aria-hidden>*</span></span>
+      </label>
+      <label className="flex items-start gap-2">
+        <input type="checkbox" className="mt-0.5 size-4 accent-[var(--color-accent)]" checked={marketing} onChange={e => onMarketing(e.target.checked)} />
+        <span>Send me news about classes and shows (optional)</span>
+      </label>
+    </div>
   );
 }

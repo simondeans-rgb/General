@@ -56,3 +56,81 @@ export type Chaperone = { id: string; name: string; phone: string | null; role: 
 export const CHAPERONES = `select id, name, phone, role, checked from event_chaperone where event_id = $1 and deleted_at is null order by name`;
 export const ADD_CHAPERONE = `insert into event_chaperone (event_id, name, phone, role, checked) values ($1, btrim($2), nullif(btrim($3), ''), nullif(btrim($4), ''), $5) returning id`;
 export const REMOVE_CHAPERONE = `delete from event_chaperone where id = $1`;
+
+/* ── Costumes, rehearsal registers, programme, tickets (migration 0042) ──── */
+export type CostumeLine = { item_id: string; item: string; routine: string | null; student_id: string; dancer: string; size: string | null; status: string; sizes: string[] };
+export const COSTUME_LIST = `select * from app.costume_list($1)`;
+export const ADD_COSTUME = `insert into costume_item (event_id, routine_id, name, price_minor) values ($1, $2, btrim($3), $4) returning id`;
+export const SET_COSTUME_STATUS = `
+insert into costume_order (item_id, student_id, status) values ($1, $2, $3)
+on conflict (item_id, student_id) do update set status = excluded.status, updated_at = now() returning item_id`;
+export const SET_COSTUME_SIZE = `select app.set_costume_size($1, $2, $3)`;
+
+export type RehearsalRow = { student_id: string; first_name: string; last_name: string; routines: string | null; status: string | null; has_medical: boolean; requires_alert: boolean };
+export const REHEARSAL_REGISTER = `select * from app.rehearsal_register($1)`;
+export const MARK_REHEARSAL = `select app.mark_rehearsal($1, $2, $3::attendance_status)`;
+
+export type ProgrammeRow = { running_order: number; routine: string; class_name: string | null; dancers: string | null; unnamed: number };
+export const PROGRAMME = `select * from app.event_programme($1)`;
+
+export type TicketType = { id: string; name: string; price_minor: number; capacity: number | null; per_family_max: number; left: number | null; sold: number };
+export const TICKET_TYPES = `
+select t.id, t.name, t.price_minor, t.capacity, t.per_family_max, app.tickets_left(t.id) as left,
+       coalesce((select sum(quantity) from ticket_booking b where b.ticket_type_id = t.id and b.status = 'booked'), 0)::int as sold
+  from ticket_type t where t.event_id = $1 and t.deleted_at is null order by t.price_minor desc, t.name`;
+export const ADD_TICKET_TYPE = `insert into ticket_type (event_id, name, price_minor, capacity, per_family_max) values ($1, btrim($2), $3, $4, $5) returning id`;
+export const BOOK_TICKETS = `select app.book_tickets($1, $2) as id`;
+export const MY_TICKETS = `select b.id, t.event_id, t.name, b.quantity from ticket_booking b join ticket_type t on t.id = b.ticket_type_id where b.status = 'booked'`;
+
+/* ── Exams (migration 0042) ──────────────────────────────────────────────── */
+export type ExamSession = { id: string; board: string; title: string; exam_on: string; venue: string | null; entries_close_on: string | null;
+  entries: number; results: number; unbilled: number };
+export const EXAM_SESSIONS = `
+select x.id, x.board, x.title, x.exam_on, x.venue, x.entries_close_on,
+       count(e.*) filter (where e.status <> 'withdrawn')::int as entries,
+       count(e.*) filter (where e.result is not null)::int as results,
+       count(e.*) filter (where e.status <> 'withdrawn' and e.invoice_id is null and e.fee_minor > 0)::int as unbilled
+  from exam_session x left join exam_entry e on e.session_id = x.id
+ where x.deleted_at is null group by x.id order by (x.exam_on < current_date), x.exam_on`;
+export const ADD_EXAM_SESSION = `
+insert into exam_session (studio_id, board, title, exam_on, venue, entries_close_on)
+select m.studio_id, btrim($1), btrim($2), $3::date, nullif(btrim($4), ''), $5::date
+  from membership m where m.user_id = auth.uid() and m.role in ('owner','admin') and m.deleted_at is null and app.in_scope(m.studio_id) limit 1 returning id`;
+export type ExamEntry = { id: string; session_id: string; student_id: string; student: string; grade: string; fee_minor: number; status: string;
+  result: string | null; mark: number | null; board: string; exam_title: string; exam_on: string };
+const ENTRY_COLS = `e.id, e.session_id, e.student_id, s.first_name || ' ' || s.last_name as student, e.grade, e.fee_minor, e.status, e.result, e.mark,
+       x.board, x.title as exam_title, x.exam_on`;
+export const EXAM_ENTRIES = `
+select ${ENTRY_COLS} from exam_entry e join exam_session x on x.id = e.session_id join student s on s.id = e.student_id
+ where e.session_id = $1 order by e.grade, s.first_name`;
+export const STUDENT_EXAMS = `
+select ${ENTRY_COLS} from exam_entry e join exam_session x on x.id = e.session_id join student s on s.id = e.student_id
+ where e.student_id = $1 and e.status <> 'withdrawn' order by x.exam_on desc`;
+export const MY_EXAMS = `
+select ${ENTRY_COLS} from exam_entry e join exam_session x on x.id = e.session_id join student s on s.id = e.student_id
+ where e.status <> 'withdrawn' order by x.exam_on desc`;
+export const UPCOMING_EXAMS = `select id, board, title, exam_on from exam_session where deleted_at is null and exam_on >= current_date order by exam_on`;
+export const ENTER_EXAM = `select app.enter_exam($1, $2, $3, $4) as id`;
+export const EXAM_RESULT = `select app.exam_result($1, $2, $3)`;
+export const WITHDRAW_EXAM = `select app.withdraw_exam($1)`;
+export const BILL_EXAM = `select app.bill_exam($1) as n`;
+export const STUDENT_PICK = `select id, first_name || ' ' || last_name as name from student where deleted_at is null order by first_name, last_name`;
+export const RESULTS: [string, string][] = [['distinction', 'Distinction'], ['merit', 'Merit'], ['pass', 'Pass'],
+  ['highly_commended', 'Highly commended'], ['commended', 'Commended'], ['not_yet', 'Not yet']];
+
+/* ── Practice (migration 0042) ───────────────────────────────────────────── */
+export type PracticeWeek = { student_id: string; student_name: string; week_start: string; minutes: number; sessions: number };
+export const PRACTICE_WEEKLY = `select * from app.practice_weekly($1)`;
+export const LOG_PRACTICE = `select app.log_practice($1, $2, $3) as id`;
+export const MY_PRACTICE = `select id, practised_on, minutes, what from practice_log where student_id = $1 order by practised_on desc, created_at desc limit 10`;
+/** A family's costume lines: RLS on student keeps it to their own children. */
+export type MyCostume = { id: string; name: string; sizes: string[]; student_id: string; first_name: string; size: string | null; status: string | null };
+export const MY_COSTUMES = `
+select i.id, i.name, i.sizes, s.id as student_id, s.first_name, o.size, o.status
+  from costume_item i
+  join student s on s.id in (select rd.student_id from routine_dancer rd where rd.routine_id = i.routine_id
+                             union select p.student_id from event_participant p where i.routine_id is null and p.event_id = i.event_id
+                                     and p.status = 'confirmed' and p.deleted_at is null)
+  left join costume_order o on o.item_id = i.id and o.student_id = s.id
+ where i.event_id = $1 and i.deleted_at is null and s.deleted_at is null
+ order by i.name, s.first_name`;

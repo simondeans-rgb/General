@@ -121,22 +121,65 @@ returning id`;
 export type BillingLine = {
   family_id: string; family_name: string; student_id: string; student_name: string;
   class_id: string; class_name: string; description: string; quantity: string;
-  unit_minor: number; discount_minor: number; discount_reason: string | null;
+  unit_minor: number; discount_minor: number; discount_reason: string | null; period_start: string | null;
 };
 export type DiscountRule = { id: string; kind: 'sibling' | 'multi_class'; from_nth: number; percent: number; enabled: boolean };
-export type BillingRun = { id: string; term_name: string; status: string; due_on: string; invoice_count: number; total_minor: string; created_at: string; issued_at: string | null };
+export type BillingRun = { id: string; term_name: string; period_month: string | null; status: string; due_on: string; invoice_count: number; total_minor: string; created_at: string; issued_at: string | null };
 
 export const BILLING_TERMS = `select id, name, starts_on, ends_on from term where deleted_at is null order by starts_on desc`;
-export const BILLING_LINES = `select * from app.billing_lines($1)`;
+export const BILLING_LINES = `select * from app.billing_lines($1, $2::date)`;
 export const DISCOUNT_RULES = `select id, kind, from_nth, percent, enabled from discount_rule order by kind desc`;
 export const SET_DISCOUNT_RULE = `update discount_rule set enabled = $2, percent = $3, from_nth = $4 where id = $1 returning id`;
 export const BILLING_RUNS = `
-select r.id, t.name as term_name, r.status, r.due_on, r.invoice_count, r.total_minor, r.created_at, r.issued_at
+select r.id, t.name as term_name, r.period_month, r.status, r.due_on, r.invoice_count, r.total_minor, r.created_at, r.issued_at
   from billing_run r join term t on t.id = r.term_id
  where r.status <> 'discarded' order by r.created_at desc limit 10`;
-export const CREATE_BILLING_RUN = `select app.create_billing_run($1, $2::date) as id`;
+export const CREATE_BILLING_RUN = `select app.create_billing_run($1, $2::date, $3::date) as id`;
 export const ISSUE_BILLING_RUN = `select app.issue_billing_run($1) as n`;
 export const DISCARD_BILLING_RUN = `select app.discard_billing_run($1)`;
+
+/* ── Family discounts, aged debt and Xero (migration 0039) ───────────────── */
+export type FamilyDiscount = { id: string; family_id: string; family_name: string; kind: 'percent' | 'fixed'; amount: number;
+  reason: 'bursary' | 'staff' | 'loyalty' | 'other'; note: string | null; starts_on: string; ends_on: string | null };
+export const FAMILY_DISCOUNTS = `
+select d.id, d.family_id, f.name as family_name, d.kind, d.amount, d.reason, d.note, d.starts_on, d.ends_on
+  from family_discount d join family f on f.id = d.family_id
+ where d.ends_on is null or d.ends_on >= current_date order by f.name`;
+export const ADD_FAMILY_DISCOUNT = `
+insert into family_discount (family_id, kind, amount, reason, note, starts_on, ends_on)
+values ($1, $2, $3, $4, nullif($5, ''), coalesce($6::date, current_date), $7::date) returning id`;
+export const END_FAMILY_DISCOUNT = `update family_discount set deleted_at = now() where id = $1 returning id`;
+export const FAMILY_PICK = `select id, name from family where deleted_at is null and not is_prospect order by name`;
+
+export type AgedDebt = { family_id: string; family_name: string; current_minor: string; d31_60: string; d61_90: string; d90_plus: string; total: string };
+const MY_STUDIO = `(select id from studio where app.is_admin(id) order by name limit 1)`;
+export const AGED_DEBT = `select * from app.aged_debt(${MY_STUDIO})`;
+
+/** Sales invoices in Xero's import layout: one row per line, UK dates. */
+export const XERO_EXPORT = `
+with lines as (
+  select i.id, i.number, f.name as contact, (select g.email from guardian g where g.family_id = f.id and g.deleted_at is null
+            order by g.is_primary desc, g.created_at limit 1) as email,
+         coalesce(i.issued_on, i.created_at::date) as inv_date, i.due_on, t.name as term,
+         ii.description, ii.quantity, ii.total_minor, ii.created_at, 0 as ord
+    from invoice i join family f on f.id = i.family_id join invoice_item ii on ii.invoice_id = i.id and ii.deleted_at is null
+    left join term t on t.id = i.term_id
+   where i.deleted_at is null and i.status not in ('draft', 'void')
+  union all
+  select i.id, i.number, f.name, null, coalesce(i.issued_on, i.created_at::date), i.due_on, t.name,
+         'Discount', 1, -i.discount_minor, i.created_at, 1
+    from invoice i join family f on f.id = i.family_id left join term t on t.id = i.term_id
+   where i.deleted_at is null and i.status not in ('draft', 'void') and i.discount_minor > 0
+)
+select contact as "*ContactName", coalesce(email, '') as "EmailAddress", number as "*InvoiceNumber", coalesce(term, '') as "Reference",
+       to_char(inv_date, 'DD/MM/YYYY') as "*InvoiceDate", to_char(due_on, 'DD/MM/YYYY') as "*DueDate",
+       description as "*Description", quantity as "*Quantity", round(total_minor / quantity / 100.0, 2) as "*UnitAmount",
+       '200' as "*AccountCode", 'No VAT' as "*TaxType", 'GBP' as "Currency"
+  from lines order by number, ord, created_at`;
+export const AGED_DEBT_EXPORT = `
+select family_name as family, round(current_minor / 100.0, 2) as "0-30 days", round(d31_60 / 100.0, 2) as "31-60 days",
+       round(d61_90 / 100.0, 2) as "61-90 days", round(d90_plus / 100.0, 2) as "90+ days", round(total / 100.0, 2) as total
+  from app.aged_debt(${MY_STUDIO})`;
 
 /** Every invoice, flat, for the accountant (R-012). */
 export const INVOICES_EXPORT = `

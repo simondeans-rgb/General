@@ -49,7 +49,7 @@
   /* Dance-style hues. Chosen to stay distinguishable at 10px on a timetable
      and to pass contrast as text on their own soft background. */
   --color-violet:  #6a4bd6;  --color-violet-soft:  #efebfd;
-  --color-amber:   #9a6410;  --color-amber-soft:   #fdf0dc;
+  --color-amber:   #8a5a0c;  --color-amber-soft:   #fdf0dc;
   --color-teal:    #0d7377;  --color-teal-soft:    #e0f4f4;
   --color-rose:    #b03060;  --color-rose-soft:    #fdeaf1;
   --color-indigo:  #2f4bb5;  --color-indigo-soft:  #e9edfb;

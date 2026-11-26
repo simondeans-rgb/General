@@ -14,8 +14,7 @@
  * the database refuses, not the interface.
  */
 import type { PGlite } from '@electric-sql/pglite';
-import { migrations } from './migrations/generated';
-import { buildSeedSql } from './seed/data';
+import { SCHEMA_HASH } from './migrations/fingerprint';
 
 /** Where the prebuilt PGlite runtime is served from (see scripts/copy-pglite.mjs). */
 const PGLITE_URL = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/pglite/index.js`;
@@ -39,11 +38,7 @@ const STORAGE = 'idb://barre-demo-v1';
 const SEED_VERSION = 7;
 
 function fingerprint(): string {
-  let h = 5381;
-  for (const m of migrations) {
-    for (let i = 0; i < m.sql.length; i++) h = ((h * 33) ^ m.sql.charCodeAt(i)) >>> 0;
-  }
-  return `${h.toString(36)}.${SEED_VERSION}`;
+  return `${SCHEMA_HASH}.${SEED_VERSION}`;
 }
 
 let ready: Promise<PGlite> | null = null;
@@ -83,6 +78,9 @@ async function boot(): Promise<PGlite> {
 }
 
 async function install(db: PGlite, version: string): Promise<void> {
+  // Only a first visit (or a new version) needs the schema and the sample
+  // school, so they are fetched here rather than shipped with every page.
+  const [{ migrations }, { buildSeedSql }] = await Promise.all([import('./migrations/generated'), import('./seed/data')]);
   // reset role first: a previous attempt may have left the session as
   // service_role. Recreating `public` also drops its default grants, which is
   // what "permission denied for schema public" was — the node reset path had

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { uid, NS } from '@/lib/db/seed/data';
+import { uid, NS } from '@/lib/db/seed/ids';
 
 /**
  * Who is using the app.

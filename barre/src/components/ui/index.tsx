@@ -179,7 +179,7 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
   // Database rules raise "CODE: sentence". The sentence is written for people;
   // the code is for tests and logs.
   let message = (error instanceof Error ? error.message : String(error))
-    .replace(/^[A-Z_]{3,}:\s*/, '');
+    .replace(/^([A-Z_]{3,}:\s*)+/, '');
   // Refusals from row level security are correct but unreadable.
   if (/row-level security|read-only transaction|permission denied/i.test(message)) {
     message = 'You don’t have permission to change this. If the account is read-only, nothing here can be changed.';

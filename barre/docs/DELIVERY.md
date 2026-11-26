@@ -46,3 +46,12 @@ Without keys the worker only prints what it would send.
 
 The demo build has no server, so its office "Run automations" button and the
 office's open app stand in for the scheduler.
+
+## Daily digest and calendar feed
+
+- People who choose **one email a day** get their routine notifications as a single email at 5pm school
+  time; `app.send_digests()` runs from `app.tick()`. Urgent notices (a class cancelled today, a safety
+  alert) are still sent straight away.
+- **Calendar subscription:** `scripts/calendar-feed.mts` serves `GET /calendar/<token>.ics` from
+  `app.calendar_feed()`. Run it behind the same HTTPS front door as the app (`DATABASE_URL`, `PORT`).
+  Tokens are random, one per person per school, and replaced or turned off from the app.

@@ -6,18 +6,22 @@ import { Shell } from '@/components/app/shell';
 import { SessionRow } from '@/components/app/session-row';
 import { SessionSheet } from '@/components/app/session-sheet';
 import { ClassForm } from '@/components/app/class-form';
+import { WeekGrid } from '@/components/app/week-grid';
 import { useRows } from '@/lib/query';
 import { Button, Card, EmptyState, Skeleton, ErrorState, Badge } from '@/components/ui';
 import * as Q from '@/lib/repos/dashboard';
 import { weekRange, dateLong, dayName, isoDate, toDate } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
-type View = 'week' | 'day' | 'teacher' | 'room';
+type View = 'grid' | 'week' | 'day' | 'teacher' | 'room';
 
 export default function SchedulePage() {
   const [anchor, setAnchor] = React.useState(() => new Date());
   const [adding, setAdding] = React.useState(false);
-  const [view, setView] = React.useState<View>('week');
+  const [view, setView] = React.useState<View>('grid');
+  const [open, setOpen] = React.useState<Q.SessionRow | null>(null);
+  // The grid needs width; a phone starts on the list.
+  React.useEffect(() => { if (window.innerWidth < 768) setView('week'); }, []);
   const [from, to] = React.useMemo(() => weekRange(anchor), [anchor]);
   const sessions = useRows<Q.SessionRow>(['week', from], Q.SESSIONS_BETWEEN, [from, to]);
 
@@ -28,6 +32,7 @@ export default function SchedulePage() {
 
   return (
     <Shell
+      help={<>Every class session, week by week. The week grid shows rooms side by side and marks clashes in red; drag a class to another day to move that week’s session. Tap a class to cancel it, move it or arrange cover — families are told.</>}
       title="Schedule"
       subtitle={`${dateLong(from)} – ${dateLong(new Date(new Date(to).getTime() - 86400000))}`}
       allow={['owner', 'admin']}
@@ -38,13 +43,13 @@ export default function SchedulePage() {
           </Button>
           <Button size="sm" variant="secondary" onClick={() => setAnchor(new Date())}
                   disabled={thisWeek}>
-            {thisWeek ? 'This week' : 'Back to today'}
+            {thisWeek ? 'This week' : <><span className="sm:hidden">Today</span><span className="hidden sm:inline">Back to today</span></>}
           </Button>
           <Button size="sm" variant="ghost" onClick={() => shift(1)} aria-label="Next week">
             <ChevronRight className="size-4" aria-hidden />
           </Button>
-          <Button size="sm" variant="primary" onClick={() => setAdding(true)}>
-            <Plus className="size-4" aria-hidden /> New class
+          <Button size="sm" variant="primary" aria-label="New class" onClick={() => setAdding(true)}>
+            <Plus className="size-4" aria-hidden /> <span className="hidden sm:inline">New class</span>
           </Button>
         </div>
       }
@@ -52,11 +57,11 @@ export default function SchedulePage() {
       <div className="mx-auto max-w-6xl space-y-4">
         <div role="tablist" aria-label="Schedule view"
              className="inline-flex rounded-[var(--radius-md)] border border-line bg-surface p-0.5">
-          {(['week','day','teacher','room'] as View[]).map(v => (
+          {(['grid','week','day','teacher','room'] as View[]).map(v => (
             <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)}
               className={cn('min-h-[34px] rounded-[7px] px-3 text-[13px] font-medium capitalize transition-colors',
                 view === v ? 'bg-accent-soft text-accent-ink' : 'text-ink-2 hover:text-ink')}>
-              {v === 'room' ? 'Room' : v}
+              {v === 'grid' ? 'Week grid' : v === 'week' ? 'List' : v}
             </button>
           ))}
         </div>
@@ -67,9 +72,10 @@ export default function SchedulePage() {
           <Card><EmptyState icon={<CalendarX2 className="size-5" />} title="No classes this week"
             body="Either the term has not started or this week falls in a break." /></Card>
         )}
-        {sessions.data && sessions.data.length > 0 && (
-          <Grouped sessions={sessions.data} view={view} />
-        )}
+        {sessions.data && sessions.data.length > 0 && (view === 'grid'
+          ? <WeekGrid sessions={sessions.data} from={from} onOpen={setOpen} />
+          : <Grouped sessions={sessions.data} view={view} />)}
+        {open && <SessionSheet session={open} onClose={() => setOpen(null)} />}
       </div>
       {adding && <ClassForm onClose={() => setAdding(false)} />}
     </Shell>

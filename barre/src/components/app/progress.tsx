@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Award, CheckCircle2, FileText, Flag, MessageSquareHeart, Sparkles, TrendingUp } from 'lucide-react';
+import { Award, CheckCircle2, FileText, Flag, MessageSquareHeart, PlayCircle, Sparkles, TrendingUp } from 'lucide-react';
 import { Badge, Button, EmptyState, ErrorState, Input, Skeleton, type Tone } from '@/components/ui';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
@@ -26,6 +26,7 @@ function useWrite() {
 /** A child's skills in the styles they dance. Teachers set a level in one tap (R-020). */
 export function SkillsPanel({ studentId, editable }: { studentId: string; editable?: boolean }) {
   const rows = useRows<P.SkillRow>(['skills', studentId], P.STUDENT_SKILLS, [studentId]);
+  const demos = new Map((useRows<{ id: string; demo_url: string }>(['skill-demos'], P.SKILL_DEMOS).data ?? []).map(d => [d.id, d.demo_url]));
   const write = useWrite();
   const groups = React.useMemo(() => {
     const m = new Map<string, P.SkillRow[]>();
@@ -45,6 +46,18 @@ export function SkillsPanel({ studentId, editable }: { studentId: string; editab
               <li key={s.skill_id} className="flex flex-wrap items-center gap-2 text-sm">
                 <span className="min-w-0 flex-1">{s.skill}
                   {s.previous && s.level && s.previous !== s.level && <TrendingUp className="ml-1 inline size-3.5 text-positive" aria-label="Improved" />}
+                  {demos.get(s.skill_id) && (
+                    <a href={demos.get(s.skill_id)} target="_blank" rel="noreferrer" className="ml-2 inline-flex items-center gap-0.5 text-[12px] font-medium text-accent-text underline">
+                      <PlayCircle className="size-3.5" aria-hidden /> Watch
+                    </a>
+                  )}
+                  {editable && (
+                    <button className="ml-2 text-[11.5px] text-ink-3 underline" aria-label={`Demonstration link for ${s.skill}`}
+                      onClick={() => { const u = window.prompt(`A secure link (https://) to a demonstration of ${s.skill}. Leave empty to remove.`, demos.get(s.skill_id) ?? '');
+                        if (u !== null) write.mutate({ sql: P.SET_SKILL_DEMO, params: [s.skill_id, u] }); }}>
+                      {demos.get(s.skill_id) ? 'change link' : 'add demo'}
+                    </button>
+                  )}
                 </span>
                 {editable ? (
                   <span role="radiogroup" aria-label={`${s.skill} level`} className="inline-flex rounded-[var(--radius-md)] border border-line p-0.5">

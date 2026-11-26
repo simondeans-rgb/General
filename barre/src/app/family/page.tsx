@@ -1,5 +1,6 @@
 'use client';
 
+import { MySchoolHero } from '@/components/app/school-hero';
 import * as React from 'react';
 import Link from 'next/link';
 import { CalendarDays, MapPin, User, CreditCard, Megaphone, CheckCircle2,
@@ -31,6 +32,7 @@ export default function FamilyHome() {
   return (
     <Shell title={`${greeting()}, ${session?.name.split(' ')[0] ?? ''}`} allow={['guardian']}>
       <div className="mx-auto max-w-lg space-y-4">
+        <MySchoolHero />
         {schedule.isLoading && <Card className="p-4"><Skeleton className="h-24" /></Card>}
         {schedule.error && <ErrorState error={schedule.error} onRetry={() => schedule.refetch()} />}
 

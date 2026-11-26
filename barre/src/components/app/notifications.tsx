@@ -8,7 +8,8 @@ import {
   Bell, CreditCard, MessageSquare, UserPlus, Sparkles, HeartPulse, ListOrdered, Inbox, GraduationCap, CheckCheck,
   CalendarClock, UserRoundCheck, Contact, Settings2, BellRing, ShieldAlert, BadgeCheck, Award, MessageSquareHeart, FileText,
 } from 'lucide-react';
-import { NotificationSettings } from '@/components/app/notification-settings';
+import dynamic from 'next/dynamic';
+const NotificationSettings = dynamic(() => import('@/components/app/notification-settings').then(m => m.NotificationSettings), { ssr: false });
 import { REMIND_CHECKS } from '@/lib/repos/safeguarding';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
@@ -39,6 +40,10 @@ export function NotificationBell() {
   const unread = useRows<{ n: number }>(['notif-unread'], I.UNREAD_NOTIFICATIONS, [],
     { refetchInterval: 30_000 }).data?.[0]?.n ?? 0;
   const list = useRows<I.Note>(['notifications'], I.NOTIFICATIONS, [], { enabled: open });
+  // Notifications follow the chosen school (R-051); the others wait behind a switch.
+  const others = useRows<{ studio_id: string; name: string; unread: number }>(['notif-other'], I.OTHER_SCHOOL_NOTES, [],
+    { enabled: open && !!session?.studio });
+  const { chooseSchool } = useSession();
   const button = React.useRef<HTMLButtonElement>(null);
   const [settings, setSettings] = React.useState(false);
 
@@ -108,6 +113,13 @@ export function NotificationBell() {
               )}
             </div>
             <div className="max-h-[calc(80dvh-56px)] overflow-y-auto pb-safe sm:max-h-[460px]">
+              {others.data?.filter(o => o.unread > 0).map(o => (
+                <button key={o.studio_id} className="flex w-full items-center gap-2 border-b border-line bg-surface-2 px-4 py-2.5 text-left text-[13px] hover:bg-surface-3"
+                  onClick={() => { chooseSchool(o.studio_id, session!.role); qc.invalidateQueries(); setOpen(false); router.push('/'); }}>
+                  <span className="min-w-0 flex-1"><b>{o.unread}</b> unread at {o.name}</span>
+                  <span className="font-medium text-accent-text">Switch</span>
+                </button>
+              ))}
               {list.isLoading && <div className="space-y-2 p-3">{[0,1,2].map(i => <Skeleton key={i} className="h-12" />)}</div>}
               {list.data?.length === 0 && <EmptyState icon={<Bell className="size-5" />} title="Nothing new"
                 body={session?.role === 'guardian'

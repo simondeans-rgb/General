@@ -5,6 +5,8 @@ import { Suspense } from 'react';
 import { Users, MessageSquarePlus, HeartPulse, Mail, ShieldAlert } from 'lucide-react';
 import { RaiseConcernSheet } from '@/components/app/safeguarding';
 import { TeacherMessageSheet } from '@/components/app/teacher-message';
+import { StudentExams } from '@/components/app/exams';
+import { PracticeSummary } from '@/components/app/practice';
 import { SkillsPanel, Goals, Reflections, Milestones, Timeline } from '@/components/app/progress';
 import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection, KeyValue } from '@/components/app/detail-panel';
@@ -128,6 +130,8 @@ function MyStudents() {
                     </DetailSection>
                   )}
                   <DetailSection title="Milestones"><Milestones studentId={current.id} /></DetailSection>
+                  <DetailSection title="Exams"><StudentExams studentId={current.id} canEnter /></DetailSection>
+                  <DetailSection title="Practice"><PracticeSummary studentId={current.id} /></DetailSection>
                   <DetailSection title="Timeline"><Timeline studentId={current.id} limit={8} /></DetailSection>
                   <Button className="w-full" onClick={() => setWriting(current)}>
                     <MessageSquarePlus className="size-4" aria-hidden /> Write feedback

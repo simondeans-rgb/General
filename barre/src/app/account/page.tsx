@@ -7,7 +7,7 @@ import { Shell } from '@/components/app/shell';
 import { RetentionCard } from '@/components/app/safeguarding';
 import { RecordSheet } from '@/components/app/record-sheet';
 import { InviteLink } from '@/components/app/invite-link';
-import { BrandSettings } from '@/components/app/brand-settings';
+import { BrandSettings, ImagerySettings } from '@/components/app/brand-settings';
 import { useRows } from '@/lib/query';
 import { runAs, readAs } from '@/lib/db/client';
 import { useSession, type Role } from '@/lib/auth/session';
@@ -45,6 +45,7 @@ export default function AccountPage() {
       allow={['owner', 'admin']}>
       <div className="mx-auto max-w-3xl space-y-5">
         <BrandSettings canEdit={isOwner && !session?.platform} />
+        <ImagerySettings canEdit={isOwner && !session?.platform} />
         <PlanCard acct={acct} />
         <Team isOwner={isOwner} studioId={acct?.id} />
         {isOwner && !session?.platform && acct && <SupportCard studioId={acct.id} />}

@@ -52,7 +52,7 @@ describe('notification preferences (R-019)', () => {
   it('quiet hours need both ends', async () => {
     await asUser(USERS.guardianA, async q => {
       await q(I.SET_QUIET, ['21:00', '07:00']);
-      expect((await q(I.MY_QUIET))[0]).toEqual({ quiet_from: '21:00', quiet_to: '07:00' });
+      expect((await q(I.MY_QUIET))[0]).toMatchObject({ quiet_from: '21:00', quiet_to: '07:00' });
       expect(await expectRejected(() => q(I.SET_QUIET, ['21:00', null]))).toMatch(/both/);
     });
   });

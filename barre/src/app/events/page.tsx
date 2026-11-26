@@ -14,6 +14,8 @@ import { useSession } from '@/lib/auth/session';
 import { useSelection } from '@/lib/use-selection';
 import * as E from '@/lib/repos/events';
 import * as C from '@/lib/repos/classes';
+import { CostumeSection, ProgrammeButton, RehearsalRegisterButton, TicketSection } from '@/components/app/show-tools';
+import { ExamsCard } from '@/components/app/exams';
 import { dateLong, money, time } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
@@ -41,7 +43,7 @@ function Events() {
   const [editing, setEditing] = React.useState<E.OfficeEvent | 'new' | null>(null);
   const current = rows.data?.find(e => e.id === selected);
   return (
-    <Shell title="Events" subtitle="Shows, exams, competitions and workshops" allow={['owner', 'admin']}
+    <Shell title="Events" help={<>Shows, competitions, workshops and exam sessions. Invite whole classes, and families accept in their app. Within a show: running order, costumes and sizes, rehearsals with registers, chaperones, a printable programme (children are named only with photo consent), tickets, and fees billed in one step.</>} subtitle="Shows, exams, competitions and workshops" allow={['owner', 'admin']}
       actions={<Button size="sm" variant="primary" onClick={() => setEditing('new')}><Plus className="size-4" aria-hidden /> New event</Button>}>
       <div className="mx-auto max-w-6xl">
         <div className={cn('gap-5', selected ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,440px)]' : 'block')}>
@@ -66,6 +68,7 @@ function Events() {
               ))}
             </ul>
           </Card>
+          {!selected && <ExamsCard />}
           {selected && current && <EventDetail e={current} onEdit={() => setEditing(current)} onClose={() => select(null)} />}
         </div>
       </div>
@@ -187,8 +190,14 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
         </div>
       </DetailSection>
 
+      {routines.data && routines.data.length > 0 && <ProgrammeButton event={e} />}
+
+      <CostumeSection eventId={e.id} routines={routines.data ?? []} />
+
       <DetailSection title="Rehearsals">
-        <ul className="space-y-1 text-sm">{rehearsals.data?.map(r => <li key={r.id}><b>{r.title}</b> · {dateLong(r.starts_at)}, {time(r.starts_at)}</li>)}</ul>
+        <ul className="space-y-1 text-sm">{rehearsals.data?.map(r => (
+          <li key={r.id} className="flex items-center gap-2"><span className="min-w-0 flex-1"><b>{r.title}</b> · {dateLong(r.starts_at)}, {time(r.starts_at)}</span>
+            <RehearsalRegisterButton rehearsal={r} /></li>))}</ul>
         <div className="mt-2 grid grid-cols-2 gap-1.5">
           <Input aria-label="Rehearsal name" value={rh.title} onChange={x => setRh({ ...rh, title: x.target.value })} />
           <Input aria-label="Rehearsal starts" type="datetime-local" value={rh.starts} onChange={x => setRh({ ...rh, starts: x.target.value })} />
@@ -196,6 +205,8 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
         <Button size="sm" className="mt-1.5" disabled={!rh.starts} onClick={() => { go(E.ADD_REHEARSAL, [e.id, rh.title, new Date(rh.starts).toISOString(), null, null],
           () => 'Rehearsal added to dancers’ and teachers’ diaries.'); setRh({ title: 'Rehearsal', starts: '', ends: '' }); }}>Add rehearsal</Button>
       </DetailSection>
+
+      {(e.kind === 'show' || e.kind === 'competition') && <TicketSection eventId={e.id} />}
 
       <DetailSection title="Chaperones">
         <ul className="space-y-1 text-sm">

@@ -1,6 +1,8 @@
 'use client';
 
 import * as React from 'react';
+import { StudentExams } from '@/components/app/exams';
+import { PracticeLog } from '@/components/app/practice';
 import Link from 'next/link';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, CameraOff, Camera, Check, CalendarOff, MessageSquareHeart, Trophy, HelpCircle, ChevronRight, Sparkles, UserPlus } from 'lucide-react';
@@ -84,14 +86,19 @@ export default function FamilyChildren() {
                     <p className="mt-1 text-[12.5px] text-ink-3">
                       Teachers see allergies and the emergency plan only — never the full record.
                       To change any of it,{' '}
-                      <Link href="/family/enquiries" className="text-accent-text hover:underline">
+                      <Link href="/family/enquiries" className="text-accent-text underline">
                         tell the studio</Link>, so there is a record of who changed what.
                     </p>
                   </dd>
                 </div>
               )}
+              <div className="flex gap-3">
+                <dt className="w-28 shrink-0 text-ink-3">Exams</dt>
+                <dd className="min-w-0 flex-1"><StudentExams studentId={c.id} /></dd>
+              </div>
             </dl>
             <EmergencyContacts studentId={c.id} name={c.first_name} />
+            <div className="border-t border-line"><PracticeLog studentId={c.id} who={c.first_name} bare /></div>
             <div className="flex flex-wrap gap-2 border-t border-line p-3">
               <Button size="sm" variant="primary" onClick={() => setBrowsing(c)}>
                 <Sparkles className="size-4" aria-hidden /> Classes and trials

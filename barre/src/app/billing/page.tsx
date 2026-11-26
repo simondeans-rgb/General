@@ -102,14 +102,14 @@ function Billing() {
   const s = summary.data;
 
   return (
-    <Shell title="Billing" allow={['owner', 'admin']}
+    <Shell title="Billing" help={<>Invoices for every family. Use <b>Billing runs</b> to raise a whole term’s (or month’s) invoices at once: check the drafts, then send them together. Discounts — sibling, multi-class and per-family bursaries — are applied automatically. <b>Export</b> gives your accountant spreadsheets, aged debt and a Xero import file.</>} allow={['owner', 'admin']}
       subtitle={s ? `${money(s.outstanding_minor)} outstanding across ${s.owing_families} famil${s.owing_families === 1 ? 'y' : 'ies'}` : undefined}
       actions={<div className="flex gap-2">
         <ExportButton />
-        <Button size="sm" onClick={() => setRunning(true)}>
-          <CalendarRange className="size-4" aria-hidden /> <span className="hidden sm:inline">Term billing</span>
+        <Button size="sm" aria-label="Billing runs" onClick={() => setRunning(true)}>
+          <CalendarRange className="size-4" aria-hidden /> <span className="hidden sm:inline">Billing runs</span>
         </Button>
-        <Button size="sm" variant="primary" onClick={() => setCreating(true)}>
+        <Button size="sm" variant="primary" aria-label="New invoice" onClick={() => setCreating(true)}>
           <Plus className="size-4" aria-hidden /> <span className="hidden sm:inline">New invoice</span>
         </Button>
       </div>}>
@@ -242,20 +242,26 @@ function Billing() {
 function ExportButton() {
   const { session } = useSession();
   const [open, setOpen] = React.useState(false);
-  const go = async (what: 'invoices' | 'payments') => {
+  const go = async (what: 'invoices' | 'payments' | 'xero' | 'aged-debt') => {
     setOpen(false);
-    const rows = await readAs<Record<string, string>>(session, what === 'invoices' ? B.INVOICES_EXPORT : B.PAYMENTS_EXPORT);
-    downloadCsv(`${what}-${isoDate(new Date())}.csv`, rows);
+    const sql = { invoices: B.INVOICES_EXPORT, payments: B.PAYMENTS_EXPORT, xero: B.XERO_EXPORT, 'aged-debt': B.AGED_DEBT_EXPORT }[what];
+    const rows = await readAs<Record<string, string>>(session, sql);
+    downloadCsv(`${what === 'xero' ? 'xero-sales-invoices' : what}-${isoDate(new Date())}.csv`, rows);
   };
   return (
     <div className="relative">
-      <Button size="sm" onClick={() => setOpen(o => !o)} aria-expanded={open} aria-haspopup="menu">
+      <Button size="sm" aria-label="Export" onClick={() => setOpen(o => !o)} aria-expanded={open} aria-haspopup="menu">
         <Download className="size-4" aria-hidden /> <span className="hidden sm:inline">Export</span>
       </Button>
       {open && (
         <div role="menu" className="absolute right-0 z-30 mt-1 w-48 overflow-hidden rounded-[var(--radius-md)] border border-line bg-surface shadow-lg">
           <button role="menuitem" className="block w-full px-3 py-2.5 text-left text-sm hover:bg-surface-2" onClick={() => go('invoices')}>Invoices (CSV)</button>
           <button role="menuitem" className="block w-full px-3 py-2.5 text-left text-sm hover:bg-surface-2" onClick={() => go('payments')}>Payments (CSV)</button>
+          <button role="menuitem" className="block w-full px-3 py-2.5 text-left text-sm hover:bg-surface-2" onClick={() => go('aged-debt')}>Aged debt (CSV)</button>
+          <button role="menuitem" className="block w-full border-t border-line px-3 py-2.5 text-left text-sm hover:bg-surface-2" onClick={() => go('xero')}>
+            Xero sales invoices
+            <span className="block text-[12px] text-ink-3">Import in Xero: Sales › Import</span>
+          </button>
         </div>
       )}
     </div>

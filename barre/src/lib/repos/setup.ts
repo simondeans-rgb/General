@@ -127,15 +127,15 @@ export const RETIRE_SETUP = `select app.retire_setup($1, $2) as ok`;
 export type StudioRow = {
   id: string; name: string; timezone: string; currency: string;
   contact_email: string | null; contact_phone: string | null;
-  onboarded_at: string | null;
+  onboarded_at: string | null; privacy_notice_url: string | null;
 };
 
 export const STUDIO = `
-select id, name, timezone, currency, contact_email, contact_phone, onboarded_at
+select id, name, timezone, currency, contact_email, contact_phone, onboarded_at, privacy_notice_url
   from studio where deleted_at is null limit 1`;
 
 /** Owner only — studio_write is the one policy narrowed past is_admin. */
 export const UPDATE_STUDIO = `
 update studio set name = $2, timezone = $3, contact_email = nullif(btrim($4),''),
-       contact_phone = nullif(btrim($5),''), updated_at = now()
+       contact_phone = nullif(btrim($5),''), privacy_notice_url = nullif(btrim($6),''), updated_at = now()
  where id = $1 returning id`;

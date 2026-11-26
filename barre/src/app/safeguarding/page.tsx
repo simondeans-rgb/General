@@ -24,7 +24,7 @@ export default function SafeguardingPage() {
   const [open, setOpen] = React.useState<G.Concern | null>(null);
   const owner = session?.role === 'owner';
   return (
-    <Shell title="Safeguarding" subtitle="Concerns raised by staff" allow={['owner', 'admin', 'teacher']}>
+    <Shell title="Safeguarding" help={<>Concerns any member of staff raises go only to you and your safeguarding lead, and every time one is opened it is logged. Staff checks (DBS, training, first aid) remind you 30 days before they expire. Retention settings decide how long leavers’ details are kept.</>} subtitle="Concerns raised by staff" allow={['owner', 'admin', 'teacher']}>
       <div className="mx-auto max-w-3xl space-y-5">
         {me && !me.can_read && (
           <Card><EmptyState icon={<Lock className="size-5" />} title="Only the safeguarding lead and the owner can read concerns"

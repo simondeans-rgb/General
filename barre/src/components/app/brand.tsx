@@ -59,3 +59,19 @@ export function useSchoolTheme(school: { theme?: string | null; brand_colour?: s
 export function useBrandTheme(colour: string | null | undefined) {
   useSchoolTheme(colour ? { brand_colour: colour } : null);
 }
+
+/** The light logo suits the dark Urban style; otherwise the usual one (R-060). */
+export const logoFor = (s: { theme?: string | null; logo_url: string | null; logo_light_url?: string | null }) =>
+  s.theme === 'urban' && s.logo_light_url ? s.logo_light_url : s.logo_url;
+
+/** The school's own photograph across the top of a home screen (R-060). */
+export function SchoolHero({ src, name, children }: { src: string | null | undefined; name: string; children?: React.ReactNode }) {
+  if (!src) return null;
+  return (
+    <div className="relative overflow-hidden rounded-[var(--radius-xl)] bg-surface-3">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt={`${name}`} className="aspect-[16/7] w-full object-cover" />
+      {children && <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-4 text-white">{children}</div>}
+    </div>
+  );
+}
