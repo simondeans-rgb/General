@@ -2,23 +2,30 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { CalendarCheck2, ChevronRight, CheckCircle2, MapPin, Users, UserRoundX } from 'lucide-react';
+import { ArrowRight, ChevronRight, UserRoundX } from 'lucide-react';
 import { CalendarSubscribe } from '@/components/app/calendar-subscribe';
 import { downloadIcs } from '@/lib/ics';
 import { RehearsalList } from '@/components/app/rehearsals';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
 import { useSession } from '@/lib/auth/session';
-import { Badge, Button, Card, CardHeader, EmptyState, Field, Input, Skeleton, ErrorState, type Tone } from '@/components/ui';
+import { Button, Field, Input, Skeleton, ErrorState } from '@/components/ui';
 import { RecordSheet } from '@/components/app/record-sheet';
+import { medicalLine } from '@/components/app/medical-brief';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { runAs, readAs } from '@/lib/db/client';
 import * as T from '@/lib/repos/teaching';
-import { time, greeting, dateLong, dayRange, relativeDay } from '@/lib/format';
+import { time, dateLong, dateShort, dayRange, relativeDay } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
-const TONES: Record<string, Tone> = { violet:'violet', amber:'amber', teal:'teal', rose:'rose', indigo:'indigo', lime:'lime' };
+const sameDay = (a: string | Date, b: Date) => new Date(a).toDateString() === b.toDateString();
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
+/**
+ * A teacher's Today, read standing up between classes: the next class is the
+ * hero (time, room, who needs watching), then the rest of today, a nudge to
+ * give feedback after a class, and the fortnight ahead with cover requests.
+ */
 export default function TeachToday() {
   const { session } = useSession();
   const [from] = React.useMemo(() => dayRange(0), []);
@@ -29,46 +36,150 @@ export default function TeachToday() {
   const [asking, setAsking] = React.useState<T.TeachSession | null>(null);
   const sessions = useRows<T.TeachSession>(['my-sessions', from], T.MY_SESSIONS, [from, to]);
 
-  const today = (sessions.data ?? []).filter(s =>
-    new Date(s.starts_at).toDateString() === new Date().toDateString());
-  const later = (sessions.data ?? []).filter(s =>
-    new Date(s.starts_at).toDateString() !== new Date().toDateString());
+  const now = new Date();
+  const all = sessions.data ?? [];
+  const mine = (s: T.TeachSession) => s.status !== 'cancelled' && !s.covered_by;
+  const next = all.find(s => mine(s) && new Date(s.ends_at) > now) ?? null;
+  const today = all.filter(s => sameDay(s.starts_at, now) && s.id !== next?.id);
+  const later = all.filter(s => !sameDay(s.starts_at, now) && s.id !== next?.id);
+  // The most recent class of today that has finished: feedback while it's fresh.
+  const finished = [...all].reverse().find(s => mine(s) && sameDay(s.starts_at, now) && new Date(s.ends_at) <= now) ?? null;
 
   return (
-    <Shell title={`${greeting()}, ${session?.name.split(' ')[0] ?? ''}`}
-           subtitle={dateLong(new Date())} allow={['owner','admin','teacher']}
+    <Shell title="Today" subtitle={dateLong(now)} allow={['owner','admin','teacher']}
            actions={<CalendarSubscribe onDownload={() => downloadTeaching(session)} />}>
-      <div className="mx-auto max-w-2xl space-y-5">
-        <RehearsalList days={21} />
-        {sessions.isLoading && <Card className="space-y-3 p-4">{[0,1].map(i => <Skeleton key={i} className="h-20" />)}</Card>}
-        {sessions.error && <ErrorState error={sessions.error} onRetry={() => sessions.refetch()} />}
+      <div className="mx-auto grid max-w-[1040px] gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+        {sessions.isLoading && <div className="space-y-4"><Skeleton className="h-24 w-48" /><Skeleton className="h-28" /></div>}
+        {sessions.error != null && <ErrorState error={sessions.error} onRetry={() => sessions.refetch()} />}
 
         {sessions.data && (
           <>
-            <Card>
-              <CardHeader title="Today"
-                subtitle={today.length ? `${today.length} class${today.length === 1 ? '' : 'es'}` : undefined} />
-              {today.length === 0
-                ? <EmptyState icon={<CalendarCheck2 className="size-5" />} title="No classes today"
-                    body="Your next class is further down." />
-                : <ul className="divide-y divide-line">
+            <div className="min-w-0 space-y-10">
+              <NextClass s={next} onAskCover={() => next && setAsking(next)} />
+              {today.length > 0 && (
+                <section aria-labelledby="today-h">
+                  <SectionHead id="today-h" title={next && sameDay(next.starts_at, now) ? 'Later today' : 'Today'} meta={plural(today.length, 'class', 'classes')} />
+                  <ul className="divide-y divide-line">
                     {today.map(s => <li key={s.id}><TeachRow s={s} onAskCover={() => setAsking(s)} /></li>)}
-                  </ul>}
-            </Card>
+                  </ul>
+                </section>
+              )}
+              <AfterClass done={finished} upcoming={next} />
+            </div>
 
-            {later.length > 0 && (
-              <Card>
-                <CardHeader title="Your next two weeks" subtitle="Ask the office for cover from any class here" />
-                <ul className="divide-y divide-line">
-                  {later.map(s => <li key={s.id}><TeachRow s={s} showDay onAskCover={() => setAsking(s)} /></li>)}
-                </ul>
-              </Card>
-            )}
+            <div className="min-w-0 space-y-10">
+              <section aria-labelledby="fortnight-h">
+                <SectionHead id="fortnight-h" title="Next two weeks" meta={later.length ? plural(later.length, 'class', 'classes') : undefined} />
+                {later.length === 0
+                  ? <p className="py-3 text-[14.5px] text-ink-3">Nothing else on your timetable for two weeks.</p>
+                  : <ul className="divide-y divide-line">
+                      {later.map(s => <li key={s.id}><TeachRow s={s} showDay onAskCover={() => setAsking(s)} /></li>)}
+                    </ul>}
+                {later.length > 0 && <p className="pt-3 text-[13px] text-ink-3">Can’t make one? Ask the office for cover from its row.</p>}
+              </section>
+              <RehearsalList days={21} />
+            </div>
           </>
         )}
       </div>
       {asking && <CoverRequestSheet s={asking} onClose={() => setAsking(null)} />}
     </Shell>
+  );
+}
+
+function SectionHead({ id, title, meta }: { id?: string; title: string; meta?: React.ReactNode }) {
+  return (
+    <div className="mb-1 flex items-baseline gap-3 border-b-2 border-ink pb-2">
+      <h2 id={id} className="section-title flex-1">{title}</h2>
+      {meta && <span className="text-[13px] text-ink-3">{meta}</span>}
+    </div>
+  );
+}
+
+/* ── The next class: time, place, who to watch, one button ──────────────── */
+function NextClass({ s, onAskCover }: { s: T.TeachSession | null; onAskCover: () => void }) {
+  const roll = useRows<T.RegisterEntry>(['register', s?.id ?? ''], T.REGISTER, [s?.id], { enabled: !!s });
+  if (!s) return (
+    <section aria-labelledby="next-h">
+      <p className="label">Next</p>
+      <h2 id="next-h" className="mt-2 font-display text-[28px] leading-tight">Nothing on for two weeks</h2>
+      <p className="mt-1 text-ink-3">New classes and cover appear here as soon as the office adds them.</p>
+    </section>
+  );
+
+  const now = Date.now();
+  const mins = Math.round((new Date(s.starts_at).getTime() - now) / 60000);
+  const isToday = sameDay(s.starts_at, new Date());
+  const whenLabel = !isToday ? `${relativeDay(s.starts_at)}${/^\d/.test(relativeDay(s.starts_at)) ? '' : ` ${dateShort(s.starts_at)}`}`
+    : mins <= 0 ? 'on now' : mins < 90 ? `in ${mins} min` : `at ${time(s.starts_at)}`;
+  const flagged = (roll.data ?? []).filter(r => r.requires_alert || r.has_medical_need)
+    .sort((a, b) => Number(b.requires_alert) - Number(a.requires_alert));
+  const urgent = flagged.some(r => r.requires_alert);
+  const started = new Date(s.starts_at).getTime() <= now;
+  const canAsk = !started && !s.covering && !s.cover_requested;
+
+  return (
+    <section aria-labelledby="next-h">
+      <p className="label text-accent-text">Next · {whenLabel}</p>
+      <p className="display-xl mt-1 text-[80px] text-ink sm:text-[96px]">{time(s.starts_at)}</p>
+      <h2 id="next-h" className="mt-3 font-display text-[26px] leading-tight">{s.name}</h2>
+      <p className="mt-1 text-[15px] text-ink-3">
+        {[s.location, s.room,
+          `${s.enrolled} booked${s.trials ? ` + ${plural(s.trials, 'trial')}` : ''}`].filter(Boolean).join(' · ')}
+      </p>
+      {(s.covering || s.cover_requested) && (
+        <p className="mt-1 text-[14px] font-semibold text-ink-2">{s.covering ? 'You are covering this class' : 'Cover requested · the office will confirm'}</p>
+      )}
+
+      {flagged.length > 0 && (
+        <div role="note" className={cn('mt-4 border-l-4 py-0.5 pl-3', urgent ? 'border-critical' : 'border-caution')}>
+          <p className={cn('text-[15px] font-semibold', urgent ? 'text-critical' : 'text-caution')}>
+            {plural(flagged.length, 'medical note')}
+          </p>
+          <ul className="mt-0.5 space-y-0.5 text-[15px] text-ink">
+            {flagged.slice(0, 4).map(r => (
+              <li key={r.student_id}>
+                <span className="font-semibold">{r.preferred_name ?? r.first_name} {r.last_name}</span>
+                {' — '}{medicalLine(r)}
+              </li>
+            ))}
+            {flagged.length > 4 && <li className="text-ink-3">and {flagged.length - 4} more on the register</li>}
+          </ul>
+        </div>
+      )}
+
+      <div className="mt-5 flex flex-wrap items-center gap-3">
+        <Link href={`/teach/register/?session=${s.id}`} className="w-full sm:w-auto">
+          <Button variant="primary" size="lg" className="w-full sm:w-auto sm:min-w-56" tabIndex={-1}>Open register</Button>
+        </Link>
+        {canAsk && (
+          <Button variant="ghost" onClick={onAskCover} className="text-ink-2">
+            <UserRoundX className="size-4" aria-hidden /> Ask for cover
+          </Button>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* ── After class: two lines of feedback while it's fresh ─────────────────── */
+function AfterClass({ done, upcoming }: { done: T.TeachSession | null; upcoming: T.TeachSession | null }) {
+  const s = done ?? (upcoming && sameDay(upcoming.starts_at, new Date()) ? upcoming : null);
+  if (!s) return null;
+  return (
+    <section aria-labelledby="after-h" className="rounded-[var(--radius-lg)] bg-surface-2 p-4">
+      <h2 id="after-h" className="section-title">After class</h2>
+      <p className="mt-1 text-[15px] text-ink-2">
+        {done ? `${s.name} is done. Two lines of feedback while it’s fresh?`
+              : `When ${s.name} finishes, tap a child and what fits. Families see it once you share.`}
+      </p>
+      {done && (
+        <Link href={`/teach/feedback/?session=${s.id}`}
+              className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-[15px] font-semibold text-accent-text hover:underline">
+          Give feedback for {s.name} <ArrowRight className="size-4" aria-hidden />
+        </Link>
+      )}
+    </section>
   );
 }
 
@@ -82,7 +193,7 @@ function CoverRequestSheet({ s, onClose }: { s: T.TeachSession; onClose: () => v
     onSuccess: () => { setSent(true); qc.invalidateQueries({ queryKey: ['db'] }); },
   });
   if (sent) return <RecordSheet title="Asked" onClose={onClose} onSave={onClose} saveLabel="Done">
-    <p className="text-sm text-ink-2">The office has your request and will let you know who is covering.</p></RecordSheet>;
+    <p className="text-sm text-ink-2">The office has your request and will tell you who is covering.</p></RecordSheet>;
   return (
     <RecordSheet title="Ask for cover" subtitle={`${s.name} · ${dateLong(s.starts_at)} at ${time(s.starts_at)}`}
       onClose={onClose} onSave={() => ask.mutate()} saving={ask.isPending} error={ask.error} canSave={reason.trim().length >= 3} saveLabel="Send to the office">
@@ -93,6 +204,7 @@ function CoverRequestSheet({ s, onClose }: { s: T.TeachSession; onClose: () => v
   );
 }
 
+/** One class in a list: time, name, place, and at most one status in words. */
 function TeachRow({ s, showDay, onAskCover }: { s: T.TeachSession; showDay?: boolean; onAskCover?: () => void }) {
   const cancelled = s.status === 'cancelled';
   const coveredByOther = !!s.covered_by;
@@ -100,44 +212,53 @@ function TeachRow({ s, showDay, onAskCover }: { s: T.TeachSession; showDay?: boo
   const done = s.marked >= expected && expected > 0;
   const started = new Date(s.starts_at) <= new Date();
 
+  // One status, most important first; colour only backs up the word.
+  const status: [string, string] | null =
+    cancelled ? [`Cancelled${s.cancel_reason ? ` · ${s.cancel_reason}` : ''}`, 'text-critical font-semibold']
+    : coveredByOther ? [`Covered by ${s.covered_by}`, 'text-ink-2']
+    : s.covering ? ['You are covering', 'text-ink font-semibold']
+    : s.cover_requested ? ['Cover requested', 'text-caution font-semibold']
+    : done ? ['Register done', 'text-positive font-semibold']
+    : started ? ['Register due', 'text-caution font-semibold']
+    : null;
+  const meta = [s.room, `${expected} expected${s.trials ? ` · ${plural(s.trials, 'trial')}` : ''}`].filter(Boolean).join(' · ');
+
   const inner = (
-    <div className={cn('flex items-center gap-3 px-4 py-3.5', cancelled && 'opacity-60')}>
-      <span aria-hidden className={cn('w-1 self-stretch rounded-full',
-        { violet:'bg-violet', amber:'bg-amber', teal:'bg-teal', rose:'bg-rose', indigo:'bg-indigo', lime:'bg-lime' }[s.colour ?? ''] ?? 'bg-surface-3')} />
-      <span className="min-w-0 flex-1">
-        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="tnum font-semibold">{showDay ? `${relativeDay(s.starts_at)} ` : ''}{time(s.starts_at)}</span>
-          <span className="font-medium">{s.name}</span>
-          {cancelled && <Badge tone="critical">Cancelled</Badge>}
-          {cancelled && s.cancel_reason && <span className="w-full text-[12.5px] text-critical">{s.cancel_reason}</span>}
-          {s.covering && <Badge tone="info">You are covering</Badge>}
-          {coveredByOther && <Badge tone="neutral">Covered by {s.covered_by}</Badge>}
-          {s.cover_requested && !coveredByOther && <Badge tone="caution">Cover requested</Badge>}
-          {!cancelled && done && <Badge tone="positive" icon={<CheckCircle2 className="size-3" />}>Register done</Badge>}
-          {!cancelled && !done && started && <Badge tone="caution">Register due</Badge>}
-          {!cancelled && s.trials > 0 && <Badge tone="info">{s.trials} trial{s.trials === 1 ? '' : 's'}</Badge>}
-        </span>
-        <span className="mt-1 flex flex-wrap items-center gap-x-3 text-[12.5px] text-ink-2">
-          <span className="inline-flex items-center gap-1"><Users className="size-3.5" aria-hidden />{expected} expected</span>
-          {s.room && <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" aria-hidden />{s.room}</span>}
+    <div className="grid min-h-14 grid-cols-[4.25rem_minmax(0,1fr)_auto] items-center gap-x-3 py-3">
+      <span className={cn('leading-tight', cancelled && 'text-ink-3')}>
+        {showDay && <span className="block text-[12.5px] text-ink-3">{dayLabel(s.starts_at)}</span>}
+        <span className={cn('font-display text-[19px] tnum', cancelled && 'line-through')}>{time(s.starts_at)}</span>
+      </span>
+      <span className="min-w-0">
+        <span className={cn('block truncate font-semibold', (cancelled || coveredByOther) && 'text-ink-3')}>{s.name}</span>
+        <span className="block truncate text-[13px] text-ink-3">
+          {status && <span className={status[1]}>{status[0]}</span>}
+          {status && !cancelled && !coveredByOther && <span aria-hidden> · </span>}
+          {!cancelled && !coveredByOther && meta}
         </span>
       </span>
-      {!cancelled && <ChevronRight className="size-4 shrink-0 text-ink-3" aria-hidden />}
+      {!cancelled && !coveredByOther ? <ChevronRight className="size-4 shrink-0 text-ink-3" aria-hidden /> : <span />}
     </div>
   );
 
   if (cancelled || coveredByOther) return inner;
   return (
-    <div className="flex items-center">
-      <Link href={`/teach/register/?session=${s.id}`} className="block min-w-0 flex-1 hover:bg-surface-2">{inner}</Link>
+    <div className="flex items-center gap-1">
+      <Link href={`/teach/register/?session=${s.id}`} className="block min-w-0 flex-1 rounded-[var(--radius-sm)] hover:bg-surface-2/60">{inner}</Link>
       {onAskCover && !started && !s.covering && !s.cover_requested && (
-        <Button size="sm" variant="ghost" className="mr-2 shrink-0" onClick={onAskCover} aria-label={`Ask for cover for ${s.name}`}>
+        <Button size="sm" variant="ghost" className="size-11 shrink-0 p-0" onClick={onAskCover}
+                aria-label={`Ask for cover for ${s.name}, ${dayLabel(s.starts_at)} ${time(s.starts_at)}`} title="Ask for cover">
           <UserRoundX className="size-4" aria-hidden />
         </Button>
       )}
     </div>
   );
 }
+
+const dayLabel = (v: string | Date) => {
+  const r = relativeDay(v);
+  return /^\d/.test(r) ? r : r.length > 9 ? r.slice(0, 3) + ' ' + dateShort(v) : r;
+};
 
 /** A teacher's classes for the coming term as a calendar file (R-036). */
 async function downloadTeaching(session: ReturnType<typeof useSession>['session']) {

@@ -2,10 +2,9 @@
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Check, Eye, EyeOff, Sparkles, Target, Lock } from 'lucide-react';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Button, ErrorState, Field, Input } from '@/components/ui';
+import { Button, ErrorState, Field, Input, Notice } from '@/components/ui';
 import * as H from '@/lib/repos/hub';
 
 /**
@@ -48,23 +47,16 @@ export function FeedbackComposer({
         className="max-h-[88dvh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-t-[var(--radius-xl)]
                    border border-line bg-surface p-4 pb-safe shadow-lg sm:rounded-[var(--radius-xl)]">
         {done ? (
-          <div className="py-4 text-center">
-            <span className="mx-auto mb-3 grid size-11 place-items-center rounded-full bg-positive-soft text-positive" aria-hidden>
-              <Check className="size-5" />
-            </span>
-            <p id="fb-title" className="font-medium">
-              {share ? 'Shared with the family' : 'Saved as a draft'}
-            </p>
-            <p className="mt-1 text-sm text-ink-2">
-              {share
-                ? `${student.first_name} and their guardians can see this now.`
-                : 'Only studio staff can see this until you share it.'}
-            </p>
-            <Button className="mt-4 w-full" variant="primary" onClick={onClose}>Done</Button>
+          <div className="py-2" role="status">
+            <h2 id="fb-title" className="sr-only">{share ? 'Shared with the family' : 'Saved as a draft'}</h2>
+            <Notice word={share ? 'Shared' : 'Saved'} tone="positive"
+              title={share ? `${student.first_name} and their guardians can see this now.` : 'Saved as a draft'}
+              detail={share ? undefined : 'Only studio staff can see it until you share it.'} />
+            <Button className="mt-5 w-full" variant="primary" size="lg" onClick={onClose}>Done</Button>
           </div>
         ) : (
           <>
-            <h2 id="fb-title" className="text-[17px] font-semibold tracking-tight">
+            <h2 id="fb-title" className="font-display text-[20px] leading-tight">
               Feedback for {student.first_name}
             </h2>
             <div className="mt-4 space-y-3">
@@ -76,31 +68,30 @@ export function FeedbackComposer({
               <Field label="Going well" htmlFor="fb-well">
                 <textarea id="fb-well" rows={3} value={goingWell} onChange={e => setGoingWell(e.target.value)}
                   placeholder="Be specific — it means more than 'good work'."
-                  className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
+                  className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-[15px]
                              focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
               </Field>
               <Field label="To work on" htmlFor="fb-work">
                 <textarea id="fb-work" rows={3} value={workOn} onChange={e => setWorkOn(e.target.value)}
                   placeholder="One thing to practise before next week."
-                  className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
+                  className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-[15px]
                              focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
               </Field>
               <Field label="Private note" htmlFor="fb-priv"
                      hint="Studio staff only. Never shown to the family, whatever you choose below.">
                 <textarea id="fb-priv" rows={2} value={privateNote} onChange={e => setPrivateNote(e.target.value)}
-                  className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface-2 p-3 text-sm
+                  className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface-2 p-3 text-[15px]
                              focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
               </Field>
 
-              <label className="flex cursor-pointer items-start gap-3 rounded-[var(--radius-md)] border border-line p-3">
+              <label className="flex cursor-pointer items-start gap-3 border-t border-line pt-3">
                 <input type="checkbox" checked={share} onChange={e => setShare(e.target.checked)}
-                       className="mt-0.5 size-4 accent-[var(--color-accent)]" />
+                       className="mt-0.5 size-5 shrink-0 accent-[var(--color-accent)]" />
                 <span>
-                  <span className="flex items-center gap-1.5 text-sm font-medium">
-                    {share ? <Eye className="size-3.5" aria-hidden /> : <EyeOff className="size-3.5" aria-hidden />}
+                  <span className="block text-[15px] font-semibold">
                     Share with {student.first_name} and their guardians
                   </span>
-                  <span className="mt-0.5 block text-[12.5px] text-ink-2">
+                  <span className="mt-0.5 block text-[13.5px] text-ink-3">
                     {share
                       ? 'They will see it as soon as you save.'
                       : 'Saved as a draft. Nothing reaches the family until you share it.'}

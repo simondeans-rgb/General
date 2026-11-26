@@ -5,27 +5,23 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { MedicalBrief, MedicalMarker } from '@/components/app/medical-brief';
+import { MedicalBrief, medicalLine } from '@/components/app/medical-brief';
 import { AttendanceQueue, localQueueStorage, isOfflineError } from '@/lib/offline/attendance-queue';
-import { ArrowLeft, AlertTriangle, Check, Phone, CheckCheck, Lock, LockOpen,
-         NotebookPen, FolderOpen, ChevronRight, MessageSquarePlus, CloudOff } from 'lucide-react';
+import { ArrowLeft, Check, ChevronDown, ChevronRight, X } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Badge, Button, Card, EmptyState, Input, Skeleton, ErrorState } from '@/components/ui';
+import { Beats, Button, EmptyState, Input, Notice, Skeleton, ErrorState } from '@/components/ui';
 import * as T from '@/lib/repos/teaching';
 import { time, ageFrom, dateLong } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 type Status = 'present' | 'absent' | 'late' | 'excused' | 'trial';
 
-const MARKS: { key: Status; label: string; short: string; tone: string }[] = [
-  { key: 'present', label: 'Present', short: 'P', tone: 'bg-positive text-white border-positive' },
-  { key: 'late',    label: 'Late',    short: 'L', tone: 'bg-caution text-white border-caution' },
-  { key: 'absent',  label: 'Absent',  short: 'A', tone: 'bg-critical text-white border-critical' },
-  { key: 'excused', label: 'Excused', short: 'E', tone: 'bg-info text-white border-info' },
-];
+const isHere = (s: string | null) => s === 'present' || s === 'late' || s === 'trial';
+const isAway = (s: string | null) => s === 'absent' || s === 'excused';
+const firstName = (r: T.RegisterEntry) => r.preferred_name ?? r.first_name;
 
 export default function RegisterPage() {
   return <Suspense fallback={<div className="min-h-dvh" />}><Register /></Suspense>;
@@ -122,104 +118,102 @@ function Register() {
   const m = meta.data?.[0] as (T.TeachSession & { notes: string | null }) | undefined;
   const list = rows.data ?? [];
   const marked = list.filter(r => r.status).length;
-  const alerts = list.filter(r => r.requires_alert);
-  const needs = list.filter(r => r.has_medical_need && !r.requires_alert);
+  const here = list.filter(r => r.status === 'present' || r.status === 'trial').length;
+  const late = list.filter(r => r.status === 'late').length;
+  const absent = list.filter(r => r.status === 'absent').length;
+  const excused = list.filter(r => r.status === 'excused').length;
+  const unmarked = list.filter(r => !r.status);
+  const flagged = list.filter(r => r.requires_alert || r.has_medical_need);
   const closed = !!m?.register_closed_at;
   const complete = list.length > 0 && marked === list.length;
 
   if (!sessionId) {
     return <Shell title="Register" allow={['owner','admin','teacher']}>
-      <Card><EmptyState title="No class chosen" body="Pick a class from Today."
-        action={<Link href="/teach"><Button variant="primary">Back to today</Button></Link>} /></Card>
+      <div className="mx-auto max-w-2xl"><EmptyState title="No class chosen" body="Pick a class from Today."
+        action={<Link href="/teach"><Button variant="primary">Back to Today</Button></Link>} /></div>
     </Shell>;
   }
+
+  const counts = [
+    `${here} here`, late && `${late} late`, `${absent} absent`, excused && `${excused} excused`,
+  ].filter(Boolean).join(' · ');
 
   return (
     <Shell
       title={m?.name ?? 'Register'}
-      subtitle={m ? `${dateLong(m.starts_at)} · ${time(m.starts_at)}` : undefined}
+      subtitle={m ? [`${dateLong(m.starts_at)} · ${time(m.starts_at)}`, m.location, m.room].filter(Boolean).join(' · ') : undefined}
       allow={['owner','admin','teacher']}
-      actions={<Link href="/teach" aria-label="Back to today"
-        className="grid size-9 place-items-center rounded-full text-ink-2 hover:bg-surface-2">
-        <ArrowLeft className="size-4" aria-hidden /></Link>}
+      actions={<Link href="/teach" aria-label="Back to Today"
+        className="grid size-11 place-items-center rounded-full text-ink-2 hover:bg-surface-2">
+        <ArrowLeft className="size-5" aria-hidden /></Link>}
     >
-      <div className="mx-auto max-w-2xl space-y-4">
-        {/* Progress, and the one action that finishes a register in a tap. */}
-        <div className="flex items-center gap-3">
-          <div className="flex-1">
-            <p className="text-sm font-medium">{marked} of {list.length} marked</p>
-            <div aria-hidden className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-3">
-              <div className="h-full rounded-full bg-accent transition-[width] duration-200"
-                   style={{ width: `${list.length ? (marked / list.length) * 100 : 0}%` }} />
+      <div className="mx-auto max-w-2xl space-y-8">
+        {/* Progress in words and beats, and the one action that moves the register on. */}
+        {list.length > 0 && <section aria-label="Progress" className="space-y-4">
+          <div className="flex items-center justify-between gap-4 border-b-2 border-ink pb-3">
+            <p role="status" className="tnum text-[16px] font-semibold">
+              {counts}
+              {!closed && <span className="font-normal text-ink-3"> · {unmarked.length} to mark</span>}
+            </p>
+            <Beats value={marked} max={list.length || 1} size="lg" label={`${marked} of ${list.length} marked`} />
+          </div>
+
+          {waiting > 0 && (
+            <Notice word="Offline" tone="caution"
+              title={`${waiting} mark${waiting === 1 ? '' : 's'} waiting for a connection`}
+              detail="They send on their own when you are back online. Keep marking." />
+          )}
+
+          {closed ? (
+            <>
+              <Notice word="Closed" tone="positive" title="Everyone is accounted for"
+                detail="Reopen the register if something needs changing."
+                action={<Button onClick={() => reopen.mutate()} loading={reopen.isPending}>Reopen</Button>} />
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Link href={`/teach/feedback/?session=${sessionId}`} className="sm:flex-1">
+                  <Button variant="primary" size="lg" className="w-full" tabIndex={-1}>Give class feedback</Button>
+                </Link>
+              </div>
+            </>
+          ) : unmarked.length > 0 && list.length > 0 ? (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <p className="min-w-0 flex-1 text-[14px] text-ink-3">
+                <span className="sr-only">Still to mark: </span>
+                {unmarked.slice(0, 3).map(r => `${firstName(r)}${r.is_trial ? ' (trial)' : ''}`).join(', ')}
+                {unmarked.length > 3 ? ` and ${unmarked.length - 3} more` : ''}
+              </p>
+              <Button variant="primary" size="lg" onClick={() => markAllPresent.mutate()} loading={markAllPresent.isPending}>
+                Mark the rest here
+              </Button>
             </div>
-          </div>
-          {!closed && marked < list.length && (
-            <Button variant="primary" size="sm" onClick={() => markAllPresent.mutate()}
-                    loading={markAllPresent.isPending}>
-              <CheckCheck className="size-4" aria-hidden /> All present
-            </Button>
-          )}
-          {!closed && complete && (
-            <Button variant="primary" size="sm" onClick={() => closeRegister.mutate()}
-                    loading={closeRegister.isPending}>
-              <Lock className="size-4" aria-hidden /> Close register
-            </Button>
-          )}
-          {closed && (
-            <Button size="sm" onClick={() => reopen.mutate()} loading={reopen.isPending}>
-              <LockOpen className="size-4" aria-hidden /> Reopen
-            </Button>
-          )}
-        </div>
+          ) : complete ? (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <p className="flex-1 text-[14px] text-ink-3">Everyone is marked. Closing tells the office the register is complete.</p>
+              <Button variant="primary" size="lg" onClick={() => closeRegister.mutate()} loading={closeRegister.isPending}>
+                Close register
+              </Button>
+            </div>
+          ) : null}
+          {markAllPresent.isError && <ErrorState error={markAllPresent.error} />}
+          {closeRegister.isError && <ErrorState error={closeRegister.error} />}
+          {reopen.isError && <ErrorState error={reopen.error} />}
+        </section>}
 
-        {waiting > 0 && (
-          <p role="status" className="flex items-center gap-2 rounded-[var(--radius-md)] border border-caution/30
-                        bg-caution-soft px-3 py-2 text-[13px] text-ink-2">
-            <CloudOff className="size-3.5 shrink-0 text-caution" aria-hidden />
-            {waiting} mark{waiting === 1 ? '' : 's'} saved on this device — they send when the connection is back.
-          </p>
-        )}
-
-        {closed && (
-          <p className="flex items-center gap-2 rounded-[var(--radius-md)] border border-positive/30
-                        bg-positive-soft px-3 py-2 text-[13px] text-ink-2">
-            <Lock className="size-3.5 shrink-0 text-positive" aria-hidden />
-            Register closed. Everyone is accounted for — reopen it if something needs changing.
-          </p>
-        )}
-        {closed && (
-          <Link href={`/teach/feedback/?session=${sessionId}`}
-            className="flex items-center justify-between rounded-[var(--radius-lg)] border border-accent-line bg-accent-soft px-4 py-3 hover:brightness-95">
-            <span><span className="block font-medium text-accent-ink">Give class feedback</span>
-              <span className="block text-[13px] text-ink-2">Tap a child, tap what fits. A whole class in a few minutes.</span></span>
-            <ChevronRight className="size-4 text-accent-ink" aria-hidden />
-          </Link>
-        )}
         {closed && <NextClass sessionId={sessionId} />}
-        {closeRegister.isError && <ErrorState error={closeRegister.error} />}
 
-        {(alerts.length > 0 || needs.length > 0) && (
-          <div role="note" className={cn('rounded-[var(--radius-lg)] border p-3',
-            alerts.length ? 'border-critical/30 bg-critical-soft' : 'border-caution/30 bg-caution-soft')}>
-            <p className={cn('flex items-center gap-1.5 text-sm font-semibold', alerts.length ? 'text-critical' : 'text-caution')}>
-              <AlertTriangle className="size-4" aria-hidden />
-              {[alerts.length && `${alerts.length} urgent medical alert${alerts.length === 1 ? '' : 's'}`,
-                needs.length && `${needs.length} with medical information`].filter(Boolean).join(' · ')}
-            </p>
-            <p className="mt-0.5 text-[13px] text-ink-2">
-              {[...alerts, ...needs].map(r => r.preferred_name ?? r.first_name).join(', ')} — tap a name to see what to do.
-            </p>
+        <section aria-labelledby="roll-h">
+          <div className="flex items-baseline gap-3 border-b border-line pb-2">
+            <h2 id="roll-h" className="section-title flex-1">Register</h2>
+            {flagged.length > 0 && (
+              <span className={cn('text-[13px] font-semibold', flagged.some(r => r.requires_alert) ? 'text-critical' : 'text-caution')}>
+                {flagged.length} medical note{flagged.length === 1 ? '' : 's'} · tap a name
+              </span>
+            )}
           </div>
-        )}
-
-        {rows.isLoading && <Card className="divide-y divide-line">
-          {[0,1,2,3].map(i => <div key={i} className="p-4"><Skeleton className="h-10" /></div>)}</Card>}
-        {rows.error && <ErrorState error={rows.error} onRetry={() => rows.refetch()} />}
-        {rows.data?.length === 0 && <Card><EmptyState title="Nobody on this register"
-          body="No one is enrolled in this class yet." /></Card>}
-
-        {list.length > 0 && (
-          <Card>
+          {rows.isLoading && <div className="space-y-3 pt-3">{[0,1,2,3].map(i => <Skeleton key={i} className="h-14" />)}</div>}
+          {rows.error != null && <ErrorState error={rows.error} onRetry={() => rows.refetch()} />}
+          {rows.data?.length === 0 && <EmptyState title="Nobody on this register" body="No one is enrolled in this class yet." />}
+          {list.length > 0 && (
             <ul className="divide-y divide-line">
               {list.map(r => (
                 <li key={r.student_id}>
@@ -230,10 +224,10 @@ function Register() {
                 </li>
               ))}
             </ul>
-          </Card>
-        )}
-
-        {mark.isError && <ErrorState error={mark.error} />}
+          )}
+          {mark.isError && <ErrorState error={mark.error} />}
+          {setReason.isError && <ErrorState error={setReason.error} />}
+        </section>
 
         {m && <SessionNotes sessionId={sessionId} saved={m.notes ?? ''} />}
         {m?.class_id && <ClassLinks classId={m.class_id} name={m.name} />}
@@ -264,135 +258,149 @@ function SessionNotes({ sessionId, saved }: { sessionId: string; saved: string }
   const dirty = touched && text !== saved;
 
   return (
-    <Card className="p-4">
-      <label htmlFor="session-notes" className="flex items-center gap-1.5 text-[13px] font-medium text-ink-2">
-        <NotebookPen className="size-4 text-ink-3" aria-hidden /> Notes on this session
-      </label>
+    <section aria-labelledby="notes-h">
+      <div className="mb-3 flex items-baseline gap-3 border-b-2 border-ink pb-2">
+        <h2 id="notes-h" className="section-title flex-1"><label htmlFor="session-notes">Notes on this class</label></h2>
+        <span className="text-[13px] text-ink-3">You and the office only</span>
+      </div>
       <textarea id="session-notes" rows={3} value={text}
         onChange={e => { setText(e.target.value); setTouched(true); }}
-        placeholder="Covered the first sixteen counts. Nadia to chase the missing exam forms."
-        className="mt-2 w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
+        placeholder="Covered the first sixteen counts. Chase the missing exam forms."
+        className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-[15px]
                    focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
-      <div className="mt-2 flex items-center gap-2">
-        <p className="flex-1 text-[12.5px] text-ink-3">
-          Seen by you and the office. Not shared with families.
-        </p>
-        {dirty && <Button size="sm" onClick={() => { setText(saved); setTouched(false); }}>Undo</Button>}
-        <Button size="sm" variant="primary" disabled={!dirty}
-                loading={save.isPending} onClick={() => save.mutate()}>Save note</Button>
+      <div className="mt-2 flex items-center justify-end gap-2">
+        {dirty && <Button variant="ghost" onClick={() => { setText(saved); setTouched(false); }}>Undo</Button>}
+        <Button disabled={!dirty} loading={save.isPending} onClick={() => save.mutate()}>Save note</Button>
       </div>
       {save.isError && <div className="mt-2"><ErrorState error={save.error} /></div>}
-    </Card>
+    </section>
   );
 }
 
 /** From the register straight to the two things a teacher does next. */
 function ClassLinks({ classId, name }: { classId: string; name: string }) {
   return (
-    <Card>
+    <section aria-labelledby="links-h">
+      <div className="mb-1 border-b-2 border-ink pb-2"><h2 id="links-h" className="section-title">For {name}</h2></div>
       <ul className="divide-y divide-line">
         {[
-          { href: `/class/?id=${classId}`, icon: FolderOpen,
-            label: 'Videos, music and notes', hint: `Shared with everyone in ${name}` },
-          { href: `/class/?id=${classId}#notices`, icon: MessageSquarePlus,
-            label: 'Send a notice', hint: 'Homework, kit for next week, a reminder' },
+          { href: `/class/?id=${classId}`, label: 'Videos, music and notes', hint: 'Shared with everyone in the class' },
+          { href: `/class/?id=${classId}#notices`, label: 'Send a notice', hint: 'Homework, kit for next week, a reminder' },
         ].map(l => (
           <li key={l.href}>
-            <Link href={l.href} className="flex items-center gap-3 px-4 py-3.5 hover:bg-surface-2">
-              <l.icon className="size-4 shrink-0 text-ink-3" aria-hidden />
+            <Link href={l.href} className="flex min-h-14 items-center gap-3 py-3 hover:bg-surface-2/60">
               <span className="min-w-0 flex-1">
-                <span className="block font-medium">{l.label}</span>
-                <span className="block truncate text-[12.5px] text-ink-2">{l.hint}</span>
+                <span className="block font-semibold">{l.label}</span>
+                <span className="block truncate text-[13px] text-ink-3">{l.hint}</span>
               </span>
               <ChevronRight className="size-4 shrink-0 text-ink-3" aria-hidden />
             </Link>
           </li>
         ))}
       </ul>
-    </Card>
+    </section>
   );
 }
 
+/**
+ * One child: name and medical line in words on the left, two big targets on
+ * the right. Here and Absent are the ninety-percent case; Late and Excused
+ * sit one tap further in, under the name, with the medical brief.
+ */
 function RegisterLine({ entry: r, onMark, onReason, disabled, saving }: {
   entry: T.RegisterEntry; onMark: (s: Status) => void;
   onReason: (reason: string) => void; disabled?: boolean; saving?: boolean;
 }) {
   const [open, setOpen] = React.useState(false);
-  const name = `${r.preferred_name ?? r.first_name} ${r.last_name}`;
+  const name = `${firstName(r)} ${r.last_name}`;
+  const med = medicalLine(r);
+  const here = isHere(r.status);
+  const away = isAway(r.status);
 
   // A reason only makes sense against an absence. Asking for one on every mark
   // would slow down the ninety percent of a register that is simply "present".
-  const wantsReason = r.status === 'absent' || r.status === 'excused';
   const [reason, setReason] = React.useState(r.reason ?? '');
   const [editing, setEditing] = React.useState(false);
   React.useEffect(() => { if (!editing) setReason(r.reason ?? ''); }, [r.reason, editing]);
 
   return (
-    <div className={cn('px-3 py-2.5 transition-colors', r.status && 'bg-surface-2/60')}>
-      <div className="flex items-center gap-2.5">
+    <div className="py-2.5">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3">
         <button
           onClick={() => setOpen(o => !o)}
           aria-expanded={open}
-          className="flex min-w-0 flex-1 items-center gap-2.5 rounded-[var(--radius-md)] py-1.5 text-left">
-          <span className="min-w-0">
-            <span className="flex items-center gap-1.5">
-              <span className="truncate font-medium">{name}</span>
-              <MedicalMarker brief={r} className="size-3.5" />
-              {r.is_trial && <Badge tone="info">Trial</Badge>}
-            </span>
-            <span className="block text-[12px] text-ink-3">
-              {ageFrom(r.date_of_birth)}
-              {r.attendance_pct != null && ` · ${r.attendance_pct}% attendance`}
-            </span>
+          aria-label={`${name}${r.is_trial ? ', trial' : ''}${med ? `, ${med}` : ''}. Show details`}
+          className="min-h-11 min-w-0 rounded-[var(--radius-md)] py-1 text-left">
+          <span className="flex items-center gap-1.5">
+            <span className="truncate text-[17px] font-semibold leading-tight">{name}</span>
+            <ChevronDown className={cn('size-4 shrink-0 text-ink-3 transition-transform', open && 'rotate-180')} aria-hidden />
+          </span>
+          {med && (
+            <span className={cn('mt-0.5 block text-[14px] font-semibold leading-snug',
+              r.requires_alert ? 'text-critical' : 'text-caution')}>{med}</span>
+          )}
+          <span className="mt-0.5 block text-[13px] text-ink-3">
+            {r.is_trial && <span className="mr-1.5 rounded-[var(--radius-sm)] bg-peach-soft px-1.5 py-px font-semibold text-ink">Trial</span>}
+            {[ageFrom(r.date_of_birth) != null && `Age ${ageFrom(r.date_of_birth)}`,
+              r.attendance_pct != null && `${r.attendance_pct}% attendance`].filter(Boolean).join(' · ')}
           </span>
         </button>
 
-        {/* Four targets, each at least 44px, labelled with a letter as well as
-            a colour so the state is never colour-only. */}
-        <div role="group" aria-label={`Mark ${name}`} className="flex shrink-0 gap-1">
-          {MARKS.map(mk => {
-            const active = r.status === mk.key || (r.status === 'trial' && mk.key === 'present');
-            return (
-              <button key={mk.key}
-                onClick={() => onMark(mk.key)}
-                disabled={disabled}
-                aria-pressed={active}
-                aria-label={`${mk.label} — ${name}`}
-                title={mk.label}
-                className={cn(
-                  'grid size-11 place-items-center rounded-[var(--radius-md)] border text-[13px] font-semibold transition-all',
-                  active ? mk.tone : 'border-line-strong bg-surface text-ink-3 hover:bg-surface-2 hover:text-ink',
-                  disabled && 'opacity-50 pointer-events-none')}>
-                {active ? <Check className="size-4" aria-hidden /> : mk.short}
-              </button>
-            );
-          })}
+        {/* Two targets, each 48px tall; the state is a word and a tick, not colour alone. */}
+        <div role="group" aria-label={`Mark ${name}`}
+             className={cn('grid h-12 w-[9.5rem] grid-cols-2 overflow-hidden rounded-[var(--radius-lg)] border-[1.5px] sm:w-44',
+               here ? 'border-positive' : away ? 'border-critical' : 'border-line-strong',
+               disabled && 'cursor-default')}>
+          <button onClick={() => { if (!here) onMark('present'); }} disabled={disabled} aria-pressed={here}
+            aria-label={`${r.status === 'late' ? 'Late' : 'Here'} — ${name}`}
+            className={cn('flex items-center justify-center gap-1 text-[15px] font-semibold transition-colors',
+              here ? 'bg-positive-soft text-positive' : 'text-ink-2 hover:bg-surface-2')}>
+            {here && <Check className="size-4" strokeWidth={2.5} aria-hidden />}{r.status === 'late' ? 'Late' : 'Here'}
+          </button>
+          <button onClick={() => { if (!away) onMark('absent'); }} disabled={disabled} aria-pressed={away}
+            aria-label={`${r.status === 'excused' ? 'Excused' : 'Absent'} — ${name}`}
+            className={cn('flex items-center justify-center gap-1 border-l-[1.5px] text-[15px] font-semibold transition-colors',
+              here ? 'border-positive' : away ? 'border-critical' : 'border-line-strong',
+              away ? 'bg-critical-soft text-critical' : 'text-ink-2 hover:bg-surface-2')}>
+            {away && <X className="size-4" strokeWidth={2.5} aria-hidden />}{r.status === 'excused' ? 'Excused' : 'Absent'}
+          </button>
         </div>
       </div>
 
-      {wantsReason && !disabled && (
-        <div className="mb-1 ml-1 mt-2 flex items-center gap-2">
+      {away && !disabled && (
+        <div className="mt-2 flex items-center gap-2">
           <label htmlFor={`reason-${r.student_id}`} className="sr-only">Why {name} is away</label>
-          <Input id={`reason-${r.student_id}`} value={reason} className="h-9 text-[13px]"
+          <Input id={`reason-${r.student_id}`} value={reason}
                  placeholder={r.status === 'excused' ? 'Excused because…' : 'Reason, if you know it'}
                  onChange={e => { setReason(e.target.value); setEditing(true); }}
                  onBlur={() => { if (editing && reason !== (r.reason ?? '')) { onReason(reason); setEditing(false); } }} />
           {editing && reason !== (r.reason ?? '') && (
-            <Button size="sm" variant="primary" loading={saving}
-                    onClick={() => { onReason(reason); setEditing(false); }}>Save</Button>
+            <Button loading={saving} onClick={() => { onReason(reason); setEditing(false); }}>Save</Button>
           )}
         </div>
       )}
-      {wantsReason && disabled && r.reason && (
-        <p className="mb-1 ml-1 mt-1.5 text-[12.5px] text-ink-2">{r.reason}</p>
+      {away && disabled && r.reason && (
+        <p className="mt-1 text-[13.5px] text-ink-2">{r.reason}</p>
       )}
 
       {open && (
-        <div className="mb-1 mt-2">
+        <div className="mb-2 mt-3 space-y-4">
+          {!disabled && (
+            <div role="group" aria-label={`Other marks for ${name}`} className="flex flex-wrap gap-2">
+              {([
+                r.status !== 'late' && ['late', 'Late'],
+                r.status !== 'excused' && ['excused', 'Excused absence'],
+                r.status === 'late' && ['present', 'Here, on time'],
+                r.status === 'excused' && ['absent', 'Absent, not excused'],
+              ].filter(Boolean) as [Status, string][]).map(([k, label]) => (
+                <Button key={k} onClick={() => onMark(k)} aria-label={`${label} — ${name}`}>{label}</Button>
+              ))}
+            </div>
+          )}
           <MedicalBrief brief={r} />
           {/* What a teacher can see is set by the database (student_safety_brief),
               not by this screen. The family doctor stays with the office. */}
-          <p className="mt-2 text-[12px] text-ink-3">GP details and the full record stay with the office.</p>
+          <p className="text-[13px] text-ink-3">GP details and the full record stay with the office.</p>
         </div>
       )}
     </div>
@@ -406,10 +414,11 @@ function NextClass({ sessionId }: { sessionId: string }) {
   if (!n) return null;
   return (
     <Link href={`/teach/register/?session=${n.id}`}
-      className="flex items-center justify-between rounded-[var(--radius-lg)] border border-line bg-surface px-4 py-3 hover:bg-surface-2">
-      <span><span className="block text-[13px] text-ink-3">Next class</span>
-        <span className="font-medium">{n.name} · {time(n.starts_at)}</span></span>
-      <ChevronRight className="size-4 text-ink-3" aria-hidden />
+      className="grid min-h-14 grid-cols-[4.25rem_minmax(0,1fr)_auto] items-center gap-x-3 border-y border-line py-3 hover:bg-surface-2/60">
+      <span className="font-display text-[19px] tnum">{time(n.starts_at)}</span>
+      <span className="min-w-0"><span className="block text-[13px] text-ink-3">Next class</span>
+        <span className="block truncate font-semibold">{n.name}</span></span>
+      <span className="flex items-center gap-1 text-[13.5px] font-semibold text-accent-text">Register<ChevronRight className="size-4" aria-hidden /></span>
     </Link>
   );
 }

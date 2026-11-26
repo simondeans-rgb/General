@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Suspense } from 'react';
-import { Users, MessageSquarePlus, HeartPulse, Mail, ShieldAlert } from 'lucide-react';
+import { MessageSquarePlus, Mail, ShieldAlert } from 'lucide-react';
 import { RaiseConcernSheet } from '@/components/app/safeguarding';
 import { TeacherMessageSheet } from '@/components/app/teacher-message';
 import { StudentExams } from '@/components/app/exams';
@@ -10,13 +10,13 @@ import { PracticeSummary } from '@/components/app/practice';
 import { SkillsPanel, Goals, Reflections, Milestones, Timeline } from '@/components/app/progress';
 import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection, KeyValue } from '@/components/app/detail-panel';
-import { MedicalBrief, MedicalMarker } from '@/components/app/medical-brief';
+import { MedicalBrief, medicalLine } from '@/components/app/medical-brief';
 import { useRows } from '@/lib/query';
 import { useSelection } from '@/lib/use-selection';
-import { Badge, Button, Card, EmptyState, Input, Skeleton, ErrorState } from '@/components/ui';
+import { Beats, Button, EmptyState, Input, Skeleton, ErrorState } from '@/components/ui';
 import { FeedbackComposer } from '@/components/app/feedback-composer';
 import * as T from '@/lib/repos/teaching';
-import { ageFrom, initials } from '@/lib/format';
+import { ageFrom } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 type Row = {
@@ -44,59 +44,62 @@ function MyStudents() {
 
   return (
     <Shell title="My students"
-      subtitle={rows.data ? `${rows.data.length} across your classes${withNeeds ? ` · ${withNeeds} with medical information` : ''}` : undefined}
+      subtitle={rows.data ? `${rows.data.length} across your classes` : undefined}
       allow={['owner','admin','teacher']}>
       <div className="mx-auto max-w-5xl">
         <div className={cn('gap-5', selected ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,440px)]' : 'block')}>
-          <div className="min-w-0 space-y-3">
+          <div className="min-w-0 space-y-4">
             <div className="flex gap-2">
               <Input type="search" value={q} onChange={e => setQ(e.target.value)}
-                     placeholder="Search your students" aria-label="Search your students" />
+                     placeholder="Search by name" aria-label="Search your students" />
               {withNeeds > 0 && (
                 <Button aria-pressed={onlyNeeds} onClick={() => setOnlyNeeds(v => !v)}
-                        className={cn('shrink-0', onlyNeeds && 'border-caution bg-caution-soft')}>
-                  <HeartPulse className="size-4 text-caution" aria-hidden /> Medical <span className="tnum">{withNeeds}</span>
+                        className={cn('shrink-0', onlyNeeds && 'border-ink bg-surface-2')}>
+                  Medical notes <span className="tnum text-ink-3">{withNeeds}</span>
                 </Button>
               )}
             </div>
-            {rows.isLoading && <Card className="space-y-3 p-4">{[0,1,2].map(i => <Skeleton key={i} className="h-12" />)}</Card>}
-            {rows.error && <ErrorState error={rows.error} />}
-            {list.length === 0 && !rows.isLoading && (
-              <Card><EmptyState icon={<Users className="size-5" />} title="No students found"
-                body={onlyNeeds ? 'Nobody matching has medical information recorded.' : 'You only see children in classes you teach.'} /></Card>
-            )}
-            {list.length > 0 && (
-              <Card>
-                <ul className="divide-y divide-line">
-                  {list.map(s => (
+            <section aria-labelledby="students-h">
+              <div className="mb-1 flex items-baseline gap-3 border-b-2 border-ink pb-2">
+                <h2 id="students-h" className="section-title flex-1">{onlyNeeds ? 'With medical notes' : q ? 'Matching' : 'Everyone you teach'}</h2>
+                {rows.data && <span className="text-[13px] text-ink-3">{list.length} · attendance this term</span>}
+              </div>
+              {rows.isLoading && <div className="space-y-3 pt-3">{[0,1,2].map(i => <Skeleton key={i} className="h-12" />)}</div>}
+              {rows.error != null && <ErrorState error={rows.error} onRetry={() => rows.refetch()} />}
+              {list.length === 0 && !rows.isLoading && (
+                <EmptyState title={q ? `No one called “${q}”` : 'No students yet'}
+                  body={onlyNeeds ? 'Nobody matching has medical information recorded.' : 'You see children in the classes you teach.'} />
+              )}
+              <ul className="divide-y divide-line">
+                {list.map(s => {
+                  const med = medicalLine(s);
+                  const low = s.attendance_pct != null && s.attendance_pct < 70;
+                  return (
                     <li key={s.id}>
                       <button onClick={() => select(s.id)} aria-current={selected === s.id || undefined}
-                        className={cn('flex min-h-[60px] w-full items-center gap-3 px-4 py-3 text-left hover:bg-surface-2',
-                          selected === s.id && 'bg-accent-soft/50')}>
-                        <span aria-hidden className={cn('grid size-9 shrink-0 place-items-center rounded-full text-[13px] font-semibold',
-                          s.requires_alert ? 'bg-critical-soft text-critical' : s.has_medical_need ? 'bg-caution-soft text-caution' : 'bg-surface-2 text-ink-2')}>
-                          {initials(s.first_name, s.last_name)}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="flex items-center gap-1.5">
-                            <span className="truncate font-medium">{s.preferred_name ?? s.first_name} {s.last_name}</span>
-                            <MedicalMarker brief={s} />
-                          </span>
-                          <span className="block truncate text-[12.5px] text-ink-2">
-                            {ageFrom(s.date_of_birth)} · {s.class_names ?? '—'}
+                        className={cn('grid min-h-14 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 py-3 pl-1 text-left hover:bg-surface-2/60',
+                          selected === s.id && 'bg-accent-soft/60 shadow-[inset_3px_0_0_var(--color-accent)]')}>
+                        <span className="min-w-0">
+                          <span className="block truncate font-semibold">{s.preferred_name ?? s.first_name} {s.last_name}</span>
+                          {med && <span className={cn('block truncate text-[13.5px] font-semibold', s.requires_alert ? 'text-critical' : 'text-caution')}>{med}</span>}
+                          <span className="block truncate text-[13px] text-ink-3">
+                            {[ageFrom(s.date_of_birth) != null && `Age ${ageFrom(s.date_of_birth)}`, s.class_names].filter(Boolean).join(' · ')}
                           </span>
                         </span>
                         {s.attendance_pct != null && (
-                          <Badge tone={s.attendance_pct >= 85 ? 'positive' : s.attendance_pct >= 70 ? 'caution' : 'critical'}>
-                            {s.attendance_pct}%
-                          </Badge>
+                          <span className="flex items-center gap-2">
+                            <Beats value={s.attendance_pct} max={100} size="sm" tone={low ? 'caution' : 'ink'} label={`${s.attendance_pct}% attendance`} className="hidden sm:inline-flex" />
+                            <span className={cn('tnum w-11 text-right text-[14px]', low ? 'font-semibold text-caution' : 'text-ink-2')}>
+                              {s.attendance_pct}%{low && <span className="sr-only"> attendance, low</span>}
+                            </span>
+                          </span>
                         )}
                       </button>
                     </li>
-                  ))}
-                </ul>
-              </Card>
-            )}
+                  );
+                })}
+              </ul>
+            </section>
           </div>
 
           {selected && (
@@ -109,7 +112,7 @@ function MyStudents() {
                 <>
                   <DetailSection title="Safety">
                     <MedicalBrief brief={current} layout="stack" />
-                    <p className="mt-2 text-[12px] text-ink-3">Kept up to date by the office. GP details stay with them.</p>
+                    <p className="mt-3 text-[13px] text-ink-3">Kept up to date by the office. GP details stay with them.</p>
                   </DetailSection>
                   <DetailSection title="With you">
                     <KeyValue rows={[
@@ -126,14 +129,14 @@ function MyStudents() {
                   {(ageFrom(current.date_of_birth) ?? 0) >= 13 && (
                     <DetailSection title="Their reflections">
                       <Reflections studentId={current.id} />
-                      <p className="mt-1.5 text-[12px] text-ink-3">Only you, their other teachers and the student see these. If one worries you, follow your safeguarding procedure.</p>
+                      <p className="mt-1.5 text-[13px] text-ink-3">Only you, their other teachers and the student see these. If one worries you, follow your safeguarding procedure.</p>
                     </DetailSection>
                   )}
                   <DetailSection title="Milestones"><Milestones studentId={current.id} /></DetailSection>
                   <DetailSection title="Exams"><StudentExams studentId={current.id} canEnter /></DetailSection>
                   <DetailSection title="Practice"><PracticeSummary studentId={current.id} /></DetailSection>
                   <DetailSection title="Timeline"><Timeline studentId={current.id} limit={8} /></DetailSection>
-                  <Button className="w-full" onClick={() => setWriting(current)}>
+                  <Button className="w-full" variant="primary" onClick={() => setWriting(current)}>
                     <MessageSquarePlus className="size-4" aria-hidden /> Write feedback
                   </Button>
                   <Button className="mt-2 w-full" variant="ghost" onClick={() => setMessaging(current)}>

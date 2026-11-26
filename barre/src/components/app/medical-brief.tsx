@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { AlertTriangle, HeartPulse, Phone, Camera, CameraOff, UserRound } from 'lucide-react';
+import { AlertTriangle, HeartPulse, Phone } from 'lucide-react';
 import type { Brief } from '@/lib/repos/teaching';
 import { cn } from '@/lib/cn';
 
@@ -22,8 +22,22 @@ export function MedicalMarker({ brief, className }: { brief: Pick<Brief, 'requir
 }
 
 /**
+ * A child's medical need in a few words, for a register line or the next
+ * class: "Nut allergy · urgent". Empty when nothing is recorded.
+ */
+export function medicalLine(b: Pick<Brief, 'requires_alert' | 'has_medical_need' | 'allergies' | 'conditions' | 'medications'>): string {
+  if (!b.requires_alert && !b.has_medical_need) return '';
+  const allergy = b.allergies?.trim() ? `Allergy: ${b.allergies.trim()}` : null;
+  const what = [allergy, b.conditions, b.medications].map(v => v?.trim()).filter(Boolean) as string[];
+  const first = what[0] ? what[0].charAt(0).toUpperCase() + what[0].slice(1) : 'Medical information recorded';
+  const text = what.length > 1 ? `${first}; ${what.slice(1).join('; ')}` : first;
+  return b.requires_alert ? `${text} · urgent` : text;
+}
+
+/**
  * What a teacher needs in the room: the medical need and who to ring, side
- * by side on a wide screen, stacked on a phone.
+ * by side on a wide screen, stacked on a phone. Set as rules and type: the
+ * urgency is a word and a coloured rule, never a tinted box alone.
  */
 export function MedicalBrief({ brief, layout = 'side' }: { brief: Brief; layout?: 'side' | 'stack' }) {
   const lines: [string, string | null][] = [
@@ -33,69 +47,61 @@ export function MedicalBrief({ brief, layout = 'side' }: { brief: Brief; layout?
   const contacts = brief.emergency_contacts?.length
     ? brief.emergency_contacts
     : brief.emergency_contact_phone ? [{ name: brief.emergency_contact_name ?? 'Emergency contact', relationship: null, phone: brief.emergency_contact_phone }] : [];
+  const tone = brief.requires_alert ? 'critical' : brief.has_medical_need ? 'caution' : 'none';
 
   return (
-    <div className={cn('grid gap-3', layout === 'side' && 'sm:grid-cols-2')}>
-      <section aria-label="Medical" className={cn('rounded-[var(--radius-md)] border p-3',
-        brief.requires_alert ? 'border-critical/30 bg-critical-soft'
-          : brief.has_medical_need ? 'border-caution/30 bg-caution-soft' : 'border-line bg-surface-2')}>
-        <h3 className={cn('flex items-center gap-1.5 text-[13px] font-semibold',
-          brief.requires_alert ? 'text-critical' : brief.has_medical_need ? 'text-caution' : 'text-ink-2')}>
-          {brief.requires_alert ? <AlertTriangle className="size-4" aria-hidden />
-            : <HeartPulse className="size-4" aria-hidden />}
-          {brief.requires_alert ? 'Urgent medical alert' : brief.has_medical_need ? 'Medical information' : 'Medical'}
+    <div className={cn('grid gap-x-8 gap-y-5', layout === 'side' && 'sm:grid-cols-2')}>
+      <section aria-label="Medical" className={cn('border-l-4 pl-3',
+        tone === 'critical' ? 'border-critical' : tone === 'caution' ? 'border-caution' : 'border-line')}>
+        <h3 className={cn('text-[14px] font-semibold',
+          tone === 'critical' ? 'text-critical' : tone === 'caution' ? 'text-caution' : 'text-ink-2')}>
+          {tone === 'critical' ? 'Urgent medical alert' : tone === 'caution' ? 'Medical information' : 'Medical'}
         </h3>
-        {!brief.has_medical_need && <p className="mt-1 text-[13px] text-ink-2">Nothing recorded.</p>}
+        {!brief.has_medical_need && <p className="mt-0.5 text-[14px] text-ink-2">Nothing recorded.</p>}
         {recorded.length > 0 && (
-          <dl className="mt-2 space-y-1.5 text-[13.5px]">
+          <dl className="mt-1.5 space-y-1.5 text-[14.5px]">
             {recorded.map(([k, v]) => (
               <div key={k}>
-                <dt className="text-[11.5px] font-medium uppercase tracking-[0.05em] text-ink-3">{k}</dt>
-                <dd>{v}</dd>
+                <dt className="text-[13px] text-ink-3">{k}</dt>
+                <dd className="text-ink">{v}</dd>
               </div>
             ))}
           </dl>
         )}
         {brief.action_plan && (
-          <div className="mt-2 rounded-[var(--radius-sm,6px)] bg-surface/70 p-2.5">
-            <p className="text-[11.5px] font-medium uppercase tracking-[0.05em] text-ink-3">In an emergency</p>
-            <p className="mt-0.5 text-[13.5px] font-medium">{brief.action_plan}</p>
+          <div className="mt-2">
+            <p className="text-[13px] text-ink-3">In an emergency</p>
+            <p className="text-[14.5px] font-semibold text-ink">{brief.action_plan}</p>
           </div>
         )}
       </section>
 
-      <section aria-label="Emergency contacts" className="rounded-[var(--radius-md)] border border-line p-3">
-        <h3 className="flex items-center gap-1.5 text-[13px] font-semibold text-ink-2">
-          <Phone className="size-4" aria-hidden /> Emergency contacts
-        </h3>
+      <section aria-label="Emergency contacts">
+        <h3 className="text-[14px] font-semibold text-ink-2">Emergency contacts</h3>
         {contacts.length === 0 && (
-          <p className="mt-1 flex items-center gap-1.5 text-[13px] text-caution">
-            <AlertTriangle className="size-3.5" aria-hidden /> None recorded — tell the office.
-          </p>
+          <p className="mt-0.5 text-[14px] font-semibold text-caution">None recorded. Tell the office.</p>
         )}
-        <ul className="mt-1.5 space-y-1">
+        <ul className="divide-y divide-line">
           {contacts.map((c, n) => (
             <li key={n}>
               {c.phone ? (
                 <a href={`tel:${c.phone.replace(/\s+/g, '')}`}
-                   className="flex min-h-[44px] items-center gap-2.5 rounded-[var(--radius-md)] px-2 -mx-2 hover:bg-surface-2">
-                  <UserRound className="size-4 shrink-0 text-ink-3" aria-hidden />
+                   className="-mx-2 flex min-h-[48px] items-center gap-3 rounded-[var(--radius-md)] px-2 hover:bg-surface-2">
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[13.5px] font-medium">{c.name}{c.relationship ? <span className="font-normal text-ink-3"> · {c.relationship}</span> : null}</span>
-                    <span className="tnum block text-[13px] text-accent-text">{c.phone}</span>
+                    <span className="block text-[14.5px] font-medium">{c.name}{c.relationship ? <span className="font-normal text-ink-3"> · {c.relationship}</span> : null}</span>
+                    <span className="tnum block text-[13.5px] text-ink-2">{c.phone}</span>
                   </span>
-                  <span className="text-[12px] font-medium text-accent-text">Call</span>
+                  <span className="inline-flex items-center gap-1 text-[13.5px] font-semibold text-accent-text">
+                    <Phone className="size-3.5" aria-hidden />Call</span>
                 </a>
               ) : (
-                <span className="block py-2 text-[13.5px]">{c.name}</span>
+                <span className="block py-2 text-[14.5px]">{c.name}</span>
               )}
             </li>
           ))}
         </ul>
         {brief.photo_consent !== null && brief.photo_consent !== undefined && (
-          <p className={cn('mt-2 flex items-center gap-1.5 border-t border-line pt-2 text-[12.5px]',
-            brief.photo_consent ? 'text-ink-2' : 'font-medium text-caution')}>
-            {brief.photo_consent ? <Camera className="size-3.5" aria-hidden /> : <CameraOff className="size-3.5" aria-hidden />}
+          <p className={cn('mt-2 text-[13.5px]', brief.photo_consent ? 'text-ink-3' : 'font-semibold text-caution')}>
             {brief.photo_consent ? 'Photos allowed' : 'No photos'}
           </p>
         )}
