@@ -4,7 +4,7 @@ import * as React from 'react';
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Clock, Upload, MapPin, User, Users, FolderOpen, X, Check } from 'lucide-react';
+import { Upload, X } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { ResourceRow } from '@/components/app/resource-row';
 import { ClassNotices } from '@/components/app/class-notices';
@@ -12,15 +12,13 @@ import { useRow, useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import {
-  Badge, Button, Card, CardHeader, EmptyState, ErrorState, Field, Input, Select,
-  Skeleton, Spinner, type Tone,
+  Beats, Button, EmptyState, ErrorState, Field, Input, Notice, Select, Skeleton, Spinner,
 } from '@/components/ui';
+import { SectionHead, StyleMark, ViewTabs } from '@/components/app/session-row';
 import * as H from '@/lib/repos/hub';
 import { storage, formatBytes, kindForFile, probeDuration } from '@/lib/storage';
 import { cn } from '@/lib/cn';
 
-const TONES: Record<string, Tone> = {
-  violet:'violet', amber:'amber', teal:'teal', rose:'rose', indigo:'indigo', lime:'lime' };
 
 const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
@@ -56,13 +54,13 @@ function ClassView() {
           </Button>
         : undefined}
     >
-      <div className="mx-auto max-w-2xl space-y-4">
-        {detail.isLoading && <Card className="p-4"><Skeleton className="h-24" /></Card>}
+      <div className="mx-auto max-w-2xl space-y-10">
+        {detail.isLoading && <Skeleton className="h-32" />}
         {detail.error && <ErrorState error={detail.error} onRetry={() => detail.refetch()} />}
 
         {!detail.isLoading && !c && !detail.error && (
-          <Card><EmptyState icon={<Users className="size-5" />} title="Class not found"
-            body="Either it has been removed, or it is not one of yours." /></Card>
+          <EmptyState title="Class not found"
+            body="It has been removed, or it isn’t one of yours." />
         )}
 
         {c && <Summary c={c} />}
@@ -81,33 +79,35 @@ function ClassView() {
 function Summary({ c }: { c: H.ClassDetail }) {
   const where = [c.location, c.room].filter(Boolean).join(' · ');
   return (
-    <Card className="p-4">
-      <div className="flex flex-wrap items-center gap-2">
-        {c.style && <Badge tone={TONES[c.colour ?? ''] ?? 'neutral'}>{c.style}</Badge>}
-        {c.level && <Badge tone="neutral">{c.level}</Badge>}
-        {c.i_teach && <Badge tone="accent">You teach this</Badge>}
-      </div>
-      <h2 className="mt-2 text-[19px] font-semibold tracking-tight">{c.name}</h2>
-      {c.description && <p className="mt-1 text-sm leading-relaxed text-ink-2">{c.description}</p>}
+    <section aria-labelledby="class-when">
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13.5px] text-ink-3">
+        {c.style && <StyleMark colour={c.colour} name={c.style} />}
+        {c.level && <span>{c.level}</span>}
+        {c.i_teach && <span className="font-semibold text-ink">You teach this</span>}
+      </p>
+      <p id="class-when" className="mt-2 flex flex-wrap items-baseline gap-x-3">
+        <span className="font-display text-[40px] leading-none tnum">{clock(c.start_time)}</span>
+        <span className="text-[15px] font-semibold">{DAYS[c.day_of_week] ?? ''}s · {c.duration_min} min</span>
+      </p>
+      {c.description && <p className="mt-3 max-w-prose text-[15px] leading-relaxed text-ink-2">{c.description}</p>}
 
-      <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
-        <Fact icon={<Clock className="size-3.5" />} label="When"
-              value={`${DAYS[c.day_of_week] ?? ''} ${clock(c.start_time)} · ${c.duration_min} min`} />
-        {where && <Fact icon={<MapPin className="size-3.5" />} label="Where" value={where} />}
-        {c.teacher && <Fact icon={<User className="size-3.5" />} label="Taught by"
+      <dl className="mt-5 divide-y divide-line border-y border-line text-[14px]">
+        {where && <Fact label="Where" value={where} />}
+        {c.teacher && <Fact label="Taught by"
               value={[c.teacher, c.assistant && `with ${c.assistant}`].filter(Boolean).join(' ')} />}
-        <Fact icon={<Users className="size-3.5" />} label="Dancers"
-              value={`${c.enrolled} of ${c.capacity}`} />
+        <Fact label="Dancers" value={<span className="flex items-center gap-2">
+          <Beats value={c.enrolled} max={c.capacity} label={`${c.enrolled} of ${c.capacity} places`} />
+          <span className="tnum">{c.enrolled} of {c.capacity}</span></span>} />
       </dl>
-    </Card>
+    </section>
   );
 }
 
-function Fact({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function Fact({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="min-w-0">
-      <dt className="flex items-center gap-1.5 text-ink-3">{icon}{label}</dt>
-      <dd className="mt-0.5 font-medium">{value}</dd>
+    <div className="flex gap-4 py-2.5">
+      <dt className="w-24 shrink-0 text-ink-3">{label}</dt>
+      <dd className="min-w-0 flex-1 font-medium">{value}</dd>
     </div>
   );
 }
@@ -122,13 +122,13 @@ function Material({ classId, canAdd, isOffice }: {
 
   return (
     <>
-      <Card>
-        <CardHeader title="For this class"
-          subtitle={pinned.length === 0 ? undefined : `${pinned.length} item${pinned.length === 1 ? '' : 's'}`} />
-        {rows.isPending && <div className="space-y-3 p-4">{[0,1].map(i => <Skeleton key={i} className="h-14" />)}</div>}
-        {rows.error && <div className="p-4"><ErrorState error={rows.error} onRetry={() => rows.refetch()} /></div>}
+      <section>
+        <SectionHead title="For this class"
+          meta={pinned.length === 0 ? undefined : `${pinned.length} item${pinned.length === 1 ? '' : 's'}`} />
+        {rows.isPending && <div className="space-y-3 pt-3">{[0,1].map(i => <Skeleton key={i} className="h-14" />)}</div>}
+        {rows.error && <div className="pt-3"><ErrorState error={rows.error} onRetry={() => rows.refetch()} /></div>}
         {!rows.isPending && pinned.length === 0 && (
-          <EmptyState icon={<FolderOpen className="size-5" />} title="Nothing shared yet"
+          <EmptyState title="Nothing shared yet"
             body={canAdd
               ? 'Add a routine video, the music for this term, or a handout — everyone in this class will see it.'
               : 'Your teacher has not shared anything for this class yet.'} />
@@ -140,15 +140,15 @@ function Material({ classId, canAdd, isOffice }: {
             ))}
           </ul>
         )}
-      </Card>
+      </section>
 
       {studioWide.length > 0 && (
-        <Card>
-          <CardHeader title="From the studio" subtitle="Shared with everyone" />
+        <section>
+          <SectionHead title="From the studio" meta="Shared with everyone" />
           <ul className="divide-y divide-line">
             {studioWide.map(r => <ResourceRow key={r.id} r={r} />)}
           </ul>
-        </Card>
+        </section>
       )}
     </>
   );
@@ -207,45 +207,36 @@ function AddMaterial({ classId, className, onClose }: {
     mode === 'file' ? !!file && !tooBig : /^https?:\/\/\S+$/.test(url.trim()));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 sm:items-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 sm:items-center sm:p-6" onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-labelledby="add-material-t" onClick={e => e.stopPropagation()}
-        className="max-h-[88dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-[var(--radius-xl)]
-                   border border-line bg-surface p-4 pb-safe shadow-lg sm:rounded-[var(--radius-xl)]">
+        className="flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-[var(--radius-xl)]
+                   border border-line bg-surface shadow-lg sm:rounded-[var(--radius-xl)]">
         {done ? (
-          <div className="py-4 text-center">
-            <span className="mx-auto mb-3 grid size-11 place-items-center rounded-full bg-positive-soft text-positive" aria-hidden>
-              <Check className="size-5" />
-            </span>
-            <p id="add-material-t" className="font-medium">Shared with {className}</p>
-            <p className="mt-1 text-sm text-ink-2">
-              Everyone in the class will find it when they open this class from their timetable.
-            </p>
-            <Button className="mt-4 w-full" variant="primary" onClick={onClose}>Done</Button>
-          </div>
+          <>
+            <div className="px-5 py-6">
+              <h2 id="add-material-t" className="sr-only">Shared with {className}</h2>
+              <Notice word="Shared" tone="positive" title={`Shared with ${className}`}
+                detail="Everyone in the class finds it when they open this class from their timetable." />
+            </div>
+            <div className="flex border-t border-line px-5 py-3 pb-safe sm:justify-end">
+              <Button className="w-full sm:w-auto" variant="primary" onClick={onClose}>Done</Button>
+            </div>
+          </>
         ) : (
           <>
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-3 border-b border-line px-5 pb-3 pt-4">
               <div className="min-w-0 flex-1">
-                <h2 id="add-material-t" className="text-[17px] font-semibold tracking-tight">Add material</h2>
-                <p className="mt-0.5 text-[13px] text-ink-2">Goes to everyone in {className}.</p>
+                <h2 id="add-material-t" className="font-display text-[20px] leading-tight">Add material</h2>
+                <p className="mt-1 text-[13.5px] text-ink-3">Goes to everyone in {className}.</p>
               </div>
-              <Button size="sm" variant="ghost" aria-label="Close" onClick={onClose}>
+              <Button size="sm" variant="ghost" aria-label="Close" onClick={onClose} className="-mr-2 -mt-1">
                 <X className="size-4" aria-hidden />
               </Button>
             </div>
 
-            <div role="tablist" aria-label="Kind of material"
-                 className="mt-3 inline-flex rounded-[var(--radius-md)] border border-line bg-surface-2 p-0.5">
-              {([['file','Upload a file'],['link','Add a link']] as [Mode, string][]).map(([m, label]) => (
-                <button key={m} role="tab" aria-selected={mode === m} onClick={() => setMode(m)}
-                  className={cn('min-h-[34px] rounded-[7px] px-3 text-[13px] font-medium',
-                    mode === m ? 'bg-surface text-ink shadow-xs' : 'text-ink-2 hover:text-ink')}>
-                  {label}
-                </button>
-              ))}
-            </div>
-
-            <div className="mt-4 space-y-3">
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 py-4">
+              <ViewTabs label="Kind of material" value={mode} onChange={setMode}
+                options={[['file', 'Upload a file'], ['link', 'Add a link']]} />
               {mode === 'file' ? (
                 <Field label="File" htmlFor="material-file" required
                        error={tooBig ? `That file is ${formatBytes(file!.size)} — the limit is ${formatBytes(storage.maxBytes)}.` : undefined}
@@ -289,15 +280,15 @@ function AddMaterial({ classId, className, onClose }: {
                              focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
               </Field>
 
-              <fieldset className="rounded-[var(--radius-md)] border border-line p-3">
-                <legend className="px-1 text-[13px] font-medium text-ink-2">Who can see it</legend>
-                <label className="flex min-h-[36px] items-center gap-2.5 text-sm">
-                  <input type="checkbox" checked={forStudents} className="size-4 accent-[var(--accent)]"
+              <fieldset>
+                <legend className="mb-1 text-[13px] font-medium text-ink-2">Who can see it</legend>
+                <label className="flex min-h-[44px] items-center gap-3 text-[14px]">
+                  <input type="checkbox" checked={forStudents} className="size-[18px] accent-[var(--color-accent)]"
                          onChange={e => setForStudents(e.target.checked)} />
                   Students in this class
                 </label>
-                <label className="flex min-h-[36px] items-center gap-2.5 text-sm">
-                  <input type="checkbox" checked={forGuardians} className="size-4 accent-[var(--accent)]"
+                <label className="flex min-h-[44px] items-center gap-3 text-[14px]">
+                  <input type="checkbox" checked={forGuardians} className="size-[18px] accent-[var(--color-accent)]"
                          onChange={e => setForGuardians(e.target.checked)} />
                   Their parents
                 </label>
@@ -305,22 +296,22 @@ function AddMaterial({ classId, className, onClose }: {
                   Untick both and it stays visible to staff only.
                 </p>
               </fieldset>
+
+              {save.isError && <ErrorState error={save.error} />}
             </div>
 
-            {save.isError && <div className="mt-3"><ErrorState error={save.error} /></div>}
-
-            <div className="mt-4 flex gap-2">
-              <Button className="flex-1" onClick={onClose}>Cancel</Button>
-              <Button className="flex-1" variant="primary" disabled={!valid}
+            <div className="flex flex-wrap items-center gap-2 border-t border-line px-5 py-3 pb-safe sm:justify-end">
+              {save.isPending && mode === 'file' && (
+                <p className="flex w-full items-center gap-2 text-[12.5px] text-ink-3 sm:mr-auto sm:w-auto">
+                  <Spinner className="size-3" /> Storing the file…
+                </p>
+              )}
+              <Button className="flex-1 sm:flex-none" variant="ghost" onClick={onClose}>Cancel</Button>
+              <Button className="flex-[2] sm:flex-none" variant="primary" disabled={!valid}
                       loading={save.isPending} onClick={() => save.mutate()}>
                 {save.isPending ? 'Sharing' : 'Share'}
               </Button>
             </div>
-            {save.isPending && mode === 'file' && (
-              <p className="mt-2 flex items-center justify-center gap-2 text-[12.5px] text-ink-3">
-                <Spinner className="size-3" /> Storing the file…
-              </p>
-            )}
           </>
         )}
       </div>

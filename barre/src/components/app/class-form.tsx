@@ -2,11 +2,11 @@
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { X, Check, CalendarClock, AlertTriangle } from 'lucide-react';
+import { X, AlertTriangle } from 'lucide-react';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Button, ErrorState, Field, Input, Select, Skeleton } from '@/components/ui';
+import { Button, ErrorState, Field, Input, Notice, Select, Skeleton } from '@/components/ui';
 import * as C from '@/lib/repos/classes';
 import { cn } from '@/lib/cn';
 
@@ -127,44 +127,47 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
     && (!draft.assistant_id || draft.assistant_id !== draft.teacher_id);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 sm:items-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 sm:items-center sm:p-6" onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-labelledby="class-form-t" onClick={e => e.stopPropagation()}
-        className="max-h-[88dvh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-t-[var(--radius-xl)]
-                   border border-line bg-surface p-4 pb-safe shadow-lg sm:rounded-[var(--radius-xl)]">
+        className="flex max-h-[90dvh] w-full max-w-xl flex-col overflow-hidden rounded-t-[var(--radius-xl)]
+                   border border-line bg-surface shadow-lg sm:rounded-[var(--radius-xl)]">
         {done ? (
-          <div className="py-4 text-center">
-            <span className="mx-auto mb-3 grid size-11 place-items-center rounded-full bg-positive-soft text-positive" aria-hidden>
-              <Check className="size-5" />
-            </span>
-            <p id="class-form-t" className="font-medium">{draft.name}</p>
-            <p className="mt-1 text-sm text-ink-2">{done}</p>
-            <Button className="mt-4 w-full" variant="primary" onClick={onClose}>Done</Button>
-          </div>
+          <>
+            <div className="px-5 py-6">
+              <h2 id="class-form-t" className="sr-only">{draft.name}</h2>
+              <Notice word={editing ? 'Saved' : 'New'} tone="positive" title={draft.name} detail={done} />
+            </div>
+            <div className="flex border-t border-line px-5 py-3 pb-safe sm:justify-end">
+              <Button className="w-full sm:w-auto" variant="primary" onClick={onClose}>Done</Button>
+            </div>
+          </>
         ) : (
           <>
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-3 border-b border-line px-5 pb-3 pt-4">
               <div className="min-w-0 flex-1">
-                <h2 id="class-form-t" className="text-[17px] font-semibold tracking-tight">
+                <h2 id="class-form-t" className="font-display text-[20px] leading-tight">
                   {editing ? 'Edit class' : 'New class'}
                 </h2>
-                <p className="mt-0.5 text-[13px] text-ink-2">
+                <p className="mt-1 text-[13.5px] text-ink-3">
                   {editing ? 'Changes apply from here on.' : 'The term’s sessions are created for you.'}
                 </p>
               </div>
-              <Button size="sm" variant="ghost" aria-label="Close" onClick={onClose}>
+              <Button size="sm" variant="ghost" aria-label="Close" onClick={onClose} className="-mr-2 -mt-1">
                 <X className="size-4" aria-hidden />
               </Button>
             </div>
 
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
             {!ready && !loadError && (
-              <div className="mt-4 space-y-3" aria-busy="true">
+              <div className="space-y-3" aria-busy="true">
                 <p className="text-[13px] text-ink-3">Loading the studio’s styles, rooms and terms…</p>
                 {[0,1,2,3].map(i => <Skeleton key={i} className="h-16" />)}
               </div>
             )}
-            {loadError && <div className="mt-4"><ErrorState error={loadError} /></div>}
+            {loadError && <ErrorState error={loadError} />}
 
-            <div className={cn('mt-4 space-y-3', !ready && 'hidden')}>
+            <div className={cn('space-y-4', !ready && 'hidden')}>
+              <FormPart title="The class" />
               <Field label="Name" htmlFor="cf-name" required>
                 <Input id="cf-name" value={draft.name} onChange={e => set('name', e.target.value)}
                        placeholder="Grade 4 Ballet" />
@@ -195,6 +198,7 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
                 </Field>
               )}
 
+              <FormPart title="When and where" />
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Studio" htmlFor="cf-loc" required>
                   <Select id="cf-loc" value={draft.location_id}
@@ -248,15 +252,11 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
               </div>
 
               {movesSessions && (
-                <p className="flex gap-2 rounded-[var(--radius-md)] bg-caution-soft p-3 text-[13px] text-ink-2">
-                  <CalendarClock className="mt-0.5 size-4 shrink-0 text-caution" aria-hidden />
-                  <span>
-                    This moves the class. Future sessions will be rebuilt at the new time.
-                    Any session whose register has already been taken stays where it is.
-                  </span>
-                </p>
+                <Notice word="Moved" tone="caution" title="Future sessions move to the new time"
+                  detail="Any session whose register has been taken stays where it is." />
               )}
 
+              <FormPart title="Places and price" />
               <div className="grid grid-cols-3 gap-3">
                 <Field label="Places" htmlFor="cf-cap" required>
                   <Input id="cf-cap" type="number" inputMode="numeric" min={1} max={100}
@@ -295,6 +295,7 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
                        value={draft.trial_price_minor == null ? '' : (draft.trial_price_minor / 100).toFixed(2)}
                        onChange={e => set('trial_price_minor', e.target.value === '' ? null : Math.round(Number(e.target.value) * 100))} />
               </Field>
+              <FormPart title="What families read" />
               <Field label="Before joining" htmlFor="cf-prereq" hint="Families see this, e.g. ‘Grade 2 passed, or teacher’s invitation’.">
                 <Input id="cf-prereq" value={draft.prerequisites ?? ''} maxLength={200}
                        onChange={e => set('prerequisites', e.target.value)} />
@@ -302,23 +303,23 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
               <Field label="About the class" htmlFor="cf-desc">
                 <textarea id="cf-desc" rows={3} value={draft.description ?? ''} maxLength={1000}
                   onChange={e => set('description', e.target.value)}
-                  className="w-full rounded-[var(--radius-md)] border border-line bg-surface px-3 py-2 text-sm" />
+                  className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface px-3 py-2 text-sm focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
               </Field>
 
-              <fieldset className="rounded-[var(--radius-md)] border border-line p-3">
-                <legend className="px-1 text-[13px] font-medium text-ink-2">How families find it</legend>
+              <fieldset className="space-y-1">
+                <legend className="mb-2 w-full border-b border-ink pb-1.5 text-[14px] font-semibold">How families find it</legend>
                 {([
                   ['trials_enabled', 'Taking trial bookings'],
                   ['trial_needs_approval', 'Trials need the teacher’s say-so first'],
                   ['waitlist_enabled', 'Keep a waiting list when it is full'],
                 ] as const).map(([k, label]) => (
-                  <label key={k} className="flex min-h-[36px] items-center gap-2.5 text-sm">
-                    <input type="checkbox" checked={draft[k]} className="size-4 accent-[var(--accent)]"
+                  <label key={k} className="flex min-h-[44px] items-center gap-3 text-[14px]">
+                    <input type="checkbox" checked={draft[k]} className="size-[18px] accent-[var(--color-accent)]"
                            onChange={e => set(k, e.target.checked)} />
                     {label}
                   </label>
                 ))}
-                <div className="mt-2">
+                <div className="pt-2">
                   <Select aria-label="Who can see this class" value={draft.visibility}
                           onChange={e => set('visibility', e.target.value as C.ClassDraft['visibility'])}>
                     <option value="public">Listed publicly</option>
@@ -335,11 +336,12 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
               )}
             </div>
 
-            {save.isError && <div className="mt-3"><ErrorState error={save.error} /></div>}
+              {save.isError && <div className="mt-4"><ErrorState error={save.error} /></div>}
+            </div>
 
-            <div className="mt-4 flex gap-2">
-              <Button className="flex-1" onClick={onClose}>Cancel</Button>
-              <Button className="flex-1" variant="primary" disabled={!ready || !valid}
+            <div className="flex gap-2 border-t border-line px-5 py-3 pb-safe sm:justify-end">
+              <Button className="flex-1 sm:flex-none" variant="ghost" onClick={onClose}>Cancel</Button>
+              <Button className="flex-[2] sm:flex-none" variant="primary" disabled={!ready || !valid}
                       loading={save.isPending} onClick={() => save.mutate()}>
                 {editing ? 'Save changes' : 'Create class'}
               </Button>
@@ -349,4 +351,8 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
       </div>
     </div>
   );
+}
+
+function FormPart({ title }: { title: string }) {
+  return <h3 className="border-b border-ink pb-1.5 pt-2 text-[14px] font-semibold first:pt-0">{title}</h3>;
 }

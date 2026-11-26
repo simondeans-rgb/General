@@ -2,10 +2,7 @@
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  MapPin, CalendarRange, RotateCcw, Database, ShieldCheck, Plus, Pencil,
-  DoorOpen, CalendarOff, Building2,
-} from 'lucide-react';
+import { RotateCcw, Plus, Pencil, CalendarOff } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { FrameworkSettings, ChipSettings } from '@/components/app/progress-settings';
 import { PackSettings } from '@/components/app/pack-settings';
@@ -14,14 +11,16 @@ import { useRows, useRow } from '@/lib/query';
 import { resetDemo, runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import {
-  Badge, Button, Card, CardHeader, EmptyState, Field, Input, Select,
+  Button, EmptyState, Field, Input, Select,
   Skeleton, ErrorState, type Tone,
 } from '@/components/ui';
+import { SettingsSection as Card, SettingsHead as CardHeader } from '@/components/app/progress-settings';
 import * as S from '@/lib/repos/setup';
 import { dateShort } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 const STYLE_TONES: Tone[] = ['violet', 'amber', 'teal', 'rose', 'indigo', 'lime'];
+const STYLE_BG: Record<string, string> = { violet: 'bg-violet', amber: 'bg-amber', teal: 'bg-teal', rose: 'bg-rose', indigo: 'bg-indigo', lime: 'bg-lime' };
 const TIMEZONES = ['Europe/London', 'Europe/Dublin', 'Europe/Paris', 'America/New_York',
                    'America/Los_Angeles', 'Australia/Sydney'];
 
@@ -52,27 +51,27 @@ export default function StudioSettings() {
   return (
     <Shell title="School settings" subtitle="Everything a timetable is built from"
            allow={['owner', 'admin']}>
-      <div className="mx-auto max-w-3xl space-y-5">
-        <div role="tablist" aria-label="Settings" className="-mx-1 flex gap-1 overflow-x-auto px-1">
+      <div className="mx-auto max-w-[1240px]"><div className="max-w-3xl space-y-8">
+        <div role="tablist" aria-label="Settings" className="-mx-1 flex gap-1 overflow-x-auto border-b border-line px-1">
           {TABS.map(([k, l]) => (
             <button key={k} role="tab" aria-selected={tab === k} aria-controls={`st-panel-${k}`} id={`st-tab-${k}`} onClick={() => go(k)}
-              className={cn('h-9 shrink-0 rounded-full px-3.5 text-[13px]', tab === k ? 'bg-ink font-medium text-surface' : 'text-ink-2 hover:bg-surface-2')}>
+              className={cn('-mb-px h-11 shrink-0 border-b-2 px-2 text-[14.5px] sm:px-3', tab === k ? 'border-ink font-semibold text-ink' : 'border-transparent text-ink-2 hover:text-ink')}>
               {l}
             </button>
           ))}
         </div>
-        <div role="tabpanel" id={`st-panel-${tab}`} aria-labelledby={`st-tab-${tab}`} className="space-y-5">
+        <div role="tabpanel" id={`st-panel-${tab}`} aria-labelledby={`st-tab-${tab}`} className="space-y-10">
           {tab === 'school' && <><StudioDetails /><AboutDemo /></>}
           {tab === 'places' && <><Locations /><Rooms /></>}
           {tab === 'terms' && <Terms />}
           {tab === 'teaching' && <>
-            <div className="grid gap-5 sm:grid-cols-2"><Styles /><Levels /></div>
+            <div className="grid gap-x-10 gap-y-10 sm:grid-cols-2"><Styles /><Levels /></div>
             <FrameworkSettings />
             <ChipSettings />
           </>}
           {tab === 'money' && <PackSettings />}
         </div>
-      </div>
+      </div></div>
     </Shell>
   );
 }
@@ -93,9 +92,9 @@ function StudioDetails() {
               <Pencil className="size-4" aria-hidden /> Edit
             </Button>
           : undefined} />
-      {studio.isPending && <div className="p-4"><Skeleton className="h-14" /></div>}
+      {studio.isPending && <div className="pt-3"><Skeleton className="h-14" /></div>}
       {s && (
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-3 p-4 text-[13px]">
+        <dl className="grid grid-cols-1 gap-x-6 divide-y divide-line text-[14.5px] sm:grid-cols-2 sm:divide-y-0">
           <Fact label="Name" value={s.name} />
           <Fact label="Timezone" value={s.timezone} />
           <Fact label="Email" value={s.contact_email ?? 'Not set'} />
@@ -104,7 +103,7 @@ function StudioDetails() {
         </dl>
       )}
       {!isOwner && (
-        <p className="px-4 pb-4 text-[12.5px] text-ink-3">
+        <p className="pt-3 text-[13px] text-ink-3">
           Only the studio owner can change these. Administrators run everything else.
         </p>
       )}
@@ -115,9 +114,9 @@ function StudioDetails() {
 
 function Fact({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0">
-      <dt className="text-ink-3">{label}</dt>
-      <dd className="mt-0.5 truncate font-medium">{value}</dd>
+    <div className="min-w-0 py-3 sm:border-b sm:border-line">
+      <dt className="text-[13px] text-ink-3">{label}</dt>
+      <dd className="mt-0.5 break-words font-medium">{value}</dd>
     </div>
   );
 }
@@ -167,29 +166,28 @@ function Locations() {
   return (
     <Card>
       <CardHeader title="Locations" subtitle="Where classes happen"
-        action={<Button size="sm" variant="primary" aria-label="Add a location"
+        action={<Button size="sm" aria-label="Add a location"
                         onClick={() => setOpen('new')}>
           <Plus className="size-4" aria-hidden /> Add
         </Button>} />
-      {rows.isPending && <div className="p-4"><Skeleton className="h-16" /></div>}
-      {rows.error && <div className="p-4"><ErrorState error={rows.error} onRetry={() => rows.refetch()} /></div>}
+      {rows.isPending && <div className="pt-3"><Skeleton className="h-16" /></div>}
+      {rows.error && <div className="pt-3"><ErrorState error={rows.error} onRetry={() => rows.refetch()} /></div>}
       {!rows.isPending && rows.data?.length === 0 && (
-        <EmptyState icon={<Building2 className="size-5" />} title="No locations yet"
+        <EmptyState title="No locations yet"
           body="Add the building your classes run in. Rooms go inside it." />
       )}
       <ul className="divide-y divide-line">
         {rows.data?.map(l => (
           <li key={l.id}>
             <button onClick={() => setOpen(l)}
-              className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-surface-2">
-              <MapPin className="mt-0.5 size-4 shrink-0 text-ink-3" aria-hidden />
+              className="flex min-h-12 w-full items-baseline gap-3 py-3 text-left hover:bg-surface-2/60">
               <span className="min-w-0 flex-1">
-                <span className="block font-medium">{l.name}</span>
-                <span className="block text-[13px] text-ink-2">
+                <span className="block font-semibold">{l.name}</span>
+                <span className="block text-[13px] text-ink-3">
                   {[l.address_line1, l.city, l.postcode].filter(Boolean).join(', ') || 'No address'}
                 </span>
               </span>
-              <span className="shrink-0 text-[12.5px] text-ink-3">
+              <span className="tnum shrink-0 text-[13px] text-ink-2">
                 {l.rooms} room{l.rooms === 1 ? '' : 's'} · {l.classes} classes
               </span>
             </button>
@@ -252,26 +250,25 @@ function Rooms() {
   return (
     <Card>
       <CardHeader title="Rooms" subtitle="A class is taught in one of these"
-        action={<Button size="sm" variant="primary" disabled={!hasLocation}
+        action={<Button size="sm" disabled={!hasLocation}
                         aria-label="Add a room" onClick={() => setOpen('new')}>
           <Plus className="size-4" aria-hidden /> Add
         </Button>} />
-      {rows.isPending && <div className="p-4"><Skeleton className="h-14" /></div>}
+      {rows.isPending && <div className="pt-3"><Skeleton className="h-14" /></div>}
       {!rows.isPending && rows.data?.length === 0 && (
-        <EmptyState icon={<DoorOpen className="size-5" />} title="No rooms yet"
+        <EmptyState title="No rooms yet"
           body={hasLocation ? 'Add a room to a location.' : 'Add a location first — rooms live inside one.'} />
       )}
       <ul className="divide-y divide-line">
         {rows.data?.map(r => (
           <li key={r.id}>
             <button onClick={() => setOpen(r)}
-              className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-surface-2">
-              <DoorOpen className="size-4 shrink-0 text-ink-3" aria-hidden />
+              className="flex min-h-12 w-full items-baseline gap-3 py-3 text-left hover:bg-surface-2/60">
               <span className="min-w-0 flex-1">
-                <span className="block font-medium">{r.name}</span>
-                <span className="block text-[13px] text-ink-2">{r.location}</span>
+                <span className="block font-semibold">{r.name}</span>
+                <span className="block text-[13px] text-ink-3">{r.location}</span>
               </span>
-              <span className="shrink-0 text-[12.5px] text-ink-3">
+              <span className="tnum shrink-0 text-[13px] text-ink-2">
                 {r.capacity ? `holds ${r.capacity}` : 'no limit'} · {r.classes} classes
               </span>
             </button>
@@ -332,26 +329,27 @@ function Terms() {
   return (
     <Card>
       <CardHeader title="Terms" subtitle="Class sessions are generated between these dates"
-        action={<Button size="sm" variant="primary" aria-label="Add a term"
+        action={<Button size="sm" aria-label="Add a term"
                         onClick={() => setOpen('new')}>
           <Plus className="size-4" aria-hidden /> Add
         </Button>} />
-      {rows.isPending && <div className="p-4"><Skeleton className="h-14" /></div>}
+      {rows.isPending && <div className="pt-3"><Skeleton className="h-14" /></div>}
       {!rows.isPending && rows.data?.length === 0 && (
-        <EmptyState icon={<CalendarRange className="size-5" />} title="No terms yet"
+        <EmptyState title="No terms yet"
           body="A class needs a term: it is what tells the generator which weeks to lay down." />
       )}
       <ul className="divide-y divide-line">
         {rows.data?.map(t => (
-          <li key={t.id} className="flex items-center gap-2 px-4 py-3">
-            <CalendarRange className="size-4 shrink-0 text-ink-3" aria-hidden />
-            <button onClick={() => setOpen(t)} className="min-w-0 flex-1 text-left">
-              <span className="block font-medium">{t.name}</span>
-              <span className="block text-[13px] text-ink-2">
+          <li key={t.id} className="flex min-h-14 items-center gap-3 py-2">
+            <button onClick={() => setOpen(t)} className="min-w-0 flex-1 py-1 text-left hover:underline">
+              <span className="block font-semibold">{t.name}</span>
+              <span className="block text-[13px] text-ink-3">
                 {dateShort(t.starts_on)} – {dateShort(t.ends_on)} · {t.classes} classes
               </span>
             </button>
-            <Badge tone={t.status === 'published' ? 'positive' : 'neutral'}>{t.status}</Badge>
+            <span className={cn('text-[13px] font-semibold', t.status === 'published' ? 'text-positive' : 'text-ink-3')}>
+              {t.status === 'published' ? 'Live' : t.status === 'draft' ? 'Draft' : 'Archived'}
+            </span>
             <Button size="sm" variant="ghost" onClick={() => setBreaksFor(t)}
                     aria-label={`Breaks in ${t.name} — ${t.breaks} set`}>
               <CalendarOff className="size-4" aria-hidden />
@@ -432,9 +430,9 @@ function BreaksSheet({ term, onClose }: { term: S.Term; onClose: () => void }) {
         </p>
       )}
       {(rows.data?.length ?? 0) > 0 && (
-        <ul className="divide-y divide-line rounded-[var(--radius-md)] border border-line">
+        <ul className="divide-y divide-line border-y border-line">
           {rows.data!.map(b => (
-            <li key={b.id} className="flex items-center gap-2 px-3 py-2">
+            <li key={b.id} className="flex items-center gap-2 py-2">
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-medium">{b.name}</span>
                 <span className="block text-[12.5px] text-ink-2">
@@ -479,13 +477,12 @@ function Styles() {
                         onClick={() => setOpen('new')}>
           <Plus className="size-4" aria-hidden />
         </Button>} />
-      {rows.isPending && <div className="p-4"><Skeleton className="h-10" /></div>}
-      <div className="flex flex-wrap gap-2 p-4">
+      {rows.isPending && <div className="pt-3"><Skeleton className="h-10" /></div>}
+      <div className="flex flex-wrap gap-2 pt-3">
         {rows.data?.map(s => (
-          <button key={s.id} onClick={() => setOpen(s)} className="rounded-full">
-            <Badge tone={STYLE_TONES.includes(s.colour as Tone) ? (s.colour as Tone) : 'neutral'}>
-              {s.name}
-            </Badge>
+          <button key={s.id} onClick={() => setOpen(s)} aria-label={`Edit ${s.name}`}
+            className="inline-flex min-h-10 items-center gap-2 rounded-[var(--radius-md)] border border-line-strong bg-surface px-3 text-[14px] font-medium hover:border-ink-3">
+            <span aria-hidden className={cn('size-2.5 rounded-[2px]', STYLE_BG[s.colour] ?? 'bg-ink-3')} />{s.name}
           </button>
         ))}
         {!rows.isPending && rows.data?.length === 0 &&
@@ -521,8 +518,8 @@ function StyleSheet({ row, onClose }: { row: S.Style | null; onClose: () => void
         </Select>
       </Field>
       <div className="flex items-center gap-2 pt-1">
-        <span className="text-[12.5px] text-ink-3">Preview</span>
-        <Badge tone={colour as Tone}>{name.trim() || 'Style'}</Badge>
+        <span className="text-[13px] text-ink-3">Preview</span>
+        <span className="inline-flex items-center gap-2 text-[14px] font-medium"><span aria-hidden className={cn('size-2.5 rounded-[2px]', STYLE_BG[colour] ?? 'bg-ink-3')} />{name.trim() || 'Style'}</span>
       </div>
     </RecordSheet>
   );
@@ -539,11 +536,12 @@ function Levels() {
                         onClick={() => setOpen('new')}>
           <Plus className="size-4" aria-hidden />
         </Button>} />
-      {rows.isPending && <div className="p-4"><Skeleton className="h-10" /></div>}
-      <div className="flex flex-wrap gap-2 p-4">
+      {rows.isPending && <div className="pt-3"><Skeleton className="h-10" /></div>}
+      <div className="flex flex-wrap gap-2 pt-3">
         {rows.data?.map(l => (
-          <button key={l.id} onClick={() => setOpen(l)} className="rounded-full">
-            <Badge>{l.name}</Badge>
+          <button key={l.id} onClick={() => setOpen(l)} aria-label={`Edit ${l.name}`}
+            className="inline-flex min-h-10 items-center rounded-[var(--radius-md)] border border-line-strong bg-surface px-3 text-[14px] font-medium hover:border-ink-3">
+            {l.name}
           </button>
         ))}
         {!rows.isPending && rows.data?.length === 0 &&
@@ -580,17 +578,15 @@ function AboutDemo() {
   return (
     <Card>
       <CardHeader title="About this demo" />
-      <div className="space-y-4 p-4">
-        <div className="flex items-start gap-3">
-          <Database className="mt-0.5 size-4 shrink-0 text-ink-3" aria-hidden />
-          <p className="text-[13px] leading-relaxed text-ink-2">
+      <div className="max-w-2xl space-y-3 pt-3">
+        <div>
+          <p className="text-[14px] leading-relaxed text-ink-2">
             Everything here lives in a Postgres database running inside this browser tab, built
             from the same migrations the production app uses. Nothing is sent anywhere.
           </p>
         </div>
-        <div className="flex items-start gap-3">
-          <ShieldCheck className="mt-0.5 size-4 shrink-0 text-ink-3" aria-hidden />
-          <p className="text-[13px] leading-relaxed text-ink-2">
+        <div>
+          <p className="text-[14px] leading-relaxed text-ink-2">
             Row level security is on and forced. Signed in as Marcus, the medical table returns
             no rows at all; signed in as Hannah, you get exactly one family. That is the
             database refusing, not this interface hiding.
@@ -608,8 +604,8 @@ function ResetDemo() {
 
   if (state === 'confirm') {
     return (
-      <div className="rounded-[var(--radius-md)] border border-caution/30 bg-caution-soft p-3">
-        <p className="text-sm font-medium">Rebuild the demo studio?</p>
+      <div className="border-l-2 border-caution py-1 pl-3">
+        <p className="text-sm font-semibold">Rebuild the demo school?</p>
         <p className="mt-0.5 text-[13px] text-ink-2">
           Everything you have changed — registers, classes, setup — will be discarded.
         </p>

@@ -51,42 +51,44 @@ export function RecordSheet({
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 sm:items-center"
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 sm:items-center sm:p-6"
          onClick={onClose}>
       <div ref={ref} role="dialog" aria-modal="true" aria-labelledby={titleId}
         onClick={e => e.stopPropagation()}
-        className="max-h-[88dvh] w-full max-w-md overflow-y-auto overscroll-contain
-                   rounded-t-[var(--radius-xl)] border border-line bg-surface p-4 pb-safe shadow-lg
+        className="flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden
+                   rounded-t-[var(--radius-xl)] border border-line bg-surface shadow-lg
                    sm:rounded-[var(--radius-xl)]">
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-3 border-b border-line px-5 pb-3 pt-4">
           <div className="min-w-0 flex-1">
-            <h2 id={titleId} className="text-[17px] font-semibold tracking-tight">{title}</h2>
-            {subtitle && <p className="mt-0.5 text-[13px] text-ink-2">{subtitle}</p>}
+            <h2 id={titleId} className="font-display text-[20px] leading-tight">{title}</h2>
+            {subtitle && <p className="mt-1 text-[13.5px] text-ink-3">{subtitle}</p>}
           </div>
-          <Button size="sm" variant="ghost" aria-label="Close" onClick={onClose}>
+          <Button size="sm" variant="ghost" aria-label="Close" onClick={onClose} className="-mr-2 -mt-1">
             <X className="size-4" aria-hidden />
           </Button>
         </div>
 
-        <div className="mt-4 space-y-3">{children}</div>
-
-        {error != null && <div className="mt-3"><ErrorState error={error} /></div>}
-
-        <div className="mt-4 flex gap-2">
-          <Button className="flex-1" onClick={onClose}>Cancel</Button>
-          <Button className="flex-1" variant="primary" disabled={!canSave}
-                  loading={saving} onClick={onSave}>{saveLabel}</Button>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
+          <div className="space-y-4">{children}</div>
+          {error != null && <div className="mt-4"><ErrorState error={error} /></div>}
+          {onRemove && (
+            <div className="mt-6 border-t border-line pt-4">
+              {removeHint
+                ? <p className="text-[13px] text-ink-3">{removeHint}</p>
+                : <Button variant="danger" size="sm" loading={removing} onClick={onRemove}>
+                    <Trash2 className="size-4" aria-hidden /> {removeLabel}
+                  </Button>}
+            </div>
+          )}
         </div>
 
-        {onRemove && (
-          <div className="mt-3 border-t border-line pt-3">
-            {removeHint
-              ? <p className="text-[12.5px] text-ink-3">{removeHint}</p>
-              : <Button variant="danger" className="w-full" loading={removing} onClick={onRemove}>
-                  <Trash2 className="size-4" aria-hidden /> {removeLabel}
-                </Button>}
-          </div>
-        )}
+        {/* One footer everywhere: cancel, then the one primary action on the right. */}
+        <div className="flex gap-2 border-t border-line bg-surface px-5 py-3 pb-safe sm:justify-end">
+          {/* A sheet that only reports something has nothing to cancel. */}
+          {onSave !== onClose && <Button className="flex-1 sm:flex-none" variant="ghost" onClick={onClose}>Cancel</Button>}
+          <Button className="flex-[2] sm:flex-none" variant="primary" disabled={!canSave}
+                  loading={saving} onClick={onSave}>{saveLabel}</Button>
+        </div>
       </div>
     </div>
   );

@@ -2,8 +2,8 @@
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, X } from 'lucide-react';
-import { Badge, Button, ErrorState, Select } from '@/components/ui';
+import { Download, FileSpreadsheet, X } from 'lucide-react';
+import { Notice, Button, ErrorState, Select } from '@/components/ui';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import { downloadCsv, parseCsv } from '@/lib/csv';
@@ -77,34 +77,35 @@ export function ImportWizard({ onClose }: { onClose: () => void }) {
   }]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 sm:items-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 sm:items-center sm:p-6" onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-labelledby="imp-t" onClick={e => e.stopPropagation()}
-        className="max-h-[90dvh] w-full max-w-2xl overflow-y-auto overscroll-contain rounded-t-[var(--radius-xl)]
-                   border border-line bg-surface p-4 pb-safe shadow-lg sm:rounded-[var(--radius-xl)]">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 id="imp-t" className="text-lg font-semibold tracking-tight">Import families</h2>
-          <button onClick={onClose} aria-label="Close" className="grid size-9 place-items-center rounded-full hover:bg-surface-2">
+        className="flex max-h-[90dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[var(--radius-xl)]
+                   border border-line bg-surface shadow-lg sm:rounded-[var(--radius-xl)]">
+        <div className="flex items-start gap-3 border-b border-line px-5 pb-3 pt-4">
+          <div className="min-w-0 flex-1">
+            <h2 id="imp-t" className="font-display text-[20px] leading-tight">Import families</h2>
+            <p className="mt-1 text-[13.5px] text-ink-3">One row per child, from a CSV file.</p>
+          </div>
+          <Button size="sm" variant="ghost" onClick={onClose} aria-label="Close" className="-mr-2 -mt-1">
             <X className="size-4" aria-hidden />
-          </button>
+          </Button>
         </div>
 
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
         {done ? (
-          <div className="space-y-3 py-2 text-sm">
-            <p className="flex items-center gap-2 font-medium"><CheckCircle2 className="size-5 text-positive" aria-hidden /> Imported</p>
-            <p>{done.families} new families and {done.children} children. {done.enrolled} class places taken
-              {done.medical ? `; ${done.medical} medical notes added to records` : ''}.
-              {done.skipped ? ` ${done.skipped} children were already here and were left alone.` : ''}</p>
-            {done.warnings.map((w, i) => <p key={i} className="text-ink-2">{w.message}.</p>)}
+          <div className="space-y-3 text-[14px]">
+            <Notice word="Imported" tone="positive" title={`${done.families} new families and ${done.children} children`}
+              detail={`${done.enrolled} class places taken${done.medical ? `; ${done.medical} medical notes added to records` : ''}.${done.skipped ? ` ${done.skipped} children were already here and were left alone.` : ''}`} />
+            {done.warnings.map((w, i) => <p key={i} className="text-caution">{w.message}.</p>)}
             <p className="text-ink-2">Next: invite the parents from People so they can sign in.</p>
-            <Button variant="primary" onClick={onClose}>Done</Button>
           </div>
         ) : (
-          <div className="space-y-4">
-            <section className="space-y-2">
-              <p className="text-sm text-ink-2">One row per child. Export from your current system or spreadsheet as CSV.
-                Brothers and sisters are put in one family by their parent’s email or phone number.</p>
+          <div className="space-y-6">
+            <section className="space-y-3">
+              <p className="text-[14px] text-ink-2">Export from your current system or spreadsheet as CSV.
+                Brothers and sisters go into one family by their parent’s email or phone number.</p>
               <div className="flex flex-wrap items-center gap-2">
-                <label className="inline-flex cursor-pointer items-center gap-2 rounded-[var(--radius-md)] border border-line px-3 py-2 text-sm hover:bg-surface-2">
+                <label className="inline-flex min-h-[40px] cursor-pointer items-center gap-2 rounded-[var(--radius-md)] border border-line-strong bg-surface px-4 text-sm font-semibold hover:bg-surface-2 focus-within:ring-4 focus-within:ring-accent-line/12">
                   <FileSpreadsheet className="size-4" aria-hidden /> {file ? 'Choose another file' : 'Choose a CSV file'}
                   <input type="file" accept=".csv,text/csv" className="sr-only" onChange={e => e.target.files?.[0] && read(e.target.files[0])} />
                 </label>
@@ -115,11 +116,11 @@ export function ImportWizard({ onClose }: { onClose: () => void }) {
 
             {head.length > 0 && (
               <section>
-                <h3 className="mb-1.5 text-sm font-semibold">Match your columns</h3>
-                <div className="grid gap-2 sm:grid-cols-2">
+                <h3 className="mb-2 border-b border-ink pb-1.5 text-[14px] font-semibold">Match your columns</h3>
+                <div className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
                   {FIELDS.map(f => (
-                    <label key={f.key} className="flex items-center gap-2 text-sm">
-                      <span className="w-40 shrink-0">{f.label}{f.required && <span className="text-critical"> *</span>}</span>
+                    <label key={f.key} className="flex items-center gap-2 text-[14px]">
+                      <span className="w-36 shrink-0">{f.label}{f.required && <span className="text-critical" aria-hidden> *</span>}</span>
                       <Select aria-label={f.label} value={String(map[f.key] ?? -1)}
                         onChange={e => { setMap(m => ({ ...m, [f.key]: Number(e.target.value) })); setCheck(null); }}>
                         <option value="-1">—</option>
@@ -134,15 +135,13 @@ export function ImportWizard({ onClose }: { onClose: () => void }) {
             {check && (
               <section className="space-y-2" aria-live="polite">
                 {check.ok
-                  ? <p className="flex items-center gap-2 text-sm font-medium"><CheckCircle2 className="size-4 text-positive" aria-hidden />
-                      All {check.rows} rows are fine — about {check.families} families.</p>
-                  : <p className="flex items-center gap-2 text-sm font-medium text-critical"><AlertTriangle className="size-4" aria-hidden />
-                      {check.errors.length} problem{check.errors.length === 1 ? '' : 's'} to fix in the file. Nothing has been imported.</p>}
+                  ? <Notice word="Ready" tone="positive" title={`All ${check.rows} rows are fine`} detail={`About ${check.families} families.`} />
+                  : <Notice word="Fix first" tone="critical" title={`${check.errors.length} problem${check.errors.length === 1 ? '' : 's'} to fix in the file`} detail="Nothing has been imported." />}
                 {check.errors.length > 0 && (
-                  <ul className="max-h-48 overflow-y-auto rounded-[var(--radius-md)] border border-line text-[13px]">
+                  <ul className="max-h-48 divide-y divide-line overflow-y-auto border-y border-line text-[13.5px]">
                     {check.errors.map((e, i) => (
-                      <li key={i} className="flex gap-2 border-b border-line px-3 py-1.5 last:border-0">
-                        <Badge tone="critical">Row {e.row + 1}</Badge> {e.message}
+                      <li key={i} className="flex gap-3 py-1.5">
+                        <span className="w-14 shrink-0 font-semibold text-critical tnum">Row {e.row + 1}</span> {e.message}
                       </li>
                     ))}
                   </ul>
@@ -151,19 +150,22 @@ export function ImportWizard({ onClose }: { onClose: () => void }) {
               </section>
             )}
             {call.error != null && <ErrorState error={call.error} />}
+          </div>
+        )}
+        </div>
 
-            {head.length > 0 && (
-              <div className="flex gap-2">
-                <Button className="flex-1" disabled={missing.length > 0 || body.length === 0} loading={call.isPending && call.variables === false}
-                  onClick={() => call.mutate(false)}>
-                  {missing.length ? `Match ${missing.map(m => m.label.toLowerCase()).join(', ')}` : 'Check the file'}
-                </Button>
-                <Button className="flex-1" variant="primary" disabled={!check?.ok} loading={call.isPending && call.variables === true}
-                  onClick={() => call.mutate(true)}>
-                  Import {body.length} children
-                </Button>
-              </div>
-            )}
+        {(done || head.length > 0) && (
+          <div className="flex gap-2 border-t border-line px-5 py-3 pb-safe sm:justify-end">
+            {done ? <Button className="w-full sm:w-auto" variant="primary" onClick={onClose}>Done</Button> : <>
+              <Button className="flex-1 sm:flex-none" disabled={missing.length > 0 || body.length === 0} loading={call.isPending && call.variables === false}
+                onClick={() => call.mutate(false)}>
+                {missing.length ? `Match ${missing.map(m => m.label.toLowerCase()).join(', ')}` : 'Check the file'}
+              </Button>
+              <Button className="flex-1 sm:flex-none" variant="primary" disabled={!check?.ok} loading={call.isPending && call.variables === true}
+                onClick={() => call.mutate(true)}>
+                Import {body.length} children
+              </Button>
+            </>}
           </div>
         )}
       </div>

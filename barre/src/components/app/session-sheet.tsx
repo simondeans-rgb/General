@@ -3,12 +3,12 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Ban, CalendarClock, UserRoundCog, ClipboardCheck, CheckCircle2 } from 'lucide-react';
+import { Ban, CalendarClock, UserRoundCog, ClipboardCheck } from 'lucide-react';
 import { RecordSheet } from './record-sheet';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Badge, Button, Field, Input, Select } from '@/components/ui';
+import { Beats, Button, Field, Input, Notice, Select } from '@/components/ui';
 import * as Q from '@/lib/repos/dashboard';
 import { dateLong, time, isoDate } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -69,8 +69,8 @@ export function SessionSheet({ session: s, onClose, initial = 'menu' }: { sessio
 
   if (done) {
     return (
-      <RecordSheet title="Done" onClose={onClose} onSave={onClose} saveLabel="Close">
-        <p className="flex items-start gap-2 text-sm"><CheckCircle2 className="mt-0.5 size-4 text-positive" aria-hidden />{done}</p>
+      <RecordSheet title={s.name} onClose={onClose} onSave={onClose} saveLabel="Close">
+        <Notice word="Done" tone="positive" title={done} />
       </RecordSheet>
     );
   }
@@ -80,13 +80,14 @@ export function SessionSheet({ session: s, onClose, initial = 'menu' }: { sessio
     return (
       <RecordSheet title={s.name} subtitle={`${dateLong(s.starts_at)} · ${time(s.starts_at)}–${time(s.ends_at)}${s.room ? ` · ${s.room}` : ''}`}
         onClose={onClose} onSave={onClose} saveLabel="Close">
-        <div className="flex flex-wrap gap-1.5">
-          {s.teacher && <Badge>{s.teacher}{s.covered ? ` (covering for ${s.usual_teacher})` : ''}</Badge>}
-          <Badge>{s.enrolled}/{s.capacity} booked{s.trials ? ` · ${s.trials} trial` : ''}</Badge>
-          {cancelled && <Badge tone="critical">Cancelled</Badge>}
-        </div>
-        {cancelled && s.cancel_reason && <p className="text-sm text-critical">{s.cancel_reason}</p>}
-        <ul className="divide-y divide-line rounded-[var(--radius-md)] border border-line">
+        {cancelled && <Notice word="Cancelled" tone="critical" title={s.cancel_reason || 'This session will not run'} />}
+        <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-1.5 text-[14px]">
+          {s.teacher && <><dt className="text-ink-3">Teacher</dt><dd>{s.teacher}{s.covered ? <span className="text-ink-3"> · covering for {s.usual_teacher}</span> : ''}</dd></>}
+          <dt className="text-ink-3">Booked</dt>
+          <dd className="flex items-center gap-2"><Beats value={s.enrolled} max={s.capacity} label={`${s.enrolled} of ${s.capacity} places`} />
+            <span className="tnum">{s.enrolled} of {s.capacity}{s.trials ? ` · ${s.trials} trial${s.trials === 1 ? '' : 's'}` : ''}</span></dd>
+        </dl>
+        <ul className="divide-y divide-line border-y border-line">
           {[
             ['register', ClipboardCheck, 'Open the register', 'Mark attendance for this session'],
             ['cancel', Ban, 'Cancel this session', 'Just this one — the rest of the term is unchanged'],
@@ -96,10 +97,10 @@ export function SessionSheet({ session: s, onClose, initial = 'menu' }: { sessio
             const I = Icon as React.ElementType;
             const disabled = cancelled ? key !== 'register' : s.register_closed && key !== 'register';
             const inner = (
-              <span className={cn('flex min-h-[52px] items-center gap-3 px-3 py-2.5 text-left', disabled && 'opacity-50')}>
+              <span className={cn('flex min-h-[56px] items-center gap-3 px-1 py-2.5 text-left', disabled && 'opacity-50')}>
                 <I className={cn('size-4 shrink-0', key === 'cancel' ? 'text-critical' : 'text-ink-3')} aria-hidden />
-                <span className="min-w-0 flex-1"><span className="block text-sm font-medium">{label as string}</span>
-                  <span className="block text-[12.5px] text-ink-3">{hint as string}</span></span>
+                <span className="min-w-0 flex-1"><span className={cn('block text-[15px] font-semibold', key === 'cancel' && 'text-critical')}>{label as string}</span>
+                  <span className="block text-[13px] text-ink-3">{hint as string}</span></span>
               </span>
             );
             return (
@@ -153,15 +154,15 @@ export function SessionSheet({ session: s, onClose, initial = 'menu' }: { sessio
           </Select>
         </Field>
       )}
-      <label className="flex items-start gap-2.5 text-sm">
-        <input type="checkbox" checked={notify} onChange={e => setNotify(e.target.checked)} className="mt-0.5 size-4" />
+      <label className="flex min-h-[44px] items-start gap-3 text-[14px]">
+        <input type="checkbox" checked={notify} onChange={e => setNotify(e.target.checked)} className="mt-0.5 size-[18px] accent-[var(--color-accent)]" />
         <span>{mode === 'cover' ? 'Tell the families too' : `Tell the ${families} famil${families === 1 ? 'y' : 'ies'} and the teacher`}
           <span className="block text-[12.5px] text-ink-3">{mode === 'cover' ? 'The covering teacher is always told.' : 'A class notice, plus a notification each.'}</span></span>
       </label>
       {(notify || mode === 'cover') && (
         <Field label="Message" htmlFor="ss-msg">
           <textarea id="ss-msg" rows={3} value={message} onChange={e => setMessage(e.target.value)}
-            className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/12" />
+            className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
         </Field>
       )}
       <Button variant="ghost" size="sm" onClick={() => setMode('menu')}>← Other options</Button>

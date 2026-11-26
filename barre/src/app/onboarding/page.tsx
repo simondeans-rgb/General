@@ -3,12 +3,12 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Check, ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
+import { Check, ChevronRight } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { useRows, useRow } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Badge, Button, Card, Field, Input, Select, Skeleton, ErrorState } from '@/components/ui';
+import { Beats, Button, Skeleton, ErrorState } from '@/components/ui';
 import { cn } from '@/lib/cn';
 
 /**
@@ -76,71 +76,81 @@ export default function Onboarding() {
 
   const doneKeys = new Set((rows.data ?? []).filter(r => r.n > 0).map(r => r.key));
   const done = STEPS.filter(s => doneKeys.has(s.key)).length;
-  const pct = Math.round((done / STEPS.length) * 100);
   const next = STEPS.find(s => !doneKeys.has(s.key));
 
   return (
-    <Shell title="Set up your studio" subtitle="Pick up wherever you left off" allow={['owner', 'admin']}>
-      <div className="mx-auto max-w-2xl space-y-5">
-        <Card className="p-5">
-          <div className="flex items-baseline justify-between gap-3">
-            <p className="font-medium">{done} of {STEPS.length} done</p>
-            <p className="tnum text-[13px] text-ink-3">{pct}%</p>
+    <Shell title="Set up your school" subtitle="Pick up wherever you left off" allow={['owner', 'admin']}>
+      <div className="mx-auto max-w-[1240px]"><div className="max-w-2xl space-y-10">
+        <section aria-labelledby="ob-progress" className="flex flex-col gap-x-10 gap-y-4 sm:flex-row sm:items-end">
+          <div>
+            <p className="label">Progress</p>
+            <p id="ob-progress" className="mt-1 flex items-baseline gap-2">
+              <span className="display-xl text-[64px]">{rows.data ? done : '–'}</span>
+              <span className="text-[15px] text-ink-2">of {STEPS.length} steps done</span>
+            </p>
+            <Beats value={done} max={STEPS.length} size="lg" label={`${done} of ${STEPS.length} steps done`} className="mt-3" />
           </div>
-          <div aria-hidden className="mt-2.5 h-2 overflow-hidden rounded-full bg-surface-3">
-            <div className="h-full rounded-full bg-accent transition-[width] duration-300" style={{ width: `${pct}%` }} />
+          <div className="min-w-0 flex-1 sm:pb-1">
+            {next ? (
+              <>
+                <p className="label text-accent-text">Next</p>
+                <p className="mt-1 font-display text-[22px] font-[800] leading-tight [font-stretch:112%]">{next.title}</p>
+                <p className="mt-1 text-[14px] text-ink-3">{next.blurb}</p>
+                <Link href={next.href} className="mt-3 inline-block"><Button variant="primary" tabIndex={-1}>{next.cta}</Button></Link>
+              </>
+            ) : (
+              <p className="font-display text-[22px] font-[800] leading-tight text-positive [font-stretch:112%]">Everything is set up. You are live.</p>
+            )}
           </div>
-          {next
-            ? <p className="mt-3 text-sm text-ink-2">Next: <strong className="font-medium text-ink">{next.title}</strong></p>
-            : <p className="mt-3 flex items-center gap-1.5 text-sm text-positive">
-                <Sparkles className="size-4" aria-hidden /> Everything is set up. You are live.
-              </p>}
-        </Card>
+        </section>
 
-        {rows.isLoading && <Card className="p-4"><Skeleton className="h-40" /></Card>}
+        {rows.isLoading && <Skeleton className="h-40" />}
         {rows.error && <ErrorState error={rows.error} onRetry={() => rows.refetch()} />}
 
         {rows.data && (
-          <Card>
+          <section aria-labelledby="ob-steps">
+            <div className="flex items-baseline gap-3 border-b-2 border-ink pb-2">
+              <h2 id="ob-steps" className="section-title flex-1">Every step</h2>
+              <span className="text-[13px] text-ink-3">In order, but any order works</span>
+            </div>
             <ol className="divide-y divide-line">
               {STEPS.map((s, i) => {
                 const complete = doneKeys.has(s.key);
                 const count = rows.data!.find(r => r.key === s.key)?.n ?? 0;
                 return (
-                  <li key={s.key} className="flex items-start gap-3 px-4 py-3.5">
-                    <span aria-hidden className={cn(
-                      'mt-0.5 grid size-6 shrink-0 place-items-center rounded-full text-[12px] font-semibold',
-                      complete ? 'bg-positive text-white' : 'border border-line-strong bg-surface text-ink-3')}>
-                      {complete ? <Check className="size-3.5" /> : i + 1}
+                  <li key={s.key} className="grid grid-cols-[2.25rem_minmax(0,1fr)] items-start gap-x-3 py-3.5 sm:grid-cols-[2.25rem_minmax(0,1fr)_auto]">
+                    <span aria-hidden className={cn('font-display text-[22px] leading-none tnum', complete ? 'text-ink-3' : 'text-ink')}>
+                      {complete ? <Check className="mt-0.5 size-5 text-positive" strokeWidth={2.4} /> : i + 1}
                     </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex flex-wrap items-center gap-2">
-                        <span className={cn('font-medium', complete && 'text-ink-2')}>{s.title}</span>
-                        {complete && count > 0 && <Badge tone="positive">{count} added</Badge>}
-                        {s.key === 'payments' && <Badge tone="neutral">Cards need Stripe</Badge>}
-                      </span>
-                      <span className="mt-0.5 block text-[13px] text-ink-2">{s.blurb}</span>
+                    <span className="min-w-0">
+                      <span className="block font-semibold">{s.title}
+                        <span className="sr-only">{complete ? ' (done)' : ' (to do)'}</span></span>
+                      <span className="mt-0.5 block text-[14px] text-ink-3">{s.blurb}</span>
+                      {(complete || s.key === 'payments') && (
+                        <span className="mt-1 block text-[13px]">
+                          {complete && <span className="font-semibold text-positive">Done{count > 1 ? ` · ${count} added` : ''}</span>}
+                          {complete && s.key === 'payments' && <span className="text-ink-3"> · </span>}
+                          {s.key === 'payments' && <span className="text-ink-3">Card payments need Stripe</span>}
+                        </span>
+                      )}
                     </span>
-                    {(
-                      <Link href={s.href}
-                        className="mt-0.5 inline-flex shrink-0 items-center gap-0.5 text-[13px] font-medium text-accent-text hover:underline">
-                        {complete ? 'Review' : s.cta}
-                        <ChevronRight className="size-3.5" aria-hidden />
-                      </Link>
-                    )}
+                    <Link href={s.href}
+                      className="col-start-2 inline-flex min-h-10 shrink-0 items-center gap-0.5 justify-self-start sm:col-start-auto sm:justify-self-auto text-[13.5px] font-semibold text-accent-text hover:underline [@media(pointer:fine)]:min-h-0 [@media(pointer:fine)]:pt-0.5">
+                      {complete ? 'Review' : s.cta}
+                      <ChevronRight className="size-3.5" aria-hidden />
+                    </Link>
                   </li>
                 );
               })}
             </ol>
-          </Card>
+          </section>
         )}
 
-        <p className="px-1 text-[12.5px] text-ink-3">
-          This studio was created with sample data so you can see how everything fits together.
-          Starting fresh, every step above would be empty and the wizard would walk you through them
-          in order.
+        <p className="text-[13px] text-ink-3">
+          This school was created with sample data so you can see how everything fits together.
+          Starting fresh, every step would be empty and this page would walk you through them in order.
         </p>
-      </div>
+      </div></div>
     </Shell>
   );
 }

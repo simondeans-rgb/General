@@ -3,11 +3,12 @@
 import * as React from 'react';
 import { Suspense } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowDown, ArrowUp, CheckCircle2, Plus, Receipt, Trash2, Trophy, Users } from 'lucide-react';
+import { ArrowDown, ArrowUp, Plus, Receipt, Trash2, Users } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection } from '@/components/app/detail-panel';
 import { RecordSheet } from '@/components/app/record-sheet';
-import { Badge, Button, Card, EmptyState, ErrorState, Field, Input, Select, Skeleton, type Tone } from '@/components/ui';
+import { Button, EmptyState, ErrorState, Field, Input, Notice, Select, Skeleton } from '@/components/ui';
+import { SectionHead, Word } from '@/components/app/session-row';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
@@ -20,7 +21,8 @@ import { dateLong, money, time } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 const KINDS: [string, string][] = [['show', 'Show'], ['exam', 'Exam'], ['competition', 'Competition'], ['workshop', 'Workshop'], ['social', 'Social']];
-const PSTATUS: Record<string, Tone> = { invited: 'info', confirmed: 'positive', requested: 'caution', declined: 'neutral', waitlisted: 'caution', withdrawn: 'neutral' };
+const PSTATUS: Record<string, 'ink' | 'positive' | 'caution' | 'muted'> = { invited: 'muted', confirmed: 'positive', requested: 'caution', declined: 'muted', waitlisted: 'caution', withdrawn: 'muted' };
+const PWORD: Record<string, string> = { invited: 'Invited', confirmed: 'Going', requested: 'Asking', declined: 'Declined', waitlisted: 'Waiting', withdrawn: 'Withdrawn' };
 const local = (iso?: string | null) => iso ? new Date(new Date(iso).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '';
 
 function useWrite(after?: (r: unknown) => void) {
@@ -45,35 +47,63 @@ function Events() {
   return (
     <Shell title="Events" help={<>Shows, competitions, workshops and exam sessions. Invite whole classes, and families accept in their app. Within a show: running order, costumes and sizes, rehearsals with registers, chaperones, a printable programme (children are named only with photo consent), tickets, and fees billed in one step.</>} subtitle="Shows, exams, competitions and workshops" allow={['owner', 'admin']}
       actions={<Button size="sm" variant="primary" onClick={() => setEditing('new')}><Plus className="size-4" aria-hidden /> New event</Button>}>
-      <div className="mx-auto max-w-6xl">
-        <div className={cn('gap-5', selected ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,440px)]' : 'block')}>
-          <Card className="min-w-0 overflow-hidden">
-            {rows.isLoading && <div className="p-4"><Skeleton className="h-24" /></div>}
-            {rows.data?.length === 0 && <EmptyState icon={<Trophy className="size-5" />} title="No events yet" body="Add your end-of-term show or an exam session." />}
-            <ul className="divide-y divide-line">
-              {rows.data?.map(e => (
-                <li key={e.id}>
-                  <button onClick={() => select(e.id)} className={cn('block w-full px-4 py-3 text-left hover:bg-surface-2', selected === e.id && 'bg-accent-soft/50',
-                    new Date(e.starts_at) < new Date() && 'opacity-60')}>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge tone="violet">{KINDS.find(k => k[0] === e.kind)?.[1] ?? e.kind}</Badge>
-                      {e.status === 'draft' && <Badge tone="neutral">Draft</Badge>}
-                      <span className="font-medium">{e.title}</span>
-                      <span className="ml-auto text-[12.5px] text-ink-3">{dateLong(e.starts_at)}</span>
-                    </div>
-                    <p className="mt-1 text-[13px] text-ink-2">{e.confirmed} going · {e.invited} yet to answer{e.requested ? ` · ${e.requested} asking` : ''}
-                      {e.cost_minor ? ` · ${money(e.cost_minor)} each, ${e.billed} billed` : ''}</p>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </Card>
-          {!selected && <ExamsCard />}
+      <div className="mx-auto max-w-[1240px]">
+        <div className={cn('grid gap-x-12 gap-y-10', selected ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)] lg:items-start' : 'lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]')}>
+          <div className="min-w-0 space-y-10">
+            {rows.isLoading && <Skeleton className="h-24" />}
+            {rows.error && <ErrorState error={rows.error} onRetry={() => rows.refetch()} />}
+            {rows.data?.length === 0 && <EmptyState title="No events yet" body="Add your end-of-term show or an exam session."
+              action={<Button variant="primary" onClick={() => setEditing('new')}>New event</Button>} />}
+            {rows.data && rows.data.length > 0 && (() => {
+              const now = new Date();
+              const upcoming = rows.data.filter(e => new Date(e.ends_at ?? e.starts_at) >= now);
+              const past = rows.data.filter(e => new Date(e.ends_at ?? e.starts_at) < now);
+              return [['Coming up', upcoming], ['Past', past]].filter(([, l]) => (l as E.OfficeEvent[]).length).map(([title, list]) => (
+                <section key={title as string}>
+                  <SectionHead title={title as string} meta={`${(list as E.OfficeEvent[]).length}`} />
+                  <ul className="divide-y divide-line">
+                    {(list as E.OfficeEvent[]).map(e => <EventLine key={e.id} e={e} active={selected === e.id} past={title === 'Past'} onSelect={() => select(e.id)} />)}
+                  </ul>
+                </section>
+              ));
+            })()}
+          </div>
+          {!selected && <div className="min-w-0"><ExamsCard /></div>}
           {selected && current && <EventDetail e={current} onEdit={() => setEditing(current)} onClose={() => select(null)} />}
         </div>
       </div>
       {editing && <EventSheet row={editing === 'new' ? null : editing} onClose={() => setEditing(null)} onCreated={id => { setEditing(null); select(id); }} />}
     </Shell>
+  );
+}
+
+function EventLine({ e, active, past, onSelect }: { e: E.OfficeEvent; active: boolean; past: boolean; onSelect: () => void }) {
+  const d = new Date(e.starts_at);
+  return (
+    <li>
+      <button onClick={onSelect} aria-current={active || undefined}
+        className={cn('grid w-full grid-cols-[4.25rem_minmax(0,1fr)] items-start gap-x-4 px-1 py-3 text-left hover:bg-surface-2/60',
+          active && 'bg-surface-2 shadow-[inset_3px_0_0_var(--color-accent)]')}>
+        <span className={cn('leading-none', past && 'text-ink-3')}>
+          <span className="block font-display text-[24px] tnum">{d.getDate()}</span>
+          <span className="mt-1 block text-[12.5px] text-ink-3">{d.toLocaleDateString('en-GB', { month: 'short', year: d.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined })}</span>
+        </span>
+        <span className="min-w-0">
+          <span className="flex flex-wrap items-baseline gap-x-2">
+            <span className={cn('font-semibold', past && 'text-ink-2')}>{e.title}</span>
+            <span className="text-[13px] text-ink-3">{KINDS.find(k => k[0] === e.kind)?.[1] ?? e.kind}</span>
+            {e.status === 'draft' && <Word tone="caution">Draft</Word>}
+          </span>
+          <span className="mt-0.5 block text-[13px] text-ink-3">
+            {dateLong(e.starts_at)}, {time(e.starts_at)}{e.venue ? ` · ${e.venue}` : ''}
+          </span>
+          <span className="mt-0.5 block text-[13px] text-ink-2">
+            <span className="font-semibold text-ink tnum">{e.confirmed}</span> going · {e.invited} yet to answer{e.requested ? <> · <span className="font-semibold text-caution">{e.requested} asking</span></> : ''}
+            {e.cost_minor ? ` · ${money(e.cost_minor)} each, ${e.billed} billed` : ''}
+          </span>
+        </span>
+      </button>
+    </li>
   );
 }
 
@@ -108,10 +138,10 @@ function EventSheet({ row, onClose, onCreated }: { row: E.OfficeEvent | null; on
         <Field label="Places" htmlFor="ev-cap"><Input id="ev-cap" type="number" min={1} value={f.capacity} onChange={set('capacity')} /></Field>
         <Field label="Entries close" htmlFor="ev-cl"><Input id="ev-cl" type="date" value={f.closes} onChange={set('closes')} /></Field>
       </div>
-      <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="size-4 accent-[var(--accent)]" checked={f.requests}
+      <label className="flex min-h-[44px] items-center gap-3 text-[14px]"><input type="checkbox" className="size-[18px] accent-[var(--color-accent)]" checked={f.requests}
         onChange={e => setF(x => ({ ...x, requests: e.target.checked }))} /> Families may ask to take part (you still confirm)</label>
       <Field label="Details for families" htmlFor="ev-d">
-        <textarea id="ev-d" rows={3} value={f.description} onChange={set('description')} className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm" />
+        <textarea id="ev-d" rows={3} value={f.description} onChange={set('description')} className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
       </Field>
     </RecordSheet>
   );
@@ -133,15 +163,20 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
     write.mutate({ sql, params }, { onSuccess: r => msg && setDone(msg(r)) });
   return (
     <DetailPanel open onClose={onClose} title={e.title} subtitle={`${dateLong(e.starts_at)} · ${time(e.starts_at)}${e.venue ? ` · ${e.venue}` : ''}`}>
-      {done && <p role="status" className="mb-2 flex items-center gap-2 rounded-[var(--radius-md)] bg-positive-soft px-3 py-2 text-[13px]"><CheckCircle2 className="size-4 text-positive" aria-hidden /> {done}</p>}
-      {write.error != null && <ErrorState error={write.error} />}
-      <Button className="w-full" onClick={onEdit}>Edit details</Button>
+      {done && <div role="status" className="mb-5 border-l-2 border-positive pl-3"><Notice word="Done" tone="positive" title={done} /></div>}
+      {write.error != null && <div className="mb-5"><ErrorState error={write.error} /></div>}
+      <dl className="mb-7 grid grid-cols-3 gap-4">
+        <div><dt className="label">Going</dt><dd className="stat-number mt-1 text-[26px] leading-none">{e.confirmed}</dd></div>
+        <div><dt className="label">To answer</dt><dd className="stat-number mt-1 text-[26px] leading-none">{e.invited}</dd></div>
+        <div><dt className="label">Asking</dt><dd className={cn('stat-number mt-1 text-[26px] leading-none', e.requested ? 'text-caution' : '')}>{e.requested}</dd></div>
+      </dl>
+      <Button className="mb-7" onClick={onEdit}>Edit details</Button>
 
       <DetailSection title="Invite classes">
         <div className="flex flex-wrap gap-1.5">
           {classes.data?.map(c => (
             <button key={c.id} aria-pressed={pick.includes(c.id)} onClick={() => setPick(p => p.includes(c.id) ? p.filter(x => x !== c.id) : [...p, c.id])}
-              className={cn('rounded-full border px-2.5 py-1 text-[12.5px]', pick.includes(c.id) ? 'border-accent bg-accent text-on-accent' : 'border-line')}>{c.name}</button>
+              className={cn('min-h-[36px] rounded-[var(--radius-sm)] border px-2.5 text-[13px]', pick.includes(c.id) ? 'border-ink bg-ink font-semibold text-surface' : 'border-line-strong text-ink-2 hover:border-ink-3')}>{c.name}</button>
           ))}
         </div>
         <Button size="sm" className="mt-2" disabled={!pick.length} onClick={() => { go(E.INVITE_CLASSES, [e.id, pick], r => `${r.n} dancers invited; their families have been told.`); setPick([]); }}>
@@ -150,11 +185,11 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
       </DetailSection>
 
       <DetailSection title={`Dancers (${people.data?.length ?? 0})`}>
-        <ul className="max-h-56 space-y-1 overflow-y-auto text-sm">
+        <ul className="max-h-64 divide-y divide-line overflow-y-auto text-[14px]">
           {people.data?.map(p => (
-            <li key={p.id} className="flex items-center gap-2">
+            <li key={p.id} className="flex min-h-[40px] items-center gap-2 py-1">
               <span className="min-w-0 flex-1 truncate">{p.student}{p.class_name ? <span className="text-ink-3"> · {p.class_name}</span> : ''}</span>
-              <Badge tone={PSTATUS[p.status] ?? 'neutral'}>{p.status}</Badge>
+              <Word tone={PSTATUS[p.status] ?? 'muted'}>{PWORD[p.status] ?? p.status}</Word>
               {p.status === 'requested' && <Button size="sm" onClick={() => go(E.SET_PARTICIPANT, [p.id, 'confirmed'])}>Confirm</Button>}
             </li>
           ))}
@@ -167,14 +202,14 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
       </DetailSection>
 
       <DetailSection title="Running order">
-        <ol className="space-y-1.5 text-sm">
+        <ol className="divide-y divide-line text-[14px]">
           {routines.data?.map((r, i) => (
-            <li key={r.id} className="flex items-start gap-1.5">
-              <span className="w-5 shrink-0 text-ink-3">{i + 1}.</span>
+            <li key={r.id} className="flex items-start gap-1.5 py-1.5">
+              <span className="w-6 shrink-0 font-display text-[15px] tnum text-ink-3">{i + 1}</span>
               <span className="min-w-0 flex-1"><b>{r.title}</b>{r.class_name ? ` · ${r.class_name}` : ''}{r.costume && <span className="block text-[12.5px] text-ink-2">Costume: {r.costume}</span>}</span>
-              <button aria-label={`Move ${r.title} up`} disabled={i === 0} onClick={() => go(E.MOVE_ROUTINE, [r.id, -1])} className="p-1 disabled:opacity-30"><ArrowUp className="size-3.5" /></button>
-              <button aria-label={`Move ${r.title} down`} disabled={i === (routines.data!.length - 1)} onClick={() => go(E.MOVE_ROUTINE, [r.id, 1])} className="p-1 disabled:opacity-30"><ArrowDown className="size-3.5" /></button>
-              <button aria-label={`Remove ${r.title}`} onClick={() => go(E.REMOVE_ROUTINE, [r.id])} className="p-1 text-ink-3 hover:text-critical"><Trash2 className="size-3.5" /></button>
+              <button aria-label={`Move ${r.title} up`} disabled={i === 0} onClick={() => go(E.MOVE_ROUTINE, [r.id, -1])} className="grid size-9 place-items-center rounded-[var(--radius-sm)] text-ink-3 hover:bg-surface-2 hover:text-ink disabled:opacity-30"><ArrowUp className="size-4" aria-hidden /></button>
+              <button aria-label={`Move ${r.title} down`} disabled={i === (routines.data!.length - 1)} onClick={() => go(E.MOVE_ROUTINE, [r.id, 1])} className="grid size-9 place-items-center rounded-[var(--radius-sm)] text-ink-3 hover:bg-surface-2 hover:text-ink disabled:opacity-30"><ArrowDown className="size-4" aria-hidden /></button>
+              <button aria-label={`Remove ${r.title}`} onClick={() => go(E.REMOVE_ROUTINE, [r.id])} className="grid size-9 place-items-center rounded-[var(--radius-sm)] text-ink-3 hover:bg-surface-2 hover:text-critical"><Trash2 className="size-4" aria-hidden /></button>
             </li>
           ))}
         </ol>
@@ -195,8 +230,8 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
       <CostumeSection eventId={e.id} routines={routines.data ?? []} />
 
       <DetailSection title="Rehearsals">
-        <ul className="space-y-1 text-sm">{rehearsals.data?.map(r => (
-          <li key={r.id} className="flex items-center gap-2"><span className="min-w-0 flex-1"><b>{r.title}</b> · {dateLong(r.starts_at)}, {time(r.starts_at)}</span>
+        <ul className="divide-y divide-line text-[14px]">{rehearsals.data?.map(r => (
+          <li key={r.id} className="flex min-h-[44px] items-center gap-2 py-1"><span className="min-w-0 flex-1"><b>{r.title}</b> · {dateLong(r.starts_at)}, {time(r.starts_at)}</span>
             <RehearsalRegisterButton rehearsal={r} /></li>))}</ul>
         <div className="mt-2 grid grid-cols-2 gap-1.5">
           <Input aria-label="Rehearsal name" value={rh.title} onChange={x => setRh({ ...rh, title: x.target.value })} />
@@ -209,18 +244,18 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
       {(e.kind === 'show' || e.kind === 'competition') && <TicketSection eventId={e.id} />}
 
       <DetailSection title="Chaperones">
-        <ul className="space-y-1 text-sm">
+        <ul className="divide-y divide-line text-[14px]">
           {chaps.data?.map(c => (
-            <li key={c.id} className="flex items-center gap-2"><span className="min-w-0 flex-1">{c.name}{c.phone ? ` · ${c.phone}` : ''}</span>
-              {c.checked ? <Badge tone="positive">Checked</Badge> : <Badge tone="caution">Not checked</Badge>}
-              <button aria-label={`Remove ${c.name}`} onClick={() => go(E.REMOVE_CHAPERONE, [c.id])} className="p-1 text-ink-3 hover:text-critical"><Trash2 className="size-3.5" /></button></li>
+            <li key={c.id} className="flex min-h-[44px] items-center gap-2"><span className="min-w-0 flex-1">{c.name}{c.phone ? <span className="text-ink-3"> · {c.phone}</span> : ''}</span>
+              {c.checked ? <Word tone="positive">Checked</Word> : <Word tone="caution">Not checked</Word>}
+              <button aria-label={`Remove ${c.name}`} onClick={() => go(E.REMOVE_CHAPERONE, [c.id])} className="grid size-9 place-items-center rounded-[var(--radius-sm)] text-ink-3 hover:bg-surface-2 hover:text-critical"><Trash2 className="size-4" aria-hidden /></button></li>
           ))}
         </ul>
         <div className="mt-2 grid grid-cols-2 gap-1.5">
           <Input aria-label="Chaperone name" placeholder="Name" value={ch.name} onChange={x => setCh({ ...ch, name: x.target.value })} />
           <Input aria-label="Chaperone phone" placeholder="Phone" value={ch.phone} onChange={x => setCh({ ...ch, phone: x.target.value })} />
         </div>
-        <label className="mt-1.5 flex items-center gap-2 text-[13px]"><input type="checkbox" className="size-4 accent-[var(--accent)]" checked={ch.checked}
+        <label className="mt-1 flex min-h-[44px] items-center gap-3 text-[14px]"><input type="checkbox" className="size-[18px] accent-[var(--color-accent)]" checked={ch.checked}
           onChange={x => setCh({ ...ch, checked: x.target.checked })} /> DBS or licence seen</label>
         <Button size="sm" className="mt-1.5" disabled={!ch.name.trim()} onClick={() => { go(E.ADD_CHAPERONE, [e.id, ch.name, ch.phone, null, ch.checked]); setCh({ name: '', phone: '', checked: false }); }}>Add chaperone</Button>
       </DetailSection>

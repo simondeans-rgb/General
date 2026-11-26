@@ -2,11 +2,12 @@
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Play, Mail, Zap, CheckCircle2 } from 'lucide-react';
+import { Play } from 'lucide-react';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Badge, Button, Card, EmptyState, ErrorState, Select, Skeleton } from '@/components/ui';
+import { Button, EmptyState, ErrorState, Notice, Select, Skeleton } from '@/components/ui';
+import { SectionHead, Word } from './session-row';
 import * as I from '@/lib/repos/inbox';
 import { relativeDay, time } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -46,86 +47,80 @@ export function Automations() {
   const due = rules.data?.reduce((n, r) => n + (r.enabled ? r.due : 0), 0) ?? 0;
 
   return (
-    <div className="space-y-3">
-      <Card className="overflow-hidden">
-        <div className="flex items-center gap-3 border-b border-line px-4 py-3">
-          <Zap className="size-4 text-accent-text" aria-hidden />
-          <p className="flex-1 text-[13px] text-ink-2">
-            {due ? `${due} message${due === 1 ? '' : 's'} due to go` : 'Nothing due right now'}
-          </p>
-          <Button size="sm" variant={due ? 'primary' : 'secondary'} loading={run.isPending}
-                  onClick={() => run.mutate()}>
-            <Play className="size-3.5" aria-hidden /> Run now
-          </Button>
-        </div>
+    <div className="space-y-10">
+      <section>
+        <SectionHead title="Automatic messages"
+          meta={due ? `${due} message${due === 1 ? '' : 's'} due to go` : 'Nothing due right now'}
+          action={<Button size="sm" variant={due ? 'primary' : 'secondary'} loading={run.isPending}
+                    onClick={() => run.mutate()}>
+              <Play className="size-3.5" aria-hidden /> Run now
+            </Button>} />
         {result !== null && (
-          <p role="status" className="flex items-center gap-2 border-b border-line bg-positive-soft px-4 py-2 text-[13px]">
-            <CheckCircle2 className="size-4 text-positive" aria-hidden />
-            {result ? `${result} sent.` : 'Nothing new to send — everything due has already gone.'}
-          </p>
+          <div role="status" className="border-b border-line py-3">
+            <Notice word={result ? 'Sent' : 'Nothing new'} tone={result ? 'positive' : 'ink'}
+              title={result ? `${result} message${result === 1 ? '' : 's'} sent.` : 'Everything due has already gone.'} />
+          </div>
         )}
-        {run.error && <div className="p-3"><ErrorState error={run.error} /></div>}
-        {rules.isLoading && <Skeleton className="m-3 h-24" />}
+        {run.error && <div className="pt-3"><ErrorState error={run.error} /></div>}
+        {rules.isLoading && <Skeleton className="mt-3 h-24" />}
         <ul className="divide-y divide-line">
           {rules.data?.map(r => {
             const e = EVENTS[r.event] ?? { title: r.event, when: '' };
             return (
-              <li key={r.id} className={cn('px-4 py-3', !r.enabled && 'bg-surface-2/50')}>
-                <div className="flex items-start gap-3">
-                  <span className="min-w-0 flex-1">
-                    <span className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium">{e.title}</span>
-                      {r.enabled && r.due > 0 && <Badge tone="accent">{r.due} due</Badge>}
-                      {!r.enabled && <Badge tone="neutral">Off</Badge>}
-                    </span>
-                    <span className="block text-[12.5px] text-ink-3">
-                      {e.when}{r.sent ? ` · ${r.sent} sent, last ${relativeDay(r.last_sent!)}` : ''}
-                    </span>
+              <li key={r.id} className="grid gap-x-6 gap-y-2 px-1 py-3 md:grid-cols-[minmax(0,1fr)_16rem_auto] md:items-center">
+                <span className="min-w-0">
+                  <span className="flex flex-wrap items-baseline gap-x-2">
+                    <span className={cn('font-semibold', !r.enabled && 'text-ink-3')}>{e.title}</span>
+                    {r.enabled && r.due > 0 && <Word tone="caution">{r.due} due</Word>}
+                    {!r.enabled && <Word tone="muted">Off</Word>}
                   </span>
-                  {/* A real switch: role, state and label, not a coloured div. */}
-                  <button role="switch" aria-checked={r.enabled} aria-label={`${e.title}: ${r.enabled ? 'on' : 'off'}`}
-                    onClick={() => set.mutate({ id: r.id, enabled: !r.enabled, template_id: r.template_id })}
-                    className={cn('relative mt-0.5 h-6 w-10 shrink-0 rounded-full transition-colors',
-                      r.enabled ? 'bg-accent' : 'bg-line-strong')}>
-                    <span className={cn('absolute top-0.5 size-5 rounded-full bg-white shadow-xs transition-[left]',
-                      r.enabled ? 'left-[18px]' : 'left-0.5')} />
-                  </button>
-                </div>
-                <Select aria-label={`Template for ${e.title}`} className="mt-2 h-9 text-[13px]"
+                  <span className="block text-[13px] text-ink-3">
+                    {e.when}{r.sent ? ` · ${r.sent} sent, last ${relativeDay(r.last_sent!)}` : ''}
+                  </span>
+                </span>
+                <Select aria-label={`Template for ${e.title}`} className="h-9 text-[13px]"
                   value={r.template_id ?? ''}
                   onChange={ev => set.mutate({ id: r.id, enabled: r.enabled, template_id: ev.target.value || null })}>
-                  <option value="">No template — nothing will send</option>
+                  <option value="">No template — nothing sends</option>
                   {templates.data?.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </Select>
+                {/* A real switch: role, state and label, not a coloured div. */}
+                <button role="switch" aria-checked={r.enabled} aria-label={`${e.title}: ${r.enabled ? 'on' : 'off'}`}
+                  onClick={() => set.mutate({ id: r.id, enabled: !r.enabled, template_id: r.template_id })}
+                  className="row-start-1 flex min-h-[44px] items-center gap-2 justify-self-end text-[13px] text-ink-2 md:row-start-auto">
+                  <span className="w-6 text-right">{r.enabled ? 'On' : 'Off'}</span>
+                  <span className={cn('relative h-6 w-10 shrink-0 rounded-full transition-colors', r.enabled ? 'bg-ink' : 'bg-line-strong')}>
+                    <span className={cn('absolute top-0.5 size-5 rounded-full bg-surface transition-[left]',
+                      r.enabled ? 'left-[18px]' : 'left-0.5')} />
+                  </span>
+                </button>
               </li>
             );
           })}
         </ul>
-      </Card>
+      </section>
 
-      <Card className="overflow-hidden">
-        <div className="border-b border-line px-4 py-3">
-          <p className="flex items-center gap-2 font-medium"><Mail className="size-4 text-ink-3" aria-hidden /> Email outbox</p>
-          <p className="mt-0.5 text-[12.5px] text-ink-2">
-            People without an account yet — usually someone booking a first trial — can only be reached by email.
-            Email delivery is not connected in this build, so these wait here.
-          </p>
-        </div>
-        {outbox.data?.length === 0 && <EmptyState title="Nothing queued" />}
-        <ul className="divide-y divide-line">
+      <section>
+        <SectionHead title="Email outbox" meta={outbox.data?.length ? `${outbox.data.length}` : undefined} />
+        <p className="py-2 text-[13px] text-ink-3">
+          People without an account yet, usually someone booking a first trial, can only be reached by email.
+          Email delivery isn’t connected in this build, so these wait here.
+        </p>
+        {outbox.data?.length === 0 && <p className="py-3 text-[14px] text-ink-3">Nothing queued.</p>}
+        <ul className="divide-y divide-line border-t border-line">
           {outbox.data?.map(o => (
-            <li key={o.id} className="flex items-center gap-3 px-4 py-2.5 text-sm">
+            <li key={o.id} className="flex items-center gap-3 px-1 py-2.5 text-[14px]">
               <span className="min-w-0 flex-1">
-                <span className="block truncate">{o.subject}</span>
-                <span className="block truncate text-[12.5px] text-ink-3">To {o.to_name ?? o.to_address} · {relativeDay(o.created_at)} {time(o.created_at)}</span>
+                <span className="block truncate font-medium">{o.subject}</span>
+                <span className="block truncate text-[13px] text-ink-3">To {o.to_name ?? o.to_address} · {relativeDay(o.created_at)} {time(o.created_at)}</span>
               </span>
-              <Badge tone={o.status === 'queued' ? 'caution' : o.status === 'sent' ? 'positive' : 'neutral'}>
-                {o.status === 'queued' ? 'Waiting for email' : o.status}
-              </Badge>
+              <span className={cn('shrink-0 text-[13px]', o.status === 'queued' ? 'font-semibold text-caution' : o.status === 'sent' ? 'text-positive' : 'text-ink-3')}>
+                {o.status === 'queued' ? 'Waiting for email' : o.status.charAt(0).toUpperCase() + o.status.slice(1)}
+              </span>
             </li>
           ))}
         </ul>
-      </Card>
+      </section>
     </div>
   );
 }

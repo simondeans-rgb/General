@@ -2,8 +2,7 @@
 
 import * as React from 'react';
 import { Suspense } from 'react';
-import { Search, AlertTriangle, CameraOff, Users, ChevronRight, Mail, Phone,
-         Plus, Pencil, HeartPulse, UserPlus, Upload } from 'lucide-react';
+import { Search, CameraOff, Plus, Pencil, HeartPulse, UserPlus, Upload } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { ImportWizard } from '@/components/app/import-wizard';
 import { DetailPanel, DetailSection, KeyValue } from '@/components/app/detail-panel';
@@ -12,12 +11,13 @@ import { useSelection } from '@/lib/use-selection';
 import { MedicalBrief, MedicalMarker } from '@/components/app/medical-brief';
 import type { Brief } from '@/lib/repos/teaching';
 import { useSearchParams } from 'next/navigation';
-import { Badge, Card, Input, EmptyState, Skeleton, ErrorState, Button } from '@/components/ui';
+import { Input, EmptyState, Skeleton, ErrorState, Button } from '@/components/ui';
+import { ViewTabs, Word } from '@/components/app/session-row';
 import * as P from '@/lib/repos/people';
 import {
   FamilySheet, GuardianSheet, StudentSheet, MedicalSheet, StaffSheet,
 } from '@/components/app/people-sheets';
-import { money, dateShort, ageFrom, initials } from '@/lib/format';
+import { money, dateShort, ageFrom } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 type Tab = 'families' | 'students' | 'staff';
@@ -51,27 +51,18 @@ function People() {
         </Button>
       </div>}>
       {importing && <ImportWizard onClose={() => setImporting(false)} />}
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-4 flex flex-wrap items-center gap-3">
-          <div role="tablist" aria-label="People"
-               className="inline-flex rounded-[var(--radius-md)] border border-line bg-surface p-0.5">
-            {(['families','students','staff'] as Tab[]).map(t => (
-              <button key={t} role="tab" aria-selected={tab === t}
-                onClick={() => { setTab(t); select(null); }}
-                className={cn('min-h-[34px] rounded-[7px] px-3 text-[13px] font-medium capitalize',
-                  tab === t ? 'bg-accent-soft text-accent-ink' : 'text-ink-2 hover:text-ink')}>
-                {t}
-              </button>
-            ))}
-          </div>
-          <div className="relative min-w-[220px] flex-1">
+      <div className="mx-auto max-w-[1240px]">
+        <div className="mb-6 flex flex-wrap items-end gap-x-6 gap-y-3 border-b border-line">
+          <ViewTabs label="People" value={tab} onChange={t => { setTab(t); select(null); }} className="-mb-px"
+            options={[['families', 'Families'], ['students', 'Students'], ['staff', 'Staff']]} />
+          <div className="relative mb-2 min-w-[220px] flex-1 sm:max-w-sm sm:ml-auto">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-3" aria-hidden />
             <Input value={q} onChange={e => setQ(e.target.value)} className="pl-9"
               placeholder={`Search ${tab}`} aria-label={`Search ${tab}`} type="search" />
           </div>
         </div>
 
-        <div className={cn('gap-5', selected ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,380px)]' : 'block')}>
+        <div className={cn('gap-x-10', selected ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:items-start' : 'block')}>
           <div className="min-w-0">
             {tab === 'families' && <FamilyList q={q} selected={selected} onSelect={select} />}
             {tab === 'students' && <StudentList q={q} selected={selected} onSelect={select} />}
@@ -98,38 +89,40 @@ function FamilyList({ q, selected, onSelect }: { q: string; selected: string | n
 
   if (rows.isLoading) return <ListSkeleton />;
   if (rows.error) return <ErrorState error={rows.error} onRetry={() => rows.refetch()} />;
-  if (filtered.length === 0) return <Card><EmptyState icon={<Users className="size-5" />}
+  if (filtered.length === 0) return <EmptyState
     title={q ? 'No families match that search' : 'No families yet'}
-    body={q ? 'Try a child’s first name or a surname.' : 'Families appear here once you add or import them.'} /></Card>;
+    body={q ? 'Try a child’s first name or a surname.' : 'Families appear here once you add or import them.'} />;
 
   return (
-    <Card>
-      <ul className="divide-y divide-line">
+    <div>
+      <div aria-hidden className="hidden grid-cols-[minmax(0,1.1fr)_minmax(0,1.4fr)_8rem] gap-x-4 border-b-2 border-ink px-1 pb-2 md:grid">
+        <span className="label">Family</span><span className="label">Children</span><span className="label text-right">Balance</span>
+      </div>
+      <p className="px-1 pt-2 text-[13px] text-ink-3 md:hidden">{filtered.length} famil{filtered.length === 1 ? 'y' : 'ies'}</p>
+      <ul className="divide-y divide-line border-b border-line">
         {filtered.map(f => {
           const owes = Number(f.balance_minor) > 0;
           return (
             <li key={f.id}>
-              <button onClick={() => onSelect(f.id)}
-                className={cn('flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-2',
-                  selected === f.id && 'bg-accent-soft/50')}>
-                <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-full bg-surface-2 text-[13px] font-semibold text-ink-2">
-                  {initials(f.name)}
+              <button onClick={() => onSelect(f.id)} aria-current={selected === f.id || undefined}
+                className={cn('grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 px-1 py-3 text-left transition-colors hover:bg-surface-2/60 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1.4fr)_8rem]',
+                  selected === f.id && 'bg-surface-2 shadow-[inset_3px_0_0_var(--color-accent)]')}>
+                <span className="min-w-0">
+                  <span className="block truncate font-semibold">{f.name}</span>
+                  <span className="block truncate text-[13px] text-ink-3">{f.primary_guardian}<span className="md:hidden">{f.child_names ? ` · ${f.child_names}` : ''}</span></span>
                 </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-medium">{f.name}</span>
-                  <span className="block truncate text-[13px] text-ink-2">
-                    {f.primary_guardian}{f.child_names ? ` · ${f.child_names}` : ''}
-                  </span>
+                <span className="hidden truncate text-[14px] text-ink-2 md:block">{f.child_names ?? <span className="text-ink-3">No children yet</span>}</span>
+                <span className="text-right text-[14px] tnum">
+                  {f.failed_payments > 0 ? <span className="font-semibold text-critical">Payment failed</span>
+                    : owes ? <span className="font-semibold text-caution">{money(f.balance_minor)}<span className="block text-[12px] font-normal">due</span></span>
+                    : <span className="text-ink-3" aria-label="Paid up">—</span>}
                 </span>
-                {f.failed_payments > 0 && <Badge tone="critical">Payment failed</Badge>}
-                {owes && f.failed_payments === 0 && <Badge tone="caution">{money(f.balance_minor)} due</Badge>}
-                <ChevronRight className="size-4 shrink-0 text-ink-3" aria-hidden />
               </button>
             </li>
           );
         })}
       </ul>
-    </Card>
+    </div>
   );
 }
 
@@ -162,79 +155,70 @@ function FamilyDetail({ id, onClose }: { id: string; onClose: () => void }) {
                 ? <span className="font-medium text-caution">{money(f.balance_minor)} outstanding</span>
                 : <span className="text-positive">Up to date</span>],
             ]} />
-            {f.notes && <p className="mt-2 rounded-[var(--radius-md)] bg-surface-2 p-3 text-[13px] text-ink-2">{f.notes}</p>}
-            <Button className="mt-3 w-full" onClick={() => setEditing(true)}>
+            {f.notes && <p className="mt-2 border-l-2 border-line-strong pl-3 text-[14px] text-ink-2">{f.notes}</p>}
+            <Button size="sm" variant="ghost" className="-ml-2 mt-2" onClick={() => setEditing(true)}>
               <Pencil className="size-4" aria-hidden /> Edit family
             </Button>
           </DetailSection>
 
-          <DetailSection title={`Guardians (${guardians.data?.length ?? 0})`}>
-            <ul className="space-y-2">
+          <DetailSection title={`Guardians (${guardians.data?.length ?? 0})`}
+            action={<Button size="sm" variant="ghost" onClick={() => setGuardian('new')}><UserPlus className="size-4" aria-hidden /> Add</Button>}>
+            <ul className="divide-y divide-line">
               {guardians.data?.map(g => (
-                <li key={g.id} className="rounded-[var(--radius-md)] border border-line p-3">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{g.full_name}</span>
-                    {g.is_primary && <Badge tone="accent">Primary</Badge>}
-                    {g.has_login && <Badge tone="neutral">Has login</Badge>}
+                <li key={g.id} className="flex items-start gap-2 py-2.5">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold">{g.full_name}</p>
+                    {(g.is_primary || g.has_login) && <p className="text-[13px] text-ink-3">{[g.is_primary && 'Primary contact', g.has_login && 'Uses the app'].filter(Boolean).join(' · ')}</p>}
+                    {g.email && <a href={`mailto:${g.email}`} className="block truncate text-[13.5px] text-accent-text hover:underline">{g.email}</a>}
+                    {g.phone && <a href={`tel:${g.phone}`} className="block text-[13.5px] text-ink-2 tnum hover:text-ink">{g.phone}</a>}
                   </div>
-                  <div className="mt-1 space-y-0.5 text-[13px] text-ink-2">
-                    {g.email && <a href={`mailto:${g.email}`} className="flex items-center gap-1.5 hover:text-ink">
-                      <Mail className="size-3.5" aria-hidden />{g.email}</a>}
-                    {g.phone && <a href={`tel:${g.phone}`} className="flex items-center gap-1.5 hover:text-ink">
-                      <Phone className="size-3.5" aria-hidden />{g.phone}</a>}
-                  </div>
-                  <Button size="sm" className="mt-2 w-full" onClick={() => setGuardian(g)}>
-                    <Pencil className="size-3.5" aria-hidden /> Edit
+                  <Button size="sm" variant="ghost" aria-label={`Edit ${g.full_name}`} onClick={() => setGuardian(g)}>
+                    <Pencil className="size-4" aria-hidden /> Edit
                   </Button>
                 </li>
               ))}
             </ul>
-            <Button className="mt-2 w-full" onClick={() => setGuardian('new')}>
-              <UserPlus className="size-4" aria-hidden /> Add a guardian
-            </Button>
           </DetailSection>
 
-          <DetailSection title={`Children (${students.data?.length ?? 0})`}>
-            <ul className="space-y-2">
+          <DetailSection title={`Children (${students.data?.length ?? 0})`}
+            action={<Button size="sm" variant="ghost" onClick={() => setChild('new')}><Plus className="size-4" aria-hidden /> Add a child</Button>}>
+            <ul className="divide-y divide-line">
               {students.data?.map(s => (
-                <li key={s.id} className="rounded-[var(--radius-md)] border border-line p-3">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{s.first_name} {s.last_name}</span>
+                <li key={s.id} className="py-2.5">
+                  <p className="flex flex-wrap items-baseline gap-x-2">
+                    <span className="font-semibold">{s.first_name} {s.last_name}</span>
                     <span className="text-[13px] text-ink-3">{ageFrom(s.date_of_birth)}</span>
-                    {s.has_alert && <Badge tone="critical" icon={<AlertTriangle className="size-3" />}>Medical</Badge>}
-                  </div>
-                  <p className="mt-0.5 text-[13px] text-ink-2">{s.class_names ?? 'Not in any class'}</p>
+                    {s.has_alert && <Word tone="critical">Medical alert</Word>}
+                  </p>
+                  <p className="mt-0.5 text-[13.5px] text-ink-2">{s.class_names ?? 'Not in any class'}</p>
                 </li>
               ))}
             </ul>
-            <Button className="mt-2 w-full" onClick={() => setChild('new')}>
-              <Plus className="size-4" aria-hidden /> Add a child
-            </Button>
           </DetailSection>
 
           <DetailSection title="Invoices">
-            {invoices.data?.length === 0 && <p className="text-sm text-ink-3">No invoices yet.</p>}
-            <ul className="space-y-1.5">
+            {invoices.data?.length === 0 && <p className="text-[14px] text-ink-3">No invoices yet.</p>}
+            <ul className="divide-y divide-line">
               {invoices.data?.map(i => (
-                <li key={i.id} className="flex items-center justify-between gap-3 text-sm">
+                <li key={i.id} className="grid grid-cols-[minmax(0,1fr)_auto_5.5rem] items-baseline gap-3 py-2 text-[14px]">
                   <span className="tnum text-ink-2">{i.number}</span>
-                  <span className="tnum">{money(i.total_minor)}</span>
-                  <Badge tone={i.status === 'paid' ? 'positive' : i.status === 'part_paid' ? 'caution' : 'critical'}>
-                    {i.status === 'part_paid' ? 'Part paid' : i.status}
-                  </Badge>
+                  <span className="tnum font-semibold">{money(i.total_minor)}</span>
+                  <span className={cn('text-right text-[13px] font-semibold', i.status === 'paid' ? 'text-positive' : i.status === 'part_paid' ? 'text-caution' : 'text-critical')}>
+                    {i.status === 'part_paid' ? 'Part paid' : i.status === 'paid' ? 'Paid' : i.status.charAt(0).toUpperCase() + i.status.slice(1)}
+                  </span>
                 </li>
               ))}
             </ul>
           </DetailSection>
 
           <DetailSection title="Messages">
-            {messages.data?.length === 0 && <p className="text-sm text-ink-3">No messages with this family.</p>}
-            <ul className="space-y-2">
+            {messages.data?.length === 0 && <p className="text-[14px] text-ink-3">No messages with this family.</p>}
+            <ul className="divide-y divide-line">
               {messages.data?.map(m => (
-                <li key={m.id} className="rounded-[var(--radius-md)] bg-surface-2 p-3">
-                  <p className="text-sm font-medium">{m.subject}</p>
-                  <p className="mt-0.5 line-clamp-2 text-[13px] text-ink-2">{m.body}</p>
-                  <p className="mt-1 text-[12px] text-ink-3">{dateShort(m.sent_at)}</p>
+                <li key={m.id} className="py-2.5">
+                  <p className="flex items-baseline justify-between gap-3"><span className="min-w-0 truncate text-[14px] font-semibold">{m.subject}</span>
+                    <span className="shrink-0 text-[12.5px] text-ink-3">{dateShort(m.sent_at)}</span></p>
+                  <p className="mt-0.5 line-clamp-2 text-[13.5px] text-ink-2">{m.body}</p>
                 </li>
               ))}
             </ul>
@@ -264,39 +248,45 @@ function StudentList({ q, selected, onSelect }: { q: string; selected: string | 
 
   if (rows.isLoading) return <ListSkeleton />;
   if (rows.error) return <ErrorState error={rows.error} />;
-  if (filtered.length === 0) return <Card><EmptyState title="No students match that search" /></Card>;
+  if (filtered.length === 0) return <EmptyState title={q ? 'No students match that search' : 'No students yet'}
+    body={q ? 'Try a first name or the family’s surname.' : 'Add a child to a family, or import a spreadsheet.'} />;
 
   return (
-    <Card>
-      <ul className="divide-y divide-line">
+    <div>
+      <div aria-hidden className="hidden grid-cols-[minmax(0,1.3fr)_3.5rem_minmax(0,1fr)_4.5rem_5rem] gap-x-4 border-b-2 border-ink px-1 pb-2 md:grid">
+        <span className="label">Student</span><span className="label">Age</span><span className="label">Family</span>
+        <span className="label text-right">Classes</span><span className="label text-right">Attends</span>
+      </div>
+      <p className="px-1 pt-2 text-[13px] text-ink-3 md:hidden">{filtered.length} student{filtered.length === 1 ? '' : 's'}</p>
+      <ul className="divide-y divide-line border-b border-line">
         {filtered.map(s => (
           <li key={s.id}>
-            <button onClick={() => onSelect(s.id)}
-              className={cn('flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-surface-2',
-                selected === s.id && 'bg-accent-soft/50')}>
-              <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-full bg-surface-2 text-[13px] font-semibold text-ink-2">
-                {initials(s.first_name, s.last_name)}
-              </span>
-              <span className="min-w-0 flex-1">
+            <button onClick={() => onSelect(s.id)} aria-current={selected === s.id || undefined}
+              className={cn('grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 px-1 py-3 text-left hover:bg-surface-2/60 md:grid-cols-[minmax(0,1.3fr)_3.5rem_minmax(0,1fr)_4.5rem_5rem]',
+                selected === s.id && 'bg-surface-2 shadow-[inset_3px_0_0_var(--color-accent)]')}>
+              <span className="min-w-0">
                 <span className="flex items-center gap-2">
-                  <span className="truncate font-medium">{s.preferred_name ?? s.first_name} {s.last_name}</span>
+                  <span className="truncate font-semibold">{s.preferred_name ?? s.first_name} {s.last_name}</span>
                   <MedicalMarker brief={{ requires_alert: s.has_alert, has_medical_need: s.has_need }} className="size-3.5" />
                   {s.photo_consent === false && <CameraOff className="size-3.5 shrink-0 text-ink-3" aria-label="No photo consent" />}
                 </span>
-                <span className="block truncate text-[13px] text-ink-2">
+                <span className="block truncate text-[13px] text-ink-3 md:hidden">
                   {ageFrom(s.date_of_birth)} · {s.classes} class{s.classes === 1 ? '' : 'es'} · {s.family_name}
                 </span>
               </span>
-              {s.attendance_pct != null && (
-                <Badge tone={s.attendance_pct >= 85 ? 'positive' : s.attendance_pct >= 70 ? 'caution' : 'critical'}>
-                  {s.attendance_pct}%
-                </Badge>
-              )}
+              <span className="hidden text-[14px] text-ink-2 tnum md:block">{ageFrom(s.date_of_birth)}</span>
+              <span className="hidden truncate text-[14px] text-ink-2 md:block">{s.family_name}</span>
+              <span className="hidden text-right text-[14px] text-ink-2 tnum md:block">{s.classes}</span>
+              <span className={cn('text-right text-[14px] tnum', s.attendance_pct == null ? 'text-ink-3'
+                : s.attendance_pct >= 85 ? 'text-ink-2' : s.attendance_pct >= 70 ? 'font-semibold text-caution' : 'font-semibold text-critical')}>
+                {s.attendance_pct != null ? `${s.attendance_pct}%` : '—'}
+                {s.attendance_pct != null && s.attendance_pct < 70 && <span className="block text-[12px] font-normal">Low</span>}
+              </span>
             </button>
           </li>
         ))}
       </ul>
-    </Card>
+    </div>
   );
 }
 
@@ -326,13 +316,15 @@ function StudentDetail({ id, onClose }: { id: string; onClose: () => void }) {
             ]} />
           </DetailSection>
           <DetailSection title="Record">
-            <Button className="w-full" onClick={() => setEditing(true)}>
-              <Pencil className="size-4" aria-hidden /> Edit details
-            </Button>
-            <Button className="mt-2 w-full" onClick={() => setMedical(true)}>
-              <HeartPulse className="size-4" aria-hidden /> Medical and emergency contacts
-            </Button>
-            <p className="mt-1.5 text-[12.5px] text-ink-3">
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={() => setMedical(true)}>
+                <HeartPulse className="size-4" aria-hidden /> Medical and emergency contacts
+              </Button>
+              <Button variant="ghost" onClick={() => setEditing(true)}>
+                <Pencil className="size-4" aria-hidden /> Edit details
+              </Button>
+            </div>
+            <p className="mt-2 text-[13px] text-ink-3">
               Health data is held separately and every change is recorded against your name.
             </p>
           </DetailSection>
@@ -366,47 +358,43 @@ function StaffList({ q }: { q: string }) {
 
   if (rows.isPending) return <ListSkeleton />;
   if (filtered.length === 0) {
-    return <Card><EmptyState icon={<Users className="size-5" />}
+    return <EmptyState
       title={q ? 'No staff match that search' : 'No teachers yet'}
-      body={q ? undefined : 'Add the people who take your classes. They appear on the timetable straight away.'} /></Card>;
+      body={q ? undefined : 'Add the people who take your classes. They appear on the timetable straight away.'} />;
   }
   return (
     <>
-      <div className="grid gap-3 sm:grid-cols-2">
-        {filtered.map(s => (
-          <Card key={s.id} className="p-4">
-            <button onClick={() => setEditing(s)}
-                    className="flex w-full items-center gap-3 text-left"
-                    aria-label={`Edit ${s.display_name}`}>
-              <span aria-hidden className="grid size-10 place-items-center rounded-full bg-surface-2 text-sm font-semibold text-ink-2">
-                {initials(s.display_name)}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate font-medium">{s.display_name}</span>
-                <span className="block text-[13px] text-ink-2">
-                  {s.classes} class{s.classes === 1 ? '' : 'es'}
-                  {s.user_id ? '' : ' · no login'}
-                </span>
-              </span>
-              {s.status !== 'active' && <Badge tone="neutral">Inactive</Badge>}
-              <Pencil className="size-4 shrink-0 text-ink-3" aria-hidden />
-            </button>
-            {s.bio && <p className="mt-3 text-[13px] text-ink-2">{s.bio}</p>}
-            {s.email && <a href={`mailto:${s.email}`}
-              className="mt-2 block truncate text-[13px] text-accent-text hover:underline">{s.email}</a>}
-          </Card>
-        ))}
+      <div aria-hidden className="hidden grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_5rem_6rem] gap-x-4 border-b-2 border-ink px-1 pb-2 md:grid">
+        <span className="label">Name</span><span className="label">Email</span><span className="label text-right">Classes</span><span className="label text-right">App</span>
       </div>
+      <ul className="divide-y divide-line border-b border-line">
+        {filtered.map(s => (
+          <li key={s.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 px-1 py-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_5rem_6rem]">
+            <button onClick={() => setEditing(s)} aria-label={`Edit ${s.display_name}`}
+              className="group min-w-0 text-left">
+              <span className="flex items-center gap-2">
+                <span className="truncate font-semibold group-hover:underline">{s.display_name}</span>
+                {s.status !== 'active' && <Word tone="muted">Inactive</Word>}
+                <Pencil className="size-3.5 shrink-0 text-ink-3 opacity-0 group-hover:opacity-100" aria-hidden />
+              </span>
+              {s.bio && <span className="block truncate text-[13px] text-ink-3">{s.bio}</span>}
+            </button>
+            <span className="hidden min-w-0 md:block">{s.email && <a href={`mailto:${s.email}`}
+              className="block truncate text-[14px] text-accent-text hover:underline">{s.email}</a>}</span>
+            <span className="text-right text-[14px] tnum text-ink-2">{s.classes}<span className="md:hidden"> class{s.classes === 1 ? '' : 'es'}</span></span>
+            <span className={cn('hidden text-right text-[13px] md:block', s.user_id ? 'text-ink-2' : 'text-ink-3')}>{s.user_id ? 'Signed up' : 'No login'}</span>
+          </li>
+        ))}
+      </ul>
       {editing && <StaffSheet row={editing} onClose={() => setEditing(null)} />}
     </>
   );
 }
 
 function ListSkeleton() {
-  return <Card className="divide-y divide-line">
-    {[0,1,2,3,4].map(i => <div key={i} className="flex items-center gap-3 p-4">
-      <Skeleton className="size-9 rounded-full" />
-      <div className="flex-1 space-y-1.5"><Skeleton className="h-4 w-40" /><Skeleton className="h-3 w-56" /></div>
+  return <div className="divide-y divide-line">
+    {[0,1,2,3,4].map(i => <div key={i} className="space-y-1.5 py-3">
+      <Skeleton className="h-4 w-40" /><Skeleton className="h-3 w-56" />
     </div>)}
-  </Card>;
+  </div>;
 }

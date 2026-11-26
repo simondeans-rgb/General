@@ -3,13 +3,12 @@
 import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { Check, LogOut, ArrowLeftRight } from 'lucide-react';
+import { Check, LogOut } from 'lucide-react';
 import { PERSONA_GROUPS, useSession, type Persona } from '@/lib/auth/session';
-import { Badge, Button } from '@/components/ui';
+import { Button } from '@/components/ui';
 import { initials } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
-const TONE = { owner: 'accent', admin: 'info', teacher: 'teal', guardian: 'rose', student: 'amber', platform: 'neutral' } as const;
 const ROLE_HOME = { owner: '/today', admin: '/today', teacher: '/teach',
                     guardian: '/family', student: '/learn', platform: '/platform' } as const;
 
@@ -57,7 +56,7 @@ export function PersonSwitcher({ className, label }: { className?: string; label
     <>
       {label ? (
         <button onClick={() => setOpen(true)} aria-haspopup="dialog"
-          className={cn('text-[12.5px] font-medium text-accent-text hover:underline', className)}>
+          className={cn('text-[13px] font-semibold text-accent-text hover:underline', className)}>
           {label}
         </button>
       ) : (
@@ -86,18 +85,15 @@ export function PersonSwitcher({ className, label }: { className?: string; label
                        rounded-t-[var(--radius-xl)] border border-line bg-surface
                        p-4 pb-safe shadow-lg outline-none sm:rounded-[var(--radius-xl)]"
           >
-            <div className="mb-1 flex items-center gap-2">
-              <ArrowLeftRight className="size-4 text-ink-3" aria-hidden />
-              <h2 id="switch-title" className="text-[17px] font-semibold tracking-tight">Switch person</h2>
-            </div>
-            <p className="mb-3 text-[13px] text-ink-2">
+            <h2 id="switch-title" className="font-display text-[22px] font-[800] leading-tight [font-stretch:112%]">Switch person</h2>
+            <p className="mb-4 mt-1 text-[13.5px] text-ink-3">
               What each person can read is decided by the database, not by this menu.
             </p>
 
             {PERSONA_GROUPS().map(g => (
-            <section key={g.title} className="mb-3">
-            <h3 className="mb-1.5 text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-3">{g.title}</h3>
-            <ul className="space-y-1.5">
+            <section key={g.title} className="mb-5">
+            <h3 className="section-title border-b-2 border-ink pb-1.5">{g.title}</h3>
+            <ul className="divide-y divide-line">
               {g.people.map(p => {
                 const current = p.userId === session.userId;
                 return (
@@ -106,21 +102,21 @@ export function PersonSwitcher({ className, label }: { className?: string; label
                       onClick={() => choose(p)}
                       aria-current={current ? 'true' : undefined}
                       className={cn(
-                        'flex w-full items-center gap-3 rounded-[var(--radius-lg)] border p-3 text-left transition-colors',
-                        current ? 'border-accent-line bg-accent-soft/60' : 'border-line hover:bg-surface-2',
+                        'flex min-h-14 w-full items-center gap-3 py-2.5 text-left transition-colors',
+                        current ? 'bg-accent-soft/60' : 'hover:bg-surface-2/70',
                       )}
                     >
                       <span aria-hidden className={cn(
-                        'grid size-9 shrink-0 place-items-center rounded-full text-[13px] font-semibold',
+                        'grid size-10 shrink-0 place-items-center rounded-full font-display text-[14px] font-[800]',
                         current ? 'bg-accent text-on-accent' : 'bg-surface-2 text-ink-2')}>
                         {current ? <Check className="size-4" /> : initials(p.name)}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="flex flex-wrap items-center gap-2">
-                          <span className="font-medium">{p.name}</span>
-                          <Badge tone={TONE[p.role]}>{p.title}</Badge>
+                        <span className="flex flex-wrap items-baseline gap-x-2">
+                          <span className="font-semibold">{p.name}</span>
+                          <span className="text-[13px] text-ink-3">{p.title}{current ? ' · you now' : ''}</span>
                         </span>
-                        <span className="mt-0.5 block text-[12.5px] text-ink-2">{p.blurb}</span>
+                        <span className="mt-0.5 block text-[13px] leading-snug text-ink-2">{p.blurb}</span>
                       </span>
                     </button>
                   </li>
@@ -130,7 +126,7 @@ export function PersonSwitcher({ className, label }: { className?: string; label
             </section>
             ))}
 
-            <div className="mt-4 flex gap-2 border-t border-line pt-3">
+            <div className="mt-2 flex gap-2 border-t border-line pt-3">
               <Button className="flex-1" onClick={() => setOpen(false)}>Close</Button>
               <Button className="flex-1" variant="secondary"
                       onClick={() => { setOpen(false); signOut(); router.replace('/'); }}>

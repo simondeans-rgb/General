@@ -3,13 +3,13 @@
 import * as React from 'react';
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { GraduationCap, AlertTriangle, Users, Clock, FolderOpen, ChevronRight,
-         Plus, Pencil, UserPlus, UserMinus, Sparkles, Copy, CalendarPlus } from 'lucide-react';
+import { ChevronRight, Plus, Pencil, UserMinus, Copy, CalendarPlus } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection, KeyValue } from '@/components/app/detail-panel';
 import { useRows } from '@/lib/query';
 import { useSelection } from '@/lib/use-selection';
-import { Badge, Button, Card, EmptyState, Skeleton, ErrorState, type Tone } from '@/components/ui';
+import { Beats, Button, EmptyState, Skeleton, ErrorState } from '@/components/ui';
+import { SectionHead, StyleMark, ViewTabs, Word } from '@/components/app/session-row';
 import * as C from '@/lib/repos/classes';
 import { ClassForm } from '@/components/app/class-form';
 import { TermRollover, DuplicateClass } from '@/components/app/term-rollover';
@@ -20,7 +20,6 @@ import { money, ageFrom, dateShort } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const TONES: Record<string, Tone> = { violet:'violet', amber:'amber', teal:'teal', rose:'rose', indigo:'indigo', lime:'lime' };
 
 export default function ClassesPage() {
   return <Suspense fallback={<div className="min-h-dvh" />}><Classes /></Suspense>;
@@ -62,33 +61,24 @@ function Classes() {
           <Plus className="size-4" aria-hidden /> New class
         </Button>
       </div>}>
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-[1240px]">
         {termList.length > 1 && (
-          <div role="tablist" aria-label="Term" className="mb-4 flex gap-1 overflow-x-auto">
-            {termList.map(t => (
-              <button key={t.id} role="tab" aria-selected={t.id === term?.id} onClick={() => { setTermPick(t.id); select(null); }}
-                className={cn('shrink-0 rounded-full px-3 py-1.5 text-sm', t.id === term?.id ? 'bg-ink text-surface' : 'bg-surface-2 text-ink-2 hover:bg-surface-3')}>
-                {t.name}{t.current ? ' · now' : ''}
-              </button>
-            ))}
-          </div>
+          <ViewTabs label="Term" className="mb-6" value={term?.id ?? ''} onChange={id => { setTermPick(id); select(null); }}
+            options={termList.map(t => [t.id, `${t.name}${t.current ? ' · now' : ''}`] as [string, string])} />
         )}
-        <div className={cn('gap-5', selected ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,400px)]' : 'block')}>
-          <div className="min-w-0 space-y-4">
-            {rows.isLoading && [0,1].map(i => <Card key={i} className="p-4"><Skeleton className="h-24" /></Card>)}
+        <div className={cn('gap-x-10', selected ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:items-start' : 'block')}>
+          <div className="min-w-0 space-y-10">
+            {rows.isLoading && <div className="space-y-3">{[0,1,2].map(i => <Skeleton key={i} className="h-14" />)}</div>}
             {rows.error && <ErrorState error={rows.error} onRetry={() => rows.refetch()} />}
-            {rows.data?.length === 0 && <Card><EmptyState icon={<GraduationCap className="size-5" />}
-              title="No classes yet" body="Add a term, then create your first class." /></Card>}
+            {rows.data?.length === 0 && <EmptyState title="No classes yet" body="Add a term in Settings, then create your first class."
+              action={<Button variant="primary" onClick={() => setAdding(true)}>New class</Button>} />}
             {byDay.map(([day, list]) => (
-              <Card key={day}>
-                <div className="flex items-baseline gap-2 border-b border-line px-4 py-2.5">
-                  <h2 className="font-semibold">{DAYS[day]}</h2>
-                  <span className="ml-auto text-[12.5px] text-ink-3">{list.length} class{list.length === 1 ? '' : 'es'}</span>
-                </div>
+              <section key={day}>
+                <SectionHead title={DAYS[day]} meta={`${list.length} class${list.length === 1 ? '' : 'es'} · ${list.reduce((n, c) => n + c.enrolled, 0)} of ${list.reduce((n, c) => n + c.capacity, 0)} places`} />
                 <ul className="divide-y divide-line">
                   {list.map(c => <li key={c.id}><ClassLine c={c} active={selected === c.id} onSelect={() => select(c.id)} /></li>)}
                 </ul>
-              </Card>
+              </section>
             ))}
           </div>
           {selected && <ClassDetail id={selected} rows={rows.data ?? []} onClose={() => select(null)} />}
@@ -104,31 +94,26 @@ function ClassLine({ c, active, onSelect }: { c: C.ClassRow; active: boolean; on
   const full = c.enrolled >= c.capacity;
   const nearly = !full && c.enrolled >= c.capacity - 2;
   return (
-    <button onClick={onSelect}
-      className={cn('flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-surface-2', active && 'bg-accent-soft/50')}>
-      <span className="tnum w-[52px] shrink-0 text-sm font-semibold">{c.start_time.slice(0,5)}</span>
-      <span className="min-w-0 flex-1">
-        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="font-medium">{c.name}</span>
-          {c.style && <Badge tone={TONES[c.colour ?? ''] ?? 'neutral'}>{c.style}</Badge>}
-          {full && <Badge tone="caution">Full</Badge>}
-          {c.waiting > 0 && <Badge tone="critical">{c.waiting} waiting</Badge>}
+    <button onClick={onSelect} aria-current={active || undefined}
+      className={cn('grid w-full grid-cols-[4.25rem_minmax(0,1fr)_auto] items-center gap-x-4 px-1 py-3 text-left hover:bg-surface-2/60 sm:grid-cols-[4.25rem_minmax(0,1fr)_auto_5rem]',
+        active && 'bg-surface-2 shadow-[inset_3px_0_0_var(--color-accent)]')}>
+      <span className="font-display text-[19px] leading-none tnum">{c.start_time.slice(0,5)}</span>
+      <span className="min-w-0">
+        <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+          <span className="truncate font-semibold">{c.name}</span>
+          {c.style && <StyleMark colour={c.colour} name={c.style} className="text-[13px] text-ink-3" />}
         </span>
-        <span className="mt-0.5 block truncate text-[12.5px] text-ink-2">
-          {[c.teacher, c.room, c.age_min != null ? `Ages ${c.age_min}–${c.age_max}` : null]
+        <span className="mt-0.5 block truncate text-[13px] text-ink-3">
+          {[c.teacher, c.room, c.age_min != null ? `Ages ${c.age_max != null ? `${c.age_min}–${c.age_max}` : `${c.age_min}+`}` : null]
             .filter(Boolean).join(' · ')}
         </span>
       </span>
-      {/* Capacity is shown as a number and a bar: the bar alone would be
-          colour-only information. */}
-      <span className="w-24 shrink-0 text-right">
-        <span className={cn('tnum text-[13px] font-medium', full ? 'text-caution' : nearly ? 'text-caution' : 'text-ink-2')}>
-          {c.enrolled}/{c.capacity}
-        </span>
-        <span aria-hidden className="mt-1 block h-1.5 overflow-hidden rounded-full bg-surface-3">
-          <span className={cn('block h-full rounded-full', full ? 'bg-caution' : 'bg-accent')}
-                style={{ width: `${Math.min(100, c.pct ?? 0)}%` }} />
-        </span>
+      {/* Capacity as beats and a number: never the meter alone. */}
+      <Beats value={c.enrolled} max={c.capacity} tone={full || nearly ? 'caution' : 'accent'} label={`${c.enrolled} of ${c.capacity} places`} className="hidden sm:inline-flex" />
+      <span className="text-right leading-tight">
+        <span className={cn('block text-[13.5px] tnum', full || nearly ? 'font-semibold text-caution' : 'text-ink-2')}>{c.enrolled}/{c.capacity}</span>
+        {c.waiting > 0 ? <span className="block text-[12px] font-semibold text-critical">{c.waiting} waiting</span>
+          : full ? <span className="block text-[12px] text-caution">Full</span> : null}
       </span>
     </button>
   );
@@ -159,65 +144,41 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
           <DetailSection title="Class">
             <KeyValue rows={[
               ['Teacher', c.teacher], ['Where', [c.location, c.room].filter(Boolean).join(' · ')],
-              ['Ages', c.age_min != null ? `${c.age_min}–${c.age_max}` : '—'],
+              ['Ages', c.age_min != null ? (c.age_max != null ? `${c.age_min}–${c.age_max}` : `${c.age_min} and over`) : '—'],
               ['Price', `${money(c.price_minor)} per term`],
               ['Places', `${c.enrolled} of ${c.capacity}`],
               ['Sessions left', `${c.sessions_left}`],
               ['Trials', c.trials_enabled ? 'Open for trials' : 'Not taking trials'],
             ]} />
-          </DetailSection>
-
-          <DetailSection title="Setup">
-            <Button className="w-full" onClick={() => setEditing(true)}>
-              <Pencil className="size-4" aria-hidden /> Edit this class
-            </Button>
-            <Button className="mt-2 w-full" variant="ghost" onClick={() => setDuplicating(true)}>
-              <Copy className="size-4" aria-hidden /> Duplicate
-            </Button>
-            <p className="mt-1.5 text-[12.5px] text-ink-3">
-              Day, time, room, teacher, places and price. Moving the class rebuilds
-              the sessions nobody has registered yet.
-            </p>
-          </DetailSection>
-
-          <DetailSection title="Material">
             <Link href={`/class/?id=${c.id}`}
-                  className="flex items-center gap-2.5 rounded-[var(--radius-md)] border border-line px-3 py-2.5
-                             text-sm font-medium hover:bg-surface-2">
-              <FolderOpen className="size-4 text-ink-3" aria-hidden />
+                  className="mt-1 flex min-h-[44px] items-center gap-2 border-t border-line text-[14px] font-semibold text-accent-text hover:underline">
               Videos, music and notes for this class
-              <ChevronRight className="ml-auto size-4 text-ink-3" aria-hidden />
+              <ChevronRight className="ml-auto size-4" aria-hidden />
             </Link>
           </DetailSection>
 
-          <DetailSection title="Places">
-            <div className="flex gap-2">
-              <Button className="flex-1" onClick={() => setEnrolling(true)}>
-                <UserPlus className="size-4" aria-hidden /> {full ? 'Waiting list' : 'Enrol'}
-              </Button>
-              <Button className="flex-1" onClick={() => setTrialling(true)}>
-                <Sparkles className="size-4" aria-hidden /> Book a trial
-              </Button>
-            </div>
-            {full && (
-              <p className="mt-1.5 text-[12.5px] text-caution">
-                Full. New names join the waiting list and are offered the next place automatically.
-              </p>
-            )}
-          </DetailSection>
+          <div className="mb-7 flex flex-wrap gap-2">
+            <Button variant="primary" onClick={() => setEnrolling(true)}>{full ? 'Add to waiting list' : 'Enrol a student'}</Button>
+            <Button onClick={() => setTrialling(true)}>Book a trial</Button>
+            <Button variant="ghost" onClick={() => setEditing(true)}><Pencil className="size-4" aria-hidden /> Edit</Button>
+            <Button variant="ghost" onClick={() => setDuplicating(true)}><Copy className="size-4" aria-hidden /> Duplicate</Button>
+          </div>
+          {full && (
+            <p className="-mt-4 mb-7 text-[13px] text-ink-2"><Word tone="caution">Full</Word> New names join the waiting list and are offered the next place automatically.</p>
+          )}
 
           <DetailSection title={`Register (${roster.data?.length ?? 0})`}>
             {roster.isLoading && <Skeleton className="h-20" />}
             {roster.data?.length === 0 && <p className="text-sm text-ink-3">Nobody enrolled yet.</p>}
-            <ul className="divide-y divide-line rounded-[var(--radius-md)] border border-line">
+            <ul className="divide-y divide-line">
               {roster.data?.map(s => (
-                <li key={s.id} className="flex items-center gap-2 px-3 py-2">
+                <li key={s.id} className="flex items-center gap-2 py-1.5">
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-1.5">
-                      <span className="truncate text-sm font-medium">{s.first_name} {s.last_name}</span>
-                      {s.has_alert && <AlertTriangle className="size-3.5 shrink-0 text-critical" aria-label="Medical alert" />}
+                      <span className="truncate text-[14px] font-medium">{s.first_name} {s.last_name}</span>
+                      {s.has_alert && <span className="shrink-0 text-[12px] font-semibold text-critical">Medical</span>}
                     </span>
-                    <span className="block truncate text-[12px] text-ink-3">{ageFrom(s.date_of_birth)} · {s.family_name}</span>
+                    <span className="block truncate text-[12.5px] text-ink-3">{ageFrom(s.date_of_birth)} · {s.family_name}</span>
                   </span>
                   {s.attendance_pct != null && (
                     <span className={cn('tnum shrink-0 text-[12.5px]',
@@ -236,22 +197,20 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
 
           {(waitlist.data?.length ?? 0) > 0 && (
             <DetailSection title={`Waiting list (${waitlist.data!.length})`}>
-              <ol className="divide-y divide-line rounded-[var(--radius-md)] border border-line">
+              <ol className="divide-y divide-line">
                 {waitlist.data!.map(w => (
-                  <li key={w.id} className="px-3 py-2">
+                  <li key={w.id} className="py-2">
                     <div className="flex items-center gap-3">
-                      <span className="tnum grid size-6 shrink-0 place-items-center rounded-full bg-surface-2 text-[12px] font-semibold text-ink-2">
-                        {w.position}
-                      </span>
-                      <span className="min-w-0 flex-1 truncate text-sm">{w.first_name} {w.last_name}</span>
-                      {w.status === 'offered' && <Badge tone="info">Offered</Badge>}
+                      <span className="w-6 shrink-0 font-display text-[17px] tnum">{w.position}</span>
+                      <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{w.first_name} {w.last_name}</span>
+                      {w.status === 'offered' && <Word>Offered</Word>}
                       <span className="shrink-0 truncate text-[12px] text-ink-3">{w.family_name}</span>
                     </div>
                     <WaitlistActions entry={w} />
                   </li>
                 ))}
               </ol>
-              <p className="mt-2 text-[12.5px] text-ink-3">
+              <p className="mt-2 text-[13px] text-ink-3">
                 When a place frees up, the family at position 1 is offered it first.
               </p>
             </DetailSection>
