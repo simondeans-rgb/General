@@ -5,19 +5,19 @@ import { StudentExams } from '@/components/app/exams';
 import { PracticeLog } from '@/components/app/practice';
 import Link from 'next/link';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, CameraOff, Camera, Check, CalendarOff, MessageSquareHeart, Trophy, HelpCircle, ChevronRight, Sparkles, UserPlus } from 'lucide-react';
+import { ArrowRight, CalendarOff, Sparkles, UserPlus } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import {
-  Badge, Button, Card, CardHeader, EmptyState, Field, Input, Select, Skeleton, ErrorState,
+  Beats, Button, EmptyState, Field, Input, Skeleton, ErrorState,
 } from '@/components/ui';
 import * as F from '@/lib/repos/family';
 import { YourDetails, EmergencyContacts } from '@/components/app/family-details';
 import { ChildClassesSheet, AddChildSheet } from '@/components/app/family-classes';
 import { DropIns } from '@/components/app/drop-ins';
-import { ageFrom, dateShort, initials, time, dateLong, dayRange } from '@/lib/format';
+import { ageFrom, dateShort } from '@/lib/format';
 
 type Child = {
   id: string; first_name: string; last_name: string; date_of_birth: string;
@@ -32,118 +32,97 @@ export default function FamilyChildren() {
   const [adding, setAdding] = React.useState(false);
 
   return (
-    <Shell title="Your family" allow={['guardian']}>
-      <div className="mx-auto max-w-lg space-y-4">
-        {children.isLoading && <Card className="p-4"><Skeleton className="h-24" /></Card>}
-        {children.error && <ErrorState error={children.error} />}
-        {children.data?.length === 0 && <Card><EmptyState title="No children on your account yet" /></Card>}
+    <Shell title="Your family" allow={['guardian']}
+      actions={<Button size="sm" onClick={() => setAdding(true)}><UserPlus className="size-4" aria-hidden /> Add a child</Button>}>
+      <div className="mx-auto max-w-2xl space-y-12">
+        {children.isLoading && <Skeleton className="h-40" />}
+        {children.error != null && <ErrorState error={children.error} />}
+        {children.data?.length === 0 && <EmptyState title="No children on your account yet"
+          body="Add a child and the studio will set them up." action={<Button onClick={() => setAdding(true)}>Add a child</Button>} />}
 
         {children.data?.map(c => (
-          <Card key={c.id}>
-            <div className="flex items-center gap-3 p-4">
-              <span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-full bg-accent-soft text-[15px] font-semibold text-accent-ink">
-                {initials(c.first_name, c.last_name)}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[17px] font-semibold tracking-tight">{c.first_name} {c.last_name}</p>
-                <p className="text-[13px] text-ink-2">{ageFrom(c.date_of_birth)} years old · born {dateShort(c.date_of_birth)}</p>
-              </div>
+          <section key={c.id} aria-labelledby={`child-${c.id}`}>
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b-2 border-ink pb-2">
+              <h2 id={`child-${c.id}`} className="font-display text-[24px] leading-none">{c.first_name} {c.last_name}</h2>
+              <span className="text-[13px] text-ink-3">{ageFrom(c.date_of_birth)} · born {dateShort(c.date_of_birth)}</span>
             </div>
-            <dl className="space-y-2.5 border-t border-line px-4 py-3 text-sm">
-              <div className="flex gap-3">
-                <dt className="w-28 shrink-0 text-ink-3">Classes</dt>
-                <dd className="flex-1">{c.class_names ?? <span className="text-ink-3">Not enrolled yet</span>}</dd>
-              </div>
+            <dl className="divide-y divide-line text-[14.5px]">
+              <Row label="Classes">{c.class_names ?? <span className="text-ink-3">Not in a class yet</span>}</Row>
               {c.attendance_pct != null && (
-                <div className="flex gap-3">
-                  <dt className="w-28 shrink-0 text-ink-3">Attendance</dt>
-                  <dd className="flex-1">
-                    <Badge tone={c.attendance_pct >= 85 ? 'positive' : c.attendance_pct >= 70 ? 'caution' : 'critical'}>
-                      {c.attendance_pct}%
-                    </Badge>
-                  </dd>
-                </div>
+                <Row label="Attendance">
+                  <span className="flex items-center gap-2.5">
+                    <span className="tnum font-semibold">{c.attendance_pct}%</span>
+                    <Beats value={c.attendance_pct} max={100} tone="ink" label={`Attended ${c.attendance_pct}% of classes`} />
+                  </span>
+                </Row>
               )}
-              <div className="flex gap-3">
-                <dt className="w-28 shrink-0 text-ink-3">Photos</dt>
-                <dd className="flex-1">
-                  {c.photo_consent === false
-                    ? <span className="inline-flex items-center gap-1.5 font-medium text-critical">
-                        <CameraOff className="size-3.5" aria-hidden /> Not permitted</span>
-                    : c.photo_consent
-                      ? <span className="inline-flex items-center gap-1.5 text-ink-2">
-                          <Camera className="size-3.5" aria-hidden /> Permitted</span>
-                      : <span className="text-ink-3">Not recorded</span>}
-                </dd>
-              </div>
+              <Row label="Photos">
+                {c.photo_consent === false
+                  ? <span className="font-semibold">Not permitted</span>
+                  : c.photo_consent ? <span>Permitted</span>
+                    : <span className="text-ink-3">Not recorded</span>}
+              </Row>
               {c.has_alert && (
-                <div className="flex gap-3">
-                  <dt className="w-28 shrink-0 text-ink-3">Medical</dt>
-                  <dd className="flex-1">
-                    <span className="inline-flex items-center gap-1.5 font-medium text-critical">
-                      <AlertTriangle className="size-3.5" aria-hidden /> {c.allergies ?? 'On record'}
-                    </span>
-                    <p className="mt-1 text-[12.5px] text-ink-3">
-                      Teachers see allergies and the emergency plan only — never the full record.
-                      To change any of it,{' '}
-                      <Link href="/family/enquiries" className="text-accent-text underline">
-                        tell the studio</Link>, so there is a record of who changed what.
-                    </p>
-                  </dd>
-                </div>
+                <Row label="Medical">
+                  <span className="font-semibold text-critical">{c.allergies ?? 'On record'}</span>
+                  <p className="mt-1 text-[13px] text-ink-3">
+                    Teachers see allergies and the emergency plan only, never the full record.
+                    To change any of it,{' '}
+                    <Link href="/family/enquiries" className="font-semibold text-accent-text underline">tell the studio</Link>,
+                    so there is a record of who changed what.
+                  </p>
+                </Row>
               )}
-              <div className="flex gap-3">
-                <dt className="w-28 shrink-0 text-ink-3">Exams</dt>
-                <dd className="min-w-0 flex-1"><StudentExams studentId={c.id} /></dd>
-              </div>
+              <Row label="Exams"><StudentExams studentId={c.id} /></Row>
+              <EmergencyContacts studentId={c.id} name={c.first_name} />
             </dl>
-            <EmergencyContacts studentId={c.id} name={c.first_name} />
-            <div className="border-t border-line"><PracticeLog studentId={c.id} who={c.first_name} bare /></div>
-            <div className="flex flex-wrap gap-2 border-t border-line p-3">
-              <Button size="sm" variant="primary" onClick={() => setBrowsing(c)}>
+            <div className="flex flex-wrap gap-2 border-t border-line py-3">
+              <Button onClick={() => setBrowsing(c)}>
                 <Sparkles className="size-4" aria-hidden /> Classes and trials
               </Button>
-              <Button size="sm" onClick={() => setReporting(c)}>
+              <Button onClick={() => setReporting(c)}>
                 <CalendarOff className="size-4" aria-hidden /> Report an absence
               </Button>
             </div>
-          </Card>
+            <div className="pt-4"><PracticeLog studentId={c.id} who={c.first_name} bare /></div>
+          </section>
         ))}
 
         {children.data && <DropIns children={children.data} />}
 
-        <Button className="w-full" onClick={() => setAdding(true)}>
-          <UserPlus className="size-4" aria-hidden /> Add another child
-        </Button>
-
         <YourDetails />
 
         {/* Everything about the family that is not a child, one tap away. */}
-        <Card className="divide-y divide-line overflow-hidden">
+        <nav aria-label="More" className="divide-y divide-line border-t-2 border-ink">
           {[
-            ['/family/feedback', MessageSquareHeart, 'Teacher feedback', 'Notes and progress from class'],
-            ['/family/events', Trophy, 'Shows and events', 'What is coming up, and entries'],
-            ['/family/enquiries', HelpCircle, 'Requests', 'Private lessons, questions, medical updates'],
-          ].map(([href, Icon, title, body]) => {
-            const I = Icon as React.ElementType;
-            return (
-              <Link key={href as string} href={href as string} className="flex min-h-[56px] items-center gap-3 px-4 py-3 hover:bg-surface-2">
-                <I className="size-[18px] shrink-0 text-accent-text" aria-hidden />
-                <span className="min-w-0 flex-1">
-                  <span className="block font-medium">{title as string}</span>
-                  <span className="block text-[13px] text-ink-2">{body as string}</span>
-                </span>
-                <ChevronRight className="size-4 text-ink-3" aria-hidden />
-              </Link>
-            );
-          })}
-        </Card>
+            ['/family/feedback', 'Teacher feedback', 'Notes, skills and milestones'],
+            ['/family/events', 'Shows and events', 'What’s coming up, and entries'],
+            ['/family/enquiries', 'Requests', 'Private lessons, questions, medical updates'],
+          ].map(([href, title, body]) => (
+            <Link key={href} href={href!} className="group flex min-h-[56px] items-center gap-3 py-3">
+              <span className="min-w-0 flex-1">
+                <span className="block font-semibold">{title}</span>
+                <span className="block text-[13px] text-ink-3">{body}</span>
+              </span>
+              <ArrowRight className="size-4 text-ink-3 group-hover:text-ink" aria-hidden />
+            </Link>
+          ))}
+        </nav>
       </div>
 
       {reporting && <AbsenceDialog child={reporting} onClose={() => setReporting(null)} />}
       {browsing && <ChildClassesSheet child={browsing} onClose={() => setBrowsing(null)} />}
       {adding && <AddChildSheet onClose={() => setAdding(false)} />}
     </Shell>
+  );
+}
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-4 py-3">
+      <dt className="text-ink-3">{label}</dt>
+      <dd className="min-w-0">{children}</dd>
+    </div>
   );
 }
 
@@ -171,11 +150,9 @@ function AbsenceDialog({ child, onClose }: { child: Child; onClose: () => void }
            onClick={e => e.stopPropagation()}
            className="max-h-[88dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-[var(--radius-xl)] border border-line bg-surface p-4 pb-safe shadow-lg sm:rounded-[var(--radius-xl)]">
         {done ? (
-          <div className="py-4 text-center">
-            <span className="mx-auto mb-3 grid size-11 place-items-center rounded-full bg-positive-soft text-positive" aria-hidden>
-              <Check className="size-5" />
-            </span>
-            <p id="absence-title" className="font-medium">The studio has been told</p>
+          <div className="py-2">
+            <p className="font-display text-[22px] uppercase leading-none tracking-[-0.01em] text-positive [font-stretch:80%]">Sent</p>
+            <p id="absence-title" className="mt-1.5 font-semibold">The studio has been told</p>
             <p className="mt-1 text-sm text-ink-2">
               Your message is in {child.first_name}&rsquo;s file. The teacher will see it before class.
             </p>
