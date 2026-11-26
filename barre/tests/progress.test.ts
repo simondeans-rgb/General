@@ -29,7 +29,7 @@ describe('skill frameworks (R-020)', () => {
       const kid = await amir(svc);
       const tap = await skillFor(svc, 'Tap');
       await svc(`insert into skill_assessment (studio_id, student_id, skill, skill_id, level, assessed_on)
-                 select studio_id, id, 'Shuffles', $2, 'developing', current_date - 30 from student where id = $1`, [kid.id, tap]);
+                 select studio_id, id, 'Shuffles', $2, 'developing', current_date - 1 from student where id = $1`, [kid.id, tap]);
       await q(`select app.record_skill($1, $2, 'secure')`, [kid.id, tap]);
       expect((await q(`select app.record_skill($1, $2, 'secure') id`, [kid.id, tap]))[0].id).toBeNull();   // no-op repeat
       const [row] = (await q(`select * from app.student_skills($1)`, [kid.id])).filter((r: any) => r.skill_id === tap);
