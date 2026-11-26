@@ -32,7 +32,7 @@ const STATUS: Record<string, string> = {
 };
 
 /**
- * The school's own account: what it is on, who can get in, whether Sanaa
+ * The school's own account: what it is on, who can get in, whether Swayvo
  * support may look, and its data to take away. Owners and administrators.
  */
 export default function AccountPage() {
@@ -88,7 +88,7 @@ function PlanCard({ acct }: { acct?: A.AccountRow }) {
             </div>
           );
         })}
-        <p className="text-[12.5px] text-ink-3">To change plan, contact Sanaa. Nothing is ever deleted for being over a limit — you just cannot add more.</p>
+        <p className="text-[12.5px] text-ink-3">To change plan, contact Swayvo. Nothing is ever deleted for being over a limit — you just cannot add more.</p>
       </div>
     </Card>
   );
@@ -288,7 +288,7 @@ function InviteSheet({ studioId, isOwner, onClose }: { studioId: string; isOwner
   );
 }
 
-// ── Sanaa support ────────────────────────────────────────────────────────
+// ── Swayvo support ────────────────────────────────────────────────────────
 function SupportCard({ studioId }: { studioId: string }) {
   const { session } = useSession();
   const qc = useQueryClient();
@@ -308,10 +308,10 @@ function SupportCard({ studioId }: { studioId: string }) {
 
   return (
     <Card>
-      <CardHeader title="Sanaa support" subtitle="Let Sanaa’s team see your account when you need help" />
+      <CardHeader title="Swayvo support" subtitle="Let Swayvo’s team see your account when you need help" />
       <div className="space-y-3 p-4">
         <p className="text-sm text-ink-2">
-          Sanaa cannot see your families, children or money unless you allow it here. Access is read-only, ends when
+          Swayvo cannot see your families, children or money unless you allow it here. Access is read-only, ends when
           you say, and never includes health records. Every time support opens your account it is listed below.
         </p>
         {live ? (
@@ -375,7 +375,7 @@ function ExportCard({ name }: { name?: string }) {
   };
   return (
     <Card>
-      <CardHeader title="Your data" subtitle="Everything your school holds in Sanaa, in one file" />
+      <CardHeader title="Your data" subtitle="Everything your school holds in Swayvo, in one file" />
       <div className="flex flex-wrap items-center gap-3 p-4">
         <p className="min-w-0 flex-1 text-sm text-ink-2">
           Families, children, health and consent records, classes, registers, invoices, payments and messages — as JSON.

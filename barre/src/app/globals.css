@@ -1,100 +1,89 @@
 @import "tailwindcss";
 @import "@fontsource-variable/inter/index.css";
-@import "@fontsource-variable/fraunces/index.css";
 @import "@fontsource-variable/archivo/wdth.css";
 
 /* ==========================================================================
-   Sanaa design tokens
+   Swayvo design tokens — docs/brand/DESIGN-SYSTEM.md is the reference.
    --------------------------------------------------------------------------
-   Restrained on purpose. One accent, a warm-neutral canvas, and colour used
-   only where it carries meaning — dance style, status, or a number that needs
-   acting on. Everything else earns attention through spacing and weight.
+   Studio white grounds, white surfaces, ink type, and one blue thing per
+   screen. Colour carries meaning (the "now", a status, a dance style); it is
+   never decoration. Hierarchy comes from type, spacing and rules, not boxes.
+   A school's own colour replaces Count blue at runtime (lib/brand.ts).
    ========================================================================== */
 @theme {
-  /* Sanaa: eucalyptus, ivory and terracotta. The default for every school
-     until it picks its own, and Sanaa's own screens. */
-  --color-canvas:      #f6f2ea;
-  --color-surface:     #fffdf8;
-  --color-surface-2:   #efe9de;
-  --color-surface-3:   #e7dfd1;
+  --color-canvas:      #f4f5f8;   /* Studio white */
+  --color-surface:     #ffffff;
+  --color-surface-2:   #eef0f4;
+  --color-surface-3:   #e3e6ed;
 
-  --color-line:        #e4dbcc;
-  --color-line-strong: #d3c7b3;
+  --color-line:        #e2e4eb;
+  --color-line-strong: #c9cdd8;
 
-  --color-ink:         #14211e;
-  --color-ink-2:       #4e5a55;
-  --color-ink-3:       #5b645e;
-  --color-ink-invert:  #fffdf8;
+  --color-ink:         #121521;
+  --color-ink-2:       #3c4150;
+  --color-ink-3:       #5b6072;   /* 6.2:1 on white */
+  --color-ink-invert:  #ffffff;
 
-  --color-accent:      #0b3b34;
-  --color-accent-hover:#082d28;
-  --color-accent-soft: #e2ebe7;
-  --color-accent-ink:  #0b3b34;
-  /* A school's brand replaces the accent at runtime (lib/brand.ts). These
-     three keep it readable whatever colour it is: text ON the accent, the
-     accent AS text on white, and the accent as a line or outline. */
+  --color-accent:      #2638f0;   /* Count blue */
+  --color-accent-hover:#1a27b8;
+  --color-accent-soft: #e8ebfe;
+  --color-accent-ink:  #1a27b8;
   --color-on-accent:   #ffffff;
-  --color-accent-text: #0b3b34;
-  --color-accent-line: #0b3b34;
+  --color-accent-text: #2638f0;
+  --color-accent-line: #2638f0;
+  /* Rosin peach: the downbeat. Marks and celebration only, never text on white. */
+  --color-secondary:   #ffb089;
+  --color-peach:       #ffb089;
+  --color-peach-soft:  #ffe9dd;
 
-  --color-positive:      #0b7a55;
-  --color-positive-soft: #e3f6ee;
-  --color-caution:       #9a5b06;
-  --color-caution-soft:  #fdf1de;
-  --color-critical:      #bf2a2a;
-  --color-critical-soft: #fdecec;
-  --color-info:          #1d5fd0;
-  --color-info-soft:     #e8f0fe;
+  --color-positive:      #0e7a4a;
+  --color-positive-soft: #e5f4ec;
+  --color-caution:       #9a5a00;
+  --color-caution-soft:  #fff2dc;
+  --color-critical:      #c42339;
+  --color-critical-soft: #fde8eb;
+  --color-info:          #0a6a88;
+  --color-info-soft:     #e3f2f7;
 
-  /* Dance-style hues. Chosen to stay distinguishable at 10px on a timetable
-     and to pass contrast as text on their own soft background. */
-  --color-violet:  #6a4bd6;  --color-violet-soft:  #efebfd;
+  /* Dance styles: a 4px mark beside the style's name, never colour alone.
+     Text versions pass AA on their soft ground. */
+  --color-violet:  #5b3fc4;  --color-violet-soft:  #efebfd;
   --color-amber:   #8a5a0c;  --color-amber-soft:   #fdf0dc;
-  --color-teal:    #0d7377;  --color-teal-soft:    #e0f4f4;
-  --color-rose:    #b03060;  --color-rose-soft:    #fdeaf1;
-  --color-indigo:  #2f4bb5;  --color-indigo-soft:  #e9edfb;
+  --color-teal:    #0b6e66;  --color-teal-soft:    #e0f4f1;
+  --color-rose:    #a8305c;  --color-rose-soft:    #fdeaf1;
+  --color-indigo:  #3341c9;  --color-indigo-soft:  #e9ebfd;
   --color-lime:    #4a7016;  --color-lime-soft:    #eef6df;
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 14px;
 
-  --shadow-xs: 0 1px 2px rgb(22 22 28 / 0.05);
-  --shadow-sm: 0 1px 3px rgb(22 22 28 / 0.06), 0 1px 2px rgb(22 22 28 / 0.04);
-  --shadow-md: 0 4px 16px rgb(22 22 28 / 0.07), 0 1px 3px rgb(22 22 28 / 0.05);
-  --shadow-lg: 0 12px 40px rgb(22 22 28 / 0.12), 0 2px 8px rgb(22 22 28 / 0.06);
+  /* Shadows only for things that float: menus, sheets, dialogs. */
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: 0 8px 24px rgb(18 21 33 / 0.10), 0 1px 3px rgb(18 21 33 / 0.06);
+  --shadow-lg: 0 18px 48px rgb(18 21 33 / 0.16), 0 2px 8px rgb(18 21 33 / 0.06);
 
-  --font-sans: "Inter Variable", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
-               Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
-  /* Page titles and big numbers. Each school theme brings its own. */
-  --font-display: "Fraunces Variable", "Fraunces", Georgia, "Times New Roman", serif;
-  /* A second brand colour, for gradients and glow (school themes). */
-  --color-secondary: #c86a4f;
+  --font-sans: "Inter Variable", Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-display: "Archivo Variable", Archivo, "Arial Black", "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Motion: one beat. Lists step in on the count, nothing slower than 2 beats. */
+  --beat: 120ms;
+  --ease-out: cubic-bezier(.2, .7, .2, 1);
 }
 
 /* ==========================================================================
-   School themes (lib/theme.ts). Set on <html data-theme> for a school's own
-   people; Sanaa's console keeps the base above. The school's colours are
-   applied on top as inline variables (lib/brand.ts).
+   School styles (lib/theme.ts). Classic is the light Swayvo look, Urban the
+   dark one. The school's own colours go on top as inline variables.
    ========================================================================== */
-[data-theme="classic"] {
-  --color-canvas: #f6f2ea; --color-surface: #fffdf8; --color-surface-2: #efe9de; --color-surface-3: #e7dfd1;
-  --color-line: #e4dbcc; --color-line-strong: #d3c7b3;
-  --color-ink: #14211e; --color-ink-2: #4e5a55; --color-ink-3: #5b645e;
-  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 18px; --radius-xl: 26px;
-  --shadow-xs: 0 1px 2px rgb(40 50 40 / 0.05);
-  --shadow-sm: 0 2px 6px rgb(40 50 40 / 0.06);
-  --shadow-md: 0 8px 24px rgb(40 50 40 / 0.08);
-  --shadow-lg: 0 18px 50px rgb(40 50 40 / 0.14);
-  --font-display: "Fraunces Variable", "Fraunces", Georgia, "Times New Roman", serif;
-}
+[data-theme="classic"] { --color-ink: #121521; }
 [data-theme="urban"] {
   color-scheme: dark;
-  --color-canvas: #0d0a1c; --color-surface: #18122f; --color-surface-2: #211a40; --color-surface-3: #2c2452;
-  --color-line: #2a2350; --color-line-strong: #3b3270;
-  --color-ink: #f6f4ff; --color-ink-2: #c3bce3; --color-ink-3: #9a92c4; --color-ink-invert: #0d0a1c;
+  --color-canvas: #0b0d16; --color-surface: #141826; --color-surface-2: #1c2132; --color-surface-3: #262c40;
+  --color-line: #262c3e; --color-line-strong: #39405a;
+  --color-ink: #f3f4f8; --color-ink-2: #c6cad7; --color-ink-3: #9ea4b8; --color-ink-invert: #0b0d16;
   --color-positive: #4ade80; --color-positive-soft: #10301f;
   --color-caution: #fbbf24;  --color-caution-soft: #33270b;
   --color-critical: #fb7185; --color-critical-soft: #3a1220;
@@ -105,12 +94,9 @@
   --color-rose:   #f9a8d4; --color-rose-soft:   #3a1430;
   --color-indigo: #a5b4fc; --color-indigo-soft: #1c2150;
   --color-lime:   #bef264; --color-lime-soft:   #22300d;
-  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px; --radius-xl: 22px;
-  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.4);
-  --shadow-sm: 0 2px 8px rgb(0 0 0 / 0.35);
+  --color-peach-soft: #3a2418;
   --shadow-md: 0 8px 30px rgb(0 0 0 / 0.45);
   --shadow-lg: 0 20px 60px rgb(0 0 0 / 0.55);
-  --font-display: "Archivo Variable", "Archivo", "Arial Black", system-ui, sans-serif;
 }
 
 @layer base {
@@ -122,27 +108,15 @@
     font-family: var(--font-sans);
     font-size: 15px;
     line-height: 1.5;
+    font-feature-settings: "cv11", "ss01";   /* Inter: single-storey a off, open digits */
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
-  h1, h2, h3, h4 { letter-spacing: -0.018em; font-weight: 620; }
-  /* Page titles carry the theme's voice. */
-  [data-theme="classic"] h1 { font-family: var(--font-display); font-weight: 450; letter-spacing: -0.01em; font-size: 1.55em; line-height: 1.1; }
-  [data-theme="urban"] h1 { font-family: var(--font-display); font-weight: 800; font-stretch: 112%; letter-spacing: -0.01em; }
-  [data-theme="urban"] { color: var(--color-ink); }
-  [data-theme="classic"] { color: var(--color-ink); }
-  [data-theme="urban"] body {
-    background:
-      radial-gradient(900px 500px at 85% -10%, color-mix(in srgb, var(--color-secondary) 42%, transparent), transparent 70%),
-      radial-gradient(700px 420px at -10% 110%, color-mix(in srgb, var(--color-accent) 10%, transparent), transparent 70%),
-      var(--color-canvas);
-    background-attachment: fixed;
-  }
-  /* Numbers that sit in columns must not jiggle as they change. */
-  .tnum { font-variant-numeric: lining-nums tabular-nums; }
-  .font-display, .page-title { font-variant-numeric: lining-nums; }
+  h1, h2, h3, h4 { letter-spacing: -0.015em; font-weight: 650; text-wrap: balance; }
+  [data-theme] { color: var(--color-ink); }
 
-  /* One focus treatment everywhere, visible against every surface. */
+  .tnum { font-variant-numeric: lining-nums tabular-nums; }
+
   :where(a, button, input, select, textarea, [tabindex]):focus-visible {
     outline: 2px solid var(--color-accent-line);
     outline-offset: 2px;
@@ -152,59 +126,47 @@
 }
 
 @layer utilities {
-  .sanaa-on-dark { display: none; }
-  [data-theme="urban"] .sanaa-on-dark { display: inline; }
-  [data-theme="urban"] .sanaa-on-light { display: none; }
-  .font-display { font-family: var(--font-display); }
-  /* Page titles and headline numbers carry each theme's voice. */
-  .page-title { font-size: 17px; font-weight: 600; line-height: 1.25; }
-  @media (min-width: 1024px) { .page-title { font-size: 19px; } }
-  [data-theme="classic"] .page-title { font-family: var(--font-display); font-weight: 450; font-optical-sizing: auto; font-size: 21px; line-height: 1.1; letter-spacing: -0.005em; }
-  @media (min-width: 1024px) { [data-theme="classic"] .page-title { font-size: 30px; } }
-  [data-theme="urban"] .page-title { font-family: var(--font-display); font-weight: 800; font-stretch: 115%; font-size: 18px; }
-  @media (min-width: 1024px) { [data-theme="urban"] .page-title { font-size: 22px; } }
-  [data-theme="classic"] .stat-number { font-family: var(--font-display); font-weight: 450; letter-spacing: 0; }
-  [data-theme="urban"] .stat-number { font-family: var(--font-display); font-weight: 800; font-stretch: 112%; }
-  [data-theme="urban"] .font-display { font-weight: 800; font-stretch: 112%; }
-  /* Urban cards are glass on the glow; Classic cards float on ivory. */
-  [data-theme="urban"] .card { background: color-mix(in srgb, var(--color-surface) 84%, transparent); backdrop-filter: blur(14px);
-    border-color: color-mix(in srgb, var(--color-secondary) 22%, var(--color-line)); }
-  [data-theme="classic"] .card { box-shadow: var(--shadow-sm); border-color: transparent; }
-  .theme-hero {
-    background: linear-gradient(135deg, var(--color-accent), var(--color-secondary));
-    color: var(--color-on-accent);
-  }
-  .card {
-    background: var(--color-surface);
-    border: 1px solid var(--color-line);
-    border-radius: var(--radius-lg);
-  }
-  /* Respect a reduced-motion preference rather than animating regardless. */
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-      animation-duration: 0.01ms !important;
-      transition-duration: 0.01ms !important;
-    }
-  }
-  .skeleton {
-    background: linear-gradient(90deg,
-      var(--color-surface-2) 25%, var(--color-surface-3) 37%, var(--color-surface-2) 63%);
-    background-size: 400% 100%;
-    animation: shimmer 1.4s ease-in-out infinite;
-    border-radius: var(--radius-sm);
-  }
-  @keyframes shimmer { 0% { background-position: 100% 50% } 100% { background-position: 0 50% } }
+  /* The Swayvo logo shows in ink on light styles, white on dark. */
+  .swayvo-on-dark { display: none; }
+  [data-theme="urban"] .swayvo-on-dark { display: inline; }
+  [data-theme="urban"] .swayvo-on-light { display: none; }
 
-  /* Safe-area padding so the parent app's bottom bar clears the home indicator. */
+  /* Display type: Archivo. Expanded for headlines and big numbers; normal
+     width in lists so long class names fit. */
+  .font-display { font-family: var(--font-display); font-weight: 800; font-stretch: 112%; letter-spacing: -0.01em; font-variant-numeric: lining-nums tabular-nums; }
+  .display-xl { font-family: var(--font-display); font-weight: 850; font-stretch: 125%; letter-spacing: -0.025em; line-height: 0.95; font-variant-numeric: lining-nums tabular-nums; }
+  .page-title { font-family: var(--font-display); font-weight: 800; font-stretch: 112%; font-size: 20px; line-height: 1.1; letter-spacing: -0.015em; }
+  @media (min-width: 1024px) { .page-title { font-size: 26px; } }
+  .stat-number { font-family: var(--font-display); font-weight: 800; font-stretch: 112%; letter-spacing: -0.01em; font-variant-numeric: lining-nums tabular-nums; }
+  /* Section headings inside a screen: sentence case, ink, not shouting. */
+  .section-title { font-size: 15px; font-weight: 650; letter-spacing: -0.01em; color: var(--color-ink); }
+  /* Small printed labels (Press notices, column heads). */
+  .label { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-ink-3); }
+
+  /* A surface: white, one hairline, small radius, no shadow. */
+  .card { background: var(--color-surface); border: 1px solid var(--color-line); border-radius: var(--radius-lg); }
+
+  /* School brand previews (Account → Your brand). */
+  .theme-hero { background: var(--color-accent); color: var(--color-on-accent); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+  .skeleton { background: var(--color-surface-2); border-radius: var(--radius-sm); animation: beat-pulse calc(var(--beat) * 8) ease-in-out infinite; }
+  @keyframes beat-pulse { 0%, 100% { opacity: 1 } 50% { opacity: .55 } }
+
+  /* On-the-count entrance: children step in, one beat apart. */
+  .on-count > * { animation: count-in calc(var(--beat) * 2) var(--ease-out) both; }
+  .on-count > *:nth-child(2) { animation-delay: var(--beat); }
+  .on-count > *:nth-child(3) { animation-delay: calc(var(--beat) * 2); }
+  .on-count > *:nth-child(4) { animation-delay: calc(var(--beat) * 3); }
+  @keyframes count-in { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
+
   .pb-safe { padding-bottom: max(0.5rem, env(safe-area-inset-bottom)); }
   .pt-safe { padding-top: max(0.5rem, env(safe-area-inset-top)); }
 }
 
-/* Phones (R-sizing). Unlayered, so it outranks any utility class:
-   · iOS zooms the whole page into any field whose text is under 16px, and
-     leaves it zoomed. Every field is 16px on touch screens.
-   · Nothing may make the page wider than the screen; a wide table or grid
-     scrolls inside its own box instead, so the page never zooms out. */
+/* Phones: fields at 16px so iOS never zooms; the page never scrolls sideways. */
 @media (pointer: coarse), (max-width: 767px) {
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea {
     font-size: 16px !important;

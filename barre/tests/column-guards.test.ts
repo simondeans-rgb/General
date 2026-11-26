@@ -6,7 +6,7 @@ import * as F from '../src/lib/repos/family';
 beforeAll(async () => { await rebuild(); }, 60_000);
 afterAll(async () => { await closeDb(); });
 
-describe('an owner cannot change what Sanaa manages (R-045)', () => {
+describe('an owner cannot change what Swayvo manages (R-045)', () => {
   const protectedCols: [string, string][] = [
     ['plan_id', `(select id from plan where code = 'academy')`], ['status', `'past_due'`], ['status_reason', `'x'`],
     ['trial_ends_on', `current_date + 365`], ['suspended_at', `now()`], ['cancelled_at', `now()`],
@@ -16,7 +16,7 @@ describe('an owner cannot change what Sanaa manages (R-045)', () => {
   for (const [col, val] of protectedCols) {
     it(`refuses ${col}`, async () => {
       await asUser(USERS.owner, async q => {
-        expect(await expectRejected(() => q(`update studio set ${col} = ${val} where id = $1`, [STUDIO_ID]))).toMatch(/managed by Sanaa/);
+        expect(await expectRejected(() => q(`update studio set ${col} = ${val} where id = $1`, [STUDIO_ID]))).toMatch(/managed by Swayvo/);
       });
     });
   }

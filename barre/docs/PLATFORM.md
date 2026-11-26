@@ -1,13 +1,13 @@
-# Running Sanaa for many schools
+# Running Swayvo for many schools
 
-Sanaa is sold to dance schools. Each school is a separate account (a
+Swayvo is sold to dance schools. Each school is a separate account (a
 `studio`) with its own people in five roles — owner, administrator, teacher,
-parent, student. Above them sits the **platform**: Sanaa's own staff, who set
+parent, student. Above them sits the **platform**: Swayvo's own staff, who set
 schools up, manage plans and status, and help when asked.
 
 ## Who can do what
 
-| | Sanaa staff | Owner | Administrator | Teacher | Parent / student |
+| | Swayvo staff | Owner | Administrator | Teacher | Parent / student |
 |---|---|---|---|---|---|
 | Create a school, invite its owner | ✓ | | | | |
 | Change a school's plan or status | ✓ | | | | |
@@ -17,16 +17,16 @@ schools up, manage plans and status, and help when asked.
 | Invite teachers, parents, students | | ✓ | ✓ | | |
 | Change staff roles | | ✓ | | | |
 | Remove someone's access | | ✓ | teachers, parents, students | | |
-| Let Sanaa support in | | ✓ | | | |
+| Let Swayvo support in | | ✓ | | | |
 | Export all the school's data | | ✓ | | | |
 | See inside a school | only with the owner's grant, read-only, no health records | ✓ | ✓ | own classes | own family |
 
 ## Each school's brand
 
 Every school shows its own **name, logo and colour** to its owner, staff,
-parents and students, with a small "powered by Sanaa" credit (under the
-name in the sidebar; at the foot of each page on a phone). Sanaa's own
-console keeps Sanaa's colours. The owner sets it under **Account → Your
+parents and students, with a small "powered by Swayvo" credit (under the
+name in the sidebar; at the foot of each page on a phone). Swayvo's own
+console keeps Swayvo's colours. The owner sets it under **Account → Your
 brand**, with a live preview; it is also a step in Setup.
 
 - **One colour, used exactly.** The school picks a preset or enters the exact
@@ -60,7 +60,7 @@ brand**, with a live preview; it is also a step in Setup.
 ## A school's Account page (`/account`)
 
 Plan and usage; everyone with access, grouped by role, with role changes and
-removal; pending invitations; Sanaa support access (owner only); export
+removal; pending invitations; Swayvo support access (owner only); export
 everything as JSON (owner only).
 
 ## Lifecycle
@@ -93,6 +93,6 @@ student's login stays off until a parent approves it.
   arrives, a failed subscription payment moves a school to `past_due` and,
   after a grace period, `suspended` — the statuses already exist.
 - **Sending invitation emails.** Links are copied by hand today.
-- **Self-serve sign-up.** Chosen against for now: Sanaa creates schools.
+- **Self-serve sign-up.** Chosen against for now: Swayvo creates schools.
 - **Automatic trial expiry.** Trials show their end date; moving an expired
   trial on is a manual decision in the console.

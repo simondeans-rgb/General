@@ -142,7 +142,7 @@ begin
   if u.email_digest and not urgent then return null; end if;      -- waits for the day's digest
   insert into outbound_message (studio_id, channel, to_name, to_address, subject, body, user_id, notification_id, not_before)
   values (new.studio_id, 'email', u.full_name, u.email, new.title,
-          coalesce(new.body, '') || E'\n\nOpen Sanaa to see more.', u.id, new.id,
+          coalesce(new.body, '') || E'\n\nOpen Swayvo to see more.', u.id, new.id,
           case when urgent then now() else app.after_quiet(u.id, new.studio_id) end);
   return null;
 end $$;
@@ -169,7 +169,7 @@ begin
   loop
     insert into outbound_message (studio_id, channel, to_name, to_address, subject, body, user_id, not_before)
     values (r.studio_id, 'email', r.full_name, r.email, r.school || ': ' || r.k || ' update' || case when r.k = 1 then '' else 's' end || ' today',
-            'Here is what is new today:' || E'\n\n' || r.lines || E'\n\nOpen Sanaa to see more. You chose one email a day; change this in your notification settings.',
+            'Here is what is new today:' || E'\n\n' || r.lines || E'\n\nOpen Swayvo to see more. You chose one email a day; change this in your notification settings.',
             r.id, app.after_quiet(r.id, r.studio_id));
     update user_account set last_digest_at = now() where id = r.id;
     n := n + 1;

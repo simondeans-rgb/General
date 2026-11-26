@@ -3,9 +3,9 @@ import './globals.css';
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
-  title: 'Sanaa — studio operations',
-  description: 'The operating system for running a dance studio.',
-  appleWebApp: { capable: true, title: 'Sanaa', statusBarStyle: 'default' },
+  title: 'Swayvo',
+  description: 'More time for dance. Classes, registers, payments, messages and progress for dance schools.',
+  appleWebApp: { capable: true, title: 'Swayvo', statusBarStyle: 'default' },
   icons: { apple: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/icons/apple-touch-icon.png` },
 };
 

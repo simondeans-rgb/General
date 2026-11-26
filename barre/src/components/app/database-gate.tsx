@@ -1,6 +1,6 @@
 'use client';
 
-import { SanaaLogo } from './sanaa';
+import { SwayvoLogo } from './swayvo';
 import * as React from 'react';
 import { getDb, onBootPhase, type BootPhase } from '@/lib/db/client';
 import { ErrorState, Spinner } from '@/components/ui';
@@ -36,7 +36,7 @@ export function DatabaseGate({ children }: { children: React.ReactNode }) {
       <div className="mx-auto max-w-lg p-6">
         <ErrorState error={error} onRetry={() => location.reload()} />
         <p className="mt-4 text-sm text-ink-2">
-          Sanaa runs Postgres inside your browser for this demo. If it cannot start,
+          Swayvo runs Postgres inside your browser for this demo. If it cannot start,
           it is usually private browsing or a browser that blocks storage.
         </p>
       </div>
@@ -47,7 +47,7 @@ export function DatabaseGate({ children }: { children: React.ReactNode }) {
     return (
       <div className="grid min-h-dvh place-items-center p-6">
         <div className="w-full max-w-xs text-center">
-          <SanaaLogo className="mx-auto mb-4 h-9" />
+          <SwayvoLogo className="mx-auto mb-4 h-9" />
           <p className="mt-1 flex items-center justify-center gap-2 text-sm text-ink-2">
             <Spinner className="size-3.5" /> {COPY[phase]}…
           </p>

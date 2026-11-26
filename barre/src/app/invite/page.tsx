@@ -7,7 +7,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { CheckCircle2, AlertTriangle } from 'lucide-react';
 import { readAs, runAs } from '@/lib/db/client';
 import { useSession, type Role } from '@/lib/auth/session';
-import { SanaaMark } from '@/components/app/sanaa';
+import { SwayvoIcon } from '@/components/app/swayvo';
 import { Button, Card, ErrorState, Field, Input, Skeleton } from '@/components/ui';
 
 type Preview = { studio_name: string; role: Role; email: string; full_name: string | null;
@@ -65,7 +65,7 @@ function Invite() {
   return (
     <main className="grid min-h-dvh place-items-center bg-surface-2 p-4">
       <Card className="w-full max-w-md p-6">
-        <SanaaMark className="mb-4 size-10" />
+        <SwayvoIcon className="mb-4 size-10" />
         {!token && <Problem text="This link is missing its invitation code. Open the link exactly as it was sent." />}
         {token && preview.isLoading && <Skeleton className="h-32" />}
         {preview.error && <ErrorState error={preview.error} />}

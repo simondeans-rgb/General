@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ShieldCheck, ArrowRight } from 'lucide-react';
 import { PERSONA_GROUPS, useSession, type Persona } from '@/lib/auth/session';
 import { ROLE_HOME } from '@/components/app/shell';
-import { SanaaLogo } from '@/components/app/sanaa';
+import { SwayvoLogo } from '@/components/app/swayvo';
 import { Badge } from '@/components/ui';
 
 const TONE = { owner: 'accent', admin: 'info', teacher: 'teal', guardian: 'rose', student: 'amber', platform: 'neutral' } as const;
@@ -16,14 +16,14 @@ export default function SignIn() {
 
   // Signed in already? Offer to carry on, but still show everyone — this page
   // used to bounce straight to the home screen, which hid the other people
-  // (including the Sanaa platform admin) unless you found the avatar menu.
+  // (including the Swayvo platform admin) unless you found the avatar menu.
 
   const choose = (p: Persona) => { signIn(p); router.push(ROLE_HOME[p.role]); };
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-2xl flex-col justify-center px-5 py-10">
       <div className="mb-8">
-        <h1><SanaaLogo className="h-12" /></h1>
+        <h1><SwayvoLogo className="h-12" /></h1>
         <p className="mt-3 text-[12px] font-medium uppercase tracking-[0.32em] text-ink-2">Bring creativity to life</p>
         <p className="mt-2 text-ink-2">Everything a dance school runs on — classes, families, payments and progress.</p>
       </div>

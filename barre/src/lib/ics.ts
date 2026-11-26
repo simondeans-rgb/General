@@ -23,9 +23,11 @@ function fold(line: string): string {
 }
 
 export function toIcs(name: string, events: CalEvent[], now = new Date()): string {
-  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Sanaa//Classes//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Swayvo//Classes//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
     `X-WR-CALNAME:${esc(name)}`];
   for (const e of events) {
+    // Event ids keep their original domain: changing them would duplicate every
+    // event in calendars that already subscribe.
     lines.push('BEGIN:VEVENT', `UID:${e.id}@sanaa.app`, `DTSTAMP:${stamp(now.toISOString())}`,
       `DTSTART:${stamp(e.starts_at)}`, `DTEND:${stamp(e.ends_at)}`, `SUMMARY:${esc(e.cancelled ? `Cancelled: ${e.title}` : e.title)}`,
       `STATUS:${e.cancelled ? 'CANCELLED' : 'CONFIRMED'}`);

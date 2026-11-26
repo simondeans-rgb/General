@@ -10,7 +10,7 @@
 --   * teachers cannot read medical_record; this view is their only route
 --   * only for children in classes they teach (or trial in, or take to an
 --     event); a student sees their own, a guardian their children's
---   * Sanaa support never sees any of it, grant or no grant
+--   * Swayvo support never sees any of it, grant or no grant
 --
 -- Changes:
 --   * conditions and medications are now in the brief

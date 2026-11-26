@@ -35,7 +35,7 @@ export default function PilotPage() {
   const [all, setAll] = React.useState(false);
   const list = (rows.data ?? []).filter(r => all || r.pilot_cohort);
   return (
-    <Shell title="Pilot" subtitle="How far each school has got with what keeps schools on Sanaa" allow={['platform']}>
+    <Shell title="Pilot" subtitle="How far each school has got with what keeps schools on Swayvo" allow={['platform']}>
       <div className="mx-auto max-w-6xl space-y-4">
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="size-4 accent-[var(--accent)]" checked={all} onChange={e => setAll(e.target.checked)} /> Show every school, not only pilot schools</label>
         {rows.isLoading && <Skeleton className="h-40" />}

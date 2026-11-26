@@ -28,7 +28,7 @@ begin
     or new.pilot_notes is distinct from old.pilot_notes
     or new.created_at is distinct from old.created_at or new.created_by is distinct from old.created_by
     or new.deleted_at is distinct from old.deleted_at) then
-    raise exception 'FORBIDDEN: plan, account status and dates are managed by Sanaa' using errcode = 'insufficient_privilege';
+    raise exception 'FORBIDDEN: plan, account status and dates are managed by Swayvo' using errcode = 'insufficient_privilege';
   end if;
   return new;
 end $$;

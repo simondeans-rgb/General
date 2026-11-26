@@ -212,7 +212,7 @@ function Consent({ school, ack, marketing, onAck, onMarketing, who }: {
     <div className="space-y-2 rounded-xl bg-surface-2 p-3 text-[13px] text-ink-2">
       <p>
         <strong className="text-ink">{school.name}</strong> keeps these details about {who} to arrange the class, to reach someone in an emergency,
-        and to follow up afterwards. Sanaa stores them for the school. If you don’t join, they are deleted after 90 days.
+        and to follow up afterwards. Swayvo stores them for the school. If you don’t join, they are deleted after 90 days.
         {school.privacy_notice_url && <> <a href={school.privacy_notice_url} target="_blank" rel="noreferrer" className="font-medium text-accent-text underline">Read the school’s privacy notice</a>.</>}
       </p>
       <label className="flex items-start gap-2">

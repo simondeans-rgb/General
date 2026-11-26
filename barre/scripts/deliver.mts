@@ -21,7 +21,7 @@ try {
   const providers = fromEnv(process.env);
   // Phone notifications, once VAPID keys are set (npx web-push generate-vapid-keys).
   if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
-    webpush.setVapidDetails(process.env.VAPID_SUBJECT ?? 'mailto:support@sanaa.example', process.env.VAPID_PUBLIC_KEY, process.env.VAPID_PRIVATE_KEY);
+    webpush.setVapidDetails(process.env.VAPID_SUBJECT ?? 'mailto:support@swayvo.example', process.env.VAPID_PUBLIC_KEY, process.env.VAPID_PRIVATE_KEY);
     providers.push = webPush((sub, payload) => webpush.sendNotification(sub, payload, { TTL: 3600 }),
       async e => (await q(`select * from app.push_keys($1)`, [e]))[0] ?? null);
   }

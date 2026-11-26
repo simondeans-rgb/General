@@ -998,7 +998,7 @@ function termPlanPdf(): Uint8Array {
 }
 
 /* ==========================================================================
-   The platform: Sanaa's own staff, and other schools on the service
+   The platform: Swayvo's own staff, and other schools on the service
    ========================================================================== */
 export const PLATFORM_ADMIN = uid(NS.user, 190);
 
@@ -1013,7 +1013,7 @@ update studio set plan_id = (select id from plan where code = 'studio'), status 
  where id = ${q(STUDIO_ID)};
 
 insert into user_account (id, email, full_name) values
-  (${q(PLATFORM_ADMIN)}, 'jordan@sanaa.example', 'Jordan Ellis'),
+  (${q(PLATFORM_ADMIN)}, 'jordan@swayvo.example', 'Jordan Ellis'),
   (${q(uid(NS.user, 191))}, 'elena@kestrelballet.example', 'Elena Marsh'),
   (${q(uid(NS.user, 192))}, 'tom@pointeandflex.example', 'Tom Hadley');
 insert into platform_admin (user_id, role) values (${q(PLATFORM_ADMIN)}, 'super_admin');
@@ -1081,11 +1081,11 @@ do $$ declare t record; begin
   end loop;
 end $$;
 
--- Freya has let Sanaa support look at Northstar while they help with invoices.
+-- Freya has let Swayvo support look at Northstar while they help with invoices.
 insert into support_access_grant (studio_id, granted_by, reason, expires_at, created_at) values
   (${q(STUDIO_ID)}, ${q(uid(NS.user, 1))}, 'Help setting up this term''s invoices', now() + interval '2 days', now() - interval '2 hours');
 insert into audit_log (studio_id, actor_id, action, entity, summary, at) values
   (${q(STUDIO_ID)}, ${q(uid(NS.user, 1))}, 'grant', 'support_access_grant',
-   'Sanaa support may view the account, read-only, for 48 hours: Help setting up this term''s invoices', now() - interval '2 hours');
+   'Swayvo support may view the account, read-only, for 48 hours: Help setting up this term''s invoices', now() - interval '2 hours');
 `;
 }

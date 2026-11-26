@@ -14,7 +14,7 @@ const STUDIO = `select id from studio where app.in_scope(id) and id in (select a
 
 /** Where the hosted feed answers (scripts/calendar-feed.mts). */
 const feedUrl = (token: string) => {
-  const host = typeof window === 'undefined' ? 'sanaa.app' : window.location.host;
+  const host = typeof window === 'undefined' ? 'swayvo.app' : window.location.host;
   return `webcal://${host}/calendar/${token}.ics`;
 };
 
@@ -77,7 +77,7 @@ function Sheet({ onClose, onDownload }: { onClose: () => void; onDownload: () =>
           ) : (
             <Button size="sm" variant="primary" loading={act.isPending} onClick={() => act.mutate('app.issue_calendar_token')}>Make my link</Button>
           )}
-          <p className="text-[12px] text-ink-3">In this demo the link is made but not served; it starts working once Sanaa is hosted.</p>
+          <p className="text-[12px] text-ink-3">In this demo the link is made but not served; it starts working once Swayvo is hosted.</p>
           {act.error != null && <ErrorState error={act.error} />}
         </section>
         <section className="space-y-2 border-t border-line pt-4">

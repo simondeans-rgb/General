@@ -60,7 +60,7 @@ function Schools() {
   });
 
   return (
-    <Shell title="Schools" subtitle="Every dance school on Sanaa" allow={['platform']}
+    <Shell title="Schools" subtitle="Every dance school on Swayvo" allow={['platform']}
       actions={<Button size="sm" variant="primary" onClick={() => setCreating(true)}>
         <Plus className="size-4" aria-hidden /> New school
       </Button>}>
@@ -250,7 +250,7 @@ function SchoolPanel({ id, school: s, onClose }: { id: string; school?: P.School
           <Badge tone="amber">{s.student_logins} student{s.student_logins === 1 ? '' : 's'}</Badge>
         </p>
         <p className="mt-2 text-[12.5px] text-ink-3">
-          Sanaa sees how many — the school manages who, from its Account page.
+          Swayvo sees how many — the school manages who, from its Account page.
         </p>
         {liveInvites.length > 0 && (
           <ul className="mt-3 space-y-2">
@@ -282,7 +282,7 @@ function SchoolPanel({ id, school: s, onClose }: { id: string; school?: P.School
         ) : (
           <p className="flex items-start gap-2 text-sm text-ink-2">
             <ShieldOff className="mt-0.5 size-4 shrink-0 text-ink-3" aria-hidden />
-            Not granted. The owner can let Sanaa support in for up to a week from their Account page.
+            Not granted. The owner can let Swayvo support in for up to a week from their Account page.
           </p>
         )}
       </DetailSection>

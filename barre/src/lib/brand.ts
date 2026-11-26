@@ -24,7 +24,7 @@ export type Palette = {
   textDeepened: boolean;
 };
 
-export const DEFAULT_BRAND = '#0b3b34';   // Sanaa eucalyptus
+export const DEFAULT_BRAND = '#2638f0';   // Swayvo Count blue
 
 
 export function normaliseHex(v: string | null | undefined): string | null {
