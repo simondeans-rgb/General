@@ -97,9 +97,9 @@ export function Badge({
 }: { tone?: Tone; children: React.ReactNode; className?: string; icon?: React.ReactNode }) {
   return (
     <span className={cn(
-      'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[12px] font-medium leading-5 whitespace-nowrap',
+      'inline-flex min-w-0 max-w-full items-center gap-1 rounded-full border px-2 py-0.5 text-[12px] font-medium leading-5 whitespace-nowrap',
       TONES[tone] ?? TONES.neutral, className)}>
-      {icon}{children}
+      {icon}<span className="min-w-0 truncate">{children}</span>
     </span>
   );
 }
