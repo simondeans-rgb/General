@@ -108,7 +108,8 @@ function TeachRow({ s, showDay, onAskCover }: { s: T.TeachSession; showDay?: boo
         <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className="tnum font-semibold">{showDay ? `${relativeDay(s.starts_at)} ` : ''}{time(s.starts_at)}</span>
           <span className="font-medium">{s.name}</span>
-          {cancelled && <Badge tone="critical">Cancelled{s.cancel_reason ? ` · ${s.cancel_reason}` : ''}</Badge>}
+          {cancelled && <Badge tone="critical">Cancelled</Badge>}
+          {cancelled && s.cancel_reason && <span className="w-full text-[12.5px] text-critical">{s.cancel_reason}</span>}
           {s.covering && <Badge tone="info">You are covering</Badge>}
           {coveredByOther && <Badge tone="neutral">Covered by {s.covered_by}</Badge>}
           {s.cover_requested && !coveredByOther && <Badge tone="caution">Cover requested</Badge>}

@@ -83,8 +83,9 @@ export function SessionSheet({ session: s, onClose, initial = 'menu' }: { sessio
         <div className="flex flex-wrap gap-1.5">
           {s.teacher && <Badge>{s.teacher}{s.covered ? ` (covering for ${s.usual_teacher})` : ''}</Badge>}
           <Badge>{s.enrolled}/{s.capacity} booked{s.trials ? ` · ${s.trials} trial` : ''}</Badge>
-          {cancelled && <Badge tone="critical">Cancelled{s.cancel_reason ? `: ${s.cancel_reason}` : ''}</Badge>}
+          {cancelled && <Badge tone="critical">Cancelled</Badge>}
         </div>
+        {cancelled && s.cancel_reason && <p className="text-sm text-critical">{s.cancel_reason}</p>}
         <ul className="divide-y divide-line rounded-[var(--radius-md)] border border-line">
           {[
             ['register', ClipboardCheck, 'Open the register', 'Mark attendance for this session'],

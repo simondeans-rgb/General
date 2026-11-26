@@ -36,11 +36,12 @@ export function SessionRow({ session: s, href, onSelect }: { session: S; href?: 
         <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className={cn('font-medium', cancelled && 'line-through')}>{s.name}</span>
           {s.style && <Badge tone={TONES[s.colour ?? ''] ?? 'neutral'}>{s.style}</Badge>}
-          {cancelled && <Badge tone="critical">Cancelled{s.cancel_reason ? ` · ${s.cancel_reason}` : ''}</Badge>}
+          {cancelled && <Badge tone="critical">Cancelled</Badge>}
           {!cancelled && s.covered && <Badge tone="caution">Cover</Badge>}
           {!cancelled && s.moved && <Badge tone="info">Moved</Badge>}
           {!cancelled && s.trials > 0 && <Badge tone="info">{s.trials} trial{s.trials === 1 ? '' : 's'}</Badge>}
         </span>
+        {cancelled && s.cancel_reason && <span className="mt-0.5 block text-[12.5px] text-critical">{s.cancel_reason}</span>}
         <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[12.5px] text-ink-2">
           {s.teacher && <span className="inline-flex items-center gap-1"><User className="size-3.5" aria-hidden />{s.teacher}</span>}
           {s.room && <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" aria-hidden />{s.room}</span>}
