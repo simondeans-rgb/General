@@ -1,0 +1,1012 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Swayvo — Counts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============ TOKENS ============ */
+:root{
+  /* brand */
+  --blue:#2638F0;        /* Count blue — brand ground, primary action, the "now" beat */
+  --blue-deep:#1A27B8;   /* pressed / hover */
+  --blue-tint:#E8EBFE;   /* selected row on white */
+  --peach:#FFB089;       /* Rosin peach — accent, the downbeat, trials */
+  --peach-tint:#FFE9DD;
+  --white:#FFFFFF;
+  --studio:#F4F5F8;      /* Studio white — cool ground */
+  --ink:#121521;         /* text */
+  --mute:#5B6072;        /* secondary text: 6.25:1 on white, 5.73:1 on studio */
+  --line:#E2E4EB;
+  --line-2:#C9CCD6;
+  --on-blue-2:#DDE1FF;   /* secondary text on blue: 5.6:1 */
+  /* semantic (never brand blue) */
+  --ok:#0E7A4A;  --ok-bg:#E5F4EC;
+  --warn:#9A5A00; --warn-bg:#FFF2DC;
+  --crit:#C42339; --crit-bg:#FDE8EB;
+  --info:#0A6A88; --info-bg:#E3F2F7;
+  /* style marks (always paired with the style name) */
+  --st-ballet:#E8907A; --st-tap:#7C5CD6; --st-cont:#149E8E; --st-street:#D98A1C; --st-jazz:#C23B6B;
+  /* type */
+  --f-disp:"Archivo","Arial Black","Helvetica Neue",Arial,sans-serif;
+  --f-ui:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  /* spacing — 4px base, 8-step scale */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px; --s8:64px;
+  /* motion — one beat */
+  --beat:120ms;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--studio)}
+body{background:var(--studio);color:var(--ink);font-family:var(--f-ui);font-size:16px;line-height:1.5;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.disp{font-family:var(--f-disp);font-stretch:125%;font-weight:850;letter-spacing:-.01em;line-height:.95}
+.num{font-variant-numeric:tabular-nums}
+.sprite{position:absolute;width:0;height:0;overflow:hidden}
+svg.ic{width:24px;height:24px;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+
+/* ============ BOARD ============ */
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+section.sec{padding:96px 0 32px}
+.sec-head{display:grid;grid-template-columns:200px 1fr;gap:24px;align-items:baseline;margin-bottom:40px;border-top:2px solid var(--ink);padding-top:16px}
+.sec-no{font-family:var(--f-disp);font-stretch:125%;font-weight:800;font-size:14px;letter-spacing:.08em;color:var(--blue)}
+.sec-head h2{font-family:var(--f-disp);font-stretch:125%;font-weight:850;font-size:40px;line-height:1;letter-spacing:-.01em}
+.sec-head p{grid-column:2;color:var(--mute);max-width:640px;margin-top:8px}
+.lbl{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
+.note{font-size:14px;color:var(--mute)}
+h3.sub{font-family:var(--f-disp);font-stretch:112%;font-weight:800;font-size:20px;margin-bottom:16px}
+
+/* cover */
+.cover{background:var(--blue);color:var(--white);min-height:92vh;display:flex;flex-direction:column;justify-content:space-between;padding:32px 0 48px;overflow:hidden}
+.cover .wrap{width:100%}
+.cover-top{display:flex;justify-content:space-between;gap:16px;font-size:14px;color:var(--on-blue-2)}
+.cover-logo{width:min(760px,100%);height:auto;display:block;color:var(--white);--b1:var(--peach);margin:12vh 0 40px}
+.cover-line{font-family:var(--f-disp);font-stretch:125%;font-weight:850;font-size:clamp(40px,7.4vw,104px);line-height:.92;letter-spacing:-.02em;max-width:12ch}
+.cover-line span{color:var(--peach)}
+.cover-foot{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;margin-top:48px}
+.cover-foot p{max-width:520px;font-size:18px;color:var(--white)}
+.count-row{display:flex;gap:6px;align-items:flex-end;height:72px}
+.count-row i{display:block;width:14px;background:rgba(255,255,255,.28);border-radius:2px;height:40%}
+.count-row i:nth-child(1){height:100%;background:var(--peach)}
+.count-row i:nth-child(5){height:75%;margin-left:8px}
+.count-row i.lit{background:var(--white)}
+.count-row i:nth-child(1).lit{background:var(--peach)}
+
+/* strategy */
+.strat{display:grid;grid-template-columns:5fr 4fr;gap:48px}
+.strat .big{font-size:22px;line-height:1.45;font-weight:500}
+.persona{display:flex;flex-wrap:wrap;gap:8px 24px;margin-top:24px;font-family:var(--f-disp);font-stretch:125%;font-weight:800;font-size:22px}
+.persona span:nth-child(odd){color:var(--blue)}
+.tov{border-top:1px solid var(--line-2)}
+.tov div{display:grid;grid-template-columns:96px 1fr;gap:16px;padding:14px 0;border-bottom:1px solid var(--line-2)}
+.tov b{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);font-weight:600;padding-top:3px}
+
+/* identity */
+.id-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+.tile{background:var(--white);padding:32px;display:flex;flex-direction:column;justify-content:space-between;gap:24px;min-height:240px}
+.tile.blue{background:var(--blue);color:var(--white)}
+.tile.inkbg{background:var(--ink);color:var(--white)}
+.tile .cap{font-size:13px;color:var(--mute)}
+.tile.blue .cap{color:var(--on-blue-2)} .tile.inkbg .cap{color:#B9BDCB}
+.c12{grid-column:span 12}.c8{grid-column:span 8}.c6{grid-column:span 6}.c4{grid-column:span 4}
+.icons-row{display:flex;align-items:flex-end;gap:32px;flex-wrap:wrap}
+.icons-row figure{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.icons-row figcaption{font-size:12px;color:var(--mute)}
+.rules{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:16px}
+.rules p{font-size:15px}
+.clear-demo{position:relative;display:inline-block;padding:28px;outline:1px dashed var(--blue)}
+.clear-demo::after{content:"x = one beat bar height";position:absolute;right:4px;bottom:2px;font-size:11px;color:var(--blue)}
+
+/* colour */
+.sw-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.sw{background:var(--white);display:flex;flex-direction:column}
+.sw .chip{height:132px;padding:16px;display:flex;align-items:flex-end;font-family:var(--f-disp);font-stretch:125%;font-weight:800;font-size:22px}
+.sw .meta{padding:12px 16px 16px;font-size:14px}
+.sw .meta b{display:block;font-size:15px}
+.sw .meta code{font-family:var(--f-ui);font-variant-numeric:tabular-nums;color:var(--mute)}
+.sem-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:16px}
+.sem{padding:16px;font-size:15px;display:flex;flex-direction:column;gap:6px}
+.sem .tag{display:inline-flex;gap:8px;align-items:center;font-weight:600}
+.ratio{font-size:12px;opacity:.9}
+.usage{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:40px}
+.prop-bar{display:flex;height:40px;margin-top:12px;outline:1px solid var(--line-2)}
+.prop-bar span{display:block}
+
+/* type */
+.type-spec{display:grid;grid-template-columns:3fr 2fr;gap:48px}
+.type-spec>*{min-width:0}
+.ts-row>*{min-width:0}
+.ts-row{display:grid;grid-template-columns:110px 1fr;gap:16px;align-items:baseline;padding:14px 0;border-bottom:1px solid var(--line-2)}
+.ts-row .k{font-size:12px;color:var(--mute);line-height:1.35}
+.num-spec{background:var(--white);padding:32px}
+.num-spec .n{font-family:var(--f-disp);font-stretch:125%;font-weight:850;font-size:clamp(56px,7vw,88px);line-height:.9;font-variant-numeric:tabular-nums}
+
+/* graphic language */
+.gl{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.gl .tile{min-height:280px}
+.beats{display:flex;gap:4px;align-items:flex-end}
+.beats i{display:block;width:10px;height:28px;background:var(--line);border-radius:1px}
+.beats i:nth-child(4){margin-right:6px}
+.beats i.on{background:var(--ink)}
+.beats i.now{background:var(--blue)}
+.beats.lg i{width:22px;height:64px}
+.beats.lg i:nth-child(4){margin-right:12px}
+.demo-beats i{animation:count 2.4s infinite;animation-delay:calc(var(--n) * var(--beat))}
+@keyframes count{0%{background:var(--line);transform:scaleY(.6)}4%{background:var(--blue);transform:scaleY(1.08)}10%,62%{background:var(--blue);transform:scaleY(1)}70%,100%{background:var(--line);transform:scaleY(.6)}}
+.demo-beats i{transform-origin:bottom}
+.icon-set{display:grid;grid-template-columns:repeat(6,1fr);gap:16px 8px;color:var(--ink)}
+.icon-set div{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:var(--mute)}
+.icon-set svg{color:var(--ink)}
+.markers{display:flex;flex-direction:column;gap:10px;font-size:15px}
+.mk{display:inline-block;width:10px;height:10px;flex:none}
+.mk.crit{background:var(--crit);transform:rotate(45deg) scale(.85)}
+.mk.warn{width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:10px solid var(--warn)}
+.mk.info{background:var(--info);border-radius:50%}
+.mk.neutral{border:2px solid var(--mute);border-radius:50%}
+.mk.ok{background:var(--ok);border-radius:2px}
+
+/* ============ ARTBOARDS ============ */
+.ab{width:100%;min-width:0}
+.ab-box{position:relative;overflow:hidden}
+.ab-in{transform-origin:0 0;position:absolute;left:0;top:0}
+.ab-cap{font-size:13px;color:var(--mute);margin-top:10px}
+.ab-cap b{color:var(--ink);font-weight:600}
+.phones{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:32px;align-items:start}
+.phones.two{grid-template-columns:repeat(2,minmax(0,1fr));max-width:820px}
+.stack{display:flex;flex-direction:column;gap:56px}
+
+/* phone shell */
+.ph{width:390px;height:844px;background:var(--white);border-radius:48px;overflow:hidden;position:relative;outline:1px solid var(--line-2);font-family:var(--f-ui);color:var(--ink);font-size:16px;line-height:1.4}
+.ph-sb{height:48px;display:flex;justify-content:space-between;align-items:center;padding:0 30px 0 34px;font-size:15px;font-weight:600}
+.ph-sb .bat{width:26px;height:12px;border:1.5px solid currentColor;border-radius:3px;position:relative;opacity:.9}
+.ph-sb .bat::after{content:"";position:absolute;inset:1.5px;right:7px;background:currentColor;border-radius:1px}
+.ph-body{padding:0 20px}
+.ph-nav{position:absolute;left:0;right:0;bottom:0;height:86px;background:var(--white);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding:0 8px 20px}
+.ph-nav a{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;font-size:12px;font-weight:600;color:var(--mute);text-decoration:none;padding-top:0}
+.ph-nav a::before{content:"";display:block;width:28px;height:4px;border-radius:0 0 2px 2px;background:transparent;margin-bottom:8px}
+.ph-nav a.on{color:var(--ink)}
+.ph-nav a.on::before{background:var(--blue);height:6px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;height:52px;border-radius:10px;font-weight:600;font-size:16px;padding:0 20px}
+.btn.pri{background:var(--blue);color:var(--white)}
+.btn.ink{background:var(--ink);color:var(--white)}
+.btn.out{border:1.5px solid var(--line-2);color:var(--ink);background:var(--white)}
+.btn.peach{background:var(--peach);color:var(--ink)}
+.eyebrow{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+.hr{height:1px;background:var(--line)}
+
+/* desktop shell */
+.dk{width:1280px;height:800px;background:var(--white);display:grid;grid-template-columns:72px 1fr;overflow:hidden;outline:1px solid var(--line-2);font-family:var(--f-ui);color:var(--ink);font-size:14px;line-height:1.4}
+.rail{background:var(--studio);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:20px 0;gap:6px}
+.rail .m{width:32px;height:32px;color:var(--blue);margin-bottom:22px}
+.rail a{width:48px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--mute);position:relative;border-radius:8px}
+.rail a.on{color:var(--ink);background:var(--white)}
+.rail a.on::before{content:"";position:absolute;left:-12px;top:10px;bottom:10px;width:4px;background:var(--blue);border-radius:0 2px 2px 0}
+.rail .av{margin-top:auto;width:36px;height:36px;border-radius:50%;background:var(--ink);color:var(--white);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.ticks{display:flex;gap:3px;align-items:flex-end}
+.ticks i{display:block;width:6px;height:18px;background:var(--line);border-radius:1px}
+.ticks i.on{background:var(--ink)}
+.ticks i.now{background:var(--blue);height:22px}
+.ticks i.tr{background:var(--peach)}
+.ticks i.abs{background:var(--white);box-shadow:inset 0 0 0 1.5px var(--crit)}
+
+/* owner today */
+.od{padding:28px 40px 0;display:flex;flex-direction:column;min-width:0}
+.od-h{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:20px;border-bottom:1px solid var(--line)}
+.od-h h1{font-size:34px;margin-top:6px}
+.term{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.term .t{font-size:13px;color:var(--mute)} .term .t b{color:var(--ink);font-weight:600}
+.od-grid{display:grid;grid-template-columns:1fr 420px;gap:48px;padding-top:24px;flex:1;min-height:0}
+.next{display:grid;grid-template-columns:auto 1fr;gap:4px 28px;align-items:end;padding-bottom:24px}
+.next .big{font-size:112px;letter-spacing:-.03em;line-height:.82}
+.next h2{font-family:var(--f-disp);font-stretch:112%;font-weight:800;font-size:26px;line-height:1.1}
+.next .meta{color:var(--mute);font-size:15px;margin-top:4px}
+.next .acts{display:flex;gap:12px;margin-top:16px}
+.next .acts .btn{height:44px;font-size:15px}
+.sec-t{display:flex;justify-content:space-between;align-items:baseline;padding:14px 0 8px;border-bottom:2px solid var(--ink)}
+.sec-t h3{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.sec-t span{font-size:13px;color:var(--mute)}
+.cl-row{display:grid;grid-template-columns:64px 1fr 150px 168px 64px;gap:16px;align-items:center;height:72px;border-bottom:1px solid var(--line)}
+.cl-row .tm{font-family:var(--f-disp);font-stretch:112%;font-weight:800;font-size:18px;font-variant-numeric:tabular-nums}
+.cl-row .nm{font-weight:600;font-size:15px}
+.cl-row .sb{font-size:13px;color:var(--mute)}
+.cl-row .cap{font-size:14px;font-variant-numeric:tabular-nums;text-align:right;font-weight:600}
+.cl-row.nxt .tm{color:var(--blue)}
+.cl-row .ticks i{width:5px;height:16px;gap:2px}
+.cl-row .ticks{gap:2.5px}
+.att-row{display:grid;grid-template-columns:16px 40px 1fr auto;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line)}
+.att-row .n{font-family:var(--f-disp);font-stretch:125%;font-weight:850;font-size:26px;line-height:1;font-variant-numeric:tabular-nums}
+.att-row .t{font-weight:600;font-size:14.5px;line-height:1.3}
+.att-row .s{font-size:13px;color:var(--mute)}
+.att-row .a{font-size:13px;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line-2);white-space:nowrap}
+.money{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:16px 0}
+.money .v{font-family:var(--f-disp);font-stretch:125%;font-weight:850;font-size:30px;font-variant-numeric:tabular-nums;line-height:1}
+.money .k{font-size:13px;color:var(--mute);margin-top:6px}
+.health{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding-top:14px}
+.health .v{font-weight:700;font-size:15px;font-variant-numeric:tabular-nums;margin-bottom:8px}
+.health .v span{font-weight:400;color:var(--mute)}
+
+/* teacher */
+.t-top{display:flex;justify-content:space-between;align-items:center;padding:8px 0 20px}
+.t-top .who{font-size:15px;color:var(--mute)}
+.t-top .who b{color:var(--ink);display:block;font-size:20px;font-family:var(--f-disp);font-stretch:112%;font-weight:800}
+.t-hero{padding:4px 0 20px;border-bottom:1px solid var(--line)}
+.t-hero .tm{font-size:96px;letter-spacing:-.03em;line-height:.85;margin:8px 0 14px}
+.t-hero h2{font-family:var(--f-disp);font-stretch:112%;font-weight:800;font-size:26px;line-height:1.1}
+.t-hero .meta{color:var(--mute);font-size:15px;margin:4px 0 16px}
+.med{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;background:var(--crit-bg);color:var(--ink);border-radius:10px;font-size:15px;margin-bottom:16px}
+.med svg{color:var(--crit);margin-top:-1px}
+.med b{color:var(--crit)}
+.later{display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center;padding:16px 0;border-bottom:1px solid var(--line)}
+.later .tm{font-family:var(--f-disp);font-stretch:112%;font-weight:800;font-size:20px}
+.later .nm{font-weight:600;font-size:16px}.later .sb{color:var(--mute);font-size:15px}
+.prompt{margin-top:20px;padding:16px;background:var(--studio);border-radius:12px}
+.prompt p{font-size:15px}
+.prompt .acts{display:flex;gap:8px;margin-top:12px}
+.prompt .btn{height:44px;font-size:15px}
+
+.rg-top{display:flex;align-items:center;gap:8px;padding:4px 12px 0 8px;height:48px;font-size:16px;color:var(--blue);font-weight:600}
+.rg-h{padding:8px 20px 14px;border-bottom:1px solid var(--line)}
+.rg-h h2{font-size:30px}
+.rg-h .meta{color:var(--mute);font-size:15px;margin-top:6px}
+.rg-sum{display:flex;justify-content:space-between;align-items:center;margin-top:14px}
+.rg-sum .t{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+.rg-sum .t span{color:var(--mute);font-weight:400}
+.rg-sum .ticks i{width:8px;height:20px}
+.rg-sum .ticks{gap:3px}
+.rg-row{display:grid;grid-template-columns:1fr 152px;gap:8px;align-items:center;min-height:64px;padding:8px 20px;border-bottom:1px solid var(--line)}
+.rg-row .nm{font-size:17px;font-weight:600;line-height:1.25}
+.rg-row .md{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--crit);font-weight:600;margin-top:2px}
+.rg-row .md.soft{color:var(--warn)}
+.rg-row .md svg{width:16px;height:16px}
+.rg-row .tr{font-size:14px;color:var(--ink);margin-top:2px}
+.rg-row .tr b{background:var(--peach);padding:1px 6px;border-radius:3px;font-weight:600;margin-right:6px}
+.seg{display:grid;grid-template-columns:1fr 1fr;height:44px;border:1.5px solid var(--line-2);border-radius:10px;overflow:hidden}
+.seg span{display:flex;align-items:center;justify-content:center;gap:4px;font-size:15px;font-weight:600;color:var(--mute)}
+.seg span+span{border-left:1.5px solid var(--line-2)}
+.seg.p{border-color:var(--ok)} .seg.p span:first-child{background:var(--ok);color:var(--white)} .seg.p span+span{border-color:var(--ok)}
+.seg.a{border-color:var(--crit)} .seg.a span:last-child{background:var(--crit);color:var(--white)} .seg.a span+span{border-color:var(--crit)}
+.seg svg{width:16px;height:16px;stroke-width:2.25}
+.rg-foot{position:absolute;left:0;right:0;bottom:0;background:var(--white);border-top:1px solid var(--line);padding:12px 20px 30px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
+.rg-foot .t{font-size:15px;color:var(--mute)} .rg-foot .t b{color:var(--ink);display:block;font-size:16px}
+
+/* student */
+.st-hero{background:var(--blue);color:var(--white);padding:0 20px 24px}
+.st-hero .ph-sb{padding:0 10px 0 14px}
+.st-hero .top{display:flex;justify-content:space-between;align-items:center;padding:6px 0 18px;font-size:15px;color:var(--on-blue-2)}
+.st-hero .top b{color:var(--white);font-family:var(--f-disp);font-stretch:112%;font-weight:800;font-size:20px}
+.st-hero .ms{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:end}
+.st-hero .ms .n{font-size:104px;line-height:.8;letter-spacing:-.03em}
+.st-hero .ms p{font-size:16px;line-height:1.3;padding-bottom:2px}
+.st-hero .ms p b{display:block;font-family:var(--f-disp);font-stretch:112%;font-weight:800;font-size:20px}
+.st-hero .beats{margin-top:18px}
+.st-hero .beats i{width:36px;height:12px;background:rgba(255,255,255,.3)}
+.st-hero .beats i:nth-child(4){margin-right:10px}
+.st-hero .beats i.on{background:var(--white)} .st-hero .beats i.on:first-child{background:var(--peach)}
+.st-hero .pr{display:flex;justify-content:space-between;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.3);font-size:15px;color:var(--on-blue-2)}
+.st-hero .pr b{color:var(--white);font-family:var(--f-disp);font-stretch:125%;font-weight:850;font-size:20px}
+.st-next{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center;padding:16px 0;border-bottom:1px solid var(--line)}
+.st-next .tm{font-family:var(--f-disp);font-stretch:125%;font-weight:850;font-size:28px;line-height:1}
+.st-next .tm small{display:block;font-family:var(--f-ui);font-stretch:100%;font-weight:600;font-size:12px;letter-spacing:.06em;color:var(--blue);margin-bottom:4px}
+.st-next .nm{font-weight:600}.st-next .sb{color:var(--mute);font-size:15px}
+.fb{padding:16px 0;border-bottom:1px solid var(--line)}
+.fb q{display:block;font-size:17px;line-height:1.4;font-weight:500;quotes:none;margin-top:8px}
+.fb .by{font-size:14px;color:var(--mute);margin-top:8px}
+.sk-h{display:flex;justify-content:space-between;align-items:baseline;padding:16px 0 4px}
+.sk-h h3{font-size:16px;font-weight:700}
+.sk{display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+.sk .nm{font-size:15px;font-weight:600}
+.sk .lv{font-size:14px;color:var(--mute);grid-column:1}
+.sk .lv b{color:var(--ink);font-weight:600}
+.sk .beats{grid-row:1/3;grid-column:2}
+.sk .beats i{width:8px;height:20px}
+.sk .beats i:nth-child(4){margin-right:5px}
+.sk .up{color:var(--ok);font-weight:600}
+
+/* parent */
+.pa-top{display:flex;justify-content:space-between;align-items:center;padding:6px 0 16px}
+.pa-top h1{font-size:30px}
+.pa-top .sc{font-size:14px;color:var(--mute);margin-top:4px}
+.due{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;padding:16px;background:var(--studio);border-radius:12px}
+.due .v{font-family:var(--f-disp);font-stretch:125%;font-weight:850;font-size:32px;line-height:1;font-variant-numeric:tabular-nums}
+.due .k{font-size:15px;color:var(--mute)}
+.due .btn{grid-row:1/3;grid-column:2;height:48px}
+.notice{display:grid;grid-template-columns:14px 1fr;gap:10px;align-items:start;padding:12px 0;border-bottom:1px solid var(--line);font-size:15px}
+.notice .mk{margin-top:6px}
+.notice .s{color:var(--mute);font-size:14px}
+.notice a{color:var(--blue);font-weight:600;text-decoration:none}
+.kid{padding-top:18px}
+.kid-h{display:flex;align-items:baseline;gap:10px;padding-bottom:6px;border-bottom:2px solid var(--ink)}
+.kid-h b{font-family:var(--f-disp);font-stretch:112%;font-weight:800;font-size:20px}
+.kid-h span{font-size:14px;color:var(--mute)}
+.wk{display:grid;grid-template-columns:72px 1fr;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);align-items:start}
+.wk .d{font-size:14px;color:var(--mute);line-height:1.3;font-variant-numeric:tabular-nums}
+.wk .d b{display:block;color:var(--ink);font-size:16px;font-weight:700}
+.wk .nm{font-weight:600;font-size:15px}.wk .sb{color:var(--mute);font-size:14px}
+.wk .chg{color:var(--info);font-weight:600;font-size:14px}
+.wk.x .nm{text-decoration:line-through;color:var(--mute)}
+.wk .cx{color:var(--crit);font-weight:600;font-size:14px}
+.wk.tonight .d b{color:var(--blue)}
+
+/* payment */
+.pay-top{display:flex;align-items:center;gap:6px;height:48px;color:var(--blue);font-weight:600;padding:0 12px}
+.pay-amt{padding:12px 20px 24px}
+.pay-amt .v{font-size:72px;letter-spacing:-.02em;line-height:.9;margin:10px 0 10px;font-variant-numeric:tabular-nums}
+.pay-amt .k{font-size:16px;color:var(--mute)} .pay-amt .k b{color:var(--ink)}
+.lines{margin:0 20px;border-top:2px solid var(--ink)}
+.ln-h{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);padding:14px 0 4px}
+.ln{display:flex;justify-content:space-between;padding:8px 0;font-size:15px;font-variant-numeric:tabular-nums}
+.ln.disc{color:var(--ok)}
+.ln.tot{border-top:1px solid var(--ink);margin-top:8px;padding-top:14px;font-weight:700;font-size:17px}
+.pay-acts{padding:20px;display:flex;flex-direction:column;gap:10px}
+.bank{margin:4px 20px 0;padding:14px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;font-size:15px}
+.bank code{font-family:var(--f-ui);font-weight:700;font-size:17px;letter-spacing:.04em}
+.bank .cp{height:44px;padding:0 14px;border:1.5px solid var(--line-2);border-radius:10px;display:flex;align-items:center;gap:6px;font-weight:600;font-size:15px}
+.last{margin:0 20px;padding-top:12px;font-size:14px;color:var(--mute);border-top:1px solid var(--line)}
+
+/* sign in */
+.si{background:var(--blue);color:var(--white);height:100%;display:flex;flex-direction:column}
+.si-top{padding:12px 28px 0;flex:1;display:flex;flex-direction:column}
+.si-top .wm{width:150px;height:auto;color:var(--white);margin-top:28px}
+.si-top h1{font-size:50px;line-height:.92;margin-top:auto;letter-spacing:-.02em}
+.si-top h1 span{color:var(--peach)}
+.si-top .count-row{height:56px;margin:22px 0 28px}
+.si-top .count-row i{width:12px}
+.si-sheet{background:var(--white);color:var(--ink);border-radius:24px 24px 0 0;padding:28px 24px 40px}
+.si-sheet .sc{font-size:15px;color:var(--mute)}
+.si-sheet h2{font-family:var(--f-disp);font-stretch:112%;font-weight:800;font-size:22px;margin:2px 0 18px}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field label{font-size:14px;font-weight:600}
+.field .in{height:52px;border:1.5px solid var(--line-2);border-radius:10px;display:flex;align-items:center;padding:0 14px;font-size:16px;color:var(--ink)}
+.field .in.f{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-tint)}
+.si-sheet .fine{font-size:14px;color:var(--mute);margin-top:14px;text-align:left}
+
+/* timetable */
+.tt{padding:28px 40px 0;display:flex;flex-direction:column;min-width:0}
+.tt-h{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:18px}
+.tt-h h1{font-size:34px;margin-top:6px}
+.tt-ctl{display:flex;gap:8px;align-items:center}
+.tt-ctl .b{height:40px;min-width:40px;padding:0 14px;border:1.5px solid var(--line-2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;gap:6px;background:var(--white)}
+.tt-ctl .seg2{display:flex;border:1.5px solid var(--line-2);border-radius:8px;overflow:hidden;height:40px}
+.tt-ctl .seg2 span{padding:0 14px;display:flex;align-items:center;font-weight:600;font-size:14px;color:var(--mute)}
+.tt-ctl .seg2 span.on{background:var(--ink);color:var(--white)}
+.grid{display:grid;grid-template-columns:150px repeat(6,minmax(0,1fr));border-top:2px solid var(--ink)}
+.grid .dh{padding:10px 10px 10px;font-size:13px;font-weight:700;border-bottom:1px solid var(--line-2);display:flex;justify-content:space-between;align-items:baseline}
+.grid .dh span{font-weight:400;color:var(--mute);font-variant-numeric:tabular-nums}
+.grid .dh.today{color:var(--blue);box-shadow:inset 0 3px 0 var(--blue)}
+.grid .dh.today span{color:var(--blue);font-weight:600}
+.grid .rm{padding:12px 12px 12px 0;border-bottom:1px solid var(--line-2);font-size:13px;color:var(--mute)}
+.grid .rm b{display:block;color:var(--ink);font-size:15px;font-family:var(--f-disp);font-stretch:112%;font-weight:800;line-height:1.15}
+.grid .cell{border-left:1px solid var(--line);border-bottom:1px solid var(--line-2);padding:8px;display:flex;flex-direction:column;gap:8px;min-height:150px}
+.grid .cell.today{background:#F7F8FF}
+.cb{padding:8px 10px 9px 12px;position:relative;background:var(--studio);border-radius:4px}
+.cb::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:4px 0 0 4px;background:var(--st)}
+.cb .tm{font-family:var(--f-disp);font-stretch:112%;font-weight:800;font-size:14px;font-variant-numeric:tabular-nums}
+.cb .nm{font-weight:600;font-size:13.5px;line-height:1.25;margin-top:1px}
+.cb .sb{font-size:12.5px;color:var(--mute);line-height:1.3}
+.cb .flag{font-size:12px;font-weight:700;margin-top:4px;display:flex;gap:6px;align-items:center}
+.cb .flag.full{color:var(--warn)} .cb .flag.cx{color:var(--crit)}
+.cb.cx{background:var(--white);outline:1.5px dashed var(--line-2)}
+.cb.cx .nm{text-decoration:line-through;color:var(--mute)}
+.cb.nx{background:var(--white);outline:2px solid var(--blue)}
+.cb.nx .tm{color:var(--blue)}
+.tt-leg{display:flex;gap:20px;flex-wrap:wrap;padding:16px 0;font-size:13px;color:var(--mute);align-items:center}
+.tt-leg i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+
+/* marketing */
+.mk-hero{width:1280px;height:720px;background:var(--blue);color:var(--white);position:relative;overflow:hidden;font-family:var(--f-ui)}
+.mk-nav{display:flex;justify-content:space-between;align-items:center;padding:28px 64px}
+.mk-nav .wm{width:150px;height:auto;color:var(--white)}
+.mk-nav nav{display:flex;gap:32px;font-size:15px;font-weight:500;color:var(--on-blue-2);align-items:center}
+.mk-nav nav b{color:var(--ink);background:var(--white);padding:10px 16px;border-radius:8px;font-weight:600}
+.mk-copy{position:absolute;left:64px;top:150px;width:560px}
+.mk-copy h1{font-size:66px;line-height:.92;letter-spacing:-.025em}
+.mk-copy h1 span{color:var(--peach)}
+.mk-copy p{font-size:20px;line-height:1.45;margin-top:24px;color:var(--white);max-width:520px}
+.mk-copy .acts{display:flex;gap:20px;align-items:center;margin-top:32px}
+.mk-copy .acts .btn{height:56px;font-size:17px}
+.mk-copy .acts a:not(.btn){color:var(--white);font-weight:600;font-size:16px;text-decoration:underline;text-underline-offset:4px}
+.mk-copy .styles{margin-top:40px;font-size:14px;color:var(--on-blue-2);letter-spacing:.02em}
+.photo{position:absolute;overflow:hidden;background:
+  radial-gradient(120% 80% at 85% 20%, rgba(255,176,137,.55), transparent 55%),
+  linear-gradient(160deg,#2A2F45 0%, #151827 70%);}
+.photo::before{content:"";position:absolute;left:18%;top:22%;width:28%;height:78%;background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.04));border-radius:40% 40% 6px 6px;transform:skewX(-8deg)}
+.photo::after{content:"";position:absolute;left:52%;top:34%;width:22%;height:66%;background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.03));border-radius:40% 40% 6px 6px;transform:skewX(-14deg)}
+.photo .pl{position:absolute;left:14px;bottom:12px;right:14px;font-size:12px;line-height:1.35;color:#E9EBF5;z-index:2}
+.mk-photo{right:0;top:0;width:520px;height:720px}
+.mini{position:absolute;background:var(--white);color:var(--ink);border-radius:28px;outline:1px solid rgba(0,0,0,.12);overflow:hidden}
+.mk-phone{left:670px;top:178px;width:290px;height:600px;padding:22px 18px}
+.mini .eyebrow{font-size:11px}
+.mini h4{font-family:var(--f-disp);font-stretch:125%;font-weight:850;font-size:24px;margin:4px 0 2px}
+.mini .s{font-size:13px;color:var(--mute)}
+.mini .r{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px;font-weight:600}
+.mini .r em{font-style:normal;font-size:12px;font-weight:700;padding:4px 8px;border-radius:6px}
+.mini .r em.p{background:var(--ok);color:var(--white)} .mini .r em.a{background:var(--crit);color:var(--white)} .mini .r em.u{border:1.5px solid var(--line-2);color:var(--mute)}
+.store{width:430px;height:932px;background:var(--blue);color:var(--white);position:relative;overflow:hidden;font-family:var(--f-ui)}
+.store h2{font-size:46px;line-height:.92;letter-spacing:-.02em;padding:64px 32px 0}
+.store h2 span{color:var(--peach)}
+.store p{padding:14px 32px 0;font-size:18px;color:var(--on-blue-2)}
+.store .mini p{padding:0;font-size:13px;color:var(--mute)}
+.store .mini{left:40px;top:330px;width:350px;height:680px;padding:26px 22px}
+.insta{width:1080px;height:1080px;background:var(--studio);color:var(--ink);position:relative;overflow:hidden;font-family:var(--f-ui)}
+.insta .nums{position:absolute;left:80px;top:90px;display:grid;grid-template-columns:repeat(4,1fr);width:920px}
+.insta .nums b{font-family:var(--f-disp);font-stretch:125%;font-weight:900;font-size:240px;line-height:.8;color:var(--line-2)}
+.insta .nums b:last-child{color:var(--blue)}
+.insta .bar{position:absolute;left:80px;top:420px;display:flex;gap:14px;align-items:flex-end;height:260px}
+.insta .bar i{display:block;width:96px;height:104px;background:var(--ink);border-radius:4px}
+.insta .bar i:nth-child(1){height:260px;background:var(--peach)}
+.insta .bar i:nth-child(4){margin-right:28px}
+.insta .bar i:nth-child(5){height:190px}
+.insta .bar i.n{background:var(--blue)}
+.insta .cp{position:absolute;left:80px;bottom:84px;right:80px;display:flex;justify-content:space-between;align-items:flex-end}
+.insta .cp p{font-family:var(--f-disp);font-stretch:125%;font-weight:850;font-size:52px;line-height:.98;max-width:700px}
+.insta .cp .wm{width:200px;height:auto;color:var(--ink)}
+.mkt-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2.2fr);gap:32px;margin-top:40px;align-items:start}
+
+/* notes */
+.notes{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.notes .tile{min-height:0;justify-content:flex-start;gap:12px}
+.notes ul{padding-left:18px;font-size:15px;display:flex;flex-direction:column;gap:8px}
+.cx-meter{display:flex;gap:6px;align-items:center;font-weight:700}
+footer{padding:64px 0 80px;color:var(--mute);font-size:14px}
+
+/* motion: beat-staggered reveal of list rows */
+.stagger > *{animation:rise .36s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0) * var(--beat))}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.lit-loop i{animation:lit 1.92s infinite;animation-delay:calc(var(--n) * var(--beat))}
+@keyframes lit{0%,5%{background:rgba(255,255,255,.28)}8%,60%{background:var(--white)}70%,100%{background:rgba(255,255,255,.28)}}
+.lit-loop i:nth-child(1){animation-name:lit1}
+@keyframes lit1{0%,5%{background:rgba(255,176,137,.4)}8%,60%{background:var(--peach)}70%,100%{background:rgba(255,176,137,.4)}}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .demo-beats i{background:var(--blue)}
+  .lit-loop i{background:var(--white)} .lit-loop i:nth-child(1){background:var(--peach)}
+}
+
+/* responsive board */
+@media (max-width:900px){
+  .strat,.type-spec,.usage,.rules,.notes,.mkt-grid{grid-template-columns:1fr}
+  .sw-grid,.sem-grid{grid-template-columns:repeat(2,1fr)}
+  .gl{grid-template-columns:1fr}
+  .phones{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .c8,.c6,.c4{grid-column:span 12}
+}
+@media (max-width:600px){
+  .wrap{padding:0 16px}
+  section.sec{padding:64px 0 16px}
+  .sec-head{grid-template-columns:1fr;gap:4px}
+  .sec-head p{grid-column:1}
+  .sec-head h2{font-size:30px}
+  .phones,.phones.two{grid-template-columns:minmax(0,1fr)}
+  .tile{padding:20px}
+  .cover-foot{grid-template-columns:1fr}
+  .icon-set{grid-template-columns:repeat(4,1fr)}
+  .strat .big{font-size:19px}
+  .tov div{grid-template-columns:1fr;gap:2px}
+  .ts-row{grid-template-columns:1fr;gap:4px}
+  .num-spec{padding:20px}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ SVG SPRITE ============ -->
+<svg class="sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="sv-wm" viewBox="0 0 392 82"><g stroke="currentColor"><g transform="translate(14 1) skewX(-10)" fill="none" stroke-width="14" stroke-linejoin="bevel"><path d="M47 7H20Q8 7 8 17.5Q8 28 20 28H36Q48 28 48 38.5Q48 49 36 49H8"/><path transform="translate(62 0)" d="M5 0L17 49L31 12L45 49L57 0"/><g transform="translate(132 0)"><circle cx="28" cy="28" r="21"/><path d="M49 0V56"/></g><path transform="translate(194 0)" d="M5 0L28.5 49M51 0L17 76"/><path transform="translate(255 0)" d="M5 0L28 49L51 0"/><circle transform="translate(318 0)" cx="28" cy="28" r="21"/></g></g></symbol>
+  <symbol id="sv-mark" viewBox="0 0 64 64"><rect x="0" y="0" width="6" height="64" rx="1" style="fill:var(--b1,currentColor)"/><rect x="8" y="36" width="6" height="28" rx="1" fill="currentColor"/><rect x="16" y="36" width="6" height="28" rx="1" fill="currentColor"/><rect x="24" y="36" width="6" height="28" rx="1" fill="currentColor"/><rect x="34" y="16" width="6" height="48" rx="1" fill="currentColor"/><rect x="42" y="36" width="6" height="28" rx="1" fill="currentColor"/><rect x="50" y="36" width="6" height="28" rx="1" fill="currentColor"/><rect x="58" y="36" width="6" height="28" rx="1" fill="currentColor"/></symbol>
+  <symbol id="sv-logo" viewBox="0 0 500 96"><use href="#sv-mark" x="8" y="4" width="68" height="68"/><use href="#sv-wm" x="86" y="3" width="392" height="82"/></symbol>
+  <symbol id="sv-icon" viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="228" fill="#2638F0"/><rect x="168" y="262" width="56" height="500" rx="8" fill="#FFB089"/><rect x="254" y="542" width="56" height="220" rx="8" fill="#FFFFFF"/><rect x="340" y="542" width="56" height="220" rx="8" fill="#FFFFFF"/><rect x="426" y="542" width="56" height="220" rx="8" fill="#FFFFFF"/><rect x="542" y="387" width="56" height="375" rx="8" fill="#FFFFFF"/><rect x="628" y="542" width="56" height="220" rx="8" fill="#FFFFFF"/><rect x="714" y="542" width="56" height="220" rx="8" fill="#FFFFFF"/><rect x="800" y="542" width="56" height="220" rx="8" fill="#FFFFFF"/></symbol>
+  <!-- pixel-fitted favicons -->
+  <symbol id="sv-fav32" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#2638F0"/><rect x="4" y="7" width="2" height="18" fill="#FFB089"/><rect x="7" y="17" width="2" height="8" fill="#fff"/><rect x="10" y="17" width="2" height="8" fill="#fff"/><rect x="13" y="17" width="2" height="8" fill="#fff"/><rect x="17" y="11" width="2" height="14" fill="#fff"/><rect x="20" y="17" width="2" height="8" fill="#fff"/><rect x="23" y="17" width="2" height="8" fill="#fff"/><rect x="26" y="17" width="2" height="8" fill="#fff"/></symbol>
+  <symbol id="sv-fav16" viewBox="0 0 16 16"><rect width="16" height="16" rx="3" fill="#2638F0"/><rect x="2" y="3" width="2" height="10" fill="#FFB089"/><rect x="5" y="8" width="2" height="5" fill="#fff"/><rect x="9" y="5" width="2" height="8" fill="#fff"/><rect x="12" y="8" width="2" height="5" fill="#fff"/></symbol>
+  <!-- icons: 24 grid, 1.75 stroke, round caps -->
+  <symbol id="i-today" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="16" rx="2"/><path d="M9.5 4v16M15 4v16M3.5 10h17"/></symbol>
+  <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M16.5 5.5a3 3 0 0 1 0 6M18 14.5c2.2.6 3.5 2.6 3.5 5.5"/></symbol>
+  <symbol id="i-card" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M2.5 9.5h19M6 15h4"/></symbol>
+  <symbol id="i-funnel" viewBox="0 0 24 24"><path d="M3.5 5h17l-6.5 7.5V19l-4 1.5v-8z"/></symbol>
+  <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M3 7h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4z"/><path d="M14 7v10" stroke-dasharray="2 2"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3.5 16.5l5-5 4 3 8-8M3.5 20.5h17"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/></symbol>
+  <symbol id="i-reg" viewBox="0 0 24 24"><path d="M4 6.5l1.6 1.6L8.5 5M4 12.5l1.6 1.6L8.5 11M4.5 18.5h3M11.5 6.5h8.5M11.5 12.5h8.5M11.5 18.5h8.5"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M4 5h16v11.5H9.5L4 20.5z"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3.5 11L12 4l8.5 7v9.5h-6v-6h-5v6h-6z"/></symbol>
+  <symbol id="i-prog" viewBox="0 0 24 24"><path d="M5 20V5M9.5 20v-6M14 20v-9M18.5 20v-6"/></symbol>
+  <symbol id="i-timer" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 10v3.5l2.5 2M9.5 2.5h5"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5.5L8.5 12l6.5 6.5"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6"/></symbol>
+  <symbol id="i-med" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8v8M8 12h8"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="12" height="12" rx="2"/><path d="M15.5 8.5V3.5h-12v12h5"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.8 1.8H4.2z"/><path d="M10 21h4"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-bank" viewBox="0 0 24 24"><path d="M3 9.5L12 4.5l9 5M5.5 10.5v7M10 10.5v7M14 10.5v7M18.5 10.5v7M3 20.5h18"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></symbol>
+</svg>
+
+<!-- ============ 1 · COVER ============ -->
+<header class="cover">
+  <div class="wrap">
+    <div class="cover-top"><span>Concept B · for Northstar Dance Academy</span><span>Brand + product concept · November 2026</span></div>
+    <svg class="cover-logo" viewBox="0 0 500 96" role="img" aria-label="Swayvo"><use href="#sv-logo"/></svg>
+    <p class="cover-line">Five, six, seven, <span>eight.</span></p>
+    <div class="cover-foot">
+      <p><b>Counts.</b> Every dance starts on the count. Swayvo keeps the school on the count — the week, the register, the money — so everyone can move.</p>
+      <div class="count-row lit-loop" aria-hidden="true"><i style="--n:4"></i><i style="--n:5"></i><i style="--n:6"></i><i style="--n:7"></i><i style="--n:0"></i><i style="--n:1"></i><i style="--n:2"></i><i style="--n:3"></i></div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ============ 2 · STRATEGY ============ -->
+<section class="sec" id="strategy">
+  <div class="sec-head"><span class="sec-no">02 · STRATEGY</span><h2>The eight-count</h2></div>
+  <div class="strat">
+    <div>
+      <p class="big">Ballet, tap, breaking, ballroom — every style counts music in eights. Swayvo turns that shared count into a system: an eight-beat bar that is the logo, the progress meter, the loader and the rhythm of the week. The admin keeps time in the background so teachers and dancers can stay on the music.</p>
+      <div class="persona"><span>Energetic</span><span>Confident</span><span>Direct</span><span>Encouraging</span></div>
+    </div>
+    <div class="tov">
+      <div><b>Owner alert</b><span>3 card payments failed overnight — £162.00. Retry now or send a pay link.</span></div>
+      <div><b>Teacher prompt</b><span>Junior Tap is done. Two lines of feedback while it's fresh?</span></div>
+      <div><b>Student</b><span>50 classes. That's a full count — keep moving.</span></div>
+      <div><b>Parent notice</b><span>Tuesday 1 Dec: Grade 2 Ballet moves to Studio Two. Same time, same teacher.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3 · IDENTITY ============ -->
+<section class="sec" id="identity">
+  <div class="sec-head"><span class="sec-no">03 · IDENTITY</span><h2>Wordmark, beat mark, icon</h2>
+    <p>The wordmark is drawn from a single 14-unit stroke on a 56-unit x-height, leaning 10° forward. The mark is one bar of eight beats: a strong "1", a lifted "5", grouped in fours like counting out loud.</p></div>
+  <div class="id-grid">
+    <div class="tile c8"><span class="lbl">Primary lockup</span>
+      <svg viewBox="0 0 500 96" style="width:100%;max-width:560px;height:auto;color:var(--ink);--b1:var(--blue)" role="img" aria-label="Swayvo logo"><use href="#sv-logo" style="color:var(--ink)"/></svg>
+      <span class="cap">Downbeat in Count blue, the rest in Ink — the "1" is the now-beat. Files: logo.svg</span></div>
+    <div class="tile c4"><span class="lbl">Stacked / compact</span>
+      <div style="display:flex;flex-direction:column;gap:14px;align-items:flex-start">
+        <svg viewBox="0 0 64 64" style="width:56px;height:56px;color:var(--blue)"><use href="#sv-mark"/></svg>
+        <svg viewBox="0 0 392 82" style="width:190px;height:auto;color:var(--ink)"><use href="#sv-wm"/></svg>
+      </div><span class="cap">For square spaces, app splash, merch tags.</span></div>
+    <div class="tile c4"><span class="lbl">Standalone mark</span>
+      <svg viewBox="0 0 64 64" style="width:112px;height:112px;color:var(--blue)"><use href="#sv-mark"/></svg>
+      <span class="cap">The bar: 1 · 2 3 4 · 5 · 6 7 8. Files: mark.svg</span></div>
+    <div class="tile c8"><span class="lbl">App icon + favicons</span>
+      <div class="icons-row">
+        <figure><svg viewBox="0 0 1024 1024" width="180" height="180"><use href="#sv-icon"/></svg><figcaption>180 px</figcaption></figure>
+        <figure><svg viewBox="0 0 1024 1024" width="60" height="60"><use href="#sv-icon"/></svg><figcaption>60 px</figcaption></figure>
+        <figure><svg viewBox="0 0 32 32" width="32" height="32"><use href="#sv-fav32"/></svg><figcaption>32 px</figcaption></figure>
+        <figure><svg viewBox="0 0 16 16" width="16" height="16"><use href="#sv-fav16"/></svg><figcaption>16 px (4 beats)</figcaption></figure>
+      </div>
+      <span class="cap">Pixel-fitted favicons: 32 px keeps all eight beats on 2-px bars; 16 px keeps beats 1, 2, 5, 6 so the rhythm survives. Files: app-icon.svg</span></div>
+    <div class="tile c6 blue"><span class="lbl" style="color:var(--on-blue-2)">On Count blue</span>
+      <svg viewBox="0 0 500 96" style="width:100%;max-width:420px;height:auto;color:var(--white);--b1:var(--peach)"><use href="#sv-logo"/></svg>
+      <span class="cap">The downbeat goes Rosin peach on blue — the only two-colour version.</span></div>
+    <div class="tile c6" style="background:var(--white)"><span class="lbl">On light</span>
+      <svg viewBox="0 0 500 96" style="width:100%;max-width:420px;height:auto;color:var(--ink);--b1:var(--blue)"><use href="#sv-logo"/></svg>
+      <span class="cap">On White or Studio white. Never on Rosin peach (blue fails 3:1 there).</span></div>
+    <div class="tile c6 inkbg"><span class="lbl" style="color:#B9BDCB">Mono · dark</span>
+      <svg viewBox="0 0 500 96" style="width:100%;max-width:420px;height:auto;color:var(--white)"><use href="#sv-logo"/></svg>
+      <span class="cap">logo-mono-dark.svg — white on Ink, for print and video.</span></div>
+    <div class="tile c6" style="background:var(--studio);outline:1px solid var(--line-2);outline-offset:-1px"><span class="lbl">Mono · light</span>
+      <svg viewBox="0 0 500 96" style="width:100%;max-width:420px;height:auto;color:var(--ink)"><use href="#sv-logo"/></svg>
+      <span class="cap">logo-mono-light.svg — Ink only, for single-colour print and embroidery.</span></div>
+    <div class="tile c12">
+      <div class="rules">
+        <div><span class="lbl">Clear space</span>
+          <p style="margin:12px 0 16px">Keep clear space equal to the height of a short beat (x) on every side. Nothing enters it — not even the school's own logo.</p>
+          <span class="clear-demo"><svg viewBox="0 0 500 96" style="width:220px;height:auto;display:block;color:var(--ink);--b1:var(--blue)"><use href="#sv-logo"/></svg></span></div>
+        <div><span class="lbl">Minimum size</span>
+          <p style="margin:12px 0 16px">Primary lockup: 96 px / 22 mm wide. Wordmark alone: 64 px / 15 mm. Below 24 px use the mark; below 20 px use the pixel-fitted favicon.</p>
+          <div style="display:flex;gap:24px;align-items:flex-end">
+            <svg viewBox="0 0 500 96" style="width:96px;height:auto;color:var(--ink);--b1:var(--blue)"><use href="#sv-logo"/></svg>
+            <svg viewBox="0 0 392 82" style="width:64px;height:auto;color:var(--ink)"><use href="#sv-wm"/></svg>
+            <svg viewBox="0 0 64 64" style="width:24px;height:24px;color:var(--blue)"><use href="#sv-mark"/></svg>
+          </div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4 · COLOUR ============ -->
+<section class="sec" id="colour">
+  <div class="sec-head"><span class="sec-no">04 · COLOUR</span><h2>Loud outside, quiet inside</h2>
+    <p>Count blue is the brand at full volume on marketing, the icon and celebration moments. Inside the product it shrinks to two jobs: the primary action, and "now".</p></div>
+  <div class="sw-grid">
+    <div class="sw"><div class="chip" style="background:var(--blue);color:#fff">Aa</div><div class="meta"><b>Count blue</b><code>#2638F0</code><br>Primary · brand ground, primary action, now-beat. White text 7.23:1</div></div>
+    <div class="sw"><div class="chip" style="background:var(--peach);color:var(--ink)">Aa</div><div class="meta"><b>Rosin peach</b><code>#FFB089</code><br>Accent · the downbeat, trials, marketing CTA. Ink text 10.24:1. On blue: display only (4.07:1)</div></div>
+    <div class="sw"><div class="chip" style="background:var(--ink);color:#fff">Aa</div><div class="meta"><b>Ink</b><code>#121521</code><br>Text, filled beats, Apple Pay. 18.18:1 on White</div></div>
+    <div class="sw"><div class="chip" style="background:var(--mute);color:#fff">Aa</div><div class="meta"><b>Slate</b><code>#5B6072</code><br>Secondary text. 6.25:1 on White, 5.73:1 on Studio white</div></div>
+    <div class="sw"><div class="chip" style="background:var(--white);color:var(--ink);outline:1px solid var(--line);outline-offset:-1px">Aa</div><div class="meta"><b>White</b><code>#FFFFFF</code><br>Product surfaces</div></div>
+    <div class="sw"><div class="chip" style="background:var(--studio);color:var(--ink);outline:1px solid var(--line-2);outline-offset:-1px">Aa</div><div class="meta"><b>Studio white</b><code>#F4F5F8</code><br>Ground, rails, quiet panels. Ink 16.68:1</div></div>
+    <div class="sw"><div class="chip" style="background:var(--line);color:var(--ink)">Aa</div><div class="meta"><b>Line / Empty beat</b><code>#E2E4EB · #C9CCD6</code><br>Rules, unfilled beats, input borders</div></div>
+    <div class="sw"><div class="chip" style="background:var(--on-blue-2);color:var(--blue)">Aa</div><div class="meta"><b>Blue mist</b><code>#DDE1FF</code><br>Secondary text on blue, 5.60:1</div></div>
+  </div>
+  <div class="sem-grid">
+    <div class="sem" style="background:var(--ok-bg);color:var(--ok)"><span class="tag"><i class="mk ok"></i>Success · Present</span><span class="ratio">#0E7A4A on #E5F4EC · 4.74:1</span></div>
+    <div class="sem" style="background:var(--warn-bg);color:var(--warn)"><span class="tag"><i class="mk warn"></i>Warning · Full, medical</span><span class="ratio">#9A5A00 on #FFF2DC · 4.95:1</span></div>
+    <div class="sem" style="background:var(--crit-bg);color:var(--crit)"><span class="tag"><i class="mk crit"></i>Critical · Failed, urgent</span><span class="ratio">#C42339 on #FDE8EB · 4.91:1</span></div>
+    <div class="sem" style="background:var(--info-bg);color:var(--info)"><span class="tag"><i class="mk info"></i>Info · Changes, replies</span><span class="ratio">#0A6A88 on #E3F2F7 · 5.34:1</span></div>
+  </div>
+  <div class="usage">
+    <div><span class="lbl">Product proportion</span>
+      <div class="prop-bar" aria-hidden="true"><span style="flex:62;background:var(--white)"></span><span style="flex:20;background:var(--studio)"></span><span style="flex:12;background:var(--ink)"></span><span style="flex:4;background:var(--blue)"></span><span style="flex:2;background:var(--peach)"></span></div>
+      <p class="note" style="margin-top:8px">White 62 · Studio 20 · Ink 12 · Blue 4 · Peach 2. Semantic colours appear only when something is actually wrong, changed or done.</p></div>
+    <div><span class="lbl">The rule</span>
+      <p style="margin-top:12px">In the app, Count blue marks <b>one primary action per screen</b> and <b>the now-beat</b> (the next class, today's column, the current week). Everything else is Ink on White. Status is never brand blue and never colour alone — each state carries a shape (◆ ▲ ● ○) and a word. Style colours are 4-px marks beside the style's name, nothing more.</p></div>
+  </div>
+</section>
+
+<!-- ============ 5 · TYPE ============ -->
+<section class="sec" id="type">
+  <div class="sec-head"><span class="sec-no">05 · TYPE</span><h2>Archivo Expanded + Inter</h2>
+    <p>Archivo at 125% width and 800–900 weight carries headlines and the numbers that matter. Inter does the work everywhere else. Both OFL, both on Google Fonts.</p></div>
+  <div class="type-spec">
+    <div>
+      <div class="ts-row"><span class="k">Display XL<br>Archivo 850 · wdth 125<br>104/96 · −2%</span><span class="disp" style="font-size:clamp(40px,6vw,72px)">On the count.</span></div>
+      <div class="ts-row"><span class="k">Display L<br>Archivo 850 · wdth 125<br>48/46</span><span class="disp" style="font-size:clamp(32px,4vw,44px)">Junior Tap</span></div>
+      <div class="ts-row"><span class="k">Title<br>Archivo 800 · wdth 112<br>26/29</span><span style="font-family:var(--f-disp);font-stretch:112%;font-weight:800;font-size:26px">Needs attention</span></div>
+      <div class="ts-row"><span class="k">Body L<br>Inter 500 · 17/24</span><span style="font-size:17px;font-weight:500">Your spirals have real control now. Keep the breath going through the release.</span></div>
+      <div class="ts-row"><span class="k">Body<br>Inter 400 · 15/21 (phone min)</span><span style="font-size:15px">Marcus Bell · Greenwich · Studio Two · 12 of 16 booked, 1 trial</span></div>
+      <div class="ts-row"><span class="k">Label<br>Inter 600 · 13 · +6% caps</span><span class="eyebrow">Next up · Week 11 of 13</span></div>
+    </div>
+    <div class="num-spec">
+      <span class="lbl">Numerals · tabular</span>
+      <div class="n" style="margin-top:16px">16:30</div>
+      <div class="n" style="font-size:clamp(40px,5vw,56px);margin-top:12px">£186.00</div>
+      <div class="n" style="font-size:clamp(40px,5vw,56px);margin-top:12px;color:var(--blue)">91%</div>
+      <p class="note" style="margin-top:20px">Archivo tabular figures for hero numbers (times, amounts, counts); Inter <code>tnum</code> in lists and tables so columns of money and times align. Scale: 12 · 13 · 15 · 17 · 20 · 26 · 34 · 48 · 72 · 104 — roughly a 1.25 step, snapped to the 4-px grid.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6 · GRAPHIC LANGUAGE ============ -->
+<section class="sec" id="graphic">
+  <div class="sec-head"><span class="sec-no">06 · GRAPHIC LANGUAGE</span><h2>Everything is a bar of eight</h2>
+    <p>One motif, used as a measuring device — never as wallpaper.</p></div>
+  <div class="gl">
+    <div class="tile"><span class="lbl">The beat bar as meter</span>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div><div class="beats"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div><p class="note" style="margin-top:6px"><b style="color:var(--ink)">Developing</b> · 3 of 8</p></div>
+        <div><div class="beats"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div><p class="note" style="margin-top:6px"><b style="color:var(--ink)">Secure</b> · 6 of 8</p></div>
+        <div><div class="beats"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div><p class="note" style="margin-top:6px"><b style="color:var(--ink)">Mastered</b> · full bar</p></div>
+      </div>
+      <span class="cap">Skills, attendance, term weeks and capacity are all beats filled. Unfilled beats are "still to come", never red.</span></div>
+    <div class="tile"><span class="lbl">Icons · 24 px · 1.75 stroke · round</span>
+      <div class="icon-set">
+        <div><svg class="ic"><use href="#i-today"/></svg>Today</div><div><svg class="ic"><use href="#i-reg"/></svg>Register</div><div><svg class="ic"><use href="#i-grid"/></svg>Timetable</div><div><svg class="ic"><use href="#i-people"/></svg>Families</div><div><svg class="ic"><use href="#i-card"/></svg>Billing</div><div><svg class="ic"><use href="#i-msg"/></svg>Messages</div>
+        <div><svg class="ic"><use href="#i-prog"/></svg>Progress</div><div><svg class="ic"><use href="#i-timer"/></svg>Practice</div><div><svg class="ic"><use href="#i-med"/></svg>Medical</div><div><svg class="ic"><use href="#i-shield"/></svg>Safeguard</div><div><svg class="ic"><use href="#i-ticket"/></svg>Shows</div><div><svg class="ic"><use href="#i-funnel"/></svg>Enrol</div>
+      </div>
+      <div class="markers"><span style="display:flex;gap:10px;align-items:center"><i class="mk crit"></i>Critical — diamond</span><span style="display:flex;gap:10px;align-items:center"><i class="mk warn"></i>Warning — triangle</span><span style="display:flex;gap:10px;align-items:center"><i class="mk info"></i>Info — dot · <i class="mk neutral"></i>To do — ring</span></div>
+      <span class="cap">Icons sit in navigation and on actions only — never beside headings.</span></div>
+    <div class="tile"><span class="lbl">Motion · on the beat</span>
+      <div class="beats lg demo-beats" aria-label="Animated count: five, six, seven, eight, one to four"><i style="--n:0"></i><i style="--n:1"></i><i style="--n:2"></i><i style="--n:3"></i><i style="--n:4"></i><i style="--n:5"></i><i style="--n:6"></i><i style="--n:7"></i></div>
+      <p style="font-size:15px">One beat = 120 ms (an allegro 125 bpm). Lists enter in staggered fours; loaders light beats in time; success is the bar filling to 8 and holding. Nothing bounces or spins. With reduced motion, the bar is simply full and lists appear at once.</p>
+      <span class="cap">Live demo — honours prefers-reduced-motion.</span></div>
+  </div>
+</section>
+
+<!-- ============ 7 · PRODUCT ============ -->
+<section class="sec" id="product">
+  <div class="sec-head"><span class="sec-no">07 · PRODUCT</span><h2>The school, on the count</h2>
+    <p>White surfaces, Ink type, one blue thing per screen. Big numbers only where a decision hangs on them.</p></div>
+
+  <div class="stack">
+
+  <div class="phones">
+    <!-- a · sign in -->
+    <div class="ab" data-w="390" data-h="844"><div class="ab-box"><div class="ab-in">
+      <div class="ph"><div class="si">
+        <div class="ph-sb" style="color:#fff"><span>16:05</span><span class="bat"></span></div>
+        <div class="si-top">
+          <svg class="wm" viewBox="0 0 392 82" aria-label="Swayvo"><use href="#sv-wm"/></svg>
+          <h1 class="disp">Five, six, seven, <span>eight.</span></h1>
+          <div class="count-row lit-loop" aria-hidden="true"><i style="--n:4"></i><i style="--n:5"></i><i style="--n:6"></i><i style="--n:7"></i><i style="--n:0"></i><i style="--n:1"></i><i style="--n:2"></i><i style="--n:3"></i></div>
+        </div>
+        <div class="si-sheet">
+          <p class="sc">Northstar Dance Academy</p>
+          <h2>Sign in to your school</h2>
+          <div class="field"><label>Email</label><div class="in f">marcus.bell@northstardance.co.uk</div></div>
+          <a class="btn pri">Send me a sign-in link</a>
+          <p class="fine">No password to remember. First time here? Use the email your school invited — we'll find your classes.</p>
+        </div>
+      </div></div>
+    </div></div><p class="ab-cap"><b>a · Sign in / first run</b> — phone. Brand at full volume once; then the product goes quiet.</p></div>
+
+    <!-- c1 · teacher today -->
+    <div class="ab" data-w="390" data-h="844"><div class="ab-box"><div class="ab-in">
+      <div class="ph">
+        <div class="ph-sb"><span>16:12</span><span class="bat"></span></div>
+        <div class="ph-body">
+          <div class="t-top"><div class="who">Thursday 26 Nov<b>Marcus</b></div><svg class="ic" style="color:var(--ink)"><use href="#i-bell"/></svg></div>
+          <div class="t-hero">
+            <span class="eyebrow" style="color:var(--blue)">Next · in 18 min</span>
+            <div class="tm disp num">16:30</div>
+            <h2>Junior Tap</h2>
+            <p class="meta">Greenwich · Studio Two · 12 booked + 1 trial</p>
+            <div class="med"><svg class="ic"><use href="#i-med"/></svg><span><b>2 medical notes.</b> Jonah Grant — nut allergy, urgent. Kai Doherty — asthma, inhaler in bag.</span></div>
+            <a class="btn pri">Open register</a>
+          </div>
+          <div class="later"><span class="tm num">18:30</span><div><div class="nm">Senior Tap</div><div class="sb">Blackheath · Main Hall · 11 of 16</div></div><svg class="ic" style="color:var(--mute)"><use href="#i-chev"/></svg></div>
+          <div class="prompt"><p><b>After class:</b> two lines of feedback for Junior Tap while it's fresh? Families see it tonight.</p></div>
+        </div>
+        <nav class="ph-nav"><a class="on"><svg class="ic"><use href="#i-today"/></svg>Today</a><a><svg class="ic"><use href="#i-reg"/></svg>Registers</a><a><svg class="ic"><use href="#i-msg"/></svg>Messages</a><a><svg class="ic"><use href="#i-user"/></svg>Me</a></nav>
+      </div>
+    </div></div><p class="ab-cap"><b>c · Teacher — today</b> (Marcus). Active tab = the filled beat above it.</p></div>
+    <!-- c2 · register -->
+    <div class="ab" data-w="390" data-h="844"><div class="ab-box"><div class="ab-in">
+      <div class="ph">
+        <div class="ph-sb"><span>16:34</span><span class="bat"></span></div>
+        <div class="rg-top"><svg class="ic"><use href="#i-back"/></svg>Today</div>
+        <div class="rg-h">
+          <h2 class="disp">Junior Tap</h2>
+          <p class="meta">Thu 16:30 · Greenwich · Studio Two</p>
+          <div class="rg-sum"><span class="t">7 here · 1 absent <span>· 5 to mark</span></span>
+            <span class="ticks" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="abs"></i><i></i><i></i><i></i><i></i><i></i></span></div>
+        </div>
+        <div class="stagger">
+          <div class="rg-row" style="--i:0"><div><div class="nm">Sofia Ackah</div></div><div class="seg p"><span><svg class="ic"><use href="#i-check"/></svg>Here</span><span>Absent</span></div></div>
+          <div class="rg-row" style="--i:1"><div><div class="nm">Idris Adeyemi</div></div><div class="seg p"><span><svg class="ic"><use href="#i-check"/></svg>Here</span><span>Absent</span></div></div>
+          <div class="rg-row" style="--i:2"><div><div class="nm">Elias Bennett</div></div><div class="seg a"><span>Here</span><span><svg class="ic"><use href="#i-x"/></svg>Absent</span></div></div>
+          <div class="rg-row" style="--i:3"><div><div class="nm">Kai Doherty</div><div class="md soft"><svg class="ic"><use href="#i-med"/></svg>Asthma — inhaler in bag</div></div><div class="seg p"><span><svg class="ic"><use href="#i-check"/></svg>Here</span><span>Absent</span></div></div>
+          <div class="rg-row"><div><div class="nm">Nia Doherty</div></div><div class="seg p"><span><svg class="ic"><use href="#i-check"/></svg>Here</span><span>Absent</span></div></div>
+          <div class="rg-row"><div><div class="nm">Zara Ellery</div></div><div class="seg p"><span><svg class="ic"><use href="#i-check"/></svg>Here</span><span>Absent</span></div></div>
+          <div class="rg-row"><div><div class="nm">Ottilie Ferreira</div></div><div class="seg p"><span><svg class="ic"><use href="#i-check"/></svg>Here</span><span>Absent</span></div></div>
+          <div class="rg-row"><div><div class="nm">Jonah Grant</div><div class="md"><svg class="ic"><use href="#i-med"/></svg>Nut allergy — urgent</div></div><div class="seg p"><span><svg class="ic"><use href="#i-check"/></svg>Here</span><span>Absent</span></div></div>
+          <div class="rg-row"><div><div class="nm">Sena Hussain</div></div><div class="seg"><span>Here</span><span>Absent</span></div></div>
+          <div class="rg-row"><div><div class="nm">Leo Mensah</div></div><div class="seg"><span>Here</span><span>Absent</span></div></div>
+        </div>
+        <div class="rg-foot"><span class="t"><b>5 to mark</b>Ruby, Amara, Layla (trial) and 2 more</span><a class="btn pri" style="height:48px">Mark rest here</a></div>
+      </div>
+    </div></div><p class="ab-cap"><b>c · Teacher — register</b>, 16:30 Junior Tap. One tap per child; medical marks inline; the count fills as you go.</p></div>
+
+  </div>
+
+  <!-- b · owner today -->
+  <div class="ab" data-w="1280" data-h="800"><div class="ab-box"><div class="ab-in">
+    <div class="dk">
+      <nav class="rail"><svg class="m" viewBox="0 0 64 64"><use href="#sv-mark"/></svg>
+        <a class="on"><svg class="ic"><use href="#i-today"/></svg></a><a><svg class="ic"><use href="#i-grid"/></svg></a><a><svg class="ic"><use href="#i-people"/></svg></a><a><svg class="ic"><use href="#i-card"/></svg></a><a><svg class="ic"><use href="#i-funnel"/></svg></a><a><svg class="ic"><use href="#i-ticket"/></svg></a><a><svg class="ic"><use href="#i-chart"/></svg></a><a><svg class="ic"><use href="#i-shield"/></svg></a>
+        <span class="av">FL</span></nav>
+      <div class="od">
+        <div class="od-h">
+          <div><span class="eyebrow">Northstar Dance Academy · Greenwich &amp; Blackheath</span><h1 class="disp">Thursday 26 November</h1></div>
+          <div class="term"><span class="t">Autumn term · <b>week 11 of 13</b></span>
+            <span class="ticks"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="now"></i><i></i><i></i></span></div>
+        </div>
+        <div class="od-grid">
+          <div>
+            <div class="next">
+              <span class="big disp num">16:30</span>
+              <div><span class="eyebrow" style="color:var(--blue)">Next up · in 18 min</span><h2 style="margin-top:6px">Junior Tap</h2><p class="meta">Marcus Bell · Greenwich · Studio Two · 12 of 16, 1 trial</p></div>
+              <div class="acts" style="grid-column:1/3"><a class="btn pri">Open register</a><a class="btn out">Message families</a></div>
+            </div>
+            <div class="sec-t"><h3>Today · 4 classes</h3><span>Booked of capacity · trial in peach</span></div>
+            <div class="cl-row nxt"><span class="tm">16:30</span><div><div class="nm">Junior Tap</div><div class="sb">Marcus Bell</div></div><span class="sb">Greenwich · Studio Two</span>
+              <span class="ticks"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="tr"></i><i></i><i></i><i></i></span><span class="cap">12/16</span></div>
+            <div class="cl-row"><span class="tm">18:30</span><div><div class="nm">Senior Tap</div><div class="sb">Marcus Bell</div></div><span class="sb">Blackheath · Main Hall</span>
+              <span class="ticks"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></span><span class="cap">11/16</span></div>
+            <div class="cl-row"><span class="tm">19:00</span><div><div class="nm">Contemporary Seniors</div><div class="sb">Priya Raman</div></div><span class="sb">Greenwich · Studio One</span>
+              <span class="ticks"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i></span><span class="cap">14/18</span></div>
+            <div class="cl-row"><span class="tm">20:00</span><div><div class="nm">Adult Contemporary</div><div class="sb">Priya Raman · drop-in</div></div><span class="sb">Greenwich · Studio One</span>
+              <span class="ticks"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="cap">9/20</span></div>
+          </div>
+          <aside>
+            <div class="sec-t" style="padding-top:0"><h3>Needs attention</h3><span>5 things</span></div>
+            <div class="att-row"><i class="mk crit"></i><span class="n">3</span><div><div class="t">Card payments failed</div><div class="s">£162.00 in total</div></div><span class="a">Retry cards</span></div>
+            <div class="att-row"><i class="mk warn"></i><span class="n">1</span><div><div class="t">Medical update to acknowledge</div><div class="s">Nia Wright — new inhaler</div></div><span class="a">Acknowledge</span></div>
+            <div class="att-row"><i class="mk info"></i><span class="n">4</span><div><div class="t">Families waiting for a reply</div><div class="s">Oldest 2 days</div></div><span class="a">Reply</span></div>
+            <div class="att-row"><i class="mk neutral"></i><span class="n">5</span><div><div class="t">Trials attended, not enrolled</div><div class="s">Follow up while it's warm</div></div><span class="a">Follow up</span></div>
+            <div class="att-row"><i class="mk neutral"></i><span class="n">8</span><div><div class="t">Waiting for Grade 3 Ballet</div><div class="s">Class is full</div></div><span class="a">Waiting list</span></div>
+            <div class="sec-t" style="margin-top:20px"><h3>Money</h3><span>Billing</span></div>
+            <div class="money"><div><div class="v">£612.00</div><div class="k">Outstanding · 8 families</div></div><div><div class="v" style="color:var(--mute)">£2,088.00</div><div class="k">Collected · last 30 days</div></div></div>
+            <div class="sec-t"><h3>Last 4 weeks</h3><span>Reports</span></div>
+            <div class="health">
+              <div><div class="v">91% <span>attendance</span></div><div class="beats"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i style="background:linear-gradient(to top,var(--ink) 30%,var(--line) 30%)"></i></div></div>
+              <div><div class="v">68% <span>places · 143/210</span></div><div class="beats"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i style="background:linear-gradient(to top,var(--ink) 44%,var(--line) 44%)"></i><i></i><i></i></div></div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </div></div><p class="ab-cap"><b>b · Owner — Today</b> (Freya), desktop 1280 × 800. One hero number (the next class), a dense list for the rest; capacity drawn as beats.</p></div>
+
+  <div class="phones">
+    <!-- d · student -->
+    <div class="ab" data-w="390" data-h="844"><div class="ab-box"><div class="ab-in">
+      <div class="ph">
+        <div class="st-hero">
+          <div class="ph-sb"><span>17:40</span><span class="bat"></span></div>
+          <div class="top"><b>Amir</b><span>Progress</span></div>
+          <div class="ms"><span class="n disp num">50</span><p><b>classes.</b>That's a full count. Keep moving.</p></div>
+          <div class="beats"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div>
+          <div class="pr"><span>Practice this week</span><b class="num">45 min</b></div>
+        </div>
+        <div class="ph-body">
+          <div class="st-next"><span class="tm num"><small>TONIGHT</small>19:00</span><div><div class="nm">Contemporary Seniors</div><div class="sb">Priya Raman · Studio One</div></div></div>
+          <div class="fb"><span class="eyebrow">Priya · Thu 19 Nov</span><q>“Your spirals have real control now. Keep the breath going through the release.”</q></div>
+          <div class="sk-h"><h3>Contemporary</h3><span class="note">6 skills</span></div>
+          <div class="sk"><span class="nm">Musicality</span><span class="lv"><b>Mastered</b></span><div class="beats"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div></div>
+          <div class="sk"><span class="nm">Contraction and release</span><span class="lv"><b>Secure</b> · <span class="up">up from developing</span></span><div class="beats"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="now"></i><i class="now"></i><i></i><i></i></div></div>
+          <div class="sk"><span class="nm">Spirals</span><span class="lv"><b>Secure</b></span><div class="beats"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div></div>
+          <div class="sk"><span class="nm">Floorwork</span><span class="lv"><b>Secure</b></span><div class="beats"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div></div>
+          <div class="sk"><span class="nm">Balance</span><span class="lv"><b>Developing</b></span><div class="beats"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div></div>
+        </div>
+        <nav class="ph-nav"><a><svg class="ic"><use href="#i-home"/></svg>Home</a><a class="on"><svg class="ic"><use href="#i-prog"/></svg>Progress</a><a><svg class="ic"><use href="#i-today"/></svg>Classes</a><a><svg class="ic"><use href="#i-timer"/></svg>Practice</a></nav>
+      </div>
+    </div></div><p class="ab-cap"><b>d · Student — progress</b> (Amir). The milestone earns blue; skills are beats, never fails. Below the fold: Travelling, goal "Clean double pirouette by the spring show" (with Priya).</p></div>
+
+    <!-- e · parent -->
+    <div class="ab" data-w="390" data-h="844"><div class="ab-box"><div class="ab-in">
+      <div class="ph">
+        <div class="ph-sb"><span>12:20</span><span class="bat"></span></div>
+        <div class="ph-body">
+          <div class="pa-top"><div><h1 class="disp">Hannah</h1><p class="sc">Northstar Dance Academy</p></div><svg class="ic"><use href="#i-bell"/></svg></div>
+          <div class="due"><span class="v">£186.00</span><span class="k">Spring term · due 10 Dec</span><a class="btn pri">Pay</a></div>
+          <div class="notice"><i class="mk info"></i><div><b>Grade 2 Ballet on Tue 1 Dec moves to Studio Two</b><div class="s">Nia · same time, same teacher</div></div></div>
+          <div class="notice"><i class="mk neutral"></i><div><b>Summer Show costume sizes due by 4 Dec</b><div class="s"><a>Add sizes</a> · Nia and Amir</div></div></div>
+          <div class="kid"><div class="kid-h"><b>Amir</b><span>15</span></div>
+            <div class="wk tonight"><span class="d"><b>Tonight</b>19:00</span><div><div class="nm">Contemporary Seniors</div><div class="sb">Priya Raman · Studio One</div></div></div>
+            <div class="wk x"><span class="d"><b>Fri</b>17:30</span><div><div class="nm">Street Seniors</div><div class="cx">◆ Cancelled — teacher unwell</div></div></div>
+          </div>
+          <div class="kid"><div class="kid-h"><b>Nia</b><span>9 · next week</span></div>
+            <div class="wk"><span class="d"><b>Tue 1</b>17:30</span><div><div class="nm">Grade 2 Ballet</div><div class="chg">● Moved to Studio Two</div></div></div>
+            <div class="wk"><span class="d"><b>Wed 2</b>17:30</span><div><div class="nm">Grade 3 Ballet</div><div class="sb">Freya Lindqvist · Studio One</div></div></div>
+          </div>
+        </div>
+        <nav class="ph-nav"><a class="on"><svg class="ic"><use href="#i-home"/></svg>Home</a><a><svg class="ic"><use href="#i-today"/></svg>Week</a><a><svg class="ic"><use href="#i-card"/></svg>Payments</a><a><svg class="ic"><use href="#i-msg"/></svg>Messages</a></nav>
+      </div>
+    </div></div><p class="ab-cap"><b>e · Parent — home</b> (Hannah). What changed, what's next, what's owed. Below: Priya's feedback for Amir.</p></div>
+    <!-- g · payment -->
+    <div class="ab" data-w="390" data-h="844"><div class="ab-box"><div class="ab-in">
+      <div class="ph">
+        <div class="ph-sb"><span>12:21</span><span class="bat"></span></div>
+        <div class="pay-top"><svg class="ic"><use href="#i-back"/></svg>Payments</div>
+        <div class="pay-amt"><span class="eyebrow">INV-1088 · Spring term</span><div class="v disp">£186.00</div><p class="k">Due <b>10 December</b></p></div>
+        <div class="lines">
+          <div class="ln-h">Nia</div>
+          <div class="ln"><span>Grade 2 Ballet</span><span>£84.00</span></div>
+          <div class="ln"><span>Grade 3 Ballet</span><span>£96.00</span></div>
+          <div class="ln disc"><span>Sibling discount</span><span>−£9.60</span></div>
+          <div class="ln-h">Amir</div>
+          <div class="ln"><span>Senior Tap drop-in pack</span><span>£15.60</span></div>
+          <div class="ln tot"><span>Total</span><span>£186.00</span></div>
+        </div>
+        <div class="pay-acts"><a class="btn ink">Pay with Apple Pay</a><a class="btn out"><svg class="ic"><use href="#i-card"/></svg>Pay by card</a></div>
+        <div class="bank"><div><span class="note">Or bank transfer, reference</span><br><code>NDA-1088</code></div><span class="cp"><svg class="ic" style="width:18px;height:18px"><use href="#i-copy"/></svg>Copy</span></div>
+        <p class="last">Last paid: INV-1041 · £54.00 on 5 Nov</p>
+      </div>
+    </div></div><p class="ab-cap"><b>g · Payment</b> — Hannah pays INV-1088. Calm and exact: no blue here, because nothing should feel pushed.</p></div>
+
+  </div>
+
+  <!-- f · timetable -->
+  <div class="ab" data-w="1280" data-h="800"><div class="ab-box"><div class="ab-in">
+    <div class="dk">
+      <nav class="rail"><svg class="m" viewBox="0 0 64 64"><use href="#sv-mark"/></svg>
+        <a><svg class="ic"><use href="#i-today"/></svg></a><a class="on"><svg class="ic"><use href="#i-grid"/></svg></a><a><svg class="ic"><use href="#i-people"/></svg></a><a><svg class="ic"><use href="#i-card"/></svg></a><a><svg class="ic"><use href="#i-funnel"/></svg></a><a><svg class="ic"><use href="#i-ticket"/></svg></a><a><svg class="ic"><use href="#i-chart"/></svg></a><a><svg class="ic"><use href="#i-shield"/></svg></a>
+        <span class="av">FL</span></nav>
+      <div class="tt">
+        <div class="tt-h">
+          <div><span class="eyebrow">Timetable · Autumn term, week 11 of 13</span><h1 class="disp">Mon 23 – Sat 28 November</h1></div>
+          <div class="tt-ctl"><span class="seg2"><span class="on">By room</span><span>By teacher</span></span><span class="b"><svg class="ic" style="width:18px;height:18px"><use href="#i-back"/></svg></span><span class="b">This week</span><span class="b"><svg class="ic" style="width:18px;height:18px"><use href="#i-chev"/></svg></span><span class="b" style="background:var(--blue);color:#fff;border-color:var(--blue)"><svg class="ic" style="width:18px;height:18px"><use href="#i-plus"/></svg>Add class</span></div>
+        </div>
+        <div class="grid">
+          <div class="dh" style="border-left:0"></div>
+          <div class="dh">Mon <span>23</span></div><div class="dh">Tue <span>24</span></div><div class="dh">Wed <span>25</span></div><div class="dh today">Thu · today <span>26</span></div><div class="dh">Fri <span>27</span></div><div class="dh">Sat <span>28</span></div>
+
+          <div class="rm"><b>Studio One</b>Greenwich</div>
+          <div class="cell"><div class="cb" style="--st:var(--st-ballet)"><div class="tm">16:00</div><div class="nm">Pre-School Ballet</div><div class="sb">Freya · Ballet</div></div><div class="cb" style="--st:var(--st-ballet)"><div class="tm">17:00</div><div class="nm">Primary Ballet</div><div class="sb">Freya · Ballet</div></div></div>
+          <div class="cell"><div class="cb" style="--st:var(--st-ballet)"><div class="tm">17:30</div><div class="nm">Grade 2 Ballet</div><div class="sb">Freya · Ballet</div></div></div>
+          <div class="cell"><div class="cb" style="--st:var(--st-ballet)"><div class="tm">17:30</div><div class="nm">Grade 3 Ballet</div><div class="sb">Freya · Ballet</div><div class="flag full"><i class="mk warn"></i>Full · 8 waiting</div></div></div>
+          <div class="cell today"><div class="cb" style="--st:var(--st-cont)"><div class="tm">19:00</div><div class="nm">Contemporary Seniors</div><div class="sb">Priya · Contemporary</div></div><div class="cb" style="--st:var(--st-cont)"><div class="tm">20:00</div><div class="nm">Adult Contemporary drop-in</div><div class="sb">Priya · Contemporary</div></div></div>
+          <div class="cell"></div>
+          <div class="cell"><div class="cb" style="--st:var(--st-ballet)"><div class="tm">09:15</div><div class="nm">Grade 1 Ballet</div><div class="sb">Freya · Ballet</div></div></div>
+
+          <div class="rm"><b>Studio Two</b>Greenwich</div>
+          <div class="cell"></div>
+          <div class="cell"><div class="cb" style="--st:var(--st-tap)"><div class="tm">16:30</div><div class="nm">Junior Tap</div><div class="sb">Marcus · Tap</div></div></div>
+          <div class="cell"></div>
+          <div class="cell today"><div class="cb nx" style="--st:var(--st-tap)"><div class="tm">16:30 · next</div><div class="nm">Junior Tap</div><div class="sb">Marcus · Tap</div></div></div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+
+          <div class="rm"><b>Main Hall</b>Blackheath</div>
+          <div class="cell"></div>
+          <div class="cell"><div class="cb" style="--st:var(--st-cont)"><div class="tm">16:00</div><div class="nm">Modern Juniors</div><div class="sb">Priya · Modern</div></div></div>
+          <div class="cell"><div class="cb" style="--st:var(--st-street)"><div class="tm">16:30</div><div class="nm">Street Juniors</div><div class="sb">Tomasz · Street</div></div></div>
+          <div class="cell today"><div class="cb" style="--st:var(--st-tap)"><div class="tm">18:30</div><div class="nm">Senior Tap</div><div class="sb">Marcus · Tap</div></div></div>
+          <div class="cell"><div class="cb cx" style="--st:var(--st-street)"><div class="tm">17:30</div><div class="nm">Street Seniors</div><div class="sb">Tomasz · Street</div><div class="flag cx"><i class="mk crit"></i>Cancelled — teacher unwell</div></div></div>
+          <div class="cell"><div class="cb" style="--st:var(--st-jazz)"><div class="tm">10:30</div><div class="nm">Jazz Intermediate</div><div class="sb">Tomasz · Jazz</div></div></div>
+        </div>
+        <div class="tt-leg"><span><i style="background:var(--st-ballet)"></i>Ballet</span><span><i style="background:var(--st-tap)"></i>Tap</span><span><i style="background:var(--st-cont)"></i>Contemporary / Modern</span><span><i style="background:var(--st-street)"></i>Street</span><span><i style="background:var(--st-jazz)"></i>Jazz</span><span style="margin-left:auto">Style marks always sit beside the style name.</span></div>
+      </div>
+    </div>
+  </div></div><p class="ab-cap"><b>f · Week timetable by room</b>, desktop 1280 × 800. Rooms are rows, days are columns; today's column and the next class carry the only blue.</p></div>
+
+  </div>
+</section>
+
+<!-- ============ 8 · MARKETING ============ -->
+<section class="sec" id="marketing">
+  <div class="sec-head"><span class="sec-no">08 · MARKETING</span><h2>Loud where it should be</h2></div>
+  <div class="ab" data-w="1280" data-h="720"><div class="ab-box"><div class="ab-in">
+    <div class="mk-hero">
+      <div class="photo mk-photo"><span class="pl" style="left:240px">Photography: street class mid-routine, low side light, 35 mm, motion blur on the hands only. Mixed ages, no posing.</span></div>
+      <div class="mk-nav" style="position:relative;z-index:2"><svg class="wm" viewBox="0 0 392 82" aria-label="Swayvo"><use href="#sv-wm"/></svg><nav><span>Product</span><span>Pricing</span><span>Schools</span><span>Sign in</span><b>Book a demo</b></nav></div>
+      <div class="mk-copy"><h1 class="disp">Keep the whole school on the <span>count.</span></h1>
+        <p>Timetable, registers, payments and progress for dance schools. The admin keeps time in the background, so you can teach.</p>
+        <div class="acts"><a class="btn peach">Start a free term</a><a>See it in two minutes</a></div>
+        <p class="styles">Ballet · Tap · Contemporary · Jazz · Street · Commercial · Musical theatre · Ballroom</p></div>
+      <div class="mini mk-phone"><span class="eyebrow">Register · Thu 16:30</span><h4>Junior Tap</h4><p class="s">7 here · 1 absent · 5 to mark</p>
+        <div class="ticks" style="margin:12px 0 6px"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="abs"></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="r">Sofia Ackah<em class="p">Here</em></div><div class="r">Idris Adeyemi<em class="p">Here</em></div><div class="r">Elias Bennett<em class="a">Absent</em></div><div class="r">Kai Doherty<em class="p">Here</em></div><div class="r">Nia Doherty<em class="p">Here</em></div><div class="r">Zara Ellery<em class="p">Here</em></div><div class="r">Ottilie Ferreira<em class="p">Here</em></div><div class="r">Jonah Grant<em class="p">Here</em></div><div class="r">Sena Hussain<em class="u">Mark</em></div>
+      </div>
+    </div>
+  </div></div><p class="ab-cap"><b>Website hero</b>, 1280 × 720.</p></div>
+
+  <div class="mkt-grid">
+    <div class="ab" data-w="430" data-h="932"><div class="ab-box"><div class="ab-in">
+      <div class="store"><h2 class="disp">The register in <span>one tap.</span></h2><p>Medical notes where you need them. Saved as you go.</p>
+        <div class="mini"><span class="eyebrow">Thu 16:30 · Studio Two</span><h4>Junior Tap</h4><p class="s">7 here · 1 absent · 5 to mark</p>
+          <div class="ticks" style="margin:12px 0 6px"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="abs"></i><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="r">Sofia Ackah<em class="p">Here</em></div><div class="r">Elias Bennett<em class="a">Absent</em></div><div class="r"><span>Kai Doherty<br><span style="color:var(--warn);font-size:12px">Asthma — inhaler in bag</span></span><em class="p">Here</em></div><div class="r"><span>Jonah Grant<br><span style="color:var(--crit);font-size:12px">Nut allergy — urgent</span></span><em class="p">Here</em></div><div class="r">Sena Hussain<em class="u">Mark</em></div><div class="r">Leo Mensah<em class="u">Mark</em></div><div class="r"><span>Layla Haddad <span style="background:var(--peach);font-size:11px;padding:1px 5px;border-radius:3px">Trial</span></span><em class="u">Mark</em></div>
+        </div></div>
+    </div></div><p class="ab-cap"><b>App Store screenshot</b>, portrait.</p></div>
+    <div class="ab" data-w="1080" data-h="1080"><div class="ab-box"><div class="ab-in">
+      <div class="insta">
+        <div class="nums"><b>5</b><b>6</b><b>7</b><b>8</b></div>
+        <div class="bar"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="n"></i></div>
+        <div class="cp"><p>Every class starts on the count. We keep the rest in time.</p><svg class="wm" viewBox="0 0 392 82" aria-label="Swayvo"><use href="#sv-wm"/></svg></div>
+      </div>
+    </div></div><p class="ab-cap"><b>Instagram post</b>, 1080 × 1080. Typographic only — the count is the picture.</p></div>
+  </div>
+</section>
+
+<!-- ============ 9 · NOTES ============ -->
+<section class="sec" id="notes">
+  <div class="sec-head"><span class="sec-no">09 · CONCEPT NOTES</span><h2>Honestly</h2></div>
+  <div class="notes">
+    <div class="tile"><span class="lbl">Strengths</span><ul>
+      <li>One idea does real work: the beat bar is logo, meter, loader, nav state and success — the system explains itself.</li>
+      <li>The eight-count belongs to every style equally; nothing reads ballet-first or children's-club.</li>
+      <li>Loud brand, quiet product: blue is earned (sign-in, milestones, marketing), so data screens stay readable.</li>
+      <li>Big expanded numerals make "what's next / what's owed" scannable between classes.</li></ul></div>
+    <div class="tile"><span class="lbl">Weaknesses</span><ul>
+      <li>Bar glyphs can read as a signal-strength or audio-level icon at a glance; the grouped 4+4 rhythm and peach downbeat have to carry the difference.</li>
+      <li>"Beats" as a progress unit is abstract — 8 is not a percentage, so meters need numbers beside them.</li>
+      <li>Archivo Expanded eats width; long class names need the 112% cut in lists.</li></ul></div>
+    <div class="tile"><span class="lbl">Risks</span><ul>
+      <li>Sporty energy could feel pushy for calm ballet schools and anxious parents — tone of voice must stay encouraging, never Strava-competitive.</li>
+      <li>Skill meters risk being read as grades; "developing" must never look like failure (no red, no empty-state shame).</li>
+      <li>Count blue is close to many SaaS blues; the peach downbeat and the wordmark lean are what make it ownable.</li></ul></div>
+    <div class="tile"><span class="lbl">Implementation complexity</span>
+      <p class="cx-meter"><span class="beats"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i></span>Medium</p>
+      <p style="font-size:15px">Two Google variable fonts, a small token set and one reusable <code>&lt;Beats n= of=&gt;</code> component cover most of the UI. Motion is CSS-only. The cost is discipline: guarding the blue budget and keeping the motif from spreading into decoration.</p></div>
+  </div>
+</section>
+
+<footer>Swayvo · Concept B “Counts” · Synthetic data for Northstar Dance Academy. Fonts: Archivo, Inter (SIL Open Font License).</footer>
+</main>
+
+<script>
+(function(){
+  function fit(){
+    document.querySelectorAll('.ab').forEach(function(ab){
+      var w=+ab.dataset.w,h=+ab.dataset.h,box=ab.querySelector('.ab-box'),inner=ab.querySelector('.ab-in');
+      var s=Math.min(1,ab.clientWidth/w);
+      inner.style.width=w+'px';inner.style.height=h+'px';inner.style.transform='scale('+s+')';
+      box.style.height=(h*s)+'px';box.style.width=(w*s)+'px';
+    });
+  }
+  fit();window.addEventListener('resize',fit);
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,940 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sotto — Marked</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============ TOKENS ============ */
+:root{
+  /* neutrals — rehearsal-room daylight */
+  --porcelain:#EEF1F2; --white:#FFFFFF; --graphite:#1D2226; --slate:#5A6670;
+  --rule:#D5DBDF; --rule-soft:#E5E9EB; --tint:#F6F8F9;
+  /* brand */
+  --spike:#F2C230;      /* tape: marks, now, selection only. never text */
+  --marley:#24364A;     /* primary actions */
+  --marley-hover:#1A2938;
+  /* semantic (separate from brand) */
+  --ok:#1F7A4D; --ok-bg:#E4F1EA;
+  --warn:#94580A; --warn-bg:#F7EBD6;
+  --crit:#B3261E; --crit-bg:#F9E5E3;
+  --info:#1F5FA8; --info-bg:#E3ECF7;
+  /* style tapes (marks only, always with the class name) */
+  --t-ballet:#E9A3B6; --t-tap:#7AAEDB; --t-cont:#86BC8B; --t-street:#EE9152; --t-jazz:#B095DB;
+  /* type */
+  --sans:"Instrument Sans","Helvetica Neue",Arial,system-ui,sans-serif;
+  --mono:"Geist Mono","JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  /* spacing: 4-based */
+  --s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:24px;--s6:32px;--s7:48px;--s8:64px;--s9:96px;--s10:144px;
+  /* motion */
+  --settle:cubic-bezier(.22,1,.36,1);       /* content: ease-out, no overshoot */
+  --land:cubic-bezier(.34,1.5,.56,1);       /* marker only: tiny overshoot */
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--porcelain);overflow-x:clip}
+body{background:var(--porcelain);color:var(--graphite);font-family:var(--sans);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:clip}
+.m{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:0}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+svg{display:block}
+.ico{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:square;stroke-linejoin:miter}
+
+/* tape strip + cross — the spike mark */
+.tape{display:inline-block;width:20px;height:7px;background:var(--spike);transform:rotate(-4deg);
+  clip-path:polygon(0 18%,7% 0,100% 8%,95% 50%,100% 92%,5% 100%,2% 62%,6% 40%);flex:none}
+.tape.s{width:14px;height:5px}
+.tape.l{width:40px;height:10px}
+.xm{position:relative;display:inline-block;width:22px;height:22px;flex:none}
+.xm::before,.xm::after{content:"";position:absolute;left:0;top:37%;width:100%;height:26%;background:var(--spike);
+  clip-path:polygon(0 18%,7% 0,100% 8%,95% 50%,100% 92%,5% 100%,2% 62%,6% 40%)}
+.xm::before{transform:rotate(-13deg)}.xm::after{transform:rotate(73deg) scaleX(.88)}
+
+/* ============ BOARD LAYOUT ============ */
+.wrap{max-width:1304px;margin:0 auto;padding:0 32px}
+.sec{padding:var(--s9) 0;border-top:1px solid var(--rule)}
+.sh{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:0 24px;margin-bottom:var(--s7)}
+.sh .num{grid-column:1/3;font-family:var(--mono);font-size:13px;color:var(--slate);display:flex;align-items:center;gap:10px;padding-top:12px}
+.sh h2{grid-column:3/9;font-size:44px;line-height:1.05;letter-spacing:-.03em;font-weight:600}
+.sh p{grid-column:3/10;color:var(--slate);font-size:17px;margin-top:var(--s3);max-width:62ch}
+.g12{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:24px}
+.lbl{font-family:var(--mono);font-size:12px;color:var(--slate);text-transform:uppercase;letter-spacing:.06em}
+.cap{font-family:var(--mono);font-size:12px;color:var(--slate);margin-top:var(--s3);display:flex;gap:8px;align-items:center}
+.note{font-size:14px;color:var(--slate);max-width:52ch}
+
+/* cover */
+.cover{padding:var(--s7) 0 var(--s9)}
+.cover-top{display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;color:var(--slate);margin-bottom:var(--s9)}
+.cover-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:24px;align-items:end}
+.cover-l{grid-column:1/7}
+.cover-l .wm{width:min(100%,520px);color:var(--graphite)}
+.cover-l h1{font-size:64px;line-height:1;letter-spacing:-.035em;font-weight:600;margin-top:var(--s8)}
+.cover-l .one{font-size:19px;color:var(--slate);margin-top:var(--s4);max-width:34ch}
+.floor{grid-column:8/13;position:relative;aspect-ratio:1/1.08;background:
+  linear-gradient(var(--rule-soft) 1px,transparent 1px) 0 0/48px 48px,
+  linear-gradient(90deg,var(--rule-soft) 1px,transparent 1px) 0 0/48px 48px, var(--white);border:1px solid var(--rule)}
+.floor .pin{position:absolute;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;color:var(--slate)}
+.floor .front{position:absolute;left:0;right:0;bottom:0;height:40px;border-top:1px solid var(--rule);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;color:var(--slate);letter-spacing:.2em;background:var(--white)}
+
+/* strategy */
+.strat{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:24px}
+.strat .idea{grid-column:3/8;font-size:22px;line-height:1.4;letter-spacing:-.01em}
+.strat .pers{grid-column:9/13}
+.pers ul{list-style:none;margin-top:var(--s3)}
+.pers li{font-size:22px;font-weight:600;letter-spacing:-.02em;line-height:1.35}
+.tov{grid-column:3/13;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;margin-top:var(--s8)}
+.tov p{font-size:16px;margin-top:var(--s2)}
+.tov div{border-top:1px solid var(--graphite);padding-top:var(--s3)}
+
+/* identity */
+.id-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:24px}
+.plate{background:var(--white);display:flex;align-items:center;justify-content:center;position:relative;min-height:240px;padding:40px}
+.plate .lbl{position:absolute;left:16px;top:14px}
+.plate.dark{background:var(--graphite)}.plate.dark .lbl{color:#AEB8C0}
+.plate.marley{background:var(--marley)}.plate.marley .lbl{color:#B9C6D3}
+.plate.por{background:var(--porcelain);outline:1px solid var(--rule)}
+.icons-row{display:flex;align-items:flex-end;gap:32px;flex-wrap:wrap}
+.appi{background:var(--marley);display:flex;align-items:center;justify-content:center}
+.appi svg{width:56%;height:56%}
+.sz{font-family:var(--mono);font-size:11px;color:var(--slate);margin-top:8px}
+.rules{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:24px;margin-top:var(--s6)}
+.rules > div{grid-column:span 4;border-top:1px solid var(--rule);padding-top:var(--s3)}
+.rules h4{font-size:15px;font-weight:600}
+.rules p{font-size:14px;color:var(--slate);margin-top:4px}
+
+/* colour */
+.sw-row{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;border:1px solid var(--rule)}
+.sw{min-height:200px;padding:16px;display:flex;flex-direction:column;justify-content:space-between}
+.sw b{font-weight:600;font-size:16px}
+.sw .m{font-size:12px}
+.sw small{font-size:12px;display:block;line-height:1.4}
+.sem{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;margin-top:var(--s6)}
+.sem > div{display:flex;flex-direction:column;gap:8px}
+.chip{display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:15px;font-weight:500}
+.styles{display:flex;flex-wrap:wrap;gap:12px 32px;margin-top:var(--s6)}
+.styles span{display:flex;align-items:center;gap:10px;font-size:15px}
+.rule-box{margin-top:var(--s6);display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:24px}
+.rule-box > div{grid-column:span 6;border-left:3px solid var(--graphite);padding-left:16px}
+.rule-box p{font-size:15px;color:var(--graphite);margin-top:4px}
+
+/* type */
+.type-row{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:24px;padding:var(--s5) 0;border-top:1px solid var(--rule-soft);align-items:baseline}
+.type-row .meta{grid-column:1/4;font-family:var(--mono);font-size:12px;color:var(--slate)}
+.type-row .spec{grid-column:4/13;min-width:0}
+.scale{display:flex;flex-wrap:wrap;gap:8px 28px;align-items:baseline;margin-top:var(--s6)}
+.scale span{display:flex;flex-direction:column}
+.scale i{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--slate)}
+
+/* graphic language */
+.gl{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:24px}
+.gl > div{min-width:0}
+.icons-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:24px 8px;margin-top:var(--s4)}
+.icons-grid div{display:flex;flex-direction:column;align-items:flex-start;gap:8px;font-size:12px;color:var(--slate);font-family:var(--mono)}
+.icons-grid svg{width:24px;height:24px;color:var(--graphite)}
+.mdemo{background:var(--white);padding:28px 24px 32px;margin-top:var(--s4);position:relative}
+.mdemo .days{display:grid;grid-template-columns:repeat(4,1fr);position:relative}
+.mdemo .days span{font-size:17px;font-weight:500;padding:8px 0;color:var(--slate);transition:color .2s var(--settle)}
+.mdemo .days span.on{color:var(--graphite)}
+.mdemo .mk{position:absolute;left:0;bottom:-6px;width:25%;height:0;transition:transform 200ms var(--land)}
+.mdemo .mk .tape{width:36px;height:8px}
+.mdemo .row{margin-top:24px;display:flex;gap:16px;align-items:baseline;font-size:15px}
+.mdemo .row.in{animation:landin 200ms var(--settle) both}
+@keyframes landin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){
+  .mdemo .mk,.mdemo .days span{transition:none}
+  .mdemo .row.in{animation:none}
+}
+
+/* artboards */
+.frame{position:relative;width:100%;overflow:hidden}
+.ab{position:absolute;left:0;top:0;transform-origin:0 0;overflow:hidden;background:var(--white);font-family:var(--sans);color:var(--graphite)}
+.ph{width:390px;height:844px;border-radius:44px;border:1px solid #CBD2D6}
+.dk{width:1280px;height:800px;border:1px solid #CBD2D6}
+.phones{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:40px 32px;align-items:start}
+.phones .frame{max-width:390px}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,390px));gap:32px}
+.shot{margin-bottom:var(--s8)}
+.shot h3{font-size:22px;font-weight:600;letter-spacing:-.02em;margin-bottom:4px}
+.shot .why{font-size:15px;color:var(--slate);max-width:70ch;margin-bottom:var(--s5)}
+
+/* ============ PRODUCT UI ============ */
+.sb{height:47px;display:flex;justify-content:space-between;align-items:center;padding:0 30px 0 34px;font-family:var(--mono);font-size:15px;font-weight:500}
+.sb i{display:inline-block;width:18px;height:10px;border:1.5px solid currentColor;border-radius:2px;margin-left:6px;position:relative}
+.sb i::after{content:"";position:absolute;inset:1.5px 4px 1.5px 1.5px;background:currentColor}
+.sb b{display:inline-block;width:16px;height:10px;background:linear-gradient(90deg,currentColor 3px,transparent 3px 4.3px,currentColor 4.3px 7.3px,transparent 7.3px 8.6px,currentColor 8.6px 11.6px,transparent 11.6px 12.9px,currentColor 12.9px);clip-path:polygon(0 100%,100% 0,100% 100%)}
+.ui{font-size:15px;line-height:1.4}
+.ui .muted{color:var(--slate)}
+.ui h1{font-size:30px;line-height:1.1;letter-spacing:-.03em;font-weight:600}
+.ui .eyebrow{font-family:var(--mono);font-size:13px;color:var(--slate)}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;height:52px;padding:0 20px;background:var(--marley);color:var(--white);font-weight:600;font-size:16px;border-radius:6px}
+.btn.sec{background:var(--white);color:var(--graphite);box-shadow:inset 0 0 0 1px var(--rule)}
+.btn.sm{height:40px;font-size:14px;padding:0 14px}
+.lnk{color:var(--marley);font-weight:600;font-size:15px;display:inline-flex;align-items:center;gap:4px;text-decoration:underline;text-decoration-color:var(--rule);text-underline-offset:4px}
+.hr{height:1px;background:var(--rule-soft)}
+
+/* bottom bar */
+.bb{position:absolute;left:0;right:0;bottom:0;height:86px;background:var(--white);border-top:1px solid var(--rule-soft);display:grid;padding:0 8px 26px}
+.bb a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:12px;font-weight:500;color:var(--slate);position:relative;min-height:56px}
+.bb a .ico{width:22px;height:22px}
+.bb a.on{color:var(--graphite);font-weight:600}
+.bb a.on .tape{position:absolute;top:2px;left:50%;margin-left:-12px;width:24px;height:6px}
+
+/* desktop app shell */
+.app{display:grid;grid-template-columns:224px 1fr;height:100%}
+.rail{background:var(--porcelain);padding:28px 20px;display:flex;flex-direction:column;font-size:14px}
+.rail .wm{width:72px;color:var(--graphite);margin:0 0 36px 12px}
+.rail nav a{display:flex;align-items:center;gap:10px;height:38px;padding-left:12px;color:var(--slate);font-weight:500;position:relative}
+.rail nav a.on{color:var(--graphite);font-weight:600}
+.rail nav a.on .tape{position:absolute;left:-14px;width:18px;height:6px}
+.rail nav a .m{margin-left:auto;font-size:12px;padding-right:8px}
+.rail .who{margin-top:auto;font-size:13px;padding-left:12px}
+.rail .who b{display:block;font-weight:600}
+.main{background:var(--white);padding:36px 48px;position:relative;overflow:hidden}
+.dhead{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:24px}
+.dhead h1{font-size:34px}
+.search{display:flex;align-items:center;gap:8px;width:300px;height:40px;padding:0 12px;box-shadow:inset 0 0 0 1px var(--rule);border-radius:6px;color:var(--slate);font-size:14px}
+.search .ico{width:18px;height:18px}
+
+/* owner today */
+.ot{display:grid;grid-template-columns:3fr 2fr;gap:48px;margin-top:8px}
+.secl{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:10px;border-bottom:1px solid var(--graphite)}
+.secl h2{font-size:15px;font-weight:600}
+.cls{display:grid;grid-template-columns:56px 1fr 108px 62px;align-items:center;gap:14px;min-height:70px;border-bottom:1px solid var(--rule-soft);font-size:14px}
+.cls .t{font-family:var(--mono);font-size:17px;font-weight:500}
+.cls b{font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px}
+.cap-bar{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:13px}
+.cap-bar .trk{flex:1;height:4px;background:var(--rule-soft);position:relative}
+.cap-bar .trk i{position:absolute;left:0;top:0;bottom:0;background:var(--marley)}
+.now{display:flex;align-items:center;gap:10px;height:28px;font-family:var(--mono);font-size:12px;color:var(--graphite);position:relative}
+.now::after{content:"";flex:1;height:1px;background:var(--graphite);opacity:.5}
+.stl{display:inline-block;width:12px;height:5px;transform:rotate(-4deg);clip-path:polygon(0 18%,7% 0,100% 8%,95% 50%,100% 92%,5% 100%,2% 62%,6% 40%)}
+.att{display:grid;grid-template-columns:44px 1fr auto;gap:14px;padding:16px 0;border-bottom:1px solid var(--rule-soft);align-items:start}
+.att .n{font-family:var(--mono);font-size:24px;font-weight:500;line-height:1.1}
+.att b{display:block;font-size:15px;font-weight:600}
+.att p{font-size:14px;color:var(--slate)}
+.att .lnk{font-size:14px;white-space:nowrap;margin-top:2px}
+.flag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;margin-left:8px;vertical-align:2px}
+.flag.crit{color:var(--crit)}.flag.crit::before{content:"";width:8px;height:8px;background:var(--crit)}
+.flag.info{color:var(--info)}.flag.info::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--info)}
+.ledger{display:grid;grid-template-columns:1.35fr 1fr .8fr 1fr;gap:24px;margin-top:40px;padding-top:14px;border-top:1px solid var(--graphite);align-items:end}
+.ledger .big{font-family:var(--mono);font-size:30px;font-weight:500;letter-spacing:-.02em}
+.ledger p{font-size:14px;color:var(--slate)}
+.ledger .pair{display:flex;gap:40px;align-items:flex-end}
+
+/* register */
+.rgh{padding:8px 20px 14px;border-bottom:1px solid var(--rule-soft)}
+.rgh .back{display:flex;align-items:center;gap:4px;height:44px;color:var(--marley);font-weight:600;font-size:15px;margin-left:-6px}
+.rgh .back .ico{width:20px;height:20px}
+.rgh h1{font-size:26px}
+.tally{display:flex;gap:18px;font-family:var(--mono);font-size:13px;margin-top:10px;color:var(--slate)}
+.tally b{color:var(--graphite);font-weight:500}
+.rg{display:grid;grid-template-columns:14px 1fr auto;align-items:center;gap:10px;min-height:58px;padding:6px 16px 6px 12px;border-bottom:1px solid var(--rule-soft)}
+.rg .mkc{height:100%;display:flex;align-items:center}
+.rg .mkc .tape{width:12px;height:6px;transform:rotate(-80deg)}
+.rg .nm{font-size:16px;font-weight:500;line-height:1.25}
+.rg .med{display:flex;align-items:center;gap:6px;font-size:13px;margin-top:3px;font-weight:500}
+.rg .med::before{content:"";width:7px;height:7px;border-radius:50%;flex:none}
+.rg .med.i{color:var(--info)}.rg .med.i::before{background:var(--info)}
+.rg .med.c{color:var(--crit)}.rg .med.c::before{border-radius:0;background:var(--crit)}
+.rg .tr{font-size:13px;color:var(--slate);margin-top:3px}
+.tg{display:flex;gap:6px}
+.tg span{width:64px;height:44px;display:flex;align-items:center;justify-content:center;gap:4px;font-size:14px;font-weight:600;border-radius:6px;box-shadow:inset 0 0 0 1px var(--rule);color:var(--slate)}
+.tg span.here{background:var(--marley);color:var(--white);box-shadow:none}
+.tg span.away{box-shadow:inset 0 0 0 1.5px var(--crit);color:var(--crit);background:var(--crit-bg)}
+.tg .ico{width:15px;height:15px;stroke-width:2}
+.rg.ab-row .nm{color:var(--slate)}
+.rgf{position:absolute;left:0;right:0;bottom:0;background:var(--white);border-top:1px solid var(--rule);padding:12px 16px 34px;display:grid;grid-template-columns:1fr 1.2fr;gap:10px}
+
+/* teacher today */
+.tt{padding:6px 20px}
+.tcls{padding:18px 0;border-bottom:1px solid var(--rule-soft)}
+.tcls .row1{display:flex;gap:16px;align-items:baseline}
+.tcls .t{font-family:var(--mono);font-size:28px;font-weight:500;letter-spacing:-.02em}
+.tcls h2{font-size:21px;font-weight:600;letter-spacing:-.02em}
+
+/* student */
+.cls-sw{display:flex;gap:22px;padding:0 20px;border-bottom:1px solid var(--rule-soft)}
+.cls-sw a{height:46px;display:flex;align-items:center;font-size:15px;font-weight:500;color:var(--slate);position:relative}
+.cls-sw a.on{color:var(--graphite);font-weight:600}
+.cls-sw a.on .tape{position:absolute;bottom:-3px;left:0;width:100%;height:6px;transform:rotate(-1.5deg)}
+.quote{font-size:19px;line-height:1.38;letter-spacing:-.01em;font-weight:500}
+.sk-head{display:grid;grid-template-columns:150px repeat(3,1fr);font-family:var(--mono);font-size:11px;color:var(--slate);text-transform:uppercase;letter-spacing:.04em;padding-bottom:6px}
+.sk-head span:not(:first-child){text-align:center}
+.sk{display:grid;grid-template-columns:150px 1fr;align-items:center;min-height:40px;border-top:1px solid var(--rule-soft)}
+.sk .n{font-size:15px;font-weight:500;line-height:1.2}
+.sk .n small{display:block;font-size:12px;color:var(--ok);font-weight:600}
+.trk3{position:relative;height:40px;display:grid;grid-template-columns:repeat(3,1fr)}
+.trk3::before{content:"";position:absolute;left:16.6%;right:16.6%;top:50%;height:1px;background:var(--rule)}
+.trk3 i{position:relative;display:flex;align-items:center;justify-content:center}
+.trk3 i::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--white);box-shadow:inset 0 0 0 1.5px #A9B3BA}
+.trk3 i.on::before{display:none}
+.trk3 i.on .tape{width:30px;height:9px}
+.trk3 i.was::before{box-shadow:inset 0 0 0 1.5px var(--slate);background:var(--porcelain)}
+
+/* parent */
+.kid{padding:14px 20px 4px}
+.kid h2{font-size:18px;font-weight:600;display:flex;align-items:baseline;gap:8px}
+.wk{display:grid;grid-template-columns:62px 1fr;gap:10px;padding:9px 0;border-top:1px solid var(--rule-soft);font-size:15px;align-items:baseline;position:relative}
+.wk .d{font-family:var(--mono);font-size:13px;color:var(--slate)}
+.wk.past{color:var(--slate)}
+.wk.today .d{color:var(--graphite);font-weight:500}
+.wk.today::before{content:"";position:absolute;left:-20px;top:16px;width:12px;height:5px;background:var(--spike);clip-path:polygon(0 18%,7% 0,100% 8%,95% 50%,100% 92%,5% 100%,2% 62%,6% 40%)}
+.wk.cx b{text-decoration:line-through;text-decoration-thickness:1.5px}
+.cxl{display:inline-flex;align-items:center;gap:6px;color:var(--crit);font-weight:600;font-size:13px}
+.notice{display:grid;grid-template-columns:24px 1fr;gap:8px;padding:12px 0;border-top:1px solid var(--rule-soft);font-size:15px}
+
+/* payment */
+.inv-line{display:flex;justify-content:space-between;gap:16px;padding:8px 0;font-size:15px}
+.inv-line .m{font-size:15px}
+.meth{display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:10px;min-height:56px;border-top:1px solid var(--rule-soft);font-size:16px;font-weight:500}
+.radio{width:20px;height:20px;border-radius:50%;box-shadow:inset 0 0 0 1.5px #98A3AB}
+.radio.on{box-shadow:inset 0 0 0 6px var(--marley)}
+
+/* timetable */
+.tth{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:20px}
+.ttg{display:grid;grid-template-columns:150px repeat(6,minmax(0,1fr));border-top:1px solid var(--graphite)}
+.ttg .dh{padding:10px 10px 10px;font-size:13px;font-weight:600;border-bottom:1px solid var(--rule);position:relative}
+.ttg .dh .m{display:block;font-weight:400;color:var(--slate);font-size:12px}
+.ttg .dh.today{background:var(--tint)}
+.ttg .dh.today .tape{position:absolute;left:10px;bottom:-4px;width:34px;height:7px}
+.ttg .rm{padding:12px 10px 12px 0;font-size:13px;font-weight:600;border-bottom:1px solid var(--rule);line-height:1.3}
+.ttg .rm span{display:block;font-weight:400;color:var(--slate);font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+.ttg .c{border-bottom:1px solid var(--rule);border-left:1px solid var(--rule-soft);padding:8px;min-height:176px;display:flex;flex-direction:column;gap:8px}
+.ttg .c.today{background:var(--tint)}
+.ev{padding:8px 8px 8px 10px;background:var(--white);box-shadow:inset 0 0 0 1px var(--rule-soft);position:relative;font-size:12px;line-height:1.3}
+.ev .stl{position:absolute;left:-4px;top:12px;width:10px;height:5px}
+.ev .m{font-size:12px;color:var(--slate)}
+.ev b{display:block;font-size:13px;font-weight:600;margin:2px 0 1px}
+.ev .who{color:var(--slate)}
+.ev.full .st{color:var(--warn);font-weight:600;margin-top:4px;display:flex;gap:5px;align-items:center}
+.ev.full .st::before{content:"";width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:7px solid var(--warn)}
+.ev.cx{background:var(--crit-bg);box-shadow:inset 0 0 0 1px #EBC3BE}
+.ev.cx b{text-decoration:line-through}
+.ev.cx .st{color:var(--crit);font-weight:600;margin-top:4px}
+.ev.sel{box-shadow:inset 0 0 0 1.5px var(--graphite)}
+.legend{display:flex;gap:22px;margin-top:18px;font-size:13px;color:var(--slate);align-items:center}
+.legend span{display:flex;align-items:center;gap:8px}
+.nowline{position:absolute;left:-1px;right:0;height:0;border-top:1.5px solid var(--graphite)}
+
+/* marketing */
+.mk-hero{width:1280px;height:720px;background:var(--porcelain);position:relative}
+.mk-nav{display:flex;align-items:center;justify-content:space-between;height:84px;padding:0 64px}
+.mk-nav nav{display:flex;gap:32px;font-size:15px;font-weight:500}
+.mk-body{display:grid;grid-template-columns:repeat(12,1fr);gap:24px;padding:40px 64px 0}
+.photo{position:relative;overflow:hidden;background:
+  radial-gradient(120% 90% at 85% 10%,#5C6B78 0%,#3A4754 45%,#2A3541 100%)}
+.photo .ph-cap{position:absolute;left:12px;bottom:10px;right:12px;font-family:var(--mono);font-size:11px;color:#D7DEE3}
+.photo .t1,.photo .t2,.photo .t3{position:absolute;background:var(--spike);clip-path:polygon(0 18%,7% 0,100% 8%,95% 50%,100% 92%,5% 100%,2% 62%,6% 40%)}
+
+@media (max-width:1100px){
+  .phones{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:760px){
+  .wrap{padding:0 16px}
+  .sec{padding:var(--s8) 0}
+  .sh .num{grid-column:1/13;padding:0 0 12px}
+  .sh h2,.sh p{grid-column:1/13}
+  .sh h2{font-size:34px}
+  .cover-l,.floor{grid-column:1/13}
+  .cover-l h1{font-size:44px}
+  .cover-top{margin-bottom:var(--s7)}
+  .strat .idea,.strat .pers,.tov{grid-column:1/13}
+  .strat .idea{font-size:19px}
+  .tov{grid-template-columns:1fr 1fr}
+  .id-grid > *{grid-column:1/13 !important}
+  .rules > div{grid-column:1/13}
+  .sw-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sem{grid-template-columns:1fr 1fr}
+  .rule-box > div{grid-column:1/13}
+  .type-row .meta,.type-row .spec{grid-column:1/13}
+  .gl > *{grid-column:1/13 !important}
+  .phones,.two{grid-template-columns:minmax(0,1fr)}
+  .notes > div{grid-column:1/13 !important}
+  .icons-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .cover-top{flex-direction:column;gap:4px}
+}
+@media (max-width:480px){ .tov{grid-template-columns:1fr} }
+
+.notes{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:24px}
+.notes > div{grid-column:span 6;border-top:1px solid var(--graphite);padding-top:var(--s3)}
+.notes h3{font-size:17px;font-weight:600;margin-bottom:8px}
+.notes ul{padding-left:18px;font-size:15px}
+.notes li{margin-bottom:6px}
+.foot{padding:var(--s7) 0 var(--s8);font-family:var(--mono);font-size:12px;color:var(--slate);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+
+<!-- ============ SVG SPRITE (same geometry as the .svg files) ============ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="wm" viewBox="0 0 212 104">
+    <g fill="none" stroke="currentColor" stroke-width="12"><path d="M37 35C34.5 31.8 30 30 24 30C16 30 10 33.5 10 40.8C10 48 16 49.6 24 51.5C32 53.4 38 55.5 38 63C38 70.5 32 74 24 74C17.5 74 12.5 71.5 10 67.5"/><circle cx="78" cy="52" r="22"/><path d="M116 8V80M140 8V80M105 30H152"/><circle cx="180" cy="52" r="22"/></g>
+    <polygon style="fill:var(--spk,#F2C230)" transform="rotate(-4 180 92)" points="157,88 160,87 204,87.6 201.8,90.6 204.4,93.4 202,96.8 158,96.4 160.2,93.4 156.6,91"/>
+  </symbol>
+  <symbol id="mk" viewBox="0 0 128 128">
+    <g style="fill:var(--spk,#F2C230)" transform="translate(64 64)"><polygon transform="rotate(-13)" points="-50,-11 -46,-12.5 50,-12 47,-6 50.5,-1 47.5,5 50,12 -49,12.5 -46.5,7 -50.5,2 -47.5,-4"/><polygon transform="rotate(73) scale(.88 1)" points="-50,-11 -46,-12.5 50,-12 47,-6 50.5,-1 47.5,5 50,12 -49,12.5 -46.5,7 -50.5,2 -47.5,-4"/></g>
+  </symbol>
+  <symbol id="i-today" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15"/><path d="M4 10h16M8 3v4M16 3v4M11 14h2v2h-2z"/></symbol>
+  <symbol id="i-register" viewBox="0 0 24 24"><path d="M10 7h10M10 12h10M10 17h10M3.5 7.2l1.6 1.6 2.6-3M3.5 12.2l1.6 1.6 2.6-3"/><path d="M4 17h3"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M4 5h16v11H9.5L4 20z"/></symbol>
+  <symbol id="i-me" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c1-4 4-5.5 7-5.5s6 1.5 7 5.5"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-6 8 6v9H4z"/><path d="M10 20v-5h4v5"/></symbol>
+  <symbol id="i-week" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15"/><path d="M4 10h16M9.3 10v10M14.7 10v10"/></symbol>
+  <symbol id="i-pay" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12"/><path d="M3 10h18M7 14.5h4"/></symbol>
+  <symbol id="i-progress" viewBox="0 0 24 24"><path d="M4 19h4v-5H4zM10 19h4V9h-4zM16 19h4V5h-4z"/></symbol>
+  <symbol id="i-practice" viewBox="0 0 24 24"><circle cx="12" cy="13" r="7"/><path d="M12 13V9.5M10 3h4"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16"/><path d="M4 9.3h16M4 14.7h16M9.3 4v16M14.7 4v16"/></symbol>
+  <symbol id="i-fam" viewBox="0 0 24 24"><circle cx="9" cy="9" r="3"/><circle cx="16.5" cy="10" r="2.3"/><path d="M3.5 19c.7-3.4 3-4.8 5.5-4.8s4.8 1.4 5.5 4.8M15 14.4c2.6-.3 4.8.9 5.5 4.6"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4.5M12 17v.5"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M15.5 15.5L20 20"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+  <symbol id="i-move" viewBox="0 0 24 24"><path d="M4 12h12M12 7l5 5-5 5M20 5v14"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10"/><path d="M8 10V7a4 4 0 018 0v3"/></symbol>
+</defs>
+</svg>
+
+<!-- ============ 1 · COVER ============ -->
+<header class="wrap cover">
+  <div class="cover-top"><span>Concept A — Marked</span><span>Brand + product concept · Nov 2026</span></div>
+  <div class="cover-grid">
+    <div class="cover-l">
+      <svg class="wm" viewBox="0 0 212 104" role="img" aria-label="sotto"><use href="#wm"/></svg>
+      <h1>Everything in its place.</h1>
+      <p class="one">Spike marks for a dance school: the platform puts every class, dancer and invoice on its mark, quietly, so the performance can happen.</p>
+    </div>
+    <div class="floor" aria-label="Studio floor plan with spike marks">
+      <div class="pin" style="left:22%;top:20%"><span class="xm"></span>16:30 · Junior Tap</div>
+      <div class="pin" style="left:58%;top:38%"><span class="tape"></span>Nia W. · medical ack'd</div>
+      <div class="pin" style="left:14%;top:56%"><span class="xm"></span>INV-1088 · £186.00</div>
+      <div class="pin" style="left:48%;top:72%"><span class="tape" style="transform:rotate(6deg)"></span>Trial · Layla H.</div>
+      <div class="front">DOWNSTAGE · AUDIENCE</div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ 2 · STRATEGY ============ -->
+<section class="sec"><div class="wrap">
+  <div class="sh"><div class="num"><span class="tape s"></span>02</div><h2>Strategy</h2></div>
+  <div class="strat">
+    <p class="idea"><b>Sotto</b> comes from <i>sotto voce</i>: in a low voice. On every stage, coloured spike tape marks where people and things go — small, exact, understood by every dancer in every style. Sotto is that tape for the whole school: it puts everything on its mark and stays quiet, so the dance is what people hear.</p>
+    <div class="pers"><span class="lbl">Personality</span><ul><li>Calm</li><li>Exact</li><li>Assured</li><li>Quietly warm</li></ul></div>
+    <div class="tov">
+      <div><span class="lbl">Owner alert</span><p>Three card payments didn’t go through — £162.00. We can retry them tonight and let the families know.</p></div>
+      <div><span class="lbl">Teacher prompt</span><p>Junior Tap is done. One line for the families? Say what they can practise this week.</p></div>
+      <div><span class="lbl">Student encouragement</span><p>Contraction and release is secure now. That’s the work showing.</p></div>
+      <div><span class="lbl">Parent notice</span><p>Nia’s Grade 2 Ballet on Tue 1 Dec is in Studio Two. Same time, next door.</p></div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ 3 · IDENTITY ============ -->
+<section class="sec"><div class="wrap">
+  <div class="sh"><div class="num"><span class="tape s"></span>03</div><h2>Identity</h2><p>A tight geometric wordmark drawn from circles and straight strokes. The double t shares one crossbar, like two marks taped together. A single strip of spike tape sits under the last o: the word standing on its mark.</p></div>
+  <div class="id-grid">
+    <div class="plate" style="grid-column:1/8;min-height:360px"><span class="lbl">Primary</span><svg viewBox="0 0 212 104" style="width:min(80%,420px);color:var(--graphite)"><use href="#wm"/></svg></div>
+    <div class="plate" style="grid-column:8/13;min-height:360px;flex-direction:column;gap:18px"><span class="lbl">Stacked lockup</span>
+      <svg viewBox="0 0 128 128" style="width:84px"><use href="#mk"/></svg>
+      <svg viewBox="0 0 212 104" style="width:170px;color:var(--graphite);--spk:transparent"><use href="#wm"/></svg>
+    </div>
+    <div class="plate por" style="grid-column:1/5"><span class="lbl">Compact lockup</span>
+      <div style="display:flex;align-items:center;gap:12px"><svg viewBox="0 0 128 128" style="width:44px"><use href="#mk"/></svg><svg viewBox="0 0 212 104" style="width:120px;color:var(--graphite);--spk:transparent"><use href="#wm"/></svg></div></div>
+    <div class="plate" style="grid-column:5/9"><span class="lbl">Mark</span><svg viewBox="0 0 128 128" style="width:120px"><use href="#mk"/></svg></div>
+    <div class="plate" style="grid-column:9/13;align-items:flex-end;justify-content:flex-start"><span class="lbl">App icon · favicon</span>
+      <div class="icons-row">
+        <div><div class="appi" style="width:180px;height:180px;border-radius:40px"><svg viewBox="0 0 128 128"><use href="#mk"/></svg></div><div class="sz">180</div></div>
+        <div><div class="appi" style="width:60px;height:60px;border-radius:13px"><svg viewBox="0 0 128 128"><use href="#mk"/></svg></div><div class="sz">60</div></div>
+        <div><div class="appi" style="width:32px;height:32px;border-radius:6px"><svg viewBox="0 0 128 128" style="width:70%;height:70%"><use href="#mk"/></svg></div><div class="sz">32</div></div>
+        <div><div class="appi" style="width:16px;height:16px;border-radius:3px"><svg viewBox="0 0 128 128" style="width:80%;height:80%"><use href="#mk"/></svg></div><div class="sz">16</div></div>
+      </div></div>
+    <div class="plate dark" style="grid-column:1/5"><span class="lbl">On dark</span><svg viewBox="0 0 212 104" style="width:200px;color:#FFFFFF"><use href="#wm"/></svg></div>
+    <div class="plate marley" style="grid-column:5/9"><span class="lbl">On Marley</span><svg viewBox="0 0 212 104" style="width:200px;color:#FFFFFF"><use href="#wm"/></svg></div>
+    <div class="plate" style="grid-column:9/13"><span class="lbl">Mono · light</span><svg viewBox="0 0 212 104" style="width:200px;color:var(--graphite);--spk:var(--graphite)"><use href="#wm"/></svg></div>
+    <div class="plate dark" style="grid-column:1/5"><span class="lbl">Mono · dark</span><svg viewBox="0 0 212 104" style="width:200px;color:#FFFFFF;--spk:#FFFFFF"><use href="#wm"/></svg></div>
+    <div class="plate" style="grid-column:5/13;justify-content:flex-start;gap:40px;flex-wrap:wrap"><span class="lbl">Small sizes</span>
+      <div><svg viewBox="0 0 212 104" style="width:96px;color:var(--graphite)"><use href="#wm"/></svg><div class="sz">96px — UI headers</div></div>
+      <div><svg viewBox="0 0 212 104" style="width:64px;color:var(--graphite)"><use href="#wm"/></svg><div class="sz">64px — minimum wordmark</div></div>
+      <div><svg viewBox="0 0 128 128" style="width:16px"><use href="#mk"/></svg><div class="sz">below 64px: use the mark</div></div>
+    </div>
+  </div>
+  <div class="rules">
+    <div><h4>Minimum size</h4><p>Wordmark 64px wide on screen (18mm print). Below that, the spike tape drops out and the mark or app icon is used instead.</p></div>
+    <div><h4>Clear space</h4><p>Keep clear one o-height (the x-height) on every side. Nothing sits on the tape strip.</p></div>
+    <div><h4>Don’t</h4><p>Re-colour the tape outside yellow, white or graphite. Straighten it. Set “sotto” in a font. Add a second strip.</p></div>
+  </div>
+</div></section>
+
+<!-- ============ 4 · COLOUR ============ -->
+<section class="sec"><div class="wrap">
+  <div class="sh"><div class="num"><span class="tape s"></span>04</div><h2>Colour</h2><p>Rehearsal-room daylight: pale porcelain walls, white surfaces, a graphite mirror frame. Marley, the blue-grey vinyl of the studio floor, does the work. Spike yellow is the tape: chosen because real yellow spike tape is the one colour that reads on both black stages and grey Marley, and it is vivid without being fluorescent.</p></div>
+  <div class="sw-row">
+    <div class="sw" style="background:#F2C230;color:#1D2226"><b>Spike</b><div><span class="m">#F2C230</span><small>Marks, “now”, selection. Never text, never a fill behind text on white.</small></div></div>
+    <div class="sw" style="background:#24364A;color:#FFFFFF"><b>Marley</b><div><span class="m">#24364A</span><small>Primary actions. White on Marley 12.4:1</small></div></div>
+    <div class="sw" style="background:#1D2226;color:#FFFFFF"><b>Graphite</b><div><span class="m">#1D2226</span><small>Text. 16.0:1 on white, 14.0:1 on porcelain</small></div></div>
+    <div class="sw" style="background:#5A6670;color:#FFFFFF"><b>Slate</b><div><span class="m">#5A6670</span><small>Secondary text. 5.9:1 on white, 5.2:1 on porcelain</small></div></div>
+    <div class="sw" style="background:#EEF1F2;color:#1D2226;box-shadow:inset 1px 0 0 #D5DBDF"><b>Porcelain</b><div><span class="m">#EEF1F2</span><small>Ground, rails, quiet areas</small></div></div>
+    <div class="sw" style="background:#FFFFFF;color:#1D2226;box-shadow:inset 1px 0 0 #D5DBDF"><b>White</b><div><span class="m">#FFFFFF</span><small>Working surfaces</small></div></div>
+  </div>
+  <div class="sem">
+    <div><span class="lbl">Success</span><div class="chip" style="background:var(--ok-bg);color:var(--ok)"><svg class="ico"><use href="#i-check"/></svg>Paid</div><span class="m note">#1F7A4D · 5.3:1 white · 4.7:1 on tint #E4F1EA</span></div>
+    <div><span class="lbl">Warning</span><div class="chip" style="background:var(--warn-bg);color:var(--warn)"><svg class="ico"><use href="#i-alert"/></svg>Full · 8 waiting</div><span class="m note">#94580A · 5.4:1 white · 4.8:1 on #F7EBD6</span></div>
+    <div><span class="lbl">Critical</span><div class="chip" style="background:var(--crit-bg);color:var(--crit)"><span style="width:9px;height:9px;background:var(--crit)"></span>Payment failed</div><span class="m note">#B3261E · 6.6:1 white · 5.6:1 on #F9E5E3</span></div>
+    <div><span class="lbl">Info</span><div class="chip" style="background:var(--info-bg);color:var(--info)"><span style="width:9px;height:9px;border-radius:50%;background:var(--info)"></span>Room change</div><span class="m note">#1F5FA8 · 6.4:1 white · 5.5:1 on #E3ECF7</span></div>
+  </div>
+  <div class="styles"><span class="lbl" style="width:100%">Style tapes — small marks beside a class name, never alone</span>
+    <span><i class="stl" style="background:var(--t-ballet)"></i>Ballet <span class="m note">#E9A3B6</span></span>
+    <span><i class="stl" style="background:var(--t-tap)"></i>Tap <span class="m note">#7AAEDB</span></span>
+    <span><i class="stl" style="background:var(--t-cont)"></i>Contemporary / Modern <span class="m note">#86BC8B</span></span>
+    <span><i class="stl" style="background:var(--t-street)"></i>Street <span class="m note">#EE9152</span></span>
+    <span><i class="stl" style="background:var(--t-jazz)"></i>Jazz <span class="m note">#B095DB</span></span>
+  </div>
+  <div class="rule-box">
+    <div><span class="lbl">Brand colour rule</span><p>One spike mark per view region, at most: the current item, the “now” line, the active nav item, a checked-in dancer. Marley is reserved for the single primary action on a screen. Everything else is graphite on white.</p></div>
+    <div><span class="lbl">Status rule</span><p>Semantic colours only mean state, and always travel with a word and a shape: square = critical, triangle = warning, circle = info, tick = done. Yellow is never a warning.</p></div>
+  </div>
+</div></section>
+
+<!-- ============ 5 · TYPE ============ -->
+<section class="sec"><div class="wrap">
+  <div class="sh"><div class="num"><span class="tape s"></span>05</div><h2>Type</h2><p>Instrument Sans, set tight, for everything you read. Geist Mono for anything you count: times, money, places, invoice numbers. Two families, no serif.</p></div>
+  <div class="type-row"><div class="meta">Display · Instrument Sans 600<br>64 / 64 · −3.5%</div><div class="spec" style="font-size:64px;line-height:1;letter-spacing:-.035em;font-weight:600">Everything in its place.</div></div>
+  <div class="type-row"><div class="meta">Heading · 600<br>30 / 33 · −3%</div><div class="spec" style="font-size:30px;line-height:1.1;letter-spacing:-.03em;font-weight:600">Junior Tap · Studio Two</div></div>
+  <div class="type-row"><div class="meta">Body · 400 / 500<br>16 / 24 · phone min 15</div><div class="spec" style="font-size:16px;max-width:60ch">Grade 2 Ballet on Tue 1 Dec moves to Studio Two. Same time, same teacher. Families have been told; nothing for you to do.</div></div>
+  <div class="type-row"><div class="meta">Numerals · Geist Mono 500<br>tabular</div><div class="spec m" style="font-size:30px;font-weight:500;letter-spacing:-.02em">16:30 &nbsp;£186.00 &nbsp;12/16 &nbsp;INV-1088</div></div>
+  <div class="type-row"><div class="meta">Label · Geist Mono 400<br>12 · caps +6%</div><div class="spec lbl" style="font-size:12px">Needs attention · Autumn term week 11</div></div>
+  <div class="scale">
+    <span><b style="font-size:12px">Aa</b><i>12</i></span><span><b style="font-size:13px">Aa</b><i>13</i></span><span><b style="font-size:15px">Aa</b><i>15</i></span><span><b style="font-size:17px">Aa</b><i>17</i></span><span><b style="font-size:21px">Aa</b><i>21</i></span><span><b style="font-size:26px">Aa</b><i>26</i></span><span><b style="font-size:34px;letter-spacing:-.02em">Aa</b><i>34</i></span><span><b style="font-size:44px;letter-spacing:-.03em">Aa</b><i>44</i></span><span><b style="font-size:64px;letter-spacing:-.035em">Aa</b><i>64</i></span><span><b style="font-size:84px;letter-spacing:-.04em">Aa</b><i>84</i></span>
+  </div>
+</div></section>
+
+<!-- ============ 6 · GRAPHIC LANGUAGE ============ -->
+<section class="sec"><div class="wrap">
+  <div class="sh"><div class="num"><span class="tape s"></span>06</div><h2>Graphic language</h2><p>The floor is the grid. Information sits on a strict, quiet 12-column grid with generous air, and a short strip of tape marks the one thing that matters right now.</p></div>
+  <div class="gl">
+    <div style="grid-column:1/5">
+      <span class="lbl">Motif — spike marks</span>
+      <div style="background:var(--white);padding:28px 24px;margin-top:16px;display:grid;gap:18px;font-size:15px">
+        <div style="display:flex;gap:14px;align-items:center"><span class="tape"></span>Strip — current, selected, checked in</div>
+        <div style="display:flex;gap:14px;align-items:center"><span class="xm"></span>Cross — a fixed point: the mark, the logo</div>
+        <div style="display:flex;gap:14px;align-items:center"><span class="tape l"></span>Long strip — the “now” line</div>
+        <div style="display:flex;gap:14px;align-items:center"><i class="stl" style="background:var(--t-tap);width:20px;height:7px"></i>Coloured strip — dance style, with name</div>
+      </div>
+      <p class="note" style="margin-top:12px">Torn ends, a 2–6° tilt, never perfectly square. One mark per region.</p>
+    </div>
+    <div style="grid-column:5/9">
+      <span class="lbl">Icons — 1.5px stroke, 24px grid, square caps</span>
+      <div class="icons-grid">
+        <div><svg class="ico"><use href="#i-today"/></svg>today</div><div><svg class="ico"><use href="#i-grid"/></svg>timetable</div><div><svg class="ico"><use href="#i-register"/></svg>register</div><div><svg class="ico"><use href="#i-fam"/></svg>families</div><div><svg class="ico"><use href="#i-pay"/></svg>billing</div><div><svg class="ico"><use href="#i-msg"/></svg>messages</div>
+        <div><svg class="ico"><use href="#i-progress"/></svg>progress</div><div><svg class="ico"><use href="#i-practice"/></svg>practice</div><div><svg class="ico"><use href="#i-home"/></svg>home</div><div><svg class="ico"><use href="#i-week"/></svg>week</div><div><svg class="ico"><use href="#i-me"/></svg>me</div><div><svg class="ico"><use href="#i-move"/></svg>moved</div>
+      </div>
+      <p class="note" style="margin-top:20px">Icons appear only in navigation and status. Headings never get one.</p>
+    </div>
+    <div style="grid-column:9/13">
+      <span class="lbl">Motion — land on the mark</span>
+      <div class="mdemo" id="mdemo" aria-label="Motion demo: marker settles on each day in turn">
+        <div class="days"><span class="on">Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><div class="mk"><span class="tape"></span></div></div>
+        <div class="row in" id="mrow"><span class="m" style="color:var(--slate)">16:30</span><b>Junior Tap</b><span class="muted" style="color:var(--slate)">Studio Two</span></div>
+      </div>
+      <p class="note" style="margin-top:12px">Content settles with a 180ms ease-out and no bounce. Only the marker overshoots, by about 3px, over 200ms. With reduced motion, everything snaps into place.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ 7 · PRODUCT SCREENS ============ -->
+<section class="sec"><div class="wrap">
+  <div class="sh"><div class="num"><span class="tape s"></span>07</div><h2>Product screens</h2><p>Few containers. Alignment, whitespace and a handful of rules do the grouping. Each screen takes the shape its job needs.</p></div>
+
+  <!-- a + d + e -->
+  <div class="phones shot">
+    <!-- a · sign in -->
+    <div>
+      <div class="frame" data-w="390" data-h="844"><div class="ab ph ui" style="background:var(--porcelain)">
+        <div class="sb"><span>09:41</span><span style="display:flex;align-items:center"><b></b><i></i></span></div>
+        <div style="padding:28px 24px 0;position:relative;height:330px">
+          <svg viewBox="0 0 212 104" style="width:78px;color:var(--graphite)"><use href="#wm"/></svg>
+          <div style="position:absolute;left:24px;right:24px;top:96px;bottom:0;background:linear-gradient(var(--rule) 1px,transparent 1px) 0 0/40px 40px,linear-gradient(90deg,var(--rule) 1px,transparent 1px) 0 0/40px 40px;opacity:.7"></div>
+          <span class="xm" style="position:absolute;left:84px;top:150px;width:28px;height:28px"></span>
+          <span class="tape" style="position:absolute;left:220px;top:226px;width:40px;height:9px;transform:rotate(5deg)"></span>
+          <span class="xm" style="position:absolute;left:292px;top:122px;width:20px;height:20px;opacity:.9"></span>
+        </div>
+        <div style="background:var(--white);position:absolute;left:0;right:0;top:377px;bottom:0;padding:28px 24px">
+          <p class="eyebrow">Sign in to</p>
+          <h1 style="margin-top:4px">Northstar Dance Academy</h1>
+          <p class="muted" style="margin-top:4px">Greenwich &amp; Blackheath</p>
+          <label style="display:block;font-size:14px;font-weight:600;margin-top:28px">Email</label>
+          <div style="height:52px;margin-top:6px;box-shadow:inset 0 0 0 1.5px var(--graphite);border-radius:6px;display:flex;align-items:center;padding:0 14px;font-size:16px;color:var(--slate);position:relative">you@example.com<span class="tape s" style="position:absolute;left:-18px;top:23px"></span></div>
+          <div class="btn" style="margin-top:14px">Email me a sign-in link</div>
+          <p style="margin-top:16px;text-align:center"><a class="lnk">Use a password instead</a></p>
+          <p class="muted" style="font-size:14px;position:absolute;left:24px;right:24px;bottom:34px">First time here? Use the email your school has on file. We’ll send a link — no password to remember.</p>
+        </div>
+      </div></div>
+      <div class="cap"><span class="tape s"></span>a · Sign in / first run</div>
+    </div>
+
+    <!-- d · student -->
+    <div>
+      <div class="frame" data-w="390" data-h="844"><div class="ab ph ui">
+        <div class="sb"><span>17:12</span><span style="display:flex;align-items:center"><b></b><i></i></span></div>
+        <div style="padding:6px 20px 12px"><p class="eyebrow">Amir Wright · Progress</p><h1 style="font-size:28px;margin-top:2px">Contemporary Seniors</h1><p class="muted" style="font-size:14px">Thu 19:00 · Priya Raman · Studio One</p></div>
+        <div class="cls-sw"><a class="on">Contemporary<span class="tape"></span></a><a>Senior Tap</a><a>Street Seniors</a></div>
+        <div style="padding:16px 20px 14px">
+          <p class="quote">“Your spirals have real control now. Keep the breath going through the release.”</p>
+          <p class="muted" style="font-size:13px;margin-top:6px">Priya · <span class="m">Thu 19 Nov</span></p>
+        </div>
+        <div style="padding:0 20px">
+          <div class="sk-head"><span>Skills</span><span>Developing</span><span>Secure</span><span>Mastered</span></div>
+          <div class="sk"><span class="n">Floorwork</span><div class="trk3"><i></i><i class="on"><span class="tape"></span></i><i></i></div></div>
+          <div class="sk"><span class="n">Contraction &amp; release<small>↑ from developing</small></span><div class="trk3"><i class="was"></i><i class="on"><span class="tape"></span></i><i></i></div></div>
+          <div class="sk"><span class="n">Spirals</span><div class="trk3"><i></i><i class="on"><span class="tape"></span></i><i></i></div></div>
+          <div class="sk"><span class="n">Balance</span><div class="trk3"><i class="on"><span class="tape"></span></i><i></i><i></i></div></div>
+          <div class="sk"><span class="n">Travelling</span><div class="trk3"><i class="on"><span class="tape"></span></i><i></i><i></i></div></div>
+          <div class="sk" style="border-bottom:1px solid var(--rule-soft)"><span class="n">Musicality</span><div class="trk3"><i></i><i></i><i class="on"><span class="tape"></span></i></div></div>
+        </div>
+        <div style="padding:16px 20px 0;display:grid;grid-template-columns:1.25fr 1fr;gap:18px">
+          <div><span class="lbl">Goal · with Priya</span><p style="font-size:15px;font-weight:600;margin-top:4px;line-height:1.3">Clean double pirouette by the spring show</p></div>
+          <div><span class="lbl">Milestone</span><p class="m" style="font-size:34px;font-weight:500;line-height:1.05;margin-top:2px;letter-spacing:-.03em">50</p><p style="font-size:14px">classes. Just now.</p></div>
+        </div>
+        <div style="margin:14px 20px 0;padding-top:12px;border-top:1px solid var(--rule-soft);display:flex;justify-content:space-between;align-items:center"><div><span class="lbl">Practice this week</span><p><span class="m" style="font-size:17px;font-weight:500">45 min</span></p></div><div class="btn sec sm" style="height:44px">Log practice</div></div>
+        <nav class="bb" style="grid-template-columns:repeat(4,1fr)"><a><svg class="ico"><use href="#i-home"/></svg>Home</a><a class="on"><span class="tape"></span><svg class="ico"><use href="#i-progress"/></svg>Progress</a><a><svg class="ico"><use href="#i-practice"/></svg>Practice</a><a><svg class="ico"><use href="#i-me"/></svg>Me</a></nav>
+      </div></div>
+      <div class="cap"><span class="tape s"></span>d · Student — progress (Amir)</div>
+    </div>
+
+    <!-- e · parent -->
+    <div>
+      <div class="frame" data-w="390" data-h="844"><div class="ab ph ui">
+        <div class="sb"><span>12:20</span><span style="display:flex;align-items:center"><b></b><i></i></span></div>
+        <div style="padding:6px 20px 10px"><p class="eyebrow">Hannah Wright · Thu 26 Nov</p><h1 style="margin-top:2px">This week</h1></div>
+        <div style="padding:0 20px">
+          <div class="notice"><svg class="ico" style="color:var(--info)"><use href="#i-move"/></svg><div><b style="font-weight:600">Grade 2 Ballet on Tue 1 Dec moves to Studio Two</b><p class="muted" style="font-size:14px">Nia · same time, 17:30</p></div></div>
+          <div class="notice" style="border-bottom:1px solid var(--rule-soft)"><svg class="ico" style="color:var(--warn)"><use href="#i-alert"/></svg><div><b style="font-weight:600">Summer Show costume sizes due by 4 Dec</b><p style="font-size:14px;margin-top:2px"><a class="lnk" style="font-size:14px">Add sizes</a></p></div></div>
+        </div>
+        <div class="kid"><h2>Nia <span class="muted m" style="font-size:13px;font-weight:400">9</span></h2>
+          <div class="wk past"><span class="d">Tue 24</span><span><b style="font-weight:500">17:30 Grade 2 Ballet</b> · Studio One</span></div>
+          <div class="wk past"><span class="d">Wed 25</span><span><b style="font-weight:500">17:30 Grade 3 Ballet</b> · Studio One</span></div>
+        </div>
+        <div class="kid"><h2>Amir <span class="muted m" style="font-size:13px;font-weight:400">15</span></h2>
+          <div class="wk today"><span class="d">Today</span><span><b style="font-weight:600">18:30 Senior Tap</b> · Main Hall</span></div>
+          <div class="wk today"><span class="d">Today</span><span><b style="font-weight:600">19:00 Contemporary</b> · Studio One</span></div>
+          <div class="wk cx"><span class="d">Fri 27</span><span><b style="font-weight:500">17:30 Street Seniors</b><br><span class="cxl"><svg class="ico" style="width:14px;height:14px;stroke-width:2"><use href="#i-x"/></svg>Cancelled — teacher unwell</span></span></div>
+        </div>
+        <div style="margin:12px 20px 0;padding:14px 0;border-top:1px solid var(--graphite);display:flex;justify-content:space-between;align-items:center">
+          <div><span class="lbl">Spring term · INV-1088</span><p><span class="m" style="font-size:22px;font-weight:500">£186.00</span> <span class="muted" style="font-size:14px">due 10 Dec</span></p></div>
+          <div class="btn sm" style="height:44px">Pay</div>
+        </div>
+        <div style="padding:0 20px"><p style="font-size:14px;color:var(--slate)">Priya on Amir · Thu 19 Nov</p><p style="font-size:15px">“Your spirals have real control now…”</p></div>
+        <nav class="bb" style="grid-template-columns:repeat(4,1fr)"><a class="on"><span class="tape"></span><svg class="ico"><use href="#i-home"/></svg>Home</a><a><svg class="ico"><use href="#i-week"/></svg>Week</a><a><svg class="ico"><use href="#i-pay"/></svg>Payments</a><a><svg class="ico"><use href="#i-msg"/></svg>Messages</a></nav>
+      </div></div>
+      <div class="cap"><span class="tape s"></span>e · Parent — home (Hannah)</div>
+    </div>
+  </div>
+
+  <!-- b · owner today -->
+  <div class="shot">
+    <h3>b · Owner — Today</h3><p class="why">What’s on, and what needs a decision. Classes run down the left on a time line with a “now” strip; the attention list is ordered by consequence, each with its one action. Money and the term sit underneath as a ledger, not as tiles.</p>
+    <div class="frame" data-w="1280" data-h="800"><div class="ab dk ui"><div class="app">
+      <aside class="rail">
+        <svg class="wm" viewBox="0 0 212 104"><use href="#wm"/></svg>
+        <nav><a class="on"><span class="tape"></span>Today</a><a>Timetable</a><a>Families</a><a>Billing <span class="m" style="color:var(--crit)">3</span></a><a>Enrolment</a><a>Events &amp; shows</a><a>Reports</a><a>Safeguarding</a></nav>
+        <div class="who"><b>Northstar Dance Academy</b><span style="color:var(--slate)">Freya Lindqvist · Owner</span></div>
+      </aside>
+      <main class="main">
+        <div class="dhead"><div><p class="eyebrow">Thursday 26 November · Autumn term, week 11 of 13</p><h1 style="margin-top:4px">Today</h1></div><div class="search"><svg class="ico"><use href="#i-search"/></svg>Search families, classes, invoices</div></div>
+        <div class="ot">
+          <div>
+            <div class="secl"><h2>Classes today</h2><span class="m" style="font-size:13px;color:var(--slate)">4 classes · 46 dancers</span></div>
+            <div class="now"><span class="tape"></span>Now</div>
+            <div class="cls"><span class="t">16:30</span><div><b><i class="stl" style="background:var(--t-tap)"></i>Junior Tap</b><span style="color:var(--slate)">Marcus Bell · Studio Two · 1 trial</span></div><div class="cap-bar"><span>12/16</span><span class="trk"><i style="width:75%"></i></span></div><a class="lnk" style="font-size:14px">Register</a></div>
+            <div class="cls"><span class="t">18:30</span><div><b><i class="stl" style="background:var(--t-tap)"></i>Senior Tap</b><span style="color:var(--slate)">Marcus Bell · Main Hall</span></div><div class="cap-bar"><span>11/16</span><span class="trk"><i style="width:68.75%"></i></span></div><a class="lnk" style="font-size:14px">Register</a></div>
+            <div class="cls"><span class="t">19:00</span><div><b><i class="stl" style="background:var(--t-cont)"></i>Contemporary Seniors</b><span style="color:var(--slate)">Priya Raman · Studio One</span></div><div class="cap-bar"><span>14/18</span><span class="trk"><i style="width:77.7%"></i></span></div><a class="lnk" style="font-size:14px">Register</a></div>
+            <div class="cls"><span class="t">20:00</span><div><b><i class="stl" style="background:var(--t-cont)"></i>Adult Contemporary drop-in</b><span style="color:var(--slate)">Priya Raman · Studio One</span></div><div class="cap-bar"><span>9/20</span><span class="trk"><i style="width:45%"></i></span></div><a class="lnk" style="font-size:14px">Register</a></div>
+            <div class="ledger">
+              <div><span class="lbl">Outstanding</span><p class="big" style="margin-top:4px">£612.00</p><p>across 8 families</p></div>
+              <div><span class="lbl">Collected</span><p class="m" style="font-size:20px;font-weight:500">£2,088.00</p><p>last 30 days</p></div>
+              <div><span class="lbl">Attendance</span><p class="m" style="font-size:20px;font-weight:500">91%</p><p>last 4 weeks</p></div>
+              <div><span class="lbl">Places filled</span><p class="m" style="font-size:20px;font-weight:500">68%</p><p>143 of 210</p><div class="cap-bar" style="margin-top:6px"><span class="trk"><i style="width:68%"></i></span></div></div>
+            </div>
+          </div>
+          <div>
+            <div class="secl"><h2>Needs attention</h2><span class="m" style="font-size:13px;color:var(--slate)">5</span></div>
+            <div class="att"><span class="n">3</span><div><b>Card payments failed<span class="flag crit">Urgent</span></b><p><span class="m">£162.00</span> across 3 families</p></div><a class="lnk">Retry &amp; notify</a></div>
+            <div class="att"><span class="n">1</span><div><b>Medical update<span class="flag info">New</span></b><p>Nia Wright — new inhaler</p></div><a class="lnk">Acknowledge</a></div>
+            <div class="att"><span class="n">4</span><div><b>Families waiting for a reply</b><p>Oldest 2 days</p></div><a class="lnk">Open inbox</a></div>
+            <div class="att"><span class="n">5</span><div><b>Trials attended, not enrolled</b><p>Follow up while it’s fresh</p></div><a class="lnk">Follow up</a></div>
+            <div class="att" style="border-bottom:0"><span class="n">8</span><div><b>Waiting for Grade 3 Ballet</b><p>Class is full</p></div><a class="lnk">Review list</a></div>
+          </div>
+        </div>
+      </main>
+    </div></div></div>
+  </div>
+
+  <!-- c · teacher -->
+  <div class="shot">
+    <h3>c · Teacher — today and the register</h3><p class="why">Used between classes, standing up. One big action per class. The register is a fast list: 44px+ targets, a strip of tape marks each dancer who is in, medical notes sit under the name in words.</p>
+    <div class="two">
+      <div>
+        <div class="frame" data-w="390" data-h="844"><div class="ab ph ui">
+          <div class="sb"><span>16:24</span><span style="display:flex;align-items:center"><b></b><i></i></span></div>
+          <div class="tt">
+            <p class="eyebrow">Marcus Bell · Thu 26 Nov</p><h1 style="margin-top:2px">Today</h1>
+            <div class="now" style="margin-top:18px"><span class="tape"></span>Now · starts in 6 min</div>
+            <div class="tcls" style="padding-top:10px">
+              <div class="row1"><span class="t">16:30</span><h2>Junior Tap</h2></div>
+              <p class="muted" style="margin-top:2px">Studio Two · 12 dancers + 1 trial</p>
+              <p style="margin-top:10px;font-size:15px"><span style="color:var(--crit);font-weight:600">■ Jonah — nut allergy, urgent</span><br><span style="color:var(--info);font-weight:600">● Kai — asthma, inhaler in bag</span></p>
+              <div class="btn" style="margin-top:14px">Open register</div>
+            </div>
+            <div class="tcls">
+              <div class="row1"><span class="t">18:30</span><h2>Senior Tap</h2></div>
+              <p class="muted" style="margin-top:2px">Main Hall · 11 dancers</p>
+              <p style="margin-top:10px"><a class="lnk">Open register</a></p>
+            </div>
+            <div style="padding:18px 0;border-bottom:1px solid var(--rule-soft)">
+              <span class="lbl">After class</span>
+              <p style="font-size:16px;margin-top:6px">Junior Tap done? One line for the families — what they can practise this week.</p>
+              <div class="btn sec" style="margin-top:12px;height:48px">Write feedback</div>
+            </div>
+            <div style="padding:16px 0;display:flex;justify-content:space-between;align-items:center;min-height:56px"><div><b style="font-weight:600">Messages</b><p class="muted" style="font-size:14px">The office can read these too</p></div><svg class="ico"><use href="#i-next"/></svg></div>
+          </div>
+          <nav class="bb" style="grid-template-columns:repeat(4,1fr)"><a class="on"><span class="tape"></span><svg class="ico"><use href="#i-today"/></svg>Today</a><a><svg class="ico"><use href="#i-register"/></svg>Registers</a><a><svg class="ico"><use href="#i-msg"/></svg>Messages</a><a><svg class="ico"><use href="#i-me"/></svg>Me</a></nav>
+        </div></div>
+        <div class="cap"><span class="tape s"></span>c1 · Teacher — today</div>
+      </div>
+      <div>
+        <div class="frame" data-w="390" data-h="844"><div class="ab ph ui">
+          <div class="sb"><span>16:31</span><span style="display:flex;align-items:center"><b></b><i></i></span></div>
+          <div class="rgh"><div class="back"><svg class="ico"><use href="#i-back"/></svg>Today</div><h1>Junior Tap</h1><p class="muted" style="font-size:14px"><span class="m">16:30</span> · Studio Two · Marcus Bell</p>
+            <div class="tally"><span><b>7</b> here</span><span><b>1</b> away</span><span><b>5</b> to mark</span></div></div>
+          <div class="rg"><span class="mkc"><span class="tape"></span></span><div class="nm">Sofia Ackah</div><div class="tg"><span class="here"><svg class="ico"><use href="#i-check"/></svg>Here</span><span>Away</span></div></div>
+          <div class="rg"><span class="mkc"><span class="tape"></span></span><div class="nm">Idris Adeyemi</div><div class="tg"><span class="here"><svg class="ico"><use href="#i-check"/></svg>Here</span><span>Away</span></div></div>
+          <div class="rg ab-row"><span class="mkc"></span><div class="nm">Elias Bennett</div><div class="tg"><span>Here</span><span class="away"><svg class="ico"><use href="#i-x"/></svg>Away</span></div></div>
+          <div class="rg"><span class="mkc"><span class="tape"></span></span><div><div class="nm">Kai Doherty</div><div class="med i">Asthma — inhaler in bag</div></div><div class="tg"><span class="here"><svg class="ico"><use href="#i-check"/></svg>Here</span><span>Away</span></div></div>
+          <div class="rg"><span class="mkc"><span class="tape"></span></span><div class="nm">Nia Doherty</div><div class="tg"><span class="here"><svg class="ico"><use href="#i-check"/></svg>Here</span><span>Away</span></div></div>
+          <div class="rg"><span class="mkc"><span class="tape"></span></span><div class="nm">Zara Ellery</div><div class="tg"><span class="here"><svg class="ico"><use href="#i-check"/></svg>Here</span><span>Away</span></div></div>
+          <div class="rg"><span class="mkc"><span class="tape"></span></span><div class="nm">Ottilie Ferreira</div><div class="tg"><span class="here"><svg class="ico"><use href="#i-check"/></svg>Here</span><span>Away</span></div></div>
+          <div class="rg"><span class="mkc"><span class="tape"></span></span><div><div class="nm">Jonah Grant</div><div class="med c">Nut allergy — urgent</div></div><div class="tg"><span class="here"><svg class="ico"><use href="#i-check"/></svg>Here</span><span>Away</span></div></div>
+          <div class="rg"><span class="mkc"></span><div class="nm">Sena Hussain</div><div class="tg"><span>Here</span><span>Away</span></div></div>
+          <div class="rg"><span class="mkc"></span><div class="nm">Leo Mensah</div><div class="tg"><span>Here</span><span>Away</span></div></div>
+          <div class="rg"><span class="mkc"></span><div class="nm">Ruby Okafor</div><div class="tg"><span>Here</span><span>Away</span></div></div>
+          <div class="rgf"><div class="btn sec">Rest are here</div><div class="btn">Save register</div></div>
+        </div></div>
+        <div class="cap"><span class="tape s"></span>c2 · Teacher — register, 16:30 Junior Tap (scrolls to Amara Quinn, Layla Haddad · trial)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- f · timetable -->
+  <div class="shot">
+    <h3>f · Week timetable by room</h3><p class="why">A true grid: rooms down, days across. Today’s column is tinted and marked; style tapes sit beside names; a full class and a cancellation say so in words.</p>
+    <div class="frame" data-w="1280" data-h="800"><div class="ab dk ui"><div class="app">
+      <aside class="rail">
+        <svg class="wm" viewBox="0 0 212 104"><use href="#wm"/></svg>
+        <nav><a>Today</a><a class="on"><span class="tape"></span>Timetable</a><a>Families</a><a>Billing <span class="m" style="color:var(--crit)">3</span></a><a>Enrolment</a><a>Events &amp; shows</a><a>Reports</a><a>Safeguarding</a></nav>
+        <div class="who"><b>Northstar Dance Academy</b><span style="color:var(--slate)">Freya Lindqvist · Owner</span></div>
+      </aside>
+      <main class="main" style="padding:32px 40px">
+        <div class="tth">
+          <div><p class="eyebrow">Autumn term · week 11 of 13</p><h1 style="font-size:34px;margin-top:4px">Mon 23 – Sat 28 Nov</h1></div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <div class="btn sec sm" style="width:40px;padding:0"><svg class="ico"><use href="#i-back"/></svg></div><div class="btn sec sm">This week</div><div class="btn sec sm" style="width:40px;padding:0"><svg class="ico"><use href="#i-next"/></svg></div>
+            <div class="btn sec sm" style="margin-left:12px">By room</div><div class="btn sm">Add class</div>
+          </div>
+        </div>
+        <div class="ttg">
+          <div class="dh" style="padding-left:0"><span class="lbl">Room</span></div>
+          <div class="dh">Mon<span class="m">23</span></div><div class="dh">Tue<span class="m">24</span></div><div class="dh">Wed<span class="m">25</span></div><div class="dh today">Thu · today<span class="m">26</span><span class="tape"></span></div><div class="dh">Fri<span class="m">27</span></div><div class="dh">Sat<span class="m">28</span></div>
+
+          <div class="rm"><span>Greenwich</span>Studio One</div>
+          <div class="c"><div class="ev"><i class="stl" style="background:var(--t-ballet)"></i><span class="m">16:00</span><b>Pre-School Ballet</b><span class="who">Freya</span></div><div class="ev"><i class="stl" style="background:var(--t-ballet)"></i><span class="m">17:00</span><b>Primary Ballet</b><span class="who">Freya</span></div></div>
+          <div class="c"><div class="ev"><i class="stl" style="background:var(--t-ballet)"></i><span class="m">17:30</span><b>Grade 2 Ballet</b><span class="who">Freya</span></div></div>
+          <div class="c"><div class="ev full"><i class="stl" style="background:var(--t-ballet)"></i><span class="m">17:30</span><b>Grade 3 Ballet</b><span class="who">Freya</span><div class="st">Full · 8 waiting</div></div></div>
+          <div class="c today"><div class="ev"><i class="stl" style="background:var(--t-cont)"></i><span class="m">19:00 · 14/18</span><b>Contemporary Seniors</b><span class="who">Priya</span></div><div class="ev"><i class="stl" style="background:var(--t-cont)"></i><span class="m">20:00 · 9/20</span><b>Adult Contemporary drop-in</b><span class="who">Priya</span></div></div>
+          <div class="c"></div>
+          <div class="c"><div class="ev"><i class="stl" style="background:var(--t-ballet)"></i><span class="m">09:15</span><b>Grade 1 Ballet</b><span class="who">Freya</span></div></div>
+
+          <div class="rm"><span>Greenwich</span>Studio Two</div>
+          <div class="c" style="min-height:120px"></div>
+          <div class="c"><div class="ev"><i class="stl" style="background:var(--t-tap)"></i><span class="m">16:30</span><b>Junior Tap</b><span class="who">Marcus</span></div></div>
+          <div class="c"></div>
+          <div class="c today" style="position:relative"><div class="ev sel"><i class="stl" style="background:var(--t-tap)"></i><span class="m">16:30 · 12/16</span><b>Junior Tap</b><span class="who">Marcus · 1 trial</span></div></div>
+          <div class="c"></div>
+          <div class="c"></div>
+
+          <div class="rm"><span>Blackheath</span>Main Hall</div>
+          <div class="c" style="min-height:150px"></div>
+          <div class="c"><div class="ev"><i class="stl" style="background:var(--t-cont)"></i><span class="m">16:00</span><b>Modern Juniors</b><span class="who">Priya</span></div></div>
+          <div class="c"><div class="ev"><i class="stl" style="background:var(--t-street)"></i><span class="m">16:30</span><b>Street Juniors</b><span class="who">Tomasz Wójcik</span></div></div>
+          <div class="c today"><div class="ev"><i class="stl" style="background:var(--t-tap)"></i><span class="m">18:30 · 11/16</span><b>Senior Tap</b><span class="who">Marcus</span></div></div>
+          <div class="c"><div class="ev cx"><i class="stl" style="background:var(--t-street)"></i><span class="m">17:30</span><b>Street Seniors</b><span class="who">Tomasz</span><div class="st">Cancelled — teacher unwell</div></div></div>
+          <div class="c"><div class="ev"><i class="stl" style="background:var(--t-jazz)"></i><span class="m">10:30</span><b>Jazz Intermediate</b><span class="who">Tomasz</span></div></div>
+        </div>
+        <div class="legend"><span><i class="stl" style="background:var(--t-ballet)"></i>Ballet</span><span><i class="stl" style="background:var(--t-tap)"></i>Tap</span><span><i class="stl" style="background:var(--t-cont)"></i>Contemporary / Modern</span><span><i class="stl" style="background:var(--t-street)"></i>Street</span><span><i class="stl" style="background:var(--t-jazz)"></i>Jazz</span><span style="margin-left:auto">Selected: Junior Tap, Thu</span></div>
+      </main>
+    </div></div></div>
+  </div>
+
+  <!-- g · payment -->
+  <div class="phones shot">
+    <div>
+      <div class="frame" data-w="390" data-h="844"><div class="ab ph ui">
+        <div class="sb"><span>12:22</span><span style="display:flex;align-items:center"><b></b><i></i></span></div>
+        <div style="padding:0 20px">
+          <div class="back" style="display:flex;align-items:center;gap:4px;height:44px;color:var(--marley);font-weight:600;margin-left:-6px"><svg class="ico"><use href="#i-back"/></svg>Payments</div>
+          <p class="eyebrow" style="margin-top:8px">INV-1088 · Spring term</p>
+          <p class="m" style="font-size:48px;font-weight:500;letter-spacing:-.04em;line-height:1.1;margin-top:4px">£186.00</p>
+          <p class="muted">Due 10 Dec · Northstar Dance Academy</p>
+          <div style="margin-top:24px;border-top:1px solid var(--graphite);padding-top:8px">
+            <p style="font-weight:600;font-size:15px;padding:6px 0 0">Nia</p>
+            <div class="inv-line"><span>Grade 2 Ballet</span><span class="m">£84.00</span></div>
+            <div class="inv-line"><span>Grade 3 Ballet</span><span class="m">£96.00</span></div>
+            <div class="inv-line"><span class="muted">Sibling discount</span><span class="m muted">−£9.60</span></div>
+            <p style="font-weight:600;font-size:15px;padding:10px 0 0;border-top:1px solid var(--rule-soft);margin-top:4px">Amir</p>
+            <div class="inv-line"><span>Senior Tap drop-in pack</span><span class="m">£15.60</span></div>
+            <div class="inv-line" style="border-top:1px solid var(--graphite);margin-top:6px;padding-top:12px;font-weight:600"><span>Total</span><span class="m" style="font-weight:500">£186.00</span></div>
+          </div>
+          <div style="margin-top:18px">
+            <div class="meth"><span class="radio on"></span><span>Apple Pay</span><span class="tape"></span></div>
+            <div class="meth"><span class="radio"></span><span>Card</span><span></span></div>
+            <div class="meth" style="border-bottom:1px solid var(--rule-soft)"><span class="radio"></span><span>Bank transfer<br><span class="muted" style="font-size:14px;font-weight:400">Reference <span class="m">NDA-1088</span></span></span><span></span></div>
+          </div>
+          <div class="btn" style="margin-top:18px">Pay £186.00 with Apple Pay</div>
+          <p class="muted" style="font-size:14px;margin-top:12px;display:flex;gap:8px;align-items:center;justify-content:center"><svg class="ico" style="width:16px;height:16px"><use href="#i-lock"/></svg>Last paid: INV-1041 · <span class="m">£54.00</span> on 5 Nov</p>
+        </div>
+      </div></div>
+      <div class="cap"><span class="tape s"></span>g · Payment — Hannah pays INV-1088</div>
+    </div>
+    <div style="grid-column:span 2;align-self:center" class="note">
+      <span class="lbl">Why it looks like this</span>
+      <p style="margin-top:8px;font-size:16px;color:var(--graphite)">Payment is calm and exact: the amount first, then every line that makes it up, then the choice. Numbers in mono align to the penny. The selected method carries a tape strip as well as a filled radio, so it is never colour alone. One Marley button, labelled with the amount.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ 8 · MARKETING ============ -->
+<section class="sec"><div class="wrap">
+  <div class="sh"><div class="num"><span class="tape s"></span>08</div><h2>Marketing</h2><p>The same restraint outside the app. The floor, seen from above, is the hero image; the tape does the pointing.</p></div>
+
+  <div class="shot">
+    <div class="frame" data-w="1280" data-h="720"><div class="ab mk-hero">
+      <div class="mk-nav"><svg viewBox="0 0 212 104" style="width:96px;color:var(--graphite)"><use href="#wm"/></svg><nav><a>Product</a><a>For teachers</a><a>For families</a><a>Pricing</a></nav><div style="display:flex;gap:20px;align-items:center;font-weight:600;font-size:15px"><a>Sign in</a><span class="btn sm">Book a demo</span></div></div>
+      <div class="mk-body">
+        <div style="grid-column:1/7;padding-top:56px">
+          <p class="lbl" style="display:flex;gap:10px;align-items:center"><span class="tape s"></span>Software for dance schools</p>
+          <h1 style="font-size:88px;line-height:.98;letter-spacing:-.045em;font-weight:600;margin-top:20px">Everything in its place.</h1>
+          <p style="font-size:20px;color:var(--slate);margin-top:24px;max-width:30ch">Timetables, registers, billing and families — handled quietly underneath, so the dance is what people hear.</p>
+          <div style="display:flex;gap:12px;margin-top:36px"><span class="btn" style="padding:0 28px">Book a demo</span><span class="btn sec" style="padding:0 24px">See it in a studio</span></div>
+          <p style="font-size:14px;color:var(--slate);margin-top:28px">For ballet, tap, contemporary, jazz, street, commercial, musical theatre and ballroom.</p>
+        </div>
+        <div style="grid-column:7/13;position:relative;height:560px">
+          <div class="photo" style="position:absolute;inset:0 0 0 24px">
+            <span class="xm" style="position:absolute;left:22%;top:20%;width:84px;height:84px;--x:1"></span>
+            <span class="t2" style="left:62%;top:46%;width:80px;height:14px;transform:rotate(4deg)"></span>
+            <span class="t3" style="left:36%;top:68%;width:56px;height:13px;transform:rotate(-6deg)"></span>
+            <span class="ph-cap">Photography: Marley studio floor from directly above, spike tape marks, one window of daylight raking across, a dancer’s feet entering frame, 35mm</span>
+          </div>
+          <div style="position:absolute;left:0;bottom:64px;width:300px;background:var(--white);padding:16px 18px;box-shadow:0 0 0 1px var(--rule)">
+            <div class="now" style="height:20px"><span class="tape"></span>Now</div>
+            <div style="display:grid;grid-template-columns:52px 1fr;gap:8px;padding-top:8px;font-size:14px"><span class="m" style="font-size:15px;font-weight:500">16:30</span><span><b>Junior Tap</b><br><span style="color:var(--slate)">Studio Two · 12/16 · 1 trial</span></span></div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <div class="cap"><span class="tape s"></span>Website hero · 1280×720</div>
+  </div>
+
+  <div class="g12">
+    <div style="grid-column:span 4;min-width:0" class="mk-app">
+      <div class="frame" data-w="430" data-h="932"><div class="ab" style="width:430px;height:932px;background:var(--marley);color:#fff">
+        <div style="padding:56px 36px 0">
+          <svg viewBox="0 0 128 128" style="width:44px"><use href="#mk"/></svg>
+          <h2 style="font-size:44px;line-height:1.02;letter-spacing:-.035em;font-weight:600;margin-top:24px">The register,<br>in one tap each.</h2>
+          <p style="font-size:18px;color:#C9D4DE;margin-top:12px">Medical notes in plain words, right under the name.</p>
+        </div>
+        <div style="position:absolute;left:36px;right:36px;top:330px;bottom:-40px;background:var(--white);color:var(--graphite);border-radius:36px 36px 0 0;padding:28px 0 0" class="ui">
+          <div style="padding:0 20px 12px"><h1 style="font-size:24px">Junior Tap</h1><div class="tally" style="margin-top:6px"><span><b>7</b> here</span><span><b>1</b> away</span><span><b>5</b> to mark</span></div></div>
+          <div class="rg"><span class="mkc"><span class="tape"></span></span><div><div class="nm">Kai Doherty</div><div class="med i">Asthma — inhaler in bag</div></div><div class="tg"><span class="here" style="width:56px">Here</span><span style="width:56px">Away</span></div></div>
+          <div class="rg ab-row"><span class="mkc"></span><div class="nm">Elias Bennett</div><div class="tg"><span style="width:56px">Here</span><span class="away" style="width:56px">Away</span></div></div>
+          <div class="rg"><span class="mkc"><span class="tape"></span></span><div><div class="nm">Jonah Grant</div><div class="med c">Nut allergy — urgent</div></div><div class="tg"><span class="here" style="width:56px">Here</span><span style="width:56px">Away</span></div></div>
+          <div class="rg"><span class="mkc"></span><div class="nm">Sena Hussain</div><div class="tg"><span style="width:56px">Here</span><span style="width:56px">Away</span></div></div>
+          <div class="rg"><span class="mkc"></span><div><div class="nm">Layla Haddad</div><div class="tr">Trial</div></div><div class="tg"><span style="width:56px">Here</span><span style="width:56px">Away</span></div></div>
+          <div style="padding:20px 16px"><div class="btn">Save register</div></div>
+        </div>
+      </div></div>
+      <div class="cap"><span class="tape s"></span>App Store screenshot · portrait</div>
+    </div>
+    <div style="grid-column:span 8;min-width:0">
+      <div class="frame" data-w="1080" data-h="1080"><div class="ab" style="width:1080px;height:1080px;background:var(--porcelain)">
+        <div style="position:absolute;inset:0;background:linear-gradient(#DCE2E5 1.5px,transparent 1.5px) 0 0/120px 120px,linear-gradient(90deg,#DCE2E5 1.5px,transparent 1.5px) 0 0/120px 120px"></div>
+        <svg viewBox="0 0 128 128" style="position:absolute;left:600px;top:150px;width:330px"><use href="#mk"/></svg>
+        <p class="m" style="position:absolute;left:600px;top:500px;font-size:24px;color:var(--slate)">Studio Two · 16:30</p>
+        <h2 style="position:absolute;left:96px;bottom:220px;font-size:132px;line-height:.92;letter-spacing:-.05em;font-weight:600;color:var(--graphite)">Find<br>your mark.</h2>
+        <div style="position:absolute;left:96px;right:96px;bottom:84px;display:flex;justify-content:space-between;align-items:center"><svg viewBox="0 0 212 104" style="width:170px;color:var(--graphite)"><use href="#wm"/></svg><span style="font-size:26px;color:var(--slate)">Software for dance schools</span></div>
+      </div></div>
+      <div class="cap"><span class="tape s"></span>Instagram post · 1080×1080</div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ 9 · NOTES ============ -->
+<section class="sec"><div class="wrap">
+  <div class="sh"><div class="num"><span class="tape s"></span>09</div><h2>Concept notes</h2></div>
+  <div class="notes">
+    <div><h3>Strengths</h3><ul>
+      <li>The motif is functional, not decorative: a tape strip already means “here / this one” to every dancer, so it doubles as the selection and “now” indicator.</li>
+      <li>Style-neutral. Spike tape is on ballet stages and street battle floors alike; nothing here reads as a children’s club.</li>
+      <li>Very low colour load in the product: graphite on white, one Marley button, one yellow mark. Semantic colours stay unambiguous.</li>
+      <li>The name carries the product promise (quiet, underneath) without saying “admin”.</li>
+    </ul></div>
+    <div><h3>Weaknesses</h3><ul>
+      <li>Restraint can read as plain. Without the tape, screens could be any well-made SaaS; the motif has to be applied consistently to earn recognition.</li>
+      <li>The tape cross is close to a “+” at small sizes; next to “add” buttons or medical marks it could be misread. Hence medical markers use dots and squares, never crosses.</li>
+      <li>“Sotto” needs saying once to be understood; some will hear “so-tto” as just a name.</li>
+    </ul></div>
+    <div><h3>Risks</h3><ul>
+      <li>Yellow tape fails contrast as text and on white is a graphical accent only (about 1.7:1). Teams will be tempted to use it for buttons or warnings — the rule must be policed.</li>
+      <li>The torn-edge clip-path, overused, turns into a gimmick. One mark per region.</li>
+      <li>Name availability (domains, trademarks in software class) unchecked.</li>
+    </ul></div>
+    <div><h3>Implementation complexity — Low to medium</h3><ul>
+      <li>Two Google fonts, flat colour, no imagery dependency: low.</li>
+      <li>The tape is one CSS clip-path utility plus one SVG; motion is two easing tokens.</li>
+      <li>Medium only for discipline: a strict grid and density rules across many screens, and photography that must be commissioned (floors from above) rather than bought.</li>
+    </ul></div>
+  </div>
+  <div class="foot"><span>sotto — Concept A · Marked</span><span>All data is synthetic demo content.</span></div>
+</div></section>
+
+<script>
+(function(){
+  function fit(){
+    document.querySelectorAll('.frame').forEach(function(f){
+      var w=+f.dataset.w,h=+f.dataset.h,s=Math.min(1,f.clientWidth/w),ab=f.firstElementChild;
+      ab.style.transform='scale('+s+')';f.style.height=(h*s)+'px';
+    });
+  }
+  fit();window.addEventListener('resize',fit);
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit);
+
+  // motion demo: marker lands on its mark
+  var d=document.getElementById('mdemo');if(!d)return;
+  var days=d.querySelectorAll('.days span'),mk=d.querySelector('.mk'),row=document.getElementById('mrow');
+  var data=[['16:30','Junior Tap','Studio Two'],['17:30','Grade 3 Ballet','Studio One'],['19:00','Contemporary Seniors','Studio One'],['17:30','Street Seniors','Main Hall']];
+  var i=0;
+  setInterval(function(){
+    i=(i+1)%4;
+    days.forEach(function(s,k){s.classList.toggle('on',k===i)});
+    mk.style.transform='translateX('+(i*100)+'%)';
+    row.classList.remove('in');void row.offsetWidth;
+    row.children[0].textContent=data[i][0];row.children[1].textContent=data[i][1];row.children[2].textContent=data[i][2];
+    row.classList.add('in');
+  },1800);
+})();
+</script>
+</body>
+</html>
