@@ -33,7 +33,7 @@ export default function FamilySchedule() {
 
   return (
     <Shell title="Schedule" subtitle="The next four weeks" allow={['guardian']}
-      actions={<CalendarButton />}>
+      actionsInline actions={<CalendarButton />}>
       <div className="mx-auto max-w-2xl space-y-10">
         <RehearsalList />
         {rows.isLoading && <div className="space-y-3">{[0, 1, 2].map(i => <Skeleton key={i} className="h-14" />)}</div>}

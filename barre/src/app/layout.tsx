@@ -6,7 +6,11 @@ export const metadata: Metadata = {
   title: 'Swayvo',
   description: 'More time for dance. Classes, registers, payments, messages and progress for dance schools.',
   appleWebApp: { capable: true, title: 'Swayvo', statusBarStyle: 'default' },
-  icons: { apple: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/icons/apple-touch-icon.png` },
+  icons: {
+    icon: [{ url: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/brand/swayvo-favicon.svg`, type: 'image/svg+xml' },
+           { url: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/brand/swayvo-favicon-32.png`, sizes: '32x32', type: 'image/png' }],
+    apple: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/icons/apple-touch-icon.png`,
+  },
 };
 
 export const viewport: Viewport = {

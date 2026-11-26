@@ -91,7 +91,7 @@ const ROLE_HOME: Record<Role, string> = {
 };
 
 export function Shell({
-  title, subtitle, actions, children, allow, help,
+  title, subtitle, actions, children, allow, help, actionsInline,
 }: {
   title: string;
   subtitle?: React.ReactNode;
@@ -100,6 +100,8 @@ export function Shell({
   allow: Role[];
   /** A short "what is this screen for" note (R-061). */
   help?: React.ReactNode;
+  /** Icon-only actions stay in the top row on a phone instead of taking a row of their own. */
+  actionsInline?: boolean;
 }) {
   const [helpOpen, setHelpOpen] = React.useState(false);
   const { session, signOut, loaded } = useSession();
@@ -201,7 +203,7 @@ export function Shell({
               </button>
             )}
             {/* On a phone the page's own buttons take a row of their own, under the title. */}
-            {actions && <div className="order-last flex w-full justify-end lg:order-none lg:w-auto">{actions}</div>}
+            {actions && <div className={cn('flex justify-end', actionsInline ? '' : 'order-last w-full lg:order-none lg:w-auto')}>{actions}</div>}
             {(session.role === 'owner' || session.role === 'admin') && <AssistantLauncher />}
             {session.role !== 'student' && <NotificationBell />}
             <PersonSwitcher className="lg:hidden" />

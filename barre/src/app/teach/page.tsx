@@ -47,7 +47,7 @@ export default function TeachToday() {
 
   return (
     <Shell title="Today" subtitle={dateLong(now)} allow={['owner','admin','teacher']}
-           actions={<CalendarSubscribe onDownload={() => downloadTeaching(session)} />}>
+           actionsInline actions={<CalendarSubscribe onDownload={() => downloadTeaching(session)} />}>
       <div className="mx-auto grid max-w-[1040px] gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
         {sessions.isLoading && <div className="space-y-4"><Skeleton className="h-24 w-48" /><Skeleton className="h-28" /></div>}
         {sessions.error != null && <ErrorState error={sessions.error} onRetry={() => sessions.refetch()} />}

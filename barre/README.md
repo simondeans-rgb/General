@@ -114,6 +114,9 @@ unchanged on Supabase, a plain server, or in the browser.
 - [docs/DECISIONS.md](docs/DECISIONS.md) — where the build departs from the brief, and why.
 - [docs/PAYMENTS.md](docs/PAYMENTS.md) — the ledger, and the two server routes
   that switch on card payments with Stripe.
+- [docs/brand/GUIDELINES.md](docs/brand/GUIDELINES.md) — the Swayvo brand: logo, colour, type, voice.
+- [docs/brand/DESIGN-SYSTEM.md](docs/brand/DESIGN-SYSTEM.md) — the rules every screen follows; live at `/design`.
+- [docs/brand/FINAL-ASSESSMENT.md](docs/brand/FINAL-ASSESSMENT.md) — what was tested and the quality scorecard.
 - [docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md) — the automated checks
   (`npm run a11y`) and the manual screen-reader review still to do.
 
