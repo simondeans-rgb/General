@@ -149,7 +149,7 @@ function NeedsAttention() {
       <SectionHead title="Needs attention" meta={loading ? undefined : items.length ? `${items.length} thing${items.length === 1 ? '' : 's'}` : undefined} />
       {loading && <div className="space-y-3 pt-3">{[0, 1, 2].map(i => <Skeleton key={i} className="h-12" />)}</div>}
       {!loading && items.length === 0 && <EmptyState title="Nothing needs you" body="No failed payments, no one waiting for a reply, and everyone is turning up." />}
-      <ul className="divide-y divide-line">
+      <ul className="on-count divide-y divide-line">
         {items.map(i => (
           <li key={i.key}>
             <Link href={i.href} className="group grid grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-x-3 py-3">

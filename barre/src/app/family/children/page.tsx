@@ -34,7 +34,7 @@ export default function FamilyChildren() {
   return (
     <Shell title="Your family" allow={['guardian']}
       actions={<Button size="sm" onClick={() => setAdding(true)}><UserPlus className="size-4" aria-hidden /> Add a child</Button>}>
-      <div className="mx-auto max-w-2xl space-y-12">
+      <div className="mx-auto max-w-2xl space-y-12 lg:max-w-[1180px]">
         {children.isLoading && <Skeleton className="h-40" />}
         {children.error != null && <ErrorState error={children.error} />}
         {children.data?.length === 0 && <EmptyState title="No children on your account yet"
@@ -46,6 +46,9 @@ export default function FamilyChildren() {
               <h2 id={`child-${c.id}`} className="font-display text-[24px] leading-none">{c.first_name} {c.last_name}</h2>
               <span className="text-[13px] text-ink-3">{ageFrom(c.date_of_birth)} · born {dateShort(c.date_of_birth)}</span>
             </div>
+            {/* Desktop: details on the left, actions and practice alongside. */}
+            <div className="grid gap-x-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
+            <div className="min-w-0">
             <dl className="divide-y divide-line text-[14.5px]">
               <Row label="Classes">{c.class_names ?? <span className="text-ink-3">Not in a class yet</span>}</Row>
               {c.attendance_pct != null && (
@@ -76,7 +79,9 @@ export default function FamilyChildren() {
               <Row label="Exams"><StudentExams studentId={c.id} /></Row>
               <EmergencyContacts studentId={c.id} name={c.first_name} />
             </dl>
-            <div className="flex flex-wrap gap-2 border-t border-line py-3">
+            </div>
+            <aside className="min-w-0 lg:pt-3">
+            <div className="flex flex-wrap gap-2 border-t border-line py-3 lg:border-t-0 lg:pt-0">
               <Button onClick={() => setBrowsing(c)}>
                 <Sparkles className="size-4" aria-hidden /> Classes and trials
               </Button>
@@ -85,12 +90,15 @@ export default function FamilyChildren() {
               </Button>
             </div>
             <div className="pt-4"><PracticeLog studentId={c.id} who={c.first_name} bare /></div>
+            </aside>
+            </div>
           </section>
         ))}
 
-        {children.data && <DropIns children={children.data} />}
-
-        <YourDetails />
+        <div className="grid gap-12 lg:grid-cols-2">
+          {children.data && <div className="min-w-0"><DropIns children={children.data} /></div>}
+          <div className="min-w-0"><YourDetails /></div>
+        </div>
 
         {/* Everything about the family that is not a child, one tap away. */}
         <nav aria-label="More" className="divide-y divide-line border-t-2 border-ink">

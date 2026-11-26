@@ -73,7 +73,13 @@ Phone minimum 15px body; inputs 16px (enforced globally).
 - **Card / CardHeader**: a bordered surface with a sentence-case header. Prefer sections and rules on
   the page ground; keep cards for dialogs, forms and side panels.
 - **Shell**: title, optional subtitle, actions, `help`. Active nav is marked by one accent beat.
+- **SectionHead**: the standard section heading (title, meta, one link or action, 2px ink rule).
+- **StyleMark** (`colour`, `name`): a dance style's hue as a small square, always beside its name.
+  `styleColour()` gives the hue as a token for bars and borders.
+- **Word** (`size="sm" | "md"`): a status or change set as an uppercase word (CANCELLED, MOVED, CLASH, PAID).
+- **ViewTabs**: quiet text tabs for switching views within a screen.
 - **SwayvoLogo / SwayvoMark / SwayvoIcon** (`src/components/app/swayvo.tsx`): never redraw the logo.
+All of the above live in `src/components/ui`; do not copy them into screen files.
 
 ## 6. Patterns
 - **Times** in display type, tabular, fixed-width column. **Money** `stat-number`, two decimals.
@@ -85,8 +91,12 @@ Phone minimum 15px body; inputs 16px (enforced globally).
 - **Icons**: lucide, 1.8px stroke (2.2 active), only in navigation and controls, not beside headings.
 
 ## 7. Motion
-One beat = 120ms. Entrances step in on the count (`.on-count`), max 2 beats. No page transitions on
-office screens. Celebrations: Beats fill to eight. `prefers-reduced-motion` turns all of it off.
+One beat = 120ms. Built:
+- **Beats fill** bar by bar when they first appear (`.beat-fill`, 30ms apart, 2 beats each).
+- **On the count**: `.on-count` on a list steps its first rows in one beat apart (Today's attention
+  list, the parent's notices). Use it for at most one list per screen.
+- **Completion**: the register's count turns green and full when everyone is marked.
+No page transitions on office screens. `prefers-reduced-motion` turns all of it off.
 
 ## 8. Voice in the interface
 Plain, specific, kind. Name real things. Buttons say what happens ("Open register", "Send 4 invoices").

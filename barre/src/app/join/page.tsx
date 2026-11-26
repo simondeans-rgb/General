@@ -34,6 +34,7 @@ function Join() {
 
   const [age, setAge] = React.useState('');
   const [pick, setPick] = React.useState<Slot | null>(null);
+  const [allDates, setAllDates] = React.useState(false);
   const [form, setForm] = React.useState({ contact_name: '', contact_email: '', contact_phone: '', child_name: '', child_dob: '', website: '', privacy_ack: false, marketing: false });
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, [k]: e.target.value }));
   const tick = (k: 'privacy_ack' | 'marketing') => (v: boolean) => setForm(f => ({ ...f, [k]: v }));
@@ -86,34 +87,53 @@ function Join() {
             </div>
             {slots.isLoading && <Skeleton className="h-24" />}
             {slots.data && shown.length === 0 && <EmptyState title="No trial places in the next three weeks" body="Please contact the school — they may have a place soon." />}
-            <ul className="divide-y divide-line" aria-label="Trial classes">
-              {shown.map(x => {
-                const on = pick?.session_id === x.session_id;
+            {/* Grouped by day; the first week shows, later dates one tap away. */}
+            {(() => {
+              const days = new Map<string, Slot[]>();
+              for (const x of shown) { const k = new Date(x.starts_at).toDateString(); days.set(k, [...(days.get(k) ?? []), x]); }
+              const list = [...days.entries()];
+              const cutoff = Date.now() + 7 * 86400_000;
+              const visible = allDates ? list : list.filter(([, xs]) => new Date(xs[0]!.starts_at).getTime() < cutoff || xs.some(x => x.session_id === pick?.session_id));
+              return (
+                <div className="space-y-6">
+                  {visible.map(([k, xs]) => (
+                    <div key={k}>
+                      <h3 className="label pb-1">{new Date(xs[0]!.starts_at).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
+                      <ul className="divide-y divide-line border-t border-line" aria-label={`Trial classes, ${new Date(xs[0]!.starts_at).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}`}>
+                        {xs.map(x => {
+                          const on = pick?.session_id === x.session_id;
                 return (
-                  <li key={x.session_id}>
-                    <button onClick={() => setPick(x)} aria-pressed={on}
-                      className={cn('grid w-full grid-cols-[4.25rem_minmax(0,1fr)_auto] items-center gap-x-3 py-3.5 text-left hover:bg-surface-2/60',
-                        on && 'bg-accent-soft hover:bg-accent-soft')}>
-                      <span className="pl-1">
-                        <span className="block font-display text-[20px] leading-none tnum">{time(x.starts_at)}</span>
-                        <span className="mt-1 block text-[12.5px] text-ink-3">{new Date(x.starts_at).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block font-semibold">{x.class_name}</span>
-                        <span className="block text-[13px] text-ink-3">
-                          {[x.age_min != null ? `Ages ${x.age_min}${x.age_max != null ? `–${x.age_max}` : '+'}` : null, x.location].filter(Boolean).join(' · ')}
-                        </span>
-                        {on && <span className="block text-[13px] font-semibold text-accent-text">Chosen — add your details below</span>}
-                      </span>
-                      <span className="shrink-0 pr-1 text-right text-[13.5px]">
-                        <span className="block font-semibold">{x.trial_price_minor ? money(x.trial_price_minor) : 'Free'}</span>
-                        <span className={cn('block', x.places_left <= 2 ? 'font-semibold text-caution' : 'text-ink-3')}>{x.places_left} place{x.places_left === 1 ? '' : 's'} left</span>
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+                            <li key={x.session_id}>
+                              <button onClick={() => setPick(x)} aria-pressed={on}
+                                className={cn('grid w-full grid-cols-[4.25rem_minmax(0,1fr)_auto] items-center gap-x-3 py-3.5 text-left hover:bg-surface-2/60',
+                                  on && 'bg-accent-soft hover:bg-accent-soft')}>
+                                <span className="pl-1">
+                                  <span className="block font-display text-[20px] leading-none tnum">{time(x.starts_at)}</span>
+                                </span>
+                                <span className="min-w-0">
+                                  <span className="block font-semibold">{x.class_name}</span>
+                                  <span className="block text-[13px] text-ink-3">
+                                    {[x.age_min != null ? `Ages ${x.age_min}${x.age_max != null ? `–${x.age_max}` : '+'}` : null, x.location].filter(Boolean).join(' · ')}
+                                  </span>
+                                  {on && <span className="block text-[13px] font-semibold text-accent-text">Chosen — add your details below</span>}
+                                </span>
+                                <span className="shrink-0 pr-1 text-right text-[13.5px]">
+                                  <span className="block font-semibold">{x.trial_price_minor ? money(x.trial_price_minor) : 'Free'}</span>
+                                  <span className={cn('block', x.places_left <= 2 ? 'font-semibold text-caution' : 'text-ink-3')}>{x.places_left} place{x.places_left === 1 ? '' : 's'} left</span>
+                                </span>
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  ))}
+                  {!allDates && visible.length < list.length && (
+                    <Button onClick={() => setAllDates(true)}>Show later dates ({list.length - visible.length} more day{list.length - visible.length === 1 ? '' : 's'})</Button>
+                  )}
+                </div>
+              );
+            })()}
             {pick && (
               <div ref={formRef} className="card scroll-mt-4 space-y-4 p-4 sm:p-5">
                 <div>

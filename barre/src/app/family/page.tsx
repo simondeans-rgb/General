@@ -77,7 +77,7 @@ export default function FamilyHome() {
           {(changeNotices.length > 0 || owes || fresh.length > 0) && (
             <section aria-labelledby="notices-h">
               <SectionHead id="notices-h" title="Notices" />
-              <ul className="divide-y divide-line">
+              <ul className="on-count divide-y divide-line">
                 {changeNotices.map(({ s, kids: who, c }) => (
                   <li key={s.id} className="py-3.5">
                     <Link href={`/class/?id=${s.class_id}`} className="block rounded-[var(--radius-sm)] hover:bg-surface-2/60">

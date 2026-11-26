@@ -60,9 +60,9 @@ function Board({ rows }: { rows: Enq[] }) {
                       <p className="mt-0.5 truncate text-[12.5px] text-ink-3">{e.class_name ?? 'No class chosen'}</p>
                       <p className="truncate text-[12.5px] text-ink-3">{e.contact_name}</p>
                       {overdue && <p className="mt-1.5 leading-tight"><Word tone="critical">Overdue</Word> <span className="text-[12px] text-critical">{dateShort(e.next_action_on!)}</span></p>}
-                      <label className="mt-2 flex items-center gap-1.5 text-[12px] text-ink-3">Move to
+                      <label className="mt-2 flex items-center gap-1.5 text-[12.5px] text-ink-3">Move to
                         <select value={col.key} onChange={x => move.mutate({ e, stage: x.target.value })}
-                          className="h-8 min-w-0 flex-1 rounded-[var(--radius-sm)] border border-line-strong bg-surface px-1 text-[12.5px] text-ink">
+                          className="h-11 min-w-0 flex-1 rounded-[var(--radius-sm)] border border-line-strong bg-surface px-2 text-[13.5px] text-ink lg:h-9">
                           {COLUMNS.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
                         </select>
                       </label>

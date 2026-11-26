@@ -214,7 +214,7 @@ export function Beats({ value, max = 1, label, size = 'md', tone = 'accent', cla
         return (
           <span key={i} aria-hidden className="relative block overflow-hidden rounded-[1px] bg-surface-3"
             style={{ width: size === 'lg' ? 5 : size === 'sm' ? 3 : 4, height: '100%', marginLeft: i === 4 ? (size === 'lg' ? 5 : 3) : 0 }}>
-            {part > 0 && <span className="absolute inset-x-0 bottom-0" style={{ height: `${part * 100}%`, background: colour }} />}
+            {part > 0 && <span className="beat-fill absolute inset-x-0 bottom-0" style={{ height: `${part * 100}%`, background: colour, animationDelay: `${i * 30}ms` }} />}
           </span>
         );
       })}
@@ -257,6 +257,55 @@ export function SectionHead({ title, meta, action, href, link, as: H = 'h2', id,
       {meta && <span className="text-[13px] text-ink-3">{meta}</span>}
       {href && link && <Link href={href} className="text-[13px] font-semibold text-accent-text hover:underline">{link}</Link>}
       {action && <span className="-my-2 flex items-center">{action}</span>}
+    </div>
+  );
+}
+
+// ── Dance styles, status words, view tabs ─────────────────────────────────
+const STYLE_HUES = ['violet', 'amber', 'teal', 'rose', 'indigo', 'lime'] as const;
+
+/** A dance style's hue as a CSS colour (always a token). */
+export function styleColour(colour?: string | null) {
+  return colour && (STYLE_HUES as readonly string[]).includes(colour) ? `var(--color-${colour})` : 'var(--color-line-strong)';
+}
+
+/** A dance-style mark: a small square in the style's hue, always beside the style's name. */
+export function StyleMark({ colour, name, style, className }: { colour?: string | null; name?: string | null; style?: string | null; className?: string }) {
+  const label = name ?? style;
+  if (style !== undefined && !label) return null;
+  return (
+    <span className={cn('inline-flex min-w-0 items-center gap-1.5 whitespace-nowrap', className)}>
+      <span aria-hidden className="size-2 shrink-0 rounded-[2px]" style={{ background: styleColour(colour) }} />
+      {label && <span className="truncate">{label}</span>}
+    </span>
+  );
+}
+
+/**
+ * A change or status set as a word (MOVED, COVER, CANCELLED, CLASH, PAID).
+ * The word carries the meaning; colour supports it. `md` for rows a family
+ * reads on a phone, `sm` for dense office lists.
+ */
+export function Word({ children, tone = 'ink', size = 'sm', className }: {
+  children: React.ReactNode; tone?: 'ink' | 'critical' | 'caution' | 'positive' | 'muted'; size?: 'sm' | 'md'; className?: string;
+}) {
+  const c = { ink: 'text-ink', critical: 'text-critical', caution: 'text-caution', positive: 'text-positive', muted: 'text-ink-3' }[tone];
+  return <span className={cn('font-display uppercase leading-none', size === 'md' ? 'text-[15px] tracking-[-0.01em] [font-stretch:80%]' : 'text-[12px] tracking-[0.02em] [font-stretch:85%]', c, className)}>{children}</span>;
+}
+
+/** Quiet text tabs with an ink rule under the current one. */
+export function ViewTabs<T extends string>({ value, onChange, options, label, className }: {
+  value: T; onChange: (v: T) => void; options: [T, string][]; label: string; className?: string;
+}) {
+  return (
+    <div role="tablist" aria-label={label} className={cn('-mx-1 flex max-w-full gap-1 overflow-x-auto', className)}>
+      {options.map(([v, text]) => (
+        <button key={v} role="tab" aria-selected={value === v} onClick={() => onChange(v)}
+          className={cn('min-h-[40px] shrink-0 border-b-2 px-2 text-[14px] transition-colors',
+            value === v ? 'border-ink font-semibold text-ink' : 'border-transparent text-ink-3 hover:text-ink')}>
+          {text}
+        </button>
+      ))}
     </div>
   );
 }
