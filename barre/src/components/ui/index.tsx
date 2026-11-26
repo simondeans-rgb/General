@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { cn } from '@/lib/cn';
 
 /* ==========================================================================
@@ -240,6 +241,22 @@ export function Notice({ word, tone = 'ink', title, detail, action, className }:
         {detail && <p className="mt-0.5 text-[13.5px] text-ink-3">{detail}</p>}
       </div>
       {action}
+    </div>
+  );
+}
+
+// ── SectionHead: the standard section heading ────────────────────────────
+/** Sentence-case title, optional meta, one link or action, a 2px ink rule beneath. */
+export function SectionHead({ title, meta, action, href, link, as: H = 'h2', id, className }: {
+  title: React.ReactNode; meta?: React.ReactNode; action?: React.ReactNode; href?: string; link?: string;
+  as?: 'h2' | 'h3'; id?: string; className?: string;
+}) {
+  return (
+    <div className={cn('mb-1 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b-2 border-ink pb-2', className)}>
+      <H id={id} className="section-title min-w-0 flex-1">{title}</H>
+      {meta && <span className="text-[13px] text-ink-3">{meta}</span>}
+      {href && link && <Link href={href} className="text-[13px] font-semibold text-accent-text hover:underline">{link}</Link>}
+      {action && <span className="-my-2 flex items-center">{action}</span>}
     </div>
   );
 }

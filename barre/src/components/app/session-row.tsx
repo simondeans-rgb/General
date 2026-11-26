@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Beats } from '@/components/ui';
 import { time } from '@/lib/format';
 import { cn } from '@/lib/cn';
+export { SectionHead } from '@/components/ui';
 import type { SessionRow as S } from '@/lib/repos/dashboard';
 
 /* ── Small office building blocks, shared by the office screens ──────────
@@ -28,18 +29,6 @@ export function StyleMark({ colour, name, className }: { colour?: string | null;
   );
 }
 
-/** Section heading: sentence-case title, optional meta and one link or action, a 2px ink rule beneath. */
-export function SectionHead({ title, meta, action, as: H = 'h2', id, className }: {
-  title: React.ReactNode; meta?: React.ReactNode; action?: React.ReactNode; as?: 'h2' | 'h3'; id?: string; className?: string;
-}) {
-  return (
-    <div className={cn('mb-1 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b-2 border-ink pb-2', className)}>
-      <H id={id} className="section-title min-w-0 flex-1">{title}</H>
-      {meta && <span className="text-[13px] text-ink-3">{meta}</span>}
-      {action && <span className="-my-2 flex items-center">{action}</span>}
-    </div>
-  );
-}
 
 /** A change set as a word (MOVED, COVER, CANCELLED, CLASH). The word carries the meaning; colour supports it. */
 export function Word({ children, tone = 'ink', className }: { children: React.ReactNode; tone?: 'ink' | 'critical' | 'caution' | 'positive' | 'muted'; className?: string }) {

@@ -9,7 +9,7 @@ import { RehearsalList } from '@/components/app/rehearsals';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
 import { useSession } from '@/lib/auth/session';
-import { Button, Field, Input, Skeleton, ErrorState } from '@/components/ui';
+import { Button, Field, Input, Skeleton, ErrorState, SectionHead } from '@/components/ui';
 import { RecordSheet } from '@/components/app/record-sheet';
 import { medicalLine } from '@/components/app/medical-brief';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -87,14 +87,6 @@ export default function TeachToday() {
   );
 }
 
-function SectionHead({ id, title, meta }: { id?: string; title: string; meta?: React.ReactNode }) {
-  return (
-    <div className="mb-1 flex items-baseline gap-3 border-b-2 border-ink pb-2">
-      <h2 id={id} className="section-title flex-1">{title}</h2>
-      {meta && <span className="text-[13px] text-ink-3">{meta}</span>}
-    </div>
-  );
-}
 
 /* ── The next class: time, place, who to watch, one button ──────────────── */
 function NextClass({ s, onAskCover }: { s: T.TeachSession | null; onAskCover: () => void }) {

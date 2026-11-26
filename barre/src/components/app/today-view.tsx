@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Shell } from './shell';
 import { useRows, useRow } from '@/lib/query';
-import { Beats, Button, EmptyState, ErrorState, Skeleton } from '@/components/ui';
+import { Beats, Button, EmptyState, ErrorState, Skeleton, SectionHead } from '@/components/ui';
 import * as Q from '@/lib/repos/dashboard';
 import { SUMMARY, type BillingSummary } from '@/lib/repos/billing';
 import { money, time, dayRange, dateLong, relativeDay } from '@/lib/format';
@@ -49,15 +49,6 @@ export function TodayView() {
   );
 }
 
-function SectionHead({ title, meta, href, link }: { title: string; meta?: React.ReactNode; href?: string; link?: string }) {
-  return (
-    <div className="mb-1 flex items-baseline gap-3 border-b-2 border-ink pb-2">
-      <h2 className="section-title flex-1">{title}</h2>
-      {meta && <span className="text-[13px] text-ink-3">{meta}</span>}
-      {href && <Link href={href} className="text-[13px] font-semibold text-accent-text hover:underline">{link}</Link>}
-    </div>
-  );
-}
 
 /* ── The next class: the one number worth making big ─────────────────────── */
 function NextClass({ s, loading }: { s: Q.SessionRow | null; loading: boolean }) {

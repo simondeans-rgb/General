@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Download, ArrowDownRight, ArrowUpRight, Minus, Info } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { useRows, useRow } from '@/lib/query';
-import { Beats, Button, ErrorState, Skeleton } from '@/components/ui';
+import { Beats, Button, ErrorState, Skeleton, SectionHead } from '@/components/ui';
 import * as R from '@/lib/repos/reports';
 import { pulseComponents, pulseScore, MIN_HISTORY_DAYS } from '@/lib/pulse/score';
 import { money, dateShort } from '@/lib/format';
@@ -123,15 +123,6 @@ export default function ReportsPage() {
 
 const STYLE_BG: Record<string, string> = { violet: 'bg-violet', amber: 'bg-amber', teal: 'bg-teal', rose: 'bg-rose', indigo: 'bg-indigo', lime: 'bg-lime' };
 
-function SectionHead({ id, title, meta, action }: { id?: string; title: React.ReactNode; meta?: React.ReactNode; action?: React.ReactNode }) {
-  return (
-    <div className="flex flex-wrap items-baseline gap-x-3 border-b-2 border-ink pb-2">
-      <h2 id={id} className="section-title flex-1">{title}</h2>
-      {meta && <span className="text-[13px] text-ink-3">{meta}</span>}
-      {action}
-    </div>
-  );
-}
 
 function Kpi({ label, value, note, change, loading, href }: {
   label: string; value?: React.ReactNode; note?: React.ReactNode | false | null;
