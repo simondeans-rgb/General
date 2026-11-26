@@ -149,15 +149,12 @@ function Kpi({ label, value, note, change, loading, href }: {
 }
 
 function Small({ label, value, loading, href }: { label: string; value?: React.ReactNode; loading?: boolean; href?: string }) {
-  const inner = (
-    <>
-      <dt className="text-[13px] text-ink-3">{label}</dt>
+  return (
+    <div className="min-w-0 py-3 sm:px-4 sm:first:pl-0">
+      <dt className="text-[13px] text-ink-3">{href ? <Link href={href} className="hover:text-ink hover:underline">{label}</Link> : label}</dt>
       <dd className="tnum mt-0.5 text-[17px] font-semibold">{loading ? <Skeleton className="h-5 w-14" /> : value ?? '—'}</dd>
-    </>
+    </div>
   );
-  return href
-    ? <div className="min-w-0 sm:px-4 sm:first:pl-0"><Link href={href} className="-mx-1 block rounded-[var(--radius-sm)] px-1 py-3 hover:bg-surface-2/60">{inner}</Link></div>
-    : <div className="min-w-0 py-3 sm:px-4">{inner}</div>;
 }
 
 function WeekBars({ rows }: { rows: R.WeekRow[] }) {
