@@ -120,7 +120,7 @@ export const CREATE_CLASS = `
 insert into class (studio_id, term_id, dance_style_id, level_id, location_id, room_id,
                    teacher_id, name, day_of_week, start_time, duration_min, capacity,
                    age_min, age_max, price_minor, pricing, trials_enabled, waitlist_enabled,
-                   visibility, pricing, trial_price_minor, assistant_id, prerequisites,
+                   visibility, trial_price_minor, assistant_id, prerequisites,
                    description, trial_needs_approval)
 select t.studio_id, t.id, $2, $3, $4, $5, $6, $7, $8, $9::time, $10, $11,
        $12, $13, $14, $18::pricing_model, $15, $16, $17::class_visibility,
