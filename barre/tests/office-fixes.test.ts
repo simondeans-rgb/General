@@ -348,3 +348,34 @@ describe('the funnel and Reports count trials the same way (UR-54)', () => {
     });
   });
 });
+
+/* ── UR-53 / UR-11 a new school's first timetable ───────────────────────── */
+describe('a brand-new school builds its first timetable from onboarding (UR-53, UR-01, UR-11)', () => {
+  it('creates its place, term, style and five classes with sessions, and has no sample data', async () => {
+    const { commitAs } = await import('./helpers');
+    const { PLATFORM_ADMIN } = await import('../src/lib/db/seed/data');
+    const { randomUUID } = await import('node:crypto');
+    const S = await import('../src/lib/repos/setup');
+    const [{ invitation_token: tok }] = await commitAs(PLATFORM_ADMIN,
+      `select * from app.platform_create_studio('Lantern Dance', 'Ola Bright', 'ola@lantern.example', 'trial', 30)`);
+    const ola = randomUUID();
+    await commitAs(ola, `select * from app.accept_invitation($1, 'Ola Bright')`, [tok], { email: 'ola@lantern.example' });
+    await asUser(ola, async q => {
+      expect((await q(`select sample_data from studio`))[0].sample_data).toBe(false);
+      const [loc] = await q(S.CREATE_LOCATION, ['St Mary’s Hall', '', '', '', '', '']);
+      const from = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
+      const to = new Date(Date.now() + 90 * 864e5).toISOString().slice(0, 10);
+      const [term] = await q(S.CREATE_TERM, ['Spring term', from, to, 'published']);
+      const [style] = await q(S.CREATE_STYLE, ['Ballet', 'violet']);
+      let sessions = 0;
+      for (const [name, day] of [['Baby Ballet', 1], ['Baby Ballet', 3], ['Grade 1', 2], ['Grade 2', 4], ['Adult Ballet', 5]] as const) {
+        const [row] = await q(C.CREATE_CLASS, [term.id, style.id, null, loc.id, null, null, name, day, '17:00', 45, 12,
+          null, null, 4800, true, true, 'public', 'term', null, null, '', '', false]);
+        const [made] = await q(C.GENERATE_SESSIONS, [row.id]);
+        sessions += made.made;
+      }
+      expect(await q(C.CLASSES)).toHaveLength(5);
+      expect(sessions).toBeGreaterThan(30);
+    });
+  });
+});

@@ -10,6 +10,7 @@ import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import { Beats, Button, Skeleton, ErrorState } from '@/components/ui';
 import { cn } from '@/lib/cn';
+import { FirstTimetable } from '@/components/app/first-timetable';
 
 /**
  * Studio setup.
@@ -58,7 +59,7 @@ const STEPS: Step[] = [
     href: '/people', cta: 'Add teachers' },
   { key: 'classes', title: 'Classes', blurb: 'Day, time, capacity and price. Sessions are generated for you.',
     count: `select count(*)::int n from class where deleted_at is null`,
-    href: '/classes', cta: 'Create a class' },
+    href: '/onboarding#ob-timetable', cta: 'Create classes' },
   { key: 'families', title: 'Families', blurb: 'Import a spreadsheet you already keep, or add families one by one. Then invite them to the app.',
     count: `select count(*)::int n from family where deleted_at is null`,
     href: '/people?import=1', cta: 'Import or add families' },
@@ -75,6 +76,9 @@ export default function Onboarding() {
     STEPS.map(s => `select '${s.key}' as key, n from (${s.count}) x`).join('\nunion all\n'));
 
   const doneKeys = new Set((rows.data ?? []).filter(r => r.n > 0).map(r => r.key));
+  // Only a school that really holds the demo's sample records says so (UR-11).
+  const sample = useRow<{ sample_data: boolean }>(['sample-data'], `select sample_data from studio where deleted_at is null limit 1`);
+  const [moreClasses, setMoreClasses] = React.useState(false);
   const done = STEPS.filter(s => doneKeys.has(s.key)).length;
   const next = STEPS.find(s => !doneKeys.has(s.key));
 
@@ -103,6 +107,26 @@ export default function Onboarding() {
             )}
           </div>
         </section>
+
+        {rows.data && (!doneKeys.has('classes') || moreClasses) && (
+          <section aria-labelledby="ob-timetable">
+            <div className="flex items-baseline gap-3 border-b-2 border-ink pb-2">
+              <h2 id="ob-timetable" className="section-title flex-1">Your first timetable</h2>
+              <span className="text-[13px] text-ink-3">Sessions are made for you</span>
+            </div>
+            <p className="pb-4 pt-2 text-[14px] text-ink-2">
+              Type your weekly classes here, all on one page. Use Copy to for a class that runs on more than one day.
+            </p>
+            <FirstTimetable />
+          </section>
+        )}
+        {rows.data && doneKeys.has('classes') && !moreClasses && (
+          <p className="text-[14px] text-ink-2">
+            Classes are on your timetable.{' '}
+            <button className="font-semibold text-accent-text hover:underline" onClick={() => setMoreClasses(true)}>Add several more here</button>
+            {' '}or one at a time from <Link href="/classes" className="font-semibold text-accent-text hover:underline">Classes</Link>.
+          </p>
+        )}
 
         {rows.isLoading && <Skeleton className="h-40" />}
         {rows.error && <ErrorState error={rows.error} onRetry={() => rows.refetch()} />}
@@ -146,10 +170,12 @@ export default function Onboarding() {
           </section>
         )}
 
-        <p className="text-[13px] text-ink-3">
-          This school was created with sample data so you can see how everything fits together.
-          Starting fresh, every step would be empty and this page would walk you through them in order.
-        </p>
+        {sample.data?.sample_data && (
+          <p className="text-[13px] text-ink-3">
+            This school was created with sample data so you can see how everything fits together.
+            Starting fresh, every step would be empty and this page would walk you through them in order.
+          </p>
+        )}
       </div></div>
     </Shell>
   );
