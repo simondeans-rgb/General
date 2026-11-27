@@ -51,13 +51,16 @@ export type Brief = {
   emergency_contact_name: string | null; emergency_contact_phone: string | null;
   emergency_contacts: { name: string; relationship: string | null; phone: string | null }[];
   photo_consent: boolean | null;
+  /** Who may, and may not, collect the child (UR-17). */
+  collection?: { name: string; relationship: string | null; allowed: boolean }[];
 };
 
 const BRIEF_COLUMNS = `coalesce(b.requires_alert, false) as requires_alert,
        coalesce(b.has_medical_need, false) as has_medical_need,
        b.allergies, b.conditions, b.medications, b.action_plan,
        b.emergency_contact_name, b.emergency_contact_phone,
-       coalesce(b.emergency_contacts, '[]'::jsonb) as emergency_contacts, b.photo_consent`;
+       coalesce(b.emergency_contacts, '[]'::jsonb) as emergency_contacts, b.photo_consent,
+       app.collection_brief(b.student_id) as collection`;
 
 /**
  * The register for one session: everyone enrolled, plus anyone trialling.
