@@ -64,7 +64,8 @@ export type Session = { userId: string; role: Role; name: string; platform: bool
 type Ctx = {
   session: Session;
   signIn: (p: { userId: string; role: Role; name: string }) => void;
-  signOut: () => void;
+  /** False when it was refused (register marks still waiting to send). */
+  signOut: () => boolean;
   enterSupport: (v: SupportView) => void;
   exitSupport: () => void;
   /** People in several schools choose which one they are looking at (R-031). */
@@ -73,6 +74,21 @@ type Ctx = {
 };
 
 const SessionContext = React.createContext<Ctx | null>(null);
+
+/** Register marks still on this device (lib/offline, UR-04). Signing out or
+ *  switching person would strand them, so both wait until they are sent. */
+function registerWritesWaiting(): boolean {
+  try {
+    const raw = JSON.parse(localStorage.getItem('barre.pending-marks.v1') ?? 'null');
+    if (Array.isArray(raw)) return raw.length > 0;
+    return !!raw && ['marks', 'reasons', 'closes'].some(k => Array.isArray(raw[k]) && raw[k].length > 0);
+  } catch { return false; }
+}
+function blockedByRegister(): boolean {
+  if (!registerWritesWaiting()) return false;
+  window.dispatchEvent(new Event('barre:signout-blocked'));
+  return true;
+}
 const KEY = `barre.session.v1${process.env.NEXT_PUBLIC_SITE_KEY ? '.' + process.env.NEXT_PUBLIC_SITE_KEY : ''}`;
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
@@ -104,8 +120,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     return {
       session,
       loaded,
-      signIn: p => save({ userId: p.userId, role: p.role, name: p.name }),
-      signOut: () => save(null),
+      signIn: p => { if (stored && stored.userId !== p.userId && blockedByRegister()) return; save({ userId: p.userId, role: p.role, name: p.name }); },
+      signOut: () => { if (blockedByRegister()) return false; save(null); return true; },
       enterSupport: v => stored && save({ ...stored, support: v }),
       exitSupport: () => stored && save({ ...stored, support: undefined }),
       chooseSchool: (studio, role) => stored && save({ ...stored, studio, role: role ?? stored.role }),
