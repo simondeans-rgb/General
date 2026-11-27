@@ -114,10 +114,12 @@ describe('medical data is minimised, not merely gated', () => {
 
 describe('registers', () => {
   it('a teacher can mark their own class', async () => {
-    await asUser(MARCUS, async q => {
+    await asUser(MARCUS, async (q, svc) => {
       const s = (await q(`select cs.id, e.student_id from class_session cs
                             join enrolment e on e.class_id = cs.class_id and e.status='active'
                            where cs.class_id = $1 limit 1`, [CLASS.juniorTap]))[0];
+      // On the day of the class: registers open around the class only (UR-37).
+      await svc(`update class_session set starts_at = now() - interval '10 minutes', ends_at = now() + interval '35 minutes' where id = $1`, [s.id]);
       const r = await q(`insert into attendance_record (studio_id, session_id, student_id, status)
                          values ($1,$2,$3,'present')
                          on conflict (session_id, student_id) do update set status='present'

@@ -253,16 +253,17 @@ describe('the office builds the timetable', () => {
   });
 
   it('rescheduling moves untouched sessions and leaves taken registers alone', async () => {
-    await asUser(USERS.admin, async q => {
+    await asUser(USERS.admin, async (q, svc) => {
       const id = await insert(q, 'Moving Class', 3, '18:00');
       await q(`select app.generate_class_sessions($1)`, [id]);
 
       // Take one register in the future, so that session is now a record.
+      // (Written directly: a register cannot be marked days ahead, UR-37.)
       const [keep] = await q(`select id, studio_id from class_session
                                where class_id = $1 and starts_at > now()
                                order by starts_at limit 1`, [id]);
       const [student] = await q(`select id from student limit 1`);
-      await q(`insert into attendance_record (studio_id, session_id, student_id, status)
+      await svc(`insert into attendance_record (studio_id, session_id, student_id, status)
                values ($1,$2,$3,'present')`, [keep.studio_id, keep.id, student.id]);
 
       await q(`update class set day_of_week = 5, start_time = '19:30' where id = $1`, [id]);
@@ -316,9 +317,14 @@ describe('a teacher runs their own register', () => {
     });
   });
 
+  // Registers can be marked and closed only around the class (UR-37).
+  const onNow = (svc: any, id: string) =>
+    svc(`update class_session set starts_at = now() - interval '1 hour', ends_at = now() - interval '15 minutes', register_closed_at = null where id = $1`, [id]);
+
   it('closing a register refuses while anyone is unmarked', async () => {
-    await asUser(USERS.teacherTap, async q => {
+    await asUser(USERS.teacherTap, async (q, svc) => {
       const s = await session(q, CLASS.juniorTap);
+      await onNow(svc, s);
       await q(`delete from attendance_record where session_id = $1`, [s]);
       expect(await expectRejected(() => q(`select app.close_register($1)`, [s])))
         .toMatch(/REGISTER_INCOMPLETE/);
@@ -328,6 +334,7 @@ describe('a teacher runs their own register', () => {
   it('closing succeeds once everyone is accounted for, and is audited', async () => {
     await asUser(USERS.teacherTap, async (q, svc) => {
       const s = await session(q, CLASS.juniorTap);
+      await onNow(svc, s);
       await q(`insert into attendance_record (studio_id, session_id, student_id, status)
                select cs.studio_id, cs.id, e.student_id, 'present'
                  from class_session cs
