@@ -9,8 +9,10 @@ import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 
 type Row = { id: string; register_opens_before_min: number; register_edit_days: number; cover_travel_min: number;
-             makeup_policy: 'off' | 'cancelled' | 'cancelled_and_absence'; makeup_window_days: number; credit_cancelled_classes: boolean };
-const READ = `select id, register_opens_before_min, register_edit_days, cover_travel_min, makeup_policy, makeup_window_days, credit_cancelled_classes
+             makeup_policy: 'off' | 'cancelled' | 'cancelled_and_absence'; makeup_window_days: number; credit_cancelled_classes: boolean;
+             absence_credit: 'off' | 'session' | 'fixed' };
+const READ = `select id, register_opens_before_min, register_edit_days, cover_travel_min, makeup_policy, makeup_window_days, credit_cancelled_classes,
+  absence_credit
   from studio where id in (select app.studio_ids()) limit 1`;
 const SAVE = `update studio set register_opens_before_min = $2, register_edit_days = $3, cover_travel_min = $4,
   makeup_policy = $5, makeup_window_days = $6 where id = $1 returning id`;
@@ -49,7 +51,8 @@ export function RegisterSettings() {
         <label className="grid gap-2 py-2 text-[0.9062rem] sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center">
           <span><span className="font-semibold">Make-up classes</span>
             <span className="block text-[0.8125rem] text-ink-3">Families are offered a free place in a class of the same style with space.
-              {row.credit_cancelled_classes ? ' Cancellations are credited instead (Money tab), so make-ups are only offered for reported absences.' : ''}</span></span>
+              {row.credit_cancelled_classes ? ' Cancellations are credited instead (Money tab), so make-ups are only offered for reported absences.' : ''}
+              {row.absence_credit !== 'off' ? ' Reported absences are credited instead (Money tab); offering make-ups for them switches that credit off.' : ''}</span></span>
           <Select aria-label="Make-up classes" value={f.policy} disabled={!owner} onChange={e => setF({ ...f, policy: e.target.value })}>
             <option value="off">Not offered</option>
             <option value="cancelled">When we cancel a class</option>

@@ -7,6 +7,7 @@ import { StudentLoginAge } from '@/components/app/family-care';
 import { Shell } from '@/components/app/shell';
 import { FrameworkSettings, ChipSettings } from '@/components/app/progress-settings';
 import { PackSettings } from '@/components/app/pack-settings';
+import { AbsenceCreditSettings } from '@/components/app/absence-credit';
 import { BankDetailsSettings } from '@/components/app/bank-details';
 import { RegisterSettings } from '@/components/app/register-settings';
 import { RecordSheet } from '@/components/app/record-sheet';
@@ -73,7 +74,7 @@ export default function StudioSettings() {
             <ChipSettings />
             <RegisterSettings />
           </>}
-          {tab === 'money' && <><BankDetailsSettings /><PackSettings /></>}
+          {tab === 'money' && <><BankDetailsSettings /><PackSettings /><AbsenceCreditSettings /></>}
         </div>
       </div></div>
     </Shell>
