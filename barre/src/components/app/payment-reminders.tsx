@@ -8,6 +8,7 @@ import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import { Button, EmptyState, ErrorState, Field, Input, Skeleton } from '@/components/ui';
 import * as B from '@/lib/repos/billing';
+import { useLocationFilter } from '@/components/app/location-filter';
 import { money, dateShort } from '@/lib/format';
 
 const FALLBACK = {
@@ -26,7 +27,10 @@ const FALLBACK = {
 export function PaymentRemindersSheet({ onClose }: { onClose: () => void }) {
   const { session } = useSession();
   const qc = useQueryClient();
-  const fams = useRows<B.OverdueFamily>(['overdue-families'], B.OVERDUE_FAMILIES);
+  const all = useRows<B.OverdueFamily>(['overdue-families'], B.OVERDUE_FAMILIES);
+  // The location chosen on Billing carries over; families elsewhere are left out (UR-33).
+  const loc = useLocationFilter();
+  const fams = { ...all, data: all.data?.filter(f => !loc.current || (f.locations ?? []).includes(loc.current)) };
   const tpl = useRow<{ subject: string; body: string }>(['tpl-reminder'], B.REMINDER_TEMPLATE);
   const [subject, setSubject] = React.useState<string | null>(null);
   const [body, setBody] = React.useState<string | null>(null);
@@ -84,9 +88,10 @@ export function PaymentRemindersSheet({ onClose }: { onClose: () => void }) {
         ) : (
           <>
             <div className="flex-1 space-y-5 overflow-y-auto overscroll-contain p-4">
+              {loc.control && <div>{loc.control}</div>}
               {fams.isLoading && <Skeleton className="h-24" />}
               {fams.error != null && <ErrorState error={fams.error} />}
-              {fams.data?.length === 0 && <EmptyState title="Nobody is overdue" body="There is no one to remind." />}
+              {fams.data?.length === 0 && <EmptyState title="Nobody is overdue" body={loc.current ? `There is no one to remind at ${loc.current}.` : 'There is no one to remind.'} />}
               {!!fams.data?.length && (
                 <fieldset>
                   <legend className="mb-1.5 text-[0.8125rem] font-medium text-ink-2">

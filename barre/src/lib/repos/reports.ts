@@ -104,7 +104,10 @@ select c.id, c.name, ds.name as style, ds.colour, c.capacity,
 
 /* ── Locations (UR-33) ──────────────────────────────────────────────────── */
 export type Location = { id: string; name: string };
-export const LOCATIONS = `select id, name from location where deleted_at is null order by name`;
+/** Someone limited to some locations (UR-33) sees only theirs. */
+const IN_MY_SCOPE = `(l.studio_id not in (select studio_id from app.my_location_scope())
+       or l.id in (select location_id from app.my_location_scope()))`;
+export const LOCATIONS = `select l.id, l.name from location l where l.deleted_at is null and ${IN_MY_SCOPE} order by l.name`;
 
 export const WEEKLY_ATTENDANCE_AT = `
 select to_char(w, 'YYYY-MM-DD') as week,
@@ -168,7 +171,7 @@ select l.id, l.name,
        coalesce((select sum(coalesce(e.price_minor, c.price_minor)) from enrolment e join class c on c.id = e.class_id and c.deleted_at is null
           join term t on t.id = c.term_id and current_date between t.starts_on and t.ends_on
          where c.location_id = l.id and e.status = 'active' and e.deleted_at is null and c.pricing in ('term', 'one_off')), 0)::bigint as fees_term_minor
-  from location l where l.deleted_at is null order by l.name`;
+  from location l where l.deleted_at is null and ${IN_MY_SCOPE} order by l.name`;
 
 /* ── Retention, term on term (UR-34) ──────────────────────────────────────── */
 // $1 is the term; the term before it is the one that started most recently

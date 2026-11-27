@@ -30,7 +30,19 @@ export type InvoiceRow = {
   id: string; number: string; status: string; issued_on: string | null; due_on: string | null;
   total_minor: string; paid_minor: string; family_id: string; family_name: string;
   overdue: boolean; failed: boolean; lines: string | null;
+  /** Where it belongs, for the location filter (UR-33). */
+  locations: string[];
 };
+
+/** The locations a family's children are in a class at now (UR-33). */
+export const FAMILY_LOCATIONS = (fam: string) => `array(select distinct l.name from student s
+   join enrolment e on e.student_id = s.id and e.status = 'active' and e.deleted_at is null
+   join class c on c.id = e.class_id join location l on l.id = c.location_id
+  where s.family_id = ${fam} and s.deleted_at is null order by l.name)`;
+/** An invoice's locations: those of the classes it bills, else its family's. */
+const INVOICE_LOCATIONS = `coalesce(nullif(array(select distinct l.name from invoice_item it
+   join class c on c.id = it.class_id join location l on l.id = c.location_id
+  where it.invoice_id = i.id and it.deleted_at is null order by l.name), '{}'), ${FAMILY_LOCATIONS('f.id')})`;
 
 export const INVOICES = `
 select i.id, i.number, i.status, i.issued_on, i.due_on, i.total_minor, i.paid_minor,
@@ -40,7 +52,8 @@ select i.id, i.number, i.status, i.issued_on, i.due_on, i.total_minor, i.paid_mi
                 and p.failure_code is not null and p.succeeded_at is null)
          and i.status in ('issued','part_paid') as failed,
        (select string_agg(description, ', ' order by created_at) from invoice_item it
-         where it.invoice_id = i.id and it.deleted_at is null) as lines
+         where it.invoice_id = i.id and it.deleted_at is null) as lines,
+       ${INVOICE_LOCATIONS} as locations
   from invoice i join family f on f.id = i.family_id
  where i.deleted_at is null
  order by (i.status = 'draft') desc,
@@ -171,12 +184,13 @@ select on_date, kind, ref, detail, amount_minor,
 
 /* ── Payment reminders to many families (0045) ───────────────────────────── */
 export type OverdueFamily = { family_id: string; family_name: string; overdue_minor: string; invoices: string;
-  oldest_due: string; last_reminded: string | null; uses_app: boolean };
+  oldest_due: string; last_reminded: string | null; uses_app: boolean; locations: string[] };
 export const OVERDUE_FAMILIES = `
 select f.id as family_id, f.name as family_name, sum(i.total_minor - i.paid_minor)::bigint as overdue_minor,
        string_agg(i.number, ', ' order by i.due_on, i.number) as invoices, min(i.due_on) as oldest_due,
        app.last_payment_reminder(f.id) as last_reminded,
-       exists (select 1 from guardian g where g.family_id = f.id and g.user_id is not null and g.deleted_at is null) as uses_app
+       exists (select 1 from guardian g where g.family_id = f.id and g.user_id is not null and g.deleted_at is null) as uses_app,
+       ${FAMILY_LOCATIONS('f.id')} as locations
   from invoice i join family f on f.id = i.family_id
  where i.deleted_at is null and i.status in ('issued','part_paid','refunded')
    and i.total_minor > i.paid_minor and i.due_on < current_date
@@ -232,6 +246,8 @@ export type BillingRun = { id: string; term_name: string; period_month: string |
 
 export const BILLING_TERMS = `select id, name, starts_on, ends_on from term where deleted_at is null order by starts_on desc`;
 export const BILLING_LINES = `select * from app.billing_lines($1, $2::date, $3::uuid[])`;
+/** Each class's location, to narrow the run preview by location (UR-33). */
+export const CLASS_LOCATIONS = `select c.id, l.name as location from class c join location l on l.id = c.location_id where c.deleted_at is null`;
 export const DISCOUNT_RULES = `select id, kind, from_nth, percent, enabled from discount_rule order by kind desc`;
 export const SET_DISCOUNT_RULE = `update discount_rule set enabled = $2, percent = $3, from_nth = $4 where id = $1 returning id`;
 export const BILLING_RUNS = `
@@ -293,10 +309,12 @@ select contact as "*ContactName", coalesce(email, '') as "EmailAddress", number 
        description as "*Description", quantity as "*Quantity", round(total_minor / quantity / 100.0, 2) as "*UnitAmount",
        '200' as "*AccountCode", 'No VAT' as "*TaxType", 'GBP' as "Currency"
   from lines order by number, ord, created_at`;
+/** $1: a location name, or null for every location (UR-33). */
 export const AGED_DEBT_EXPORT = `
 select family_name as family, round(current_minor / 100.0, 2) as "0-30 days", round(d31_60 / 100.0, 2) as "31-60 days",
        round(d61_90 / 100.0, 2) as "61-90 days", round(d90_plus / 100.0, 2) as "90+ days", round(total / 100.0, 2) as total
-  from app.aged_debt(${MY_STUDIO})`;
+  from app.aged_debt(${MY_STUDIO}) a
+ where $1::text is null or $1::text = any(${FAMILY_LOCATIONS('a.family_id')})`;
 
 /** Every invoice, flat, for the accountant (R-012). */
 export const INVOICES_EXPORT = `

@@ -4,7 +4,10 @@ import * as React from 'react';
 import { useRows } from '@/lib/query';
 import { Select } from '@/components/ui';
 
-const LOCATIONS = `select id, name from location where deleted_at is null order by name`;
+// Someone limited to some locations (UR-33) chooses among theirs only.
+const LOCATIONS = `select id, name from location where deleted_at is null
+  and (studio_id not in (select studio_id from app.my_location_scope())
+       or id in (select location_id from app.my_location_scope())) order by name`;
 const KEY = 'swayvo.location.v1';
 
 /**

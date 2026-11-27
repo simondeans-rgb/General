@@ -5,7 +5,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Download, FileSpreadsheet, X } from 'lucide-react';
 import { Notice, Button, ErrorState, Input, Select, ViewTabs } from '@/components/ui';
 import { useRows } from '@/lib/query';
-import { money } from '@/lib/format';
+import { money, dateShort } from '@/lib/format';
+import { inviteLink } from '@/lib/repos/platform';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import { downloadCsv, parseCsv } from '@/lib/csv';
@@ -53,7 +54,45 @@ const BALANCE_FIELDS: typeof FIELDS = [
   { key: 'credit', label: 'Credit held (£)', match: /credit/i },
 ];
 
-type Kind = 'families' | 'classes' | 'balances';
+// History from the previous system (UR-32): a record, never money owed.
+const CHILD_FIELDS: typeof FIELDS = [
+  { key: 'child_first_name', label: 'Child first name', required: true, match: /^(child|student|dancer|pupil)?( ?first| ?fore)( ?name)?$|^first ?name$/i },
+  { key: 'child_last_name', label: 'Child last name', match: /^(child|student|dancer|pupil)?( ?last| ?sur)( ?name)?$|^surname$/i },
+  { key: 'child_dob', label: 'Date of birth', match: /d\.?o\.?b|date of birth|birth ?date|birthday/i },
+  { key: 'parent_email', label: 'Parent email', match: /e-?mail/i },
+];
+const INVOICE_FIELDS: typeof FIELDS = [
+  { key: 'parent_email', label: 'Parent email', match: /e-?mail/i },
+  { key: 'family', label: 'Family name', match: /family|account|customer|contact|surname/i },
+  { key: 'number', label: 'Invoice number', required: true, match: /^(invoice )?(number|no\.?|#|ref(erence)?)$|invoice ?(no|number|#)/i },
+  { key: 'issued_on', label: 'Invoice date', required: true, match: /^(invoice )?date$|issued|raised/i },
+  { key: 'due_on', label: 'Due date', match: /due/i },
+  { key: 'description', label: 'Description', match: /desc|detail|item|memo/i },
+  { key: 'total', label: 'Total (£)', required: true, match: /total|amount|gross/i },
+  { key: 'paid', label: 'Paid (£)', match: /paid|received/i },
+];
+const ATTENDANCE_FIELDS: typeof FIELDS = [...CHILD_FIELDS,
+  { key: 'period', label: 'Term', required: true, match: /term|period|season/i },
+  { key: 'class', label: 'Class', match: /class|course/i },
+  { key: 'attended', label: 'Attended', required: true, match: /attend|present/i },
+  { key: 'absent', label: 'Absent', match: /absen|missed/i },
+];
+const EXAM_FIELDS: typeof FIELDS = [...CHILD_FIELDS,
+  { key: 'board', label: 'Exam board', required: true, match: /board|society|syllabus/i },
+  { key: 'grade', label: 'Grade', required: true, match: /grade|level|exam$/i },
+  { key: 'exam_date', label: 'Exam date', required: true, match: /date|taken|sat/i },
+  { key: 'result', label: 'Result', match: /result|outcome|award/i },
+  { key: 'mark', label: 'Mark', match: /mark|score/i },
+  { key: 'title', label: 'Exam session', match: /session|title/i },
+];
+
+type Kind = 'families' | 'classes' | 'balances' | 'invoices' | 'attendance' | 'exams';
+type Tab = 'classes' | 'families' | 'balances' | 'history' | 'invites';
+const HISTORY: Kind[] = ['invoices', 'attendance', 'exams'];
+const FN: Record<Exclude<Kind, 'balances'>, string> = {
+  families: 'import_families', classes: 'import_classes', invoices: 'import_invoice_history',
+  attendance: 'import_attendance_history', exams: 'import_exam_results',
+};
 const KINDS: Record<Kind, { title: string; sub: string; fields: typeof FIELDS; unit: string; template: Record<string, string> }> = {
   families: { title: 'Import families', sub: 'One row per child, from a CSV file.', fields: FIELDS, unit: 'children', template: {
     'Parent name': 'Ruth Okafor', 'Parent email': 'ruth@example.com', 'Parent phone': '07700 900400',
@@ -66,10 +105,20 @@ const KINDS: Record<Kind, { title: string; sub: string; fields: typeof FIELDS; u
     'Location': '', 'Room': 'Studio 1', 'Teacher': '', 'Places': '16', 'Age min': '7', 'Age max': '10', 'Price': '54.00', 'Pricing': 'term', 'Term': '' } },
   balances: { title: 'Import opening balances', sub: 'One row per family: what they owe, or credit they hold, on a date.', fields: BALANCE_FIELDS, unit: 'families', template: {
     'Parent email': 'ruth@example.com', 'Family': 'Okafor', 'Balance': '45.00', 'Credit': '' } },
+  invoices: { title: 'Import past invoices', sub: 'One row per invoice from your previous system, kept as history.', fields: INVOICE_FIELDS, unit: 'invoices', template: {
+    'Parent email': 'ruth@example.com', 'Family': 'Okafor', 'Invoice number': 'INV-1042', 'Invoice date': '01/09/2025', 'Due date': '15/09/2025',
+    'Description': 'Autumn term fees', 'Total': '120.00', 'Paid': '120.00' } },
+  attendance: { title: 'Import attendance history', sub: 'One row per child, term and class: how many classes they came to.', fields: ATTENDANCE_FIELDS, unit: 'rows', template: {
+    'Child first name': 'Ada', 'Child last name': 'Okafor', 'Date of birth': '14/03/2018', 'Parent email': 'ruth@example.com',
+    'Term': 'Autumn 2025', 'Class': 'Pre-School Ballet', 'Attended': '11', 'Absent': '1' } },
+  exams: { title: 'Import exam results', sub: 'One row per child and exam already taken.', fields: EXAM_FIELDS, unit: 'results', template: {
+    'Child first name': 'Ada', 'Child last name': 'Okafor', 'Date of birth': '14/03/2018', 'Parent email': 'ruth@example.com',
+    'Exam board': 'RAD', 'Grade': 'Primary', 'Exam date': '20/06/2025', 'Result': 'Merit', 'Mark': '72', 'Exam session': 'RAD summer exams' } },
 };
 
 type Check = { ok: boolean; rows: number; families?: number; children?: number; enrolled?: number; skipped?: number;
   medical?: number; classes?: number; sessions?: number; invoices?: number; credits?: number; owed_minor?: number; credit_minor?: number;
+  records?: number; results?: number;
   errors: { row: number; message: string }[]; warnings: { message: string }[] };
 
 /**
@@ -77,10 +126,11 @@ type Check = { ok: boolean; rows: number; families?: number; children?: number; 
  * its columns, see every problem before anything is written, then import it all
  * in one go — or nothing at all.
  */
-export function ImportWizard({ onClose, initial = 'families' }: { onClose: () => void; initial?: Kind }) {
+export function ImportWizard({ onClose, initial = 'families' }: { onClose: () => void; initial?: Kind | 'invites' }) {
   const { session } = useSession();
   const qc = useQueryClient();
-  const [kind, setKind] = React.useState<Kind>(initial);
+  const [kind, setKind] = React.useState<Kind>(initial === 'invites' ? 'families' : initial);
+  const [tab, setTab] = React.useState<Tab>(initial === 'invites' ? 'invites' : HISTORY.includes(initial) ? 'history' : initial as Tab);
   const K = KINDS[kind];
   const FIELDS = K.fields;
   // Columns nothing is matched to are not imported: say so, and ask (UR-32).
@@ -105,6 +155,7 @@ export function ImportWizard({ onClose, initial = 'families' }: { onClose: () =>
   const unmapped = head.map((h, i) => ({ h: h.trim() || `Column ${i + 1}`, i })).filter(c => !mapped.has(c.i)
     && body.some(r => (r[c.i] ?? '').trim() !== ''));
   const switchKind = (k: Kind) => { setKind(k); setFile(null); setTable([]); setMap({}); setCheck(null); setDone(null); setAckUnmapped(false); };
+  const switchTab = (t: Tab) => { setTab(t); if (t !== 'invites') switchKind(t === 'history' ? 'invoices' : t); };
 
   const read = async (f: File) => {
     const t = parseCsv(await f.text());
@@ -119,16 +170,14 @@ export function ImportWizard({ onClose, initial = 'families' }: { onClose: () =>
   };
 
   const call = useMutation({
-    mutationFn: async (commit: boolean) => (await runAs(session, q => kind === 'families'
-      ? q<{ r: Check }>(`select app.import_families($1::jsonb, $2) r`, [JSON.stringify(rows), commit])
-      : kind === 'classes'
-        ? q<{ r: Check }>(`select app.import_classes($1::jsonb, $2) r`, [JSON.stringify(rows), commit])
-        : q<{ r: Check }>(`select app.import_opening_balances($1::jsonb, $2::date, $3, $4) r`,
-            [JSON.stringify(rows), asAt, commit, termBilled ? currentTerm?.id ?? null : null])))[0]!.r,
+    mutationFn: async (commit: boolean) => (await runAs(session, q => kind !== 'balances'
+      ? q<{ r: Check }>(`select app.${FN[kind]}($1::jsonb, $2) r`, [JSON.stringify(rows), commit])
+      : q<{ r: Check }>(`select app.import_opening_balances($1::jsonb, $2::date, $3, $4) r`,
+          [JSON.stringify(rows), asAt, commit, termBilled ? currentTerm?.id ?? null : null])))[0]!.r,
     onSuccess: (r, commit) => { if (commit) { setDone(r); qc.invalidateQueries({ queryKey: ['db'] }); } else setCheck(r); },
   });
 
-  const template = () => downloadCsv(`swayvo-${kind === 'families' ? 'families' : kind === 'classes' ? 'timetable' : 'balances'}-template.csv`, [K.template]);
+  const template = () => downloadCsv(`swayvo-${kind === 'classes' ? 'timetable' : kind}-template.csv`, [K.template]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 sm:items-center sm:p-6" onClick={onClose}>
@@ -137,8 +186,8 @@ export function ImportWizard({ onClose, initial = 'families' }: { onClose: () =>
                    border border-line bg-surface shadow-lg sm:rounded-[var(--radius-xl)]">
         <div className="flex items-start gap-3 border-b border-line px-5 pb-3 pt-4">
           <div className="min-w-0 flex-1">
-            <h2 id="imp-t" className="font-display text-[1.25rem] leading-tight">{K.title}</h2>
-            <p className="mt-1 text-[0.8438rem] text-ink-3">{K.sub}</p>
+            <h2 id="imp-t" className="font-display text-[1.25rem] leading-tight">{tab === 'invites' ? 'Invitation links' : K.title}</h2>
+            <p className="mt-1 text-[0.8438rem] text-ink-3">{tab === 'invites' ? 'A link for everyone who cannot sign in yet, to send from your own email.' : K.sub}</p>
           </div>
           <Button size="sm" variant="ghost" onClick={onClose} aria-label="Close" className="-mr-2 -mt-1">
             <X className="size-4" aria-hidden />
@@ -155,19 +204,36 @@ export function ImportWizard({ onClose, initial = 'families' }: { onClose: () =>
             {kind === 'balances' && <Notice word="Imported" tone="positive"
               title={`${done.invoices} opening-balance invoices (${money(done.owed_minor ?? 0)}) and ${done.credits} credits (${money(done.credit_minor ?? 0)})`}
               detail={`Each is labelled “Opening balance as at …” on the family’s account.${done.skipped ? ` ${done.skipped} families already had an opening balance and were left alone.` : ''}`} />}
+            {HISTORY.includes(kind) && <Notice word="Imported" tone="positive"
+              title={kind === 'invoices' ? `${done.invoices} past invoices` : kind === 'attendance' ? `${done.records} attendance records` : `${done.results} exam results`}
+              detail={`${kind === 'invoices' ? 'They are on each family’s record, marked “Imported”. They are history only: balances, aged debt and billing runs do not use them.'
+                : kind === 'attendance' ? 'They are on each child’s record, under earlier attendance.' : 'They are with each child’s exams and on their timetable.'}${done.skipped ? ` ${done.skipped} were already here and were left alone.` : ''}`} />}
             {done.warnings.map((w, i) => <p key={i} className="text-caution">{w.message}.</p>)}
-            <p className="text-ink-2">{kind === 'families' ? 'Next: import opening balances, then invite the parents from People so they can sign in.'
-              : kind === 'classes' ? 'Next: import your families, then their opening balances.' : 'Next: invite the parents from People so they can sign in.'}</p>
+            <p className="text-ink-2">{kind === 'families' ? 'Next: import opening balances, then make invitation links so parents can sign in.'
+              : kind === 'classes' ? 'Next: import your families, then their opening balances.' : 'Next: make invitation links so parents can sign in.'}</p>
+            {kind !== 'classes' && <Button size="sm" onClick={() => { setDone(null); setTab('invites'); }}>Make invitation links</Button>}
           </div>
         ) : (
           <div className="space-y-6">
-            <ViewTabs label="What to import" value={kind} onChange={switchKind}
-              options={[['classes', '1. Timetable'], ['families', '2. Families'], ['balances', '3. Balances']]} />
+            <ViewTabs label="What to import" value={tab} onChange={switchTab}
+              options={[['classes', '1. Timetable'], ['families', '2. Families'], ['balances', '3. Balances'], ['history', '4. History'], ['invites', '5. Invitations']]} />
+            {tab === 'invites' ? <BulkInvites /> : <>
+            {tab === 'history' && (
+              <label className="grid gap-1 text-[0.875rem]"><span className="font-semibold">Which history</span>
+                <Select value={kind} onChange={e => switchKind(e.target.value as Kind)} className="w-full sm:w-64">
+                  <option value="invoices">Past invoices</option>
+                  <option value="attendance">Attendance, per term</option>
+                  <option value="exams">Exam results</option>
+                </Select>
+              </label>
+            )}
             <section className="space-y-3">
               <p className="text-[0.875rem] text-ink-2">Export from your current system or spreadsheet as CSV.{' '}
                 {kind === 'families' && 'Brothers and sisters go into one family by their parent’s email or phone number.'}
                 {kind === 'classes' && 'New dance styles and rooms are added for you; a teacher not on your staff list is left blank to fill in later.'}
-                {kind === 'balances' && 'Families are matched by parent email, else family name, so import families first. A negative balance is credit.'}</p>
+                {kind === 'balances' && 'Families are matched by parent email, else family name, so import families first. A negative balance is credit.'}
+                {kind === 'invoices' && 'Families are matched by parent email, else family name. Past invoices are kept as a record only — what is still owed comes in as an opening balance.'}
+                {(kind === 'attendance' || kind === 'exams') && 'Children are matched by name, with date of birth or a parent email when two share a name, so import families first.'}</p>
               {kind === 'balances' && (
                 <div className="flex flex-wrap items-end gap-4">
                   <label className="grid gap-1 text-[0.875rem]"><span className="font-semibold">Balances as at</span>
@@ -236,11 +302,12 @@ export function ImportWizard({ onClose, initial = 'families' }: { onClose: () =>
               </section>
             )}
             {call.error != null && <ErrorState error={call.error} />}
+            </>}
           </div>
         )}
         </div>
 
-        {(done || head.length > 0) && (
+        {tab !== 'invites' && (done || head.length > 0) && (
           <div className="flex gap-2 border-t border-line px-5 py-3 pb-safe sm:justify-end">
             {done ? <Button className="w-full sm:w-auto" variant="primary" onClick={onClose}>Done</Button> : <>
               <Button className="flex-1 sm:flex-none" disabled={missing.length > 0 || body.length === 0} loading={call.isPending && call.variables === false}
@@ -249,12 +316,74 @@ export function ImportWizard({ onClose, initial = 'families' }: { onClose: () =>
               </Button>
               <Button className="flex-1 sm:flex-none" variant="primary" disabled={!check?.ok || (unmapped.length > 0 && !ackUnmapped)} loading={call.isPending && call.variables === true}
                 onClick={() => call.mutate(true)}>
-                Import {body.length} {kind === 'balances' ? 'families' : K.unit}
+                Import {body.length} {K.unit}
               </Button>
             </>}
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+type Invite = { role: 'teacher' | 'guardian'; full_name: string; email: string | null; family_name: string | null;
+  token: string | null; expires_at: string | null; note: string | null };
+
+/**
+ * Invitation links for everyone imported who cannot sign in yet (UR-32), as a
+ * spreadsheet the school sends from its own email: Swayvo does not send email
+ * yet (UR-14). Each link is an ordinary invitation — one use, 14 days — and is
+ * shown only now: the database keeps a fingerprint of it, never the link.
+ */
+function BulkInvites() {
+  const { session } = useSession();
+  const qc = useQueryClient();
+  const [reissue, setReissue] = React.useState(false);
+  const make = useMutation({
+    mutationFn: () => runAs(session, q => q<Invite>(`select * from app.bulk_invitations($1)`, [reissue])),
+    onSuccess: rows => {
+      const linked = rows.filter(r => r.token);
+      if (linked.length) downloadCsv(`swayvo-invitation-links-${new Date().toISOString().slice(0, 10)}.csv`, linked.map(r => ({
+        name: r.full_name, email: r.email, role: r.role === 'teacher' ? 'Teacher' : 'Parent', family: r.family_name ?? '',
+        link: inviteLink(r.token!), expires: r.expires_at ? dateShort(r.expires_at) : '',
+      })));
+      qc.invalidateQueries({ queryKey: ['db'] });
+    },
+  });
+  const rows = make.data ?? [];
+  const linked = rows.filter(r => r.token);
+  const missing = rows.filter(r => !r.token && /No email/.test(r.note ?? ''));
+  const others = rows.filter(r => !r.token && !/No email/.test(r.note ?? ''));
+  return (
+    <section className="space-y-4 text-[0.875rem]">
+      <p className="text-ink-2">Every parent and teacher with an email address and no login gets their own invitation link,
+        in a spreadsheet with their name and email. Send each person their link from your own email or mailing tool.
+        Each link works once and lasts 14 days, like any invitation.</p>
+      <label className="flex min-h-[44px] items-center gap-2">
+        <input type="checkbox" className="size-[18px] accent-[var(--color-accent)]" checked={reissue} onChange={e => setReissue(e.target.checked)} />
+        Also make new links for people already invited (their earlier link stops working)
+      </label>
+      <Button variant="primary" loading={make.isPending} onClick={() => make.mutate()}>
+        <Download className="size-4" aria-hidden /> Make links and download
+      </Button>
+      {make.error != null && <ErrorState error={make.error} />}
+      {make.data && (
+        <div className="space-y-3" aria-live="polite">
+          <Notice word={linked.length ? 'Downloaded' : 'Nothing new'} tone={linked.length ? 'positive' : 'ink'}
+            title={linked.length ? `${linked.length} invitation link${linked.length === 1 ? '' : 's'}` : 'Everyone with an email already has a link or a login'}
+            detail={linked.length ? 'The spreadsheet is in your downloads. The links are not shown again — keep the file until you have sent them.' : undefined} />
+          {missing.length > 0 && (
+            <div className="border-l-2 border-caution pl-3">
+              <p className="font-semibold">{missing.length} without an email address</p>
+              <p className="text-[0.8438rem] text-ink-2">{missing.map(m => m.full_name + (m.family_name ? ` (${m.family_name})` : '')).join(', ')}.
+                Add their email on People, then make the links again.</p>
+            </div>
+          )}
+          {others.length > 0 && (
+            <p className="text-[0.8438rem] text-ink-3">{others.length} left alone: {others.map(o => `${o.full_name} — ${o.note?.toLowerCase()}`).join('; ')}.</p>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
