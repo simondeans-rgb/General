@@ -9,6 +9,7 @@ import { AbsenceDialog, MakeUpOffers } from '@/components/app/absence-report';
 import { Button } from '@/components/ui';
 import { useRows } from '@/lib/query';
 import { PracticeLog } from '@/components/app/practice';
+import { StudentConsents } from '@/components/app/consents';
 import { Goals, Milestones } from '@/components/app/progress';
 import { EmptyState, Skeleton, ErrorState } from '@/components/ui';
 import * as H from '@/lib/repos/hub';
@@ -146,6 +147,9 @@ export default function LearnHome() {
               </ul>
             </section>
           )}
+
+          {/* Their own consents, read-only (UR-08); shown from 13. */}
+          <StudentConsents />
 
           <nav aria-label="More" className="divide-y divide-line border-t border-line">
             {([
