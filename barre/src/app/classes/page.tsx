@@ -12,6 +12,7 @@ import { Beats, Button, EmptyState, Skeleton, ErrorState } from '@/components/ui
 import { SectionHead, StyleMark, ViewTabs, Word } from '@/components/app/session-row';
 import * as C from '@/lib/repos/classes';
 import { ClassForm } from '@/components/app/class-form';
+import { useLocationFilter } from '@/components/app/location-filter';
 import { TermRollover, DuplicateClass } from '@/components/app/term-rollover';
 import {
   EnrolSheet, WithdrawSheet, WaitlistActions, BookTrialSheet,
@@ -34,7 +35,8 @@ function Classes() {
   const [termPick, setTermPick] = React.useState('');
   const termList = (terms.data ?? []).filter(t => t.classes > 0 || t.current);
   const term = termList.find(t => t.id === termPick) ?? termList.find(t => t.current) ?? termList[0];
-  const rows = { ...all, data: all.data?.filter(c => !term || c.term_id === term.id) };
+  const place = useLocationFilter();
+  const rows = { ...all, data: all.data?.filter(c => (!term || c.term_id === term.id) && place.keep(c.location)) };
 
   const byDay = React.useMemo(() => {
     const map = new Map<number, C.ClassRow[]>();
@@ -62,9 +64,14 @@ function Classes() {
         </Button>
       </div>}>
       <div className="mx-auto max-w-[1240px]">
-        {termList.length > 1 && (
-          <ViewTabs label="Term" className="mb-6" value={term?.id ?? ''} onChange={id => { setTermPick(id); select(null); }}
-            options={termList.map(t => [t.id, `${t.name}${t.current ? ' · now' : ''}`] as [string, string])} />
+        {(termList.length > 1 || place.control) && (
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+            {termList.length > 1 ? (
+              <ViewTabs label="Term" value={term?.id ?? ''} onChange={id => { setTermPick(id); select(null); }}
+                options={termList.map(t => [t.id, `${t.name}${t.current ? ' · now' : ''}`] as [string, string])} />
+            ) : <span />}
+            {place.control}
+          </div>
         )}
         <div className={cn('gap-x-10', selected ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:items-start' : 'block')}>
           <div className="min-w-0 space-y-10">
