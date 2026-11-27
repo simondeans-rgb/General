@@ -146,7 +146,7 @@ export function underFilled(c: { enrolled: number; capacity: number; pricing?: s
 
 /** Side by side, one row per location: students counted once per site. */
 export type LocationRow = { id: string; name: string; classes: number; students: number; enrolled: number; capacity: number;
-  attended: number; marked: number; billed_30d_minor: string; billed_term_minor: string };
+  attended: number; marked: number; billed_30d_minor: string; fees_term_minor: string };
 export const BY_LOCATION = `
 select l.id, l.name,
        (select count(*)::int from class c where c.location_id = l.id and c.deleted_at is null) as classes,
@@ -163,9 +163,9 @@ select l.id, l.name,
        coalesce((select sum(ii.total_minor) from invoice_item ii join invoice i on i.id = ii.invoice_id join class c on c.id = ii.class_id
          where c.location_id = l.id and ii.deleted_at is null and i.deleted_at is null and i.status not in ('draft', 'void')
            and i.issued_on > current_date - 30), 0)::bigint as billed_30d_minor,
-       coalesce((select sum(ii.total_minor) from invoice_item ii join invoice i on i.id = ii.invoice_id join class c on c.id = ii.class_id
+       coalesce((select sum(coalesce(e.price_minor, c.price_minor)) from enrolment e join class c on c.id = e.class_id and c.deleted_at is null
           join term t on t.id = c.term_id and current_date between t.starts_on and t.ends_on
-         where c.location_id = l.id and ii.deleted_at is null and i.deleted_at is null and i.status not in ('draft', 'void')), 0)::bigint as billed_term_minor
+         where c.location_id = l.id and e.status = 'active' and e.deleted_at is null and c.pricing in ('term', 'one_off')), 0)::bigint as fees_term_minor
   from location l where l.deleted_at is null order by l.name`;
 
 /* ── Retention, term on term (UR-34) ──────────────────────────────────────── */
