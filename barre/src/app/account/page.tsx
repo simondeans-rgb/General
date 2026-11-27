@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Download, MailPlus, ShieldOff, UserMinus, CheckCircle2 } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { RetentionCard } from '@/components/app/safeguarding';
+import { HistoryCard } from '@/components/app/history-card';
 import { RecordSheet } from '@/components/app/record-sheet';
 import { InviteLink } from '@/components/app/invite-link';
 import { BrandSettings, ImagerySettings } from '@/components/app/brand-settings';
@@ -49,6 +50,7 @@ export default function AccountPage() {
         <ImagerySettings canEdit={isOwner && !session?.platform} />
         <PlanCard acct={acct} />
         <Team isOwner={isOwner} studioId={acct?.id} />
+        {isOwner && !session?.platform && <HistoryCard />}
         {isOwner && !session?.platform && acct && <SupportCard studioId={acct.id} />}
         {isOwner && !session?.platform && acct && <RetentionCard studioId={acct.id} />}
         {isOwner && !session?.platform && <ExportCard name={acct?.name} />}
