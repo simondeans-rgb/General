@@ -12,6 +12,7 @@ import * as H from '@/lib/repos/hub';
 import * as I from '@/lib/repos/inbox';
 import { money, time, relativeDay, dateLong, dayRange, ageFrom } from '@/lib/format';
 import { cn } from '@/lib/cn';
+import { PendingLogins } from '@/components/app/family-care';
 import { SectionHead, StyleMark, dayDate, dueWord, useSessionChanges, type SessionChange } from './_parts/ui';
 
 type Child = { id: string; first_name: string; last_name: string; date_of_birth: string; class_names: string | null };
@@ -34,6 +35,9 @@ export default function FamilyHome() {
     ['my-messages'], F.MY_MESSAGES);
   const notices = useRows<I.Broadcast>(['broadcasts'], I.BROADCASTS);
   const feedback = useRows<H.Feedback>(['feedback'], H.STUDENT_FEEDBACK);
+  // A teenager's login waiting for a parent's approval (UR-16).
+  const logins = useRows<F.ChildLogin>(['my-children-logins'], F.MY_CHILDREN_LOGINS);
+  const pendingLogins = (logins.data ?? []).filter(l => l.state === 'pending').length;
 
   const rows = schedule.data ?? [];
   const changes = useSessionChanges(rows.map(r => r.id));
@@ -74,10 +78,11 @@ export default function FamilyHome() {
       <div className="mx-auto grid max-w-[1080px] gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
         <div className="min-w-0 space-y-10">
           {/* Notices: changes and dates nobody should miss. */}
-          {(changeNotices.length > 0 || owes || fresh.length > 0) && (
+          {(changeNotices.length > 0 || owes || fresh.length > 0 || pendingLogins > 0) && (
             <section aria-labelledby="notices-h">
               <SectionHead id="notices-h" title="Notices" />
               <ul className="on-count divide-y divide-line">
+                <PendingLogins />
                 {changeNotices.map(({ s, kids: who, c }) => (
                   <li key={s.id} className="py-3.5">
                     <Link href={`/class/?id=${s.class_id}`} className="block rounded-[var(--radius-sm)] hover:bg-surface-2/60">

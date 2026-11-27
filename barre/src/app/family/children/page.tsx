@@ -17,12 +17,15 @@ import * as F from '@/lib/repos/family';
 import { YourDetails, EmergencyContacts } from '@/components/app/family-details';
 import { ChildClassesSheet, AddChildSheet } from '@/components/app/family-classes';
 import { DropIns } from '@/components/app/drop-ins';
+import { ChildLogin, CollectionList } from '@/components/app/family-care';
 import { ageFrom, dateShort } from '@/lib/format';
 
 type Child = {
   id: string; first_name: string; last_name: string; date_of_birth: string;
   class_names: string | null; attendance_pct: number | null;
   has_alert: boolean; allergies: string | null; photo_consent: boolean | null;
+  /** An adult participant (UR-21); is_me when that adult is the signed-in guardian. */
+  is_adult?: boolean; is_me?: boolean;
 };
 
 export default function FamilyChildren() {
@@ -43,8 +46,8 @@ export default function FamilyChildren() {
         {children.data?.map(c => (
           <section key={c.id} aria-labelledby={`child-${c.id}`}>
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b-2 border-ink pb-2">
-              <h2 id={`child-${c.id}`} className="font-display text-[24px] leading-none">{c.first_name} {c.last_name}</h2>
-              <span className="text-[13px] text-ink-3">{ageFrom(c.date_of_birth)} · born {dateShort(c.date_of_birth)}</span>
+              <h2 id={`child-${c.id}`} className="font-display text-[24px] leading-none">{c.first_name} {c.last_name}{c.is_me ? ' (you)' : ''}</h2>
+              <span className="text-[13px] text-ink-3">{c.is_adult ? 'Adult' : `${ageFrom(c.date_of_birth)} · born ${dateShort(c.date_of_birth)}`}</span>
             </div>
             {/* Desktop: details on the left, actions and practice alongside. */}
             <div className="grid gap-x-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
@@ -78,6 +81,8 @@ export default function FamilyChildren() {
               )}
               <Row label="Exams"><StudentExams studentId={c.id} /></Row>
               <EmergencyContacts studentId={c.id} name={c.first_name} />
+              {!c.is_adult && <CollectionList studentId={c.id} name={c.first_name} />}
+              {!c.is_adult && <ChildLogin studentId={c.id} name={c.first_name} />}
             </dl>
             </div>
             <aside className="min-w-0 lg:pt-3">
