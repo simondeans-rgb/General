@@ -31,11 +31,10 @@ export function PracticeLog({ studentId, who = 'you', bare }: { studentId: strin
   const log = useMutation({
     mutationFn: (v: { mins: number; what: string }) => runAs(session, q => q(E.LOG_PRACTICE, [studentId, v.mins, v.what])),
     onMutate: () => setSaved(null),
-    onSuccess: async (_r, v) => {
+    onSuccess: (_r, v) => {
       setWhat(''); setExpected((thisWeek(weeks.data, studentId)?.minutes ?? 0) + v.mins);
       setSaved(`Saved: ${v.mins} min${v.what.trim() ? ` of ${v.what.trim()}` : ''}.`);
-      await qc.invalidateQueries({ queryKey: ['db'] });
-      setExpected(null);
+      void qc.invalidateQueries({ queryKey: ['db'] }).then(() => setExpected(null));
     },
   });
   const w = thisWeek(weeks.data, studentId);
