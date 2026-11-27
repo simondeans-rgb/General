@@ -13,14 +13,19 @@ import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import { Button, ErrorState, Field, Input, Notice, Skeleton } from '@/components/ui';
-import { dateLong, time } from '@/lib/format';
+import { dateLong, money, time } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
-type Option = { session_id: string; class_name: string; starts_at: string; ends_at: string; report_id: string | null; note: string | null; withdrawable: boolean };
+type Option = { session_id: string; class_name: string; starts_at: string; ends_at: string; report_id: string | null; note: string | null; withdrawable: boolean;
+                credit_minor: number | null };
 
 export const ABSENCE_OPTIONS = `select * from app.absence_options($1, 42)`;
 export const REPORT_ABSENCE = `select app.report_absence($1, $2::uuid[], $3) as n`;
 export const WITHDRAW_ABSENCE = `select app.withdraw_absence($1)`;
+/** Credit the school's policy gave for these reports (UR-56). */
+export const ABSENCE_CREDIT_FOR = `
+select coalesce(sum(amount_minor), 0)::int as credit_minor from absence_credit
+ where student_id = $1 and session_id = any($2::uuid[]) and status = 'active'`;
 
 export function AbsenceForm({ studentId, firstName, self = false, onDone }: {
   studentId: string; firstName: string; self?: boolean; onDone: () => void;
@@ -30,11 +35,15 @@ export function AbsenceForm({ studentId, firstName, self = false, onDone }: {
   const options = useRows<Option>(['absence-options', studentId], ABSENCE_OPTIONS, [studentId]);
   const [picked, setPicked] = React.useState<Set<string>>(new Set());
   const [note, setNote] = React.useState('');
-  const [done, setDone] = React.useState<number | null>(null);
+  const [done, setDone] = React.useState<{ n: number; credit: number } | null>(null);
 
   const send = useMutation({
-    mutationFn: async () => runAs(session, q => q<{ n: number }>(REPORT_ABSENCE, [studentId, [...picked], note.trim() || null])),
-    onSuccess: r => { setDone(r[0]?.n ?? picked.size); qc.invalidateQueries({ queryKey: ['db'] }); },
+    mutationFn: async () => runAs(session, async q => {
+      const r = await q<{ n: number }>(REPORT_ABSENCE, [studentId, [...picked], note.trim() || null]);
+      const c = await q<{ credit_minor: number }>(ABSENCE_CREDIT_FOR, [studentId, [...picked]]);
+      return { n: r[0]?.n ?? picked.size, credit: Number(c[0]?.credit_minor ?? 0) };
+    }),
+    onSuccess: r => { setDone(r); qc.invalidateQueries({ queryKey: ['db'] }); },
   });
   const withdraw = useMutation({
     mutationFn: async (id: string) => runAs(session, q => q(WITHDRAW_ABSENCE, [id])),
@@ -46,7 +55,11 @@ export function AbsenceForm({ studentId, firstName, self = false, onDone }: {
       <div className="py-2">
         <Notice word="Done" tone="positive"
           title={self ? 'Your teacher will see this on the register.' : `${firstName}’s teacher will see this on the register.`}
-          detail={`${done === 1 ? 'The class is' : `${done} classes are`} marked “reported absent”. ${self ? 'Your family and the office have' : 'The office has'} a copy too. You can withdraw it here until the class starts.`} />
+          detail={`${done.n === 1 ? 'The class is' : `${done.n} classes are`} marked “reported absent”. ${self ? 'Your family and the office have' : 'The office has'} a copy too. You can withdraw it here until the class starts.`} />
+        {done.credit > 0 && (
+          <p className="mt-3 text-[0.9062rem]"><span className="font-semibold">{money(done.credit)} credit added</span> to {self ? 'your family’s' : 'your'} account.
+            It comes off the next invoice. Withdrawing the report takes it back.</p>
+        )}
         <Button className="mt-4 w-full" variant="primary" onClick={onDone}>Close</Button>
       </div>
     );
@@ -77,7 +90,8 @@ export function AbsenceForm({ studentId, firstName, self = false, onDone }: {
                   <div key={o.session_id} className="flex min-h-11 items-center gap-3">
                     <span className="min-w-0 flex-1 text-[0.9062rem]">
                       <span className="tnum">{time(o.starts_at)}</span> {o.class_name}
-                      <span className="block text-[0.8125rem] text-ink-3">Reported absent{o.note ? ` — ${o.note}` : ''}</span>
+                      <span className="block text-[0.8125rem] text-ink-3">Reported absent{o.note ? ` — ${o.note}` : ''}
+                        {o.credit_minor ? ` · ${money(o.credit_minor)} credit added` : ''}</span>
                     </span>
                     {o.withdrawable && (
                       <Button size="sm" variant="ghost" loading={withdraw.isPending && withdraw.variables === o.report_id}

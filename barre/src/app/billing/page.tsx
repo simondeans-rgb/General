@@ -14,6 +14,7 @@ import { runAs, readAs } from '@/lib/db/client';
 import { downloadCsv } from '@/lib/csv';
 import { BillingRunPanel } from '@/components/app/billing-run';
 import { FamilyAccount } from '@/components/app/family-account';
+import { AbsenceCredits } from '@/components/app/absence-credit';
 import { PaymentRemindersSheet } from '@/components/app/payment-reminders';
 import { useLocationFilter } from '@/components/app/location-filter';
 import { cardPaymentsEnabled, invoiceState } from '@/lib/payments/invoice-status';
@@ -213,7 +214,8 @@ function Billing() {
                         </button>
                         <span className="block max-w-[240px] truncate text-[0.8125rem] text-ink-3">{i.lines}</span>
                       </td>
-                      <td className="px-3 py-2.5 align-top">{i.family_name}</td>
+                      <td className="px-3 py-2.5 align-top">{i.family_name}
+                        {i.billed_to && <span className="block text-[0.8125rem] text-ink-3">To {i.billed_to}</span>}</td>
                       <td className="tnum whitespace-nowrap px-3 py-2.5 align-top text-ink-2">{dateShort(i.due_on)}</td>
                       <td className="px-3 py-2.5 align-top"><InvoiceStatus i={i} /></td>
                       <td className="tnum py-2.5 pl-3 text-right align-top font-semibold">
@@ -232,7 +234,7 @@ function Billing() {
                   <button onClick={() => select(i.id)} aria-current={selected === i.id || undefined}
                     className={cn('grid min-h-14 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 py-3 text-left', selected === i.id && 'bg-accent-soft/60')}>
                     <span className="min-w-0">
-                      <span className="block truncate font-semibold">{i.family_name}</span>
+                      <span className="block truncate font-semibold">{i.family_name}{i.billed_to && <span className="font-normal text-ink-3"> · to {i.billed_to}</span>}</span>
                       <span className="mt-0.5 block truncate text-[0.8125rem] text-ink-3">
                         <span className="tnum">{i.number}</span> · due {dateShort(i.due_on)}
                       </span>
@@ -251,6 +253,8 @@ function Billing() {
 
           {selected && <InvoicePanel id={selected} onClose={() => select(null)} />}
         </div>
+
+        <AbsenceCredits />
       </div>
 
       {running && <BillingRunPanel onClose={() => setRunning(false)} />}
@@ -344,7 +348,7 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
   return (
     <DetailPanel open onClose={onClose}
       title={i ? `${i.number}` : 'Invoice'}
-      subtitle={i ? i.family_name : undefined}>
+      subtitle={i ? (i.billed_to ? `${i.family_name} · to ${i.billed_to}` : i.family_name) : undefined}>
       {inv.isLoading && <Skeleton className="h-40" />}
       {inv.error && <ErrorState error={inv.error} />}
       {inv.data === undefined && !inv.isLoading && !inv.error && (

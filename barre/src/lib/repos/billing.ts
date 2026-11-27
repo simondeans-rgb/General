@@ -32,6 +32,8 @@ export type InvoiceRow = {
   overdue: boolean; failed: boolean; lines: string | null;
   /** Where it belongs, for the location filter (UR-33). */
   locations: string[];
+  /** The guardian a split family's invoice is addressed to; null is the whole family (UR-17). */
+  billed_to?: string | null;
 };
 
 /** The locations a family's children are in a class at now (UR-33). */
@@ -47,6 +49,7 @@ const INVOICE_LOCATIONS = `coalesce(nullif(array(select distinct l.name from inv
 export const INVOICES = `
 select i.id, i.number, i.status, i.issued_on, i.due_on, i.total_minor, i.paid_minor,
        f.id as family_id, f.name as family_name,
+       (select g.full_name from guardian g where g.id = i.billed_guardian_id) as billed_to,
        (i.status in ('issued','part_paid','refunded') and i.due_on < current_date) as overdue,
        exists (select 1 from payment p where p.invoice_id = i.id and p.deleted_at is null
                 and p.failure_code is not null and p.succeeded_at is null)
@@ -69,6 +72,7 @@ export const INVOICE = `
 select i.id, i.number, i.status, i.issued_on, i.due_on, i.total_minor, i.paid_minor,
        i.subtotal_minor, i.discount_minor, i.note, i.void_reason,
        f.id as family_id, f.name as family_name, f.balance_minor as family_balance_minor,
+       (select g.full_name from guardian g where g.id = i.billed_guardian_id) as billed_to,
        app.family_available_credit(f.id) as available_credit_minor,
        (i.status in ('issued','part_paid','refunded') and i.due_on < current_date) as overdue
   from invoice i join family f on f.id = i.family_id
@@ -331,3 +335,32 @@ select p.succeeded_at::date as date, f.name as family, i.number as invoice, p.me
        p.provider_ref as reference
   from payment p join family f on f.id = p.family_id left join invoice i on i.id = p.invoice_id
  where p.deleted_at is null order by p.created_at`;
+
+/* ── Who pays: split billing between guardians (UR-17, 0052) ─────────────── */
+export type FamilyBilling = { mode: 'family' | 'one' | 'percent' | 'per_child'; guardian_a: string | null;
+  guardian_b: string | null; percent_a: number | null };
+/** Always one row: the family's setting, or 'family' when none is set. */
+export const FAMILY_BILLING = `
+select coalesce(b.mode, 'family') as mode, b.guardian_a, b.guardian_b, b.percent_a
+  from family f left join family_billing b on b.family_id = f.id
+ where f.id = $1`;
+export const FAMILY_GUARDIANS = `
+select id, full_name from guardian where family_id = $1 and deleted_at is null order by is_primary desc, full_name`;
+export const FAMILY_BILLING_CHILDREN = `
+select s.id, s.first_name, x.guardian_id
+  from student s left join family_billing_child x on x.student_id = s.id
+ where s.family_id = $1 and s.deleted_at is null order by s.date_of_birth`;
+export const SET_FAMILY_BILLING = `select app.set_family_billing($1, $2, $3, $4, $5, $6::jsonb)`;
+
+/* ── Credit for reported absences (UR-56, 0052) ──────────────────────────── */
+export type AbsenceCreditRow = { id: string; created_at: string; family_id: string; family_name: string; child: string;
+  session_label: string; amount_minor: number; status: 'active' | 'reversed' };
+export const ABSENCE_CREDITS = `
+select ac.id, ac.created_at, ac.family_id, f.name as family_name, s.first_name as child,
+       app.session_label(ac.session_id) as session_label, ac.amount_minor, ac.status
+  from absence_credit ac join family f on f.id = ac.family_id join student s on s.id = ac.student_id
+ order by ac.created_at desc limit 50`;
+export const ABSENCE_CREDIT_SETTING = `
+select id, absence_credit, absence_credit_fixed_minor, makeup_policy from studio where id in (select app.studio_ids()) limit 1`;
+export const SET_ABSENCE_CREDIT = `
+update studio set absence_credit = $2, absence_credit_fixed_minor = $3 where id = $1 returning id`;

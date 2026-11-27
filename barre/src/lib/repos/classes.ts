@@ -31,6 +31,10 @@ select c.id, c.name, ds.name as style, ds.colour, lv.name as level,
 
 export const CLASS_ROSTER = `
 select s.id, e.id as enrolment_id, s.first_name, s.last_name, s.date_of_birth, e.started_on,
+       -- A planned move (UR-52): leaving on ended_on, or joining on started_on.
+       case when e.moved_to is not null then e.ended_on end as leaving_on,
+       (select c2.name from enrolment e2 join class c2 on c2.id = e2.class_id where e2.id = e.moved_to) as leaving_to,
+       case when e.moved_from is not null and e.started_on > current_date then e.started_on end as joining_on,
        f.name as family_name, f.id as family_id,
        coalesce((select m.requires_alert from medical_record m
                   where m.student_id = s.id and m.deleted_at is null), false) as has_alert,
@@ -203,7 +207,14 @@ export const DECLINE_PLACE = `select app.decline_waitlist_place($1, $2) as ok`;
 /** Every trial has a child record with an emergency contact (0023), so the
  *  child is on the register. Either an existing child, or a new one. */
 export const BOOK_TRIAL = `select app.book_trial($1, $2, $3::jsonb) as id`;
-export const TRANSFER = `select app.transfer_enrolment($1, $2, $3) as id`;
+/** p_on: the first day in the new class; today when null. A future day plans
+ *  the move; a past one (office only, this term) records it (UR-52). */
+export const TRANSFER = `select app.transfer_enrolment($1, $2, $3, $4::date) as id`;
+export const CANCEL_MOVE = `select app.cancel_class_move($1)`;
+export type MovePreview = { on_day: string; earliest: string; from_left: number; from_total: number;
+  from_invoiced_minor: string; from_unused_minor: string; to_left: number; to_total: number;
+  to_charge_minor: string; note: string };
+export const MOVE_PREVIEW = `select * from app.move_preview($1, $2, $3::date)`;
 export const CLASS_OPTIONS = `
 select c.id, c.name, app.class_enrolled_count(c.id) as enrolled, c.capacity
   from class c where c.deleted_at is null order by c.day_of_week, c.start_time`;
@@ -222,7 +233,9 @@ select c.id, c.name, c.day_of_week, c.start_time, c.age_min, c.age_max, c.price_
 
 /** A student's places, for moving one from their record. */
 export const STUDENT_PLACES = `
-select e.id as enrolment_id, c.id as class_id, c.name, c.day_of_week, c.start_time, c.price_minor, c.pricing::text as pricing
+select e.id as enrolment_id, c.id as class_id, c.name, c.day_of_week, c.start_time, c.price_minor, c.pricing::text as pricing,
+       case when e.moved_to is not null then e.ended_on end as leaving_on,
+       case when e.moved_from is not null and e.started_on > current_date then e.started_on end as joining_on
   from enrolment e join class c on c.id = e.class_id
  where e.student_id = $1 and e.status = 'active' and e.deleted_at is null
  order by c.day_of_week, c.start_time`;

@@ -8,6 +8,7 @@ import { ConsentWording } from '@/components/app/consents';
 import { Shell } from '@/components/app/shell';
 import { FrameworkSettings, ChipSettings } from '@/components/app/progress-settings';
 import { PackSettings } from '@/components/app/pack-settings';
+import { AbsenceCreditSettings } from '@/components/app/absence-credit';
 import { BankDetailsSettings } from '@/components/app/bank-details';
 import { RegisterSettings } from '@/components/app/register-settings';
 import { TimetableSharing } from '@/components/app/timetable-sharing';
@@ -76,7 +77,7 @@ export default function StudioSettings() {
             <RegisterSettings />
             <TimetableSharing />
           </>}
-          {tab === 'money' && <><BankDetailsSettings /><PackSettings /></>}
+          {tab === 'money' && <><BankDetailsSettings /><PackSettings /><AbsenceCreditSettings /></>}
         </div>
       </div></div>
     </Shell>

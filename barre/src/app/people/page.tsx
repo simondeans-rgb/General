@@ -8,6 +8,7 @@ import { ImportWizard } from '@/components/app/import-wizard';
 import { DetailPanel, DetailSection, KeyValue } from '@/components/app/detail-panel';
 import { ImportedInvoices, EarlierAttendance } from '@/components/app/imported-history';
 import { FamilyAccount } from '@/components/app/family-account';
+import { BillingSplit } from '@/components/app/billing-split';
 import { invoiceState } from '@/lib/payments/invoice-status';
 import { useRows, useRow } from '@/lib/query';
 import { useSelection } from '@/lib/use-selection';
@@ -24,7 +25,7 @@ import {
 } from '@/components/app/people-sheets';
 import { money, dateShort, ageFrom } from '@/lib/format';
 import { RecordHistory } from '@/components/app/record-history';
-import { MoveSheet } from '@/components/app/enrolment-actions';
+import { MoveSheet, usePipeline } from '@/components/app/enrolment-actions';
 import * as C from '@/lib/repos/classes';
 import { ArrowRightLeft, MessageSquare } from 'lucide-react';
 import { BulkMessageSheet, DuplicatesSheet } from '@/components/app/family-tools';
@@ -209,6 +210,7 @@ function FamilyDetail({ id, onClose }: { id: string; onClose: () => void }) {
         <>
           <DetailSection title="Account">
             <FamilyAccount familyId={f.id} />
+            <BillingSplit familyId={f.id} />
             {f.notes && <p className="mt-2 border-l-2 border-line-strong pl-3 text-[0.875rem] text-ink-2">{f.notes}</p>}
             <Button size="sm" variant="ghost" className="-ml-2 mt-2" onClick={() => setEditing(true)}>
               <Pencil className="size-4" aria-hidden /> Edit family
@@ -361,7 +363,9 @@ function StudentDetail({ id, onClose }: { id: string; onClose: () => void }) {
   const s = rows.data?.find(r => r.id === id);
   const safety = useRow<Brief>(['safety', id], P.STUDENT_SAFETY, [id]);
   const places = useRows<{ enrolment_id: string; class_id: string; name: string; day_of_week: number;
-                           start_time: string; price_minor: number; pricing: string }>(['student-places', id], C.STUDENT_PLACES, [id]);
+                           start_time: string; price_minor: number; pricing: string;
+                           leaving_on: string | null; joining_on: string | null }>(['student-places', id], C.STUDENT_PLACES, [id]);
+  const cancelMove = usePipeline(C.CANCEL_MOVE);
   const [moving, setMoving] = React.useState<{ enrolment_id: string; class_id: string; name: string; price_minor: number; pricing: string } | null>(null);
 
   return (
@@ -402,14 +406,23 @@ function StudentDetail({ id, onClose }: { id: string; onClose: () => void }) {
                 <li key={p.enrolment_id} className="flex items-center gap-2 py-1.5">
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[0.875rem] font-medium">{p.name}</span>
-                    <span className="block text-[0.7812rem] text-ink-3">{['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][p.day_of_week]} {String(p.start_time).slice(0, 5)}</span>
+                    <span className="block text-[0.7812rem] text-ink-3">{['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][p.day_of_week]} {String(p.start_time).slice(0, 5)}
+                      {p.leaving_on && ` · leaves ${dateShort(p.leaving_on)} (planned move)`}
+                      {p.joining_on && ` · joins ${dateShort(p.joining_on)}`}</span>
                   </span>
-                  <Button size="sm" variant="ghost" onClick={() => setMoving(p)}>
-                    <ArrowRightLeft className="size-4" aria-hidden /> Move to another class
-                  </Button>
+                  {p.leaving_on ? (
+                    <Button size="sm" variant="ghost" loading={cancelMove.isPending} onClick={() => cancelMove.mutate([p.enrolment_id])}>
+                      Call off the move
+                    </Button>
+                  ) : !p.joining_on && (
+                    <Button size="sm" variant="ghost" onClick={() => setMoving(p)}>
+                      <ArrowRightLeft className="size-4" aria-hidden /> Move to another class
+                    </Button>
+                  )}
                 </li>
               ))}
             </ul>
+            {cancelMove.error != null && <ErrorState error={cancelMove.error} />}
           </DetailSection>
 
           <EarlierAttendance studentId={id} />

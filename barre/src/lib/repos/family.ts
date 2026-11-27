@@ -68,7 +68,13 @@ select s.id, s.first_name, s.last_name, s.date_of_birth, s.is_adult,
  order by s.date_of_birth`;
 
 export const MY_BALANCE = `
-select f.id, f.name, f.balance_minor,
+-- Worked out from the invoices this guardian can see, so a guardian who pays
+-- part of a split family's fees sees their own balance (UR-17). For any other
+-- family it is the same as family.balance_minor.
+select f.id, f.name,
+       (coalesce((select sum(i.total_minor - i.paid_minor) from invoice i
+                   where i.family_id = f.id and i.deleted_at is null and i.status in ('issued','part_paid','refunded')), 0)
+        - app.family_available_credit(f.id))::bigint as balance_minor,
        (select count(*)::int from invoice i
          where i.family_id = f.id and i.deleted_at is null and i.status in ('issued','part_paid')) as unpaid,
        (select count(*)::int from payment p
