@@ -52,6 +52,10 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
     ['class-edit', classId ?? ''], C.CLASS_FOR_EDIT, [classId], { enabled: editing });
 
   const [draft, setDraft] = React.useState<C.ClassDraft>(EMPTY);
+  // Level in plain words and what to bring, for the public page (UR-20).
+  const extraRow = useRows<C.ClassPublicExtra>(['class-public-extra', classId ?? ''], C.CLASS_PUBLIC_EXTRA, [classId], { enabled: editing });
+  const [extra, setExtra] = React.useState<C.ClassPublicExtra>({ level_note: null, what_to_bring: null });
+  React.useEffect(() => { if (extraRow.data?.[0]) setExtra(extraRow.data[0]); }, [extraRow.data]);
   const [loaded, setLoaded] = React.useState(false);
   const [done, setDone] = React.useState<string | null>(null);
   const set = <K extends keyof C.ClassDraft>(k: K, v: C.ClassDraft[K]) =>
@@ -104,6 +108,7 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
         if (editing) {
           const [row] = await q<{ id: string }>(C.UPDATE_CLASS, [classId, ...args]);
           if (!row) throw new Error('That class could not be saved.');
+          await q(C.SET_CLASS_PUBLIC_EXTRA, [classId, extra.level_note ?? '', extra.what_to_bring ?? '']);
           if (movesSessions) {
             const [r] = await q<{ net: number }>(C.RESCHEDULE_CLASS, [classId]);
             return `Saved. The timetable was rebuilt from the new time${
@@ -113,6 +118,7 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
         }
         const [row] = await q<{ id: string }>(C.CREATE_CLASS, [draft.term_id, ...args]);
         if (!row) throw new Error('You cannot add a class to that term.');
+        await q(C.SET_CLASS_PUBLIC_EXTRA, [row.id, extra.level_note ?? '', extra.what_to_bring ?? '']);
         const [made] = await q<{ made: number }>(C.GENERATE_SESSIONS, [row.id]);
         return `Added, with ${made?.made ?? 0} session${made?.made === 1 ? '' : 's'} in the term.`;
       });
@@ -299,6 +305,14 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
               <Field label="Before joining" htmlFor="cf-prereq" hint="Families see this, e.g. ‘Grade 2 passed, or teacher’s invitation’.">
                 <Input id="cf-prereq" value={draft.prerequisites ?? ''} maxLength={200}
                        onChange={e => set('prerequisites', e.target.value)} />
+              </Field>
+              <Field label="Level in plain words" htmlFor="cf-levelnote" hint="For example ‘No experience needed’ or ‘A year of tap’.">
+                <Input id="cf-levelnote" value={extra.level_note ?? ''} maxLength={200}
+                       onChange={e => setExtra(x => ({ ...x, level_note: e.target.value }))} />
+              </Field>
+              <Field label="What to wear or bring" htmlFor="cf-bring" hint="Shown to families booking a trial.">
+                <Input id="cf-bring" value={extra.what_to_bring ?? ''} maxLength={400}
+                       onChange={e => setExtra(x => ({ ...x, what_to_bring: e.target.value }))} />
               </Field>
               <Field label="About the class" htmlFor="cf-desc">
                 <textarea id="cf-desc" rows={3} value={draft.description ?? ''} maxLength={1000}
