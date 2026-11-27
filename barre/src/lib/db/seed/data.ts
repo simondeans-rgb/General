@@ -1064,6 +1064,9 @@ insert into studio (id, name, slug, contact_email, plan_id, status, trial_ends_o
      'Subscription unpaid since September — two reminders sent', now() - interval '6 days', now() - interval '14 months');
 
 update studio set theme = 'urban', brand_colour = '#c6f432', brand_secondary = '#8b5cf6' where id = ${q(S.kestrel)};
+-- Kestrel lets its teachers see their Kestrel classes in full from other schools (UR-47, 0055);
+-- Northstar keeps the default, busy times only.
+update studio set staff_timetable_sharing = 'details' where id = ${q(S.kestrel)};
 insert into membership (user_id, studio_id, role) values
   (${q(uid(NS.user, 191))}, ${q(S.kestrel)}, 'owner'),
   (${q(uid(NS.user, 192))}, ${q(S.pointe)}, 'owner');
