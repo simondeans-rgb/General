@@ -38,6 +38,10 @@ select r.id, r.kind, r.title, r.description, r.category, r.url, r.poster_url, r.
 export type Feedback = {
   id: string; headline: string | null; going_well: string | null; work_on: string | null;
   created_at: Stamp; shared_at: Stamp | null;
+  /** Set when a teacher changed it after sharing (UR-25). */
+  edited_at?: Stamp | null; style?: string | null; class_id?: string | null;
+  /** "To work on" linked to class material (UR-43). */
+  resource_title?: string | null; resource_url?: string | null;
   class_name: string | null; author: string | null;
   student_name: string; student_id: string;
 };
@@ -45,12 +49,15 @@ export type Feedback = {
 /** Shared notes only — the policy enforces it, and the column list withholds
  *  the staff-only note regardless. */
 export const STUDENT_FEEDBACK = `
-select f.id, f.headline, f.going_well, f.work_on, f.created_at, f.shared_at,
-       c.name as class_name, sm.display_name as author,
+select f.id, f.headline, f.going_well, f.work_on, f.created_at, f.shared_at, f.edited_at,
+       c.name as class_name, sm.display_name as author, ds.name as style, f.class_id,
+       r.title as resource_title, r.url as resource_url,
        s.first_name || ' ' || s.last_name as student_name, s.id as student_id
   from feedback_note f
   join student s on s.id = f.student_id
   left join class c on c.id = f.class_id
+  left join dance_style ds on ds.id = c.dance_style_id
+  left join resource r on r.id = f.work_on_resource_id and r.deleted_at is null
   left join staff_member sm on sm.id = f.author_id
  where f.deleted_at is null and f.shared_at is not null
  order by f.shared_at desc`;

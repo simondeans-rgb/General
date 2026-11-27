@@ -7,13 +7,17 @@ import { RaiseConcernSheet } from '@/components/app/safeguarding';
 import { TeacherMessageSheet } from '@/components/app/teacher-message';
 import { StudentExams } from '@/components/app/exams';
 import { PracticeSummary } from '@/components/app/practice';
-import { SkillsPanel, Goals, Reflections, Milestones, Timeline } from '@/components/app/progress';
+import { SkillsPanel, Goals, Reflections, Milestones, Timeline, ThenAndNow } from '@/components/app/progress';
+import { LastFeedback } from '@/components/app/last-feedback';
+import { SupportNote, supportReasons } from '@/components/app/support-needs';
+import * as P from '@/lib/repos/progress';
+import { useSession } from '@/lib/auth/session';
 import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection, KeyValue } from '@/components/app/detail-panel';
 import { MedicalBrief, medicalLine } from '@/components/app/medical-brief';
 import { useRows } from '@/lib/query';
 import { useSelection } from '@/lib/use-selection';
-import { Beats, Button, EmptyState, Input, Skeleton, ErrorState } from '@/components/ui';
+import { Beats, Button, EmptyState, Input, Skeleton, ErrorState, ViewTabs } from '@/components/ui';
 import { FeedbackComposer } from '@/components/app/feedback-composer';
 import * as T from '@/lib/repos/teaching';
 import { ageFrom } from '@/lib/format';
@@ -31,6 +35,12 @@ export default function MyStudentsPage() {
 function MyStudents() {
   const [q, setQ] = React.useState('');
   const [onlyNeeds, setOnlyNeeds] = React.useState(false);
+  const [view, setView] = React.useState<'all' | 'support'>('all');
+  const { session } = useSession();
+  const office = session?.role === 'owner' || session?.role === 'admin';
+  // UR-45: who may need support, from the database's view of the caller's own students.
+  const support = useRows<P.SupportRow>(['support-needs'], P.SUPPORT_NEEDS);
+  const supportBy = new Map((support.data ?? []).map(r => [r.student_id, r]));
   const [writing, setWriting] = React.useState<Row | null>(null);
   const [messaging, setMessaging] = React.useState<Row | null>(null);
   const [concern, setConcern] = React.useState<Row | null>(null);
@@ -39,7 +49,9 @@ function MyStudents() {
   const withNeeds = rows.data?.filter(s => s.has_medical_need).length ?? 0;
   const list = (rows.data ?? []).filter(s =>
     (!q || `${s.preferred_name ?? s.first_name} ${s.first_name} ${s.last_name}`.toLowerCase().includes(q.toLowerCase()))
-    && (!onlyNeeds || s.has_medical_need));
+    && (!onlyNeeds || s.has_medical_need)
+    && (view === 'all' || supportReasons(supportBy.get(s.id), s).length > 0));
+  const needing = (rows.data ?? []).filter(s => supportReasons(supportBy.get(s.id), s).length > 0).length;
   const current = rows.data?.find(s => s.id === selected);
 
   return (
@@ -59,9 +71,14 @@ function MyStudents() {
                 </Button>
               )}
             </div>
+            <ViewTabs label="Which students" value={view} onChange={setView}
+              options={[['all', 'Everyone'], ['support', `May need support${support.data ? ` · ${needing}` : ''}`]]} />
+            {view === 'support' && (
+              <p className="text-[13px] text-ink-3">Absent two or more times in a row, skills marked not started, medical notes or a support note from the office. Staff only; families never see this list.</p>
+            )}
             <section aria-labelledby="students-h">
               <div className="mb-1 flex items-baseline gap-3 border-b-2 border-ink pb-2">
-                <h2 id="students-h" className="section-title flex-1">{onlyNeeds ? 'With medical notes' : q ? 'Matching' : 'Everyone you teach'}</h2>
+                <h2 id="students-h" className="section-title flex-1">{view === 'support' ? 'May need support' : onlyNeeds ? 'With medical notes' : q ? 'Matching' : 'Everyone you teach'}</h2>
                 {rows.data && <span className="text-[13px] text-ink-3">{list.length} · attendance this term</span>}
               </div>
               {rows.isLoading && <div className="space-y-3 pt-3">{[0,1,2].map(i => <Skeleton key={i} className="h-12" />)}</div>}
@@ -74,6 +91,7 @@ function MyStudents() {
                 {list.map(s => {
                   const med = medicalLine(s);
                   const low = s.attendance_pct != null && s.attendance_pct < 70;
+                  const why = view === 'support' ? supportReasons(supportBy.get(s.id), s).filter(r => r !== 'Medical notes') : [];
                   return (
                     <li key={s.id}>
                       <button onClick={() => select(s.id)} aria-current={selected === s.id || undefined}
@@ -82,6 +100,7 @@ function MyStudents() {
                         <span className="min-w-0">
                           <span className="block truncate font-semibold">{s.preferred_name ?? s.first_name} {s.last_name}</span>
                           {med && <span className={cn('block truncate text-[13.5px] font-semibold', s.requires_alert ? 'text-critical' : 'text-caution')}>{med}</span>}
+                          {why.length > 0 && <span className="block truncate text-[13.5px] text-ink-2">{why.join(' · ')}</span>}
                           <span className="block truncate text-[13px] text-ink-3">
                             {[ageFrom(s.date_of_birth) != null && `Age ${ageFrom(s.date_of_birth)}`, s.class_names].filter(Boolean).join(' · ')}
                           </span>
@@ -114,6 +133,14 @@ function MyStudents() {
                     <MedicalBrief brief={current} layout="stack" />
                     <p className="mt-3 text-[13px] text-ink-3">Kept up to date by the office. GP details stay with them.</p>
                   </DetailSection>
+                  <DetailSection title="Last feedback">
+                    <LastFeedback studentId={current.id} name={current.preferred_name ?? current.first_name} empty="No feedback written yet." />
+                  </DetailSection>
+                  {(office || supportBy.get(current.id)?.support_note) && (
+                    <DetailSection title="Support">
+                      <SupportNote studentId={current.id} note={supportBy.get(current.id)?.support_note ?? null} editable={office} />
+                    </DetailSection>
+                  )}
                   <DetailSection title="With you">
                     <KeyValue rows={[
                       ['Classes', current.class_names],
@@ -123,6 +150,7 @@ function MyStudents() {
                   <DetailSection title="Skills">
                     <SkillsPanel studentId={current.id} editable />
                   </DetailSection>
+                  <DetailSection title="Then and now"><ThenAndNow studentId={current.id} /></DetailSection>
                   <DetailSection title="Goals this term">
                     <Goals studentId={current.id} mode="teacher" />
                   </DetailSection>

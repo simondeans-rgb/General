@@ -24,11 +24,21 @@ export function PracticeLog({ studentId, who = 'you', bare }: { studentId: strin
   const weeks = useRows<E.PracticeWeek>(['practice-weekly'], E.PRACTICE_WEEKLY, [1]);
   const [mins, setMins] = React.useState('15');
   const [what, setWhat] = React.useState('');
+  // Minutes logged here and not yet in the weekly total from the database, so
+  // the total moves the moment the log is saved (students D5).
+  const [expected, setExpected] = React.useState<number | null>(null);
+  const [saved, setSaved] = React.useState<string | null>(null);
   const log = useMutation({
-    mutationFn: () => runAs(session, q => q(E.LOG_PRACTICE, [studentId, Number(mins), what])),
-    onSuccess: () => { setWhat(''); qc.invalidateQueries({ queryKey: ['db'] }); },
+    mutationFn: (v: { mins: number; what: string }) => runAs(session, q => q(E.LOG_PRACTICE, [studentId, v.mins, v.what])),
+    onMutate: () => setSaved(null),
+    onSuccess: (_r, v) => {
+      setWhat(''); setExpected((thisWeek(weeks.data, studentId)?.minutes ?? 0) + v.mins);
+      setSaved(`Saved: ${v.mins} min${v.what.trim() ? ` of ${v.what.trim()}` : ''}.`);
+      void qc.invalidateQueries({ queryKey: ['db'] }).then(() => setExpected(null));
+    },
   });
   const w = thisWeek(weeks.data, studentId);
+  const total = Math.max(w?.minutes ?? 0, expected ?? 0);
   const H = bare ? 'h3' : 'h2';
   return (
     <section aria-label={bare ? `Practice, ${who}` : undefined}>
@@ -37,15 +47,16 @@ export function PracticeLog({ studentId, who = 'you', bare }: { studentId: strin
         <span className="text-[13px] text-ink-3">{who === 'you' ? 'Your teacher sees the weekly total' : 'The teacher sees the weekly total'}</span>
       </div>
       <p className="flex items-baseline gap-2 pt-2">
-        <span className="stat-number text-[28px] leading-none tnum">{w?.minutes ?? 0}</span>
-        <span className="text-[14px] text-ink-2">min this week{w && w.minutes > 0 ? (who === 'you' ? '. Well done.' : `. Nice work, ${who}.`) : ''}</span>
+        <span className="stat-number text-[28px] leading-none tnum">{total}</span>
+        <span className="text-[14px] text-ink-2">min this week{total > 0 ? (who === 'you' ? '. Well done.' : `. Nice work, ${who}.`) : ''}</span>
       </p>
-      <form className="flex flex-wrap items-center gap-2 py-3" onSubmit={e => { e.preventDefault(); log.mutate(); }}>
+      <form className="flex flex-wrap items-center gap-2 py-3" onSubmit={e => { e.preventDefault(); log.mutate({ mins: Number(mins), what }); }}>
         <label className="flex items-center gap-1.5 text-sm"><Timer className="size-4 text-ink-3" aria-hidden />
           <Input aria-label="Minutes" type="number" min={1} max={600} className="h-11 w-20" value={mins} onChange={e => setMins(e.target.value)} /> min</label>
         <Input aria-label="What was practised" className="h-11 min-w-0 flex-1 basis-40" placeholder="e.g. shuffles, splits" maxLength={200} value={what} onChange={e => setWhat(e.target.value)} />
         <Button type="submit" variant={bare ? 'secondary' : 'primary'} className="h-11" disabled={!(Number(mins) > 0)} loading={log.isPending}>Log</Button>
       </form>
+      <p role="status" className="min-h-[1.25rem] pb-2 text-[13.5px] font-semibold text-positive">{log.isPending ? <span className="font-normal text-ink-3">Saving…</span> : saved}</p>
       {log.error != null && <div className="pb-3"><ErrorState error={log.error} /></div>}
       {!!recent.data?.length && (
         <ul className="divide-y divide-line border-t border-line text-[14px]">

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MedicalBrief, medicalLine } from '@/components/app/medical-brief';
+import { LastFeedback } from '@/components/app/last-feedback';
 import { AttendanceQueue, localQueueStorage, isOfflineError } from '@/lib/offline/attendance-queue';
 import { ArrowLeft, Check, ChevronDown, ChevronRight, X } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
@@ -401,6 +402,7 @@ function RegisterLine({ entry: r, onMark, onReason, disabled, saving }: {
             </div>
           )}
           <MedicalBrief brief={r} />
+          <LastFeedback studentId={r.student_id} name={firstName(r)} />
           {/* What a teacher can see is set by the database (student_safety_brief),
               not by this screen. The family doctor stays with the office. */}
           <p className="text-[13px] text-ink-3">GP details and the full record stay with the office.</p>

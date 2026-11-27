@@ -14,12 +14,50 @@ export const SKILL_DEMOS = `select id, demo_url from framework_skill where demo_
 export const SET_SKILL_DEMO = `select app.set_skill_demo($1, nullif(btrim($2), ''))`;
 export const RECORD_SKILL = `select app.record_skill($1, $2, $3::assessment_level, $4) as id`;
 
-export type Chip = { id: string; kind: 'going_well' | 'work_on'; label: string; position: number };
-export const CHIPS = `select id, kind, label, position from feedback_chip order by kind, position, label`;
+export type Chip = { id: string; kind: 'going_well' | 'work_on'; label: string; position: number;
+  band?: 'standard' | 'under_8'; sticker?: string | null };
+/** The school's phrases (the office's settings), both age bands. */
+export const CHIPS = `select id, kind, label, position, band, sticker from feedback_chip where class_id is null
+                       order by band, kind, position, label`;
 export const ADD_CHIP = `
 insert into feedback_chip (studio_id, kind, label, position)
-select m.studio_id, $1, btrim($2), coalesce((select max(position) + 1 from feedback_chip where kind = $1), 1)
+select m.studio_id, $1, btrim($2), coalesce((select max(position) + 1 from feedback_chip where kind = $1 and class_id is null and band = 'standard'), 1)
   from membership m where m.user_id = auth.uid() and m.role in ('owner', 'admin') and m.deleted_at is null limit 1 returning id`;
+export const ADD_YOUNG_CHIP = `
+insert into feedback_chip (studio_id, kind, label, position, band, sticker)
+select m.studio_id, $1, btrim($2), coalesce((select max(position) + 1 from feedback_chip where kind = $1 and class_id is null and band = 'under_8'), 1),
+       'under_8', nullif(btrim($3), '')
+  from membership m where m.user_id = auth.uid() and m.role in ('owner', 'admin') and m.deleted_at is null limit 1 returning id`;
+
+/** UR-44: the phrases one class uses — the teacher's own set, or the school's for the class's age band. */
+export type ClassChip = { id: string; kind: 'going_well' | 'work_on'; label: string; sticker: string | null; chip_position: number; own: boolean };
+export const CLASS_CHIPS = `select * from app.class_chips($1)`;
+export const ADD_CLASS_CHIP = `select app.add_class_chip($1, $2, $3, $4) as id`;
+export const REMOVE_CLASS_CHIP = `select app.remove_class_chip($1, $2, $3) as ok`;
+export const RESET_CLASS_CHIPS = `select app.reset_class_chips($1) as n`;
+
+/** UR-55: how deeply a class tracks progress. */
+export type Depth = 'notes' | 'notes_skills' | 'full';
+export const DEPTHS: { key: Depth; label: string; hint: string }[] = [
+  { key: 'notes', label: 'Notes', hint: 'Feedback notes only. No skill levels.' },
+  { key: 'notes_skills', label: 'Notes and skills', hint: 'Notes and current skill levels.' },
+  { key: 'full', label: 'Full', hint: 'Notes, skill levels and their history over time.' },
+];
+export const CLASS_DEPTH = `select c.id, c.tracking_depth, app.class_depth(c.id) as depth, c.age_min, c.age_max,
+       app.age_band_depth(c.age_max) as default_depth from class c where c.id = $1`;
+export const SET_CLASS_DEPTH = `select app.set_class_depth($1, $2) as depth`;
+export const SET_SKILL_TRACKING = `select app.set_skill_tracking($1, $2) as tracked`;
+
+/** UR-48: do levels reach families at once, or with the share step? */
+export const SKILL_PUBLISH = `select id, skill_publish from studio where id in (select app.studio_ids()) limit 1`;
+export const SET_SKILL_PUBLISH = `select app.set_skill_publish($1, $2) as mode`;
+export const UNSHARED_SKILLS = `select count(*)::int as n from skill_assessment where student_id = $1 and published_at is null and deleted_at is null`;
+export const SHARE_SKILLS = `select app.share_skills($1) as n`;
+
+/** UR-43: every level, dated. */
+export type HistoryRow = { skill_id: string | null; skill: string; style_id: string | null; style: string | null;
+  level: Level; assessed_on: string; current_style: boolean; depth: Depth; published: boolean };
+export const SKILL_HISTORY = `select * from app.skill_history($1)`;
 export const REMOVE_CHIP = `select app.soft_delete('feedback_chip', $1)`;
 
 export type Framework = { id: string; name: string; style: string | null; skills: { id: string; name: string; position: number }[] };
@@ -36,20 +74,67 @@ select f.studio_id, f.id, btrim($2), coalesce((select max(position) + 1 from fra
 export const RENAME_SKILL = `update framework_skill set name = btrim($2), updated_at = now() where id = $1 returning id`;
 export const REMOVE_SKILL = `select app.soft_delete('framework_skill', $1)`;
 
-/** Who was in a session, for the class feedback grid. */
+/** Who was in a session, for the class feedback grid: the enrolled, and
+ *  anyone trialling or dropping in (UR-54, teachers D12). The saved parts come
+ *  back so reopening a child shows what was written (UR-25). */
 export type FeedbackKid = { student_id: string; first_name: string; last_name: string; status: string | null;
-  going_well: string | null; work_on: string | null; shared: boolean | null };
+  visiting: 'trial' | 'drop_in' | null;
+  going_well: string | null; work_on: string | null; shared: boolean | null; edited_at: string | null;
+  going_well_chips: string[] | null; work_on_chips: string[] | null; note: string | null; work_on_note: string | null;
+  work_on_resource_id: string | null };
 export const SESSION_FEEDBACK = `
-select s.id as student_id, s.first_name, s.last_name, a.status::text as status,
-       f.going_well, f.work_on, f.shared_at is not null as shared
-  from class_session cs
-  join enrolment e on e.class_id = cs.class_id and e.deleted_at is null
-       and (e.status = 'active' or e.ended_on >= cs.starts_at::date)
-  join student s on s.id = e.student_id and s.deleted_at is null
+with cs as (select * from class_session where id = $1),
+kids as (
+  select e.student_id, null::text as visiting, 0 as pri from cs
+    join enrolment e on e.class_id = cs.class_id and e.deleted_at is null
+         and (e.status = 'active' or e.ended_on >= cs.starts_at::date)
+  union all
+  select t.student_id, 'trial', 1 from cs join trial t on t.session_id = cs.id and t.student_id is not null
+         and t.deleted_at is null and t.status in ('booked', 'attended', 'converted')
+  union all
+  select d.student_id, 'drop_in', 2 from cs join drop_in_booking d on d.session_id = cs.id and d.status = 'booked'
+),
+one as (select distinct on (student_id) student_id, visiting from kids order by student_id, pri)
+select s.id as student_id, s.first_name, s.last_name, a.status::text as status, one.visiting,
+       f.going_well, f.work_on, f.shared_at is not null as shared, f.edited_at,
+       f.going_well_chips, f.work_on_chips, f.note, f.work_on_note, f.work_on_resource_id
+  from one
+  join cs on true
+  join student s on s.id = one.student_id and s.deleted_at is null
   left join attendance_record a on a.session_id = cs.id and a.student_id = s.id and a.deleted_at is null
   left join feedback_note f on f.session_id = cs.id and f.student_id = s.id and f.deleted_at is null
- where cs.id = $1
- order by (a.status in ('present', 'late')) desc nulls last, s.first_name`;
+ order by (a.status in ('present', 'late', 'trial')) desc nulls last, s.first_name`;
+
+/** "Same as last week" (UR-44): each child's phrases from this class's last session with feedback. */
+export type PreviousChips = { student_id: string; going_well_chips: string[] | null; work_on_chips: string[] | null; starts_at: string };
+export const PREVIOUS_SESSION_CHIPS = `
+select f.student_id, f.going_well_chips, f.work_on_chips, p.starts_at
+  from class_session me
+  join lateral (select cs.id, cs.starts_at from class_session cs
+                 where cs.class_id = me.class_id and cs.starts_at < me.starts_at and cs.deleted_at is null
+                   and exists (select 1 from feedback_note f2 where f2.session_id = cs.id and f2.deleted_at is null)
+                 order by cs.starts_at desc limit 1) p on true
+  join feedback_note f on f.session_id = p.id and f.deleted_at is null
+ where me.id = $1`;
+
+/** The last thing written for a child, other than for this session (UR-25: at the door). */
+export type LastNote = { id: string; going_well: string | null; work_on: string | null; at: string; class_name: string | null;
+  shared: boolean; resource_title: string | null };
+export const LAST_FEEDBACK = `
+select f.id, f.going_well, f.work_on, coalesce(cs.starts_at, f.shared_at, f.created_at) as at, c.name as class_name,
+       f.shared_at is not null as shared, r.title as resource_title
+  from feedback_note f
+  left join class_session cs on cs.id = f.session_id
+  left join class c on c.id = f.class_id
+  left join resource r on r.id = f.work_on_resource_id and r.deleted_at is null
+ where f.student_id = $1 and f.deleted_at is null and (f.going_well is not null or f.work_on is not null)
+   and f.session_id is distinct from $2::uuid
+ order by coalesce(cs.starts_at, f.created_at) desc limit 1`;
+
+/** UR-45: a teacher's own students who may need support. Staff only. */
+export type SupportRow = { student_id: string; absence_streak: number; last_here: string | null; not_yet: number; support_note: string | null };
+export const SUPPORT_NEEDS = `select * from app.support_needs()`;
+export const SET_SUPPORT_NOTE = `select app.set_support_note($1, $2) as ok`;
 export const SAVE_CLASS_FEEDBACK = `select app.save_class_feedback($1, $2::jsonb, $3) as n`;
 export const SHARE_SESSION_FEEDBACK = `select app.share_session_feedback($1) as n`;
 
