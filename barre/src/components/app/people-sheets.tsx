@@ -10,7 +10,7 @@ import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import { Badge, Button, Field, Input, Select, Skeleton } from '@/components/ui';
 import * as P from '@/lib/repos/people';
-import { ageFrom, dateShort } from '@/lib/format';
+import { ageFrom, dateShort, toDateInput } from '@/lib/format';
 
 const COLOURS = ['violet', 'amber', 'teal', 'rose', 'indigo', 'lime'];
 
@@ -140,11 +140,11 @@ export function StudentSheet({ familyId, familyName, row, onClose }: {
   const [first, setFirst] = React.useState(row?.first_name ?? '');
   const [last, setLast] = React.useState(row?.last_name ?? '');
   const [preferred, setPreferred] = React.useState(row?.preferred_name ?? '');
-  const [dob, setDob] = React.useState(row?.date_of_birth?.slice(0, 10) ?? '');
+  const [dob, setDob] = React.useState(toDateInput(row?.date_of_birth));
   const [pronouns, setPronouns] = React.useState(row?.pronouns ?? '');
   const [school, setSchool] = React.useState(row?.school ?? '');
   const [notes, setNotes] = React.useState(row?.notes ?? '');
-  const [left, setLeft] = React.useState(row?.left_on?.slice(0, 10) ?? '');
+  const [left, setLeft] = React.useState(toDateInput(row?.left_on));
   const save = useWrite(row ? P.UPDATE_STUDENT : P.CREATE_STUDENT, onClose);
 
   React.useEffect(() => {

@@ -143,8 +143,8 @@ export const REMOVE_GUARDIAN = `select app.soft_delete('guardian', $1) as ok`;
 
 export type StudentDetail = {
   id: string; first_name: string; last_name: string; preferred_name: string | null;
-  date_of_birth: string; pronouns: string | null; school: string | null;
-  joined_on: string; left_on: string | null; notes: string | null;
+  date_of_birth: string | Date; pronouns: string | null; school: string | null;
+  joined_on: string | Date; left_on: string | Date | null; notes: string | null;
   family_id: string; family_name: string;
 };
 

@@ -9,7 +9,7 @@ import { Beats, EmptyState, ErrorState, Field, Input, Skeleton } from '@/compone
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { dateShort } from '@/lib/format';
+import { dateShort, toDateInput } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 type Row = { id: string; name: string; status: string; pilot_cohort: string | null; pilot_started_on: string | null; days_in: number;
@@ -81,7 +81,7 @@ function PilotSheet({ r, onClose }: { r: Row; onClose: () => void }) {
   const { session } = useSession();
   const qc = useQueryClient();
   const [cohort, setCohort] = React.useState(r.pilot_cohort ?? '');
-  const [started, setStarted] = React.useState(r.pilot_started_on ?? '');
+  const [started, setStarted] = React.useState(toDateInput(r.pilot_started_on));
   const [notes, setNotes] = React.useState('');
   const save = useMutation({
     mutationFn: () => runAs(session, q => q(`select app.platform_set_pilot($1, $2, $3::date, $4)`, [r.id, cohort, started || null, notes])),

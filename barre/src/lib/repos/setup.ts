@@ -53,7 +53,7 @@ export const UPDATE_ROOM = `
 update room set name = $2, capacity = $3, updated_at = now() where id = $1 returning id`;
 
 export type Term = {
-  id: string; name: string; starts_on: string; ends_on: string;
+  id: string; name: string; starts_on: string | Date; ends_on: string | Date;
   status: string; classes: number; breaks: number;
 };
 

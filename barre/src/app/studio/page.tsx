@@ -16,7 +16,7 @@ import {
 } from '@/components/ui';
 import { SettingsSection as Card, SettingsHead as CardHeader } from '@/components/app/progress-settings';
 import * as S from '@/lib/repos/setup';
-import { dateShort } from '@/lib/format';
+import { dateShort, toDateInput } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 const STYLE_TONES: Tone[] = ['violet', 'amber', 'teal', 'rose', 'indigo', 'lime'];
@@ -366,8 +366,8 @@ function Terms() {
 
 function TermSheet({ row, onClose }: { row: S.Term | null; onClose: () => void }) {
   const [name, setName] = React.useState(row?.name ?? '');
-  const [from, setFrom] = React.useState(row?.starts_on?.slice(0, 10) ?? '');
-  const [to, setTo] = React.useState(row?.ends_on?.slice(0, 10) ?? '');
+  const [from, setFrom] = React.useState(toDateInput(row?.starts_on));
+  const [to, setTo] = React.useState(toDateInput(row?.ends_on));
   const [status, setStatus] = React.useState(row?.status ?? 'draft');
   const save = useSetupWrite(row ? S.UPDATE_TERM : S.CREATE_TERM, onClose);
   const remove = useSetupWrite(S.RETIRE_SETUP, onClose);
