@@ -197,8 +197,8 @@ begin
     tch := case when tc.pricing = 'term' and tt > 0 then round(coalesce(tc.price_minor, 0)::numeric * tl / tt)::bigint
                 when tc.pricing in ('one_off', 'monthly') then coalesce(tc.price_minor, 0) else 0 end;
   end if;
-  msg := case when d > current_date then 'Planned for ' || to_char(d, 'FMDy DD Mon') || '. Until then they stay in ' || fc.name || '. '
-              when d < current_date then 'Back-dated to ' || to_char(d, 'FMDy DD Mon') || '. Marks already made in ' || fc.name || ' after that stay as they are. '
+  msg := case when d > current_date then 'Planned for ' || to_char(d, 'FMDy FMDD Mon') || '. Until then they stay in ' || fc.name || '. '
+              when d < current_date then 'Back-dated to ' || to_char(d, 'FMDy FMDD Mon') || '. Marks already made in ' || fc.name || ' after that stay as they are. '
               else 'From today. ' end
       || case when fc.pricing = 'term' and ft > 0 then
            fl || ' of ' || ft || ' ' || fc.name || ' classes are on or after the date'
