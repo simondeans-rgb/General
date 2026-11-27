@@ -6,6 +6,7 @@ import { RotateCcw, Plus, Pencil, CalendarOff } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { FrameworkSettings, ChipSettings } from '@/components/app/progress-settings';
 import { PackSettings } from '@/components/app/pack-settings';
+import { BankDetailsSettings } from '@/components/app/bank-details';
 import { RecordSheet } from '@/components/app/record-sheet';
 import { useRows, useRow } from '@/lib/query';
 import { resetDemo, runAs } from '@/lib/db/client';
@@ -69,7 +70,7 @@ export default function StudioSettings() {
             <FrameworkSettings />
             <ChipSettings />
           </>}
-          {tab === 'money' && <PackSettings />}
+          {tab === 'money' && <><BankDetailsSettings /><PackSettings /></>}
         </div>
       </div></div>
     </Shell>

@@ -2,23 +2,20 @@
 
 import * as React from 'react';
 import { ChevronDown, Copy } from 'lucide-react';
+import { useDueReminders } from '@/components/app/family-money';
+import { invoiceState } from '@/lib/payments/invoice-status';
 import { Shell } from '@/components/app/shell';
 import { useRows, useRow } from '@/lib/query';
 import * as B from '@/lib/repos/billing';
 import { cn } from '@/lib/cn';
-import { Button, EmptyState, Skeleton, ErrorState } from '@/components/ui';
+import { Button, EmptyState, Skeleton, ErrorState, Word } from '@/components/ui';
 import * as F from '@/lib/repos/family';
 import { money, dateShort } from '@/lib/format';
 import { SectionHead, dueWord } from '../_parts/ui';
 
-/** Status in words; colour only supports it. */
-const STATUS: Record<string, { label: string; tone: string }> = {
-  paid:      { label: 'Paid',      tone: 'text-positive' },
-  issued:    { label: 'Due',       tone: 'text-caution' },
-  part_paid: { label: 'Part paid', tone: 'text-caution' },
-  draft:     { label: 'Draft',     tone: 'text-ink-3' },
-  void:      { label: 'Void',      tone: 'text-ink-3' },
-  refunded:  { label: 'Refunded',  tone: 'text-info' },
+/** Status in words, the same words the studio sees; colour only supports it. */
+const TONE: Record<string, string> = {
+  positive: 'text-positive', caution: 'text-caution', critical: 'text-critical', neutral: 'text-ink-3', info: 'text-info',
 };
 
 type Invoice = { id: string; number: string; status: string; issued_on: string;
@@ -29,6 +26,8 @@ export default function ParentPayments() {
   const balance = useRow<{ name: string; balance_minor: string; unpaid: number; failed: number }>(
     ['my-balance'], F.MY_BALANCE);
   const invoices = useRows<Invoice>(['my-invoices'], F.MY_INVOICES);
+  const info = useRow<B.PaymentInfo>(['my-payment-info'], B.MY_PAYMENT_INFO);
+  useDueReminders();
 
   const owes = !!balance.data && Number(balance.data.balance_minor) > 0;
   const credit = !!balance.data && Number(balance.data.balance_minor) < 0;
@@ -69,7 +68,9 @@ export default function ParentPayments() {
         </div>
 
         <div className="min-w-0 space-y-10">
-          {owes && <HowToPay reference={unpaid[0]?.number ?? balance.data?.name ?? ''} several={unpaid.length > 1} />}
+          {owes && <HowToPay info={info.data} invoices={unpaid.map(i => i.number)} />}
+
+          <ComingUp />
 
           <section aria-labelledby="hist-h">
             <SectionHead id="hist-h" title="Invoices" meta={invoices.data?.length ? 'Latest eight' : undefined} />
@@ -126,33 +127,126 @@ function Ledger({ i }: { i: Invoice }) {
   );
 }
 
-/** How to pay. Card payment is honest about not being connected yet. */
-function HowToPay({ reference, several }: { reference: string; several: boolean }) {
+/** One line of bank details, with its own copy button. */
+function CopyLine({ label, value, big }: { label: string; value: string; big?: boolean }) {
   const [copied, setCopied] = React.useState(false);
+  return (
+    <div className="flex items-center gap-3 py-2">
+      <div className="min-w-0 flex-1">
+        <p className="text-[13px] text-ink-3">{label}</p>
+        <p className={cn('tnum break-all', big ? 'font-display text-[22px] leading-tight' : 'text-[16px] font-semibold')}>{value}</p>
+      </div>
+      <Button size="sm" aria-label={`Copy ${label.toLowerCase()} ${value}`}
+        onClick={() => navigator.clipboard?.writeText(value.replace(/\s/g, label === 'Account name' ? ' ' : '')).then(() => {
+          setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {})}>
+        <Copy className="size-4" aria-hidden /> {copied ? 'Copied' : 'Copy'}
+      </Button>
+      <span role="status" className="sr-only">{copied ? `${label} copied` : ''}</span>
+    </div>
+  );
+}
+
+/**
+ * How to pay (UR-22): the school's bank details and a reference, each with a
+ * copy button, so a transfer can be made from this screen alone. Several
+ * invoices can be paid together with the family reference. Card payment is
+ * honest about not being connected yet.
+ */
+function HowToPay({ info, invoices }: { info?: B.PaymentInfo; invoices: string[] }) {
+  const several = invoices.length > 1;
+  const reference = several ? info?.reference ?? invoices[0] ?? '' : invoices[0] ?? info?.reference ?? '';
   return (
     <section aria-labelledby="how-h">
       <SectionHead id="how-h" title="How to pay" />
       <div className="divide-y divide-line">
         <div className="py-3">
           <p className="font-semibold">Bank transfer</p>
-          <p className="mt-0.5 text-[13.5px] text-ink-3">Use this reference so the studio can match your payment{several ? ' (pay each invoice with its own number)' : ''}.</p>
-          <div className="mt-2 flex items-center gap-3">
-            <span className="font-display text-[22px] leading-none tnum">{reference}</span>
-            <Button size="sm" aria-label={`Copy reference ${reference}`}
-              onClick={() => navigator.clipboard?.writeText(reference).then(() => setCopied(true)).catch(() => {})}>
-              <Copy className="size-4" aria-hidden /> {copied ? 'Copied' : 'Copy'}
-            </Button>
-          </div>
-          <p role="status" className="sr-only">{copied ? 'Reference copied' : ''}</p>
+          {info?.payee_name ? (
+            <div className="mt-1 divide-y divide-line">
+              <CopyLine label="Account name" value={info.payee_name} />
+              <CopyLine label="Sort code" value={info.sort_code!} />
+              <CopyLine label="Account number" value={info.account_number!} />
+              {info.iban && <CopyLine label="IBAN" value={info.iban} />}
+              <CopyLine label="Reference" value={reference} big />
+            </div>
+          ) : (
+            <>
+              <p className="mt-0.5 text-[13.5px] text-ink-3">
+                The studio has not added its bank details here yet. Ask them for the account details, and use this reference.
+              </p>
+              <CopyLine label="Reference" value={reference} big />
+            </>
+          )}
+          <p className="mt-1 text-[13.5px] text-ink-3">
+            {several
+              ? `This reference covers all ${invoices.length} invoices (${invoices.join(', ')}), so one transfer is enough. The studio matches it to them.`
+              : 'Use this reference so the studio can match your payment. It shows here once they have recorded it.'}
+          </p>
         </div>
         <div className="py-3">
           <p className="font-semibold">Card or Apple Pay</p>
           <p className="mt-0.5 text-[13.5px] text-ink-3">
-            Opens here once the studio connects its payment provider. Until then, pay by transfer or at the studio;
+            Not available yet: the studio has not connected card payments. Until then, pay by transfer or at the studio;
             they record it and it shows here straight away.
           </p>
         </div>
       </div>
+    </section>
+  );
+}
+
+const STATE_WORD = { expected: 'Expected', invoiced: 'Invoiced', paid: 'Paid' } as const;
+const STATE_TONE = { expected: 'muted', invoiced: 'caution', paid: 'positive' } as const;
+
+/**
+ * Coming up (UR-24): what each child is likely to cost soon — next term's
+ * fees, confirmed events and exams, costumes and private lessons — with dates
+ * and a total. "Expected" has not been invoiced yet.
+ */
+function ComingUp() {
+  const rows = useRows<B.UpcomingCost>(['upcoming-costs'], B.UPCOMING_COSTS, [null]);
+  const groups = React.useMemo(() => {
+    const m = new Map<string, B.UpcomingCost[]>();
+    (rows.data ?? []).forEach(r => m.set(r.child, [...(m.get(r.child) ?? []), r]));
+    return [...m.entries()];
+  }, [rows.data]);
+  const total = (rows.data ?? []).reduce((n, r) => n + Number(r.amount_minor), 0);
+  const toPay = (rows.data ?? []).filter(r => r.state !== 'paid').reduce((n, r) => n + Number(r.amount_minor), 0);
+  return (
+    <section aria-labelledby="up-h">
+      <SectionHead id="up-h" title="Coming up" meta={rows.data?.length ? 'Fees, events and lessons ahead' : undefined} />
+      {rows.isLoading && <Skeleton className="mt-3 h-20" />}
+      {rows.error != null && <ErrorState error={rows.error} />}
+      {rows.data?.length === 0 && <p className="py-3 text-[14.5px] text-ink-3">Nothing else is planned yet.</p>}
+      {groups.map(([kid, list]) => (
+        <div key={kid} className="border-b border-line py-2">
+          <p className="label pb-1 pt-1">{kid}</p>
+          <ul>
+            {list.map((r, n) => (
+              <li key={n} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 py-1.5 text-[14.5px]">
+                <span className="min-w-0">
+                  <span className="block">{r.title}</span>
+                  <span className="flex flex-wrap items-baseline gap-x-2 text-[12.5px] text-ink-3">
+                    <Word tone={STATE_TONE[r.state]}>{STATE_WORD[r.state]}</Word>
+                    <span>{r.due_on ? (r.state === 'expected' ? dateShort(r.due_on) : `due ${dateShort(r.due_on)}`) : 'Date to be set'}</span>
+                    {r.invoice_number && <span className="tnum">{r.invoice_number}</span>}
+                  </span>
+                </span>
+                <span className={cn('tnum', r.state === 'paid' && 'text-ink-3')}>{money(r.amount_minor)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+      {!!rows.data?.length && (
+        <dl className="pt-2.5 text-[14.5px]">
+          <div className="flex gap-4 font-semibold"><dt className="flex-1">Total coming up</dt><dd className="tnum">{money(total)}</dd></div>
+          {toPay !== total && (
+            <div className="flex gap-4 text-ink-2"><dt className="flex-1">Not yet paid</dt><dd className="tnum">{money(toPay)}</dd></div>
+          )}
+          <p className="mt-1 text-[12.5px] text-ink-3">Estimates use this term’s prices. The studio confirms the amount on each invoice.</p>
+        </dl>
+      )}
     </section>
   );
 }
@@ -167,7 +261,7 @@ function InvoiceLine({ i }: { i: Invoice }) {
   const [open, setOpen] = React.useState(false);
   const items = useRows<B.ItemRow>(['invoice-items', i.id], B.INVOICE_ITEMS, [i.id], { enabled: open });
   const payments = useRows<B.PaymentRow>(['invoice-payments', i.id], B.INVOICE_PAYMENTS, [i.id], { enabled: open });
-  const s = STATUS[i.status] ?? STATUS.draft!;
+  const s = invoiceState(i);
   const outstanding = Number(i.total_minor) - Number(i.paid_minor);
   return (
     <li>
@@ -176,7 +270,7 @@ function InvoiceLine({ i }: { i: Invoice }) {
         <span className="min-w-0">
           <span className="flex items-baseline gap-2">
             <span className="tnum font-semibold">{i.number}</span>
-            <span className={cn('text-[13px] font-semibold', s.tone)}>{s.label}</span>
+            <span className={cn('text-[13px] font-semibold', TONE[s.tone])}>{s.label}</span>
           </span>
           <span className="mt-0.5 block text-[13px] text-ink-3">
             Issued {dateShort(i.issued_on)} · due {dateShort(i.due_on)}
