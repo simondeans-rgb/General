@@ -5,6 +5,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
+import { MakeUpOffers } from '@/components/app/absence-report';
 import { useRows, useRow } from '@/lib/query';
 import { Button, EmptyState, Skeleton, ErrorState, Notice } from '@/components/ui';
 import * as F from '@/lib/repos/family';
@@ -162,6 +163,8 @@ export default function FamilyHome() {
         </div>
 
         <div className="min-w-0 space-y-10">
+          {/* Make-ups after a cancelled class or a reported absence (UR-56). */}
+          <MakeUpOffers />
           {/* What is owed, and one way to pay it. */}
           <section aria-labelledby="pay-h">
             <SectionHead id="pay-h" title="Payments" href="/family/payments" link={owes ? 'Invoices' : 'History'} />

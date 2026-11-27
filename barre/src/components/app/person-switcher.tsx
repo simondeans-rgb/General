@@ -129,7 +129,7 @@ export function PersonSwitcher({ className, label }: { className?: string; label
             <div className="mt-2 flex gap-2 border-t border-line pt-3">
               <Button className="flex-1" onClick={() => setOpen(false)}>Close</Button>
               <Button className="flex-1" variant="secondary"
-                      onClick={() => { setOpen(false); signOut(); router.replace('/'); }}>
+                      onClick={() => { setOpen(false); if (signOut()) router.replace('/'); }}>
                 <LogOut className="size-4" aria-hidden /> Sign out
               </Button>
             </div>

@@ -14,8 +14,21 @@ const VAPID = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? '';
 /** Registers the service worker once (R-017). */
 export function PwaSetup() {
   React.useEffect(() => {
-    if (!('serviceWorker' in navigator) || process.env.NODE_ENV !== 'production') return;
+    // Off in development (it would cache stale chunks), unless a test of the
+    // offline register asks for it with NEXT_PUBLIC_SW_IN_DEV=1.
+    if (!('serviceWorker' in navigator) || (process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_SW_IN_DEV !== '1')) return;
     navigator.serviceWorker.register(`${base}/sw.js`, { scope: `${base}/` }).catch(() => undefined);
+    // Hand the worker what this page loaded, so the app (and the database in
+    // the browser) opens with no signal next time (UR-04).
+    try { performance.setResourceTimingBufferSize(2000); } catch { /* older browsers */ }
+    const warm = () => navigator.serviceWorker.ready.then(reg => {
+      const urls = performance.getEntriesByType('resource').map(e => e.name)
+        .filter(u => /\/(_next\/static|pglite|icons)\//.test(u));
+      reg.active?.postMessage({ type: 'warm', urls: [...new Set(urls)] });
+    }).catch(() => undefined);
+    const t = setTimeout(warm, 4000);
+    const i = setInterval(warm, 30_000);
+    return () => { clearTimeout(t); clearInterval(i); };
   }, []);
   return null;
 }

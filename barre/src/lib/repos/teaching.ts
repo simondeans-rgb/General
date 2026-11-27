@@ -8,6 +8,8 @@ export type TeachSession = {
   enrolled: number; capacity: number; trials: number;
   marked: number; register_closed_at: string | null;
   covering: boolean; covered_by: string | null; cover_requested: boolean; cancel_reason: string | null;
+  /** First names of children reported absent in advance, if any. */
+  reported_absent?: string | null;
 };
 
 export const MY_SESSIONS = `
@@ -21,6 +23,10 @@ select cs.id, cs.class_id, c.name, cs.starts_at, cs.ends_at, cs.status,
        (select count(*)::int from attendance_record ar
          where ar.session_id = cs.id and ar.deleted_at is null) as marked,
        cs.register_closed_at, cs.cancel_reason,
+       -- Children whose family has said they will not be there (UR-07).
+       (select string_agg(coalesce(st.preferred_name, st.first_name), ', ' order by st.first_name)
+          from absence_report ab join student st on st.id = ab.student_id
+         where ab.session_id = cs.id and ab.status = 'active') as reported_absent,
        (cs.teacher_id in (select id from me) and c.teacher_id not in (select id from me)) as covering,
        case when cs.teacher_id is not null and cs.teacher_id not in (select id from me)
             then (select display_name from staff_member where id = cs.teacher_id) end as covered_by,
@@ -42,6 +48,10 @@ export type RegisterEntry = {
   student_id: string; first_name: string; last_name: string; preferred_name: string | null;
   date_of_birth: Stamp; status: string | null; reason: string | null;
   is_trial: boolean; attendance_pct: number | null;
+  /** explicit | reported | rest — what kind of mark the server holds (0048). */
+  mark_kind: string | null;
+  /** An advance absence report, if the family or the student made one (UR-07). */
+  reported_note: string | null; reported_by: 'guardian' | 'student' | null;
 } & Brief;
 
 /** What a teacher may know about a child's safety (migration 0020). */
@@ -61,6 +71,14 @@ const BRIEF_COLUMNS = `coalesce(b.requires_alert, false) as requires_alert,
        b.emergency_contact_name, b.emergency_contact_phone,
        coalesce(b.emergency_contacts, '[]'::jsonb) as emergency_contacts, b.photo_consent,
        app.collection_brief(b.student_id) as collection`;
+
+/** Attendance this term (UR-54): sessions since the current term began, up
+ *  to now. */
+const TERM_ATTENDANCE = (student: string) => `(select round(100.0 * count(*) filter (where a2.status in ('present','late'))
+                     / nullif(count(*),0))::int
+          from attendance_record a2 join class_session s2 on s2.id = a2.session_id
+         where a2.student_id = ${student} and a2.deleted_at is null and s2.starts_at <= now()
+           and s2.starts_at >= app.current_term_start(s2.studio_id))`;
 
 /**
  * The register for one session: everyone enrolled, plus anyone trialling.
@@ -88,31 +106,50 @@ with roll as (
 )
 select roll.id as student_id, roll.first_name, roll.last_name, roll.preferred_name,
        roll.date_of_birth, roll.is_trial,
-       ar.status, ar.reason,
+       ar.status, ar.reason, ar.mark_kind,
+       rep.note as reported_note, rep.reporter as reported_by,
        ${BRIEF_COLUMNS},
-       (select round(100.0 * count(*) filter (where a2.status in ('present','late'))
-                     / nullif(count(*),0))::int
-          from attendance_record a2 where a2.student_id = roll.id and a2.deleted_at is null) as attendance_pct
+       ${TERM_ATTENDANCE('roll.id')} as attendance_pct
   from roll
   left join attendance_record ar on ar.student_id = roll.id and ar.session_id = $1 and ar.deleted_at is null
+  left join absence_report rep on rep.student_id = roll.id and rep.session_id = $1 and rep.status = 'active'
   left join student_safety_brief b on b.student_id = roll.id
  order by roll.last_name, roll.first_name`;
 
-/* $5 is when the teacher tapped, by the device's clock. A mark taken offline
-   and synced an hour later must not overwrite a correction made since, so
-   the newer tap wins — not the later arrival. */
+/* $5 is when the teacher tapped, by the device's clock; $6 is the kind of
+   mark: 'explicit' (a tap on this child) or 'rest' ("Mark the rest here").
+   A mark taken offline and synced later must not overwrite what someone
+   actually did since (UR-04), so:
+     - an explicit mark beats a reported or "rest" mark, whatever the times;
+     - between marks of the same kind the later device time wins, and when
+       two device times are within two minutes of each other (clocks drift)
+       the later arrival wins. */
 export const MARK_ATTENDANCE = `
-insert into attendance_record (studio_id, session_id, student_id, status, reason, marked_by, client_marked_at)
-select c.studio_id, $1, $2, $3::attendance_status, $4, auth.uid(), coalesce($5::timestamptz, now())
+insert into attendance_record (studio_id, session_id, student_id, status, reason, marked_by, client_marked_at, mark_kind)
+select c.studio_id, $1, $2, $3::attendance_status, $4, auth.uid(), coalesce($5::timestamptz, now()), coalesce($6::text, 'explicit')
   from class_session cs join class c on c.id = cs.class_id
  where cs.id = $1
 on conflict (session_id, student_id) do update
   set status = excluded.status, reason = excluded.reason,
       marked_by = excluded.marked_by, marked_at = now(),
-      client_marked_at = excluded.client_marked_at
+      client_marked_at = excluded.client_marked_at, mark_kind = excluded.mark_kind,
+      reported_by_guardian = false, updated_at = now()
   where attendance_record.client_marked_at is null
-     or excluded.client_marked_at >= attendance_record.client_marked_at
+     or app.mark_rank(excluded.mark_kind) > app.mark_rank(attendance_record.mark_kind)
+     or (app.mark_rank(excluded.mark_kind) = app.mark_rank(attendance_record.mark_kind)
+         and excluded.client_marked_at >= attendance_record.client_marked_at - interval '2 minutes')
 returning id, status`;
+
+/** The office changing a register after its window, with a reason (UR-37). */
+export const AMEND_ATTENDANCE = `select app.amend_attendance($1, $2, $3::attendance_status, $4)`;
+
+/** Whether a register can be marked now (UR-37), and why a link shows nothing (UR-54). */
+export type RegisterWindow = { opens_at: Stamp; closes_at: Stamp; state: 'open' | 'early' | 'late'; edit_days: number; before_min: number };
+export const REGISTER_WINDOW = `
+select w.opens_at, w.closes_at, w.state, st.register_edit_days as edit_days, st.register_opens_before_min as before_min
+  from app.register_window($1) w, class_session cs join studio st on st.id = cs.studio_id
+ where cs.id = $1`;
+export const SESSION_ACCESS = `select app.session_access($1) as access`;
 
 
 /** Everyone a teacher may see, which is everyone in their own classes. */
@@ -123,9 +160,7 @@ select s.id, s.first_name, s.last_name, s.preferred_name, s.date_of_birth,
           join class c on c.id = e.class_id
          where e.student_id = s.id and e.status = 'active' and e.deleted_at is null
            and c.id in (select app.teacher_class_ids())) as class_names,
-       (select round(100.0 * count(*) filter (where ar.status in ('present','late'))
-                     / nullif(count(*),0))::int
-          from attendance_record ar where ar.student_id = s.id and ar.deleted_at is null) as attendance_pct
+       ${TERM_ATTENDANCE('s.id')} as attendance_pct
   from student s
   left join student_safety_brief b on b.student_id = s.id
  where s.deleted_at is null
@@ -203,6 +238,8 @@ select cm.id, cm.subject, cm.body, cm.sent_at, c.name as class_name,
  limit 40`;
 
 export const REQUEST_COVER = `select app.request_cover($1, $2) as id`;
+/** With a handover note for whoever covers (UR-27). */
+export const REQUEST_COVER_HANDOVER = `select app.request_cover($1, $2, $3) as id`;
 /** The teacher's next session after this one today, for "Next class". */
 export const NEXT_SESSION = `
 with me as (select id from staff_member where user_id = auth.uid() and deleted_at is null),
