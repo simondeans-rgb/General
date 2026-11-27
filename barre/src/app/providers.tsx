@@ -7,6 +7,7 @@ import { SessionProvider } from '@/lib/auth/session';
 import { DatabaseGate } from '@/components/app/database-gate';
 import { UndoToaster } from '@/components/app/undo';
 import { PwaSetup } from '@/components/app/pwa';
+import { FocusManager } from '@/components/app/focus-manager';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [client] = React.useState(() => new QueryClient({
@@ -19,6 +20,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={client}>
       <SessionProvider>
+        <FocusManager />
         {marketing ? children : <DatabaseGate>{children}<UndoToaster /><PwaSetup /></DatabaseGate>}
       </SessionProvider>
     </QueryClientProvider>
