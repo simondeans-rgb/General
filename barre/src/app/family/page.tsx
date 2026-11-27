@@ -179,7 +179,7 @@ export default function FamilyHome() {
             const f = feedback.data![0]!;
             return (
               <section aria-labelledby="fb-h">
-                <SectionHead id="fb-h" title="Latest feedback" href="/family/feedback" link="All feedback" />
+                <SectionHead id="fb-h" title="Latest feedback" href={`/family/feedback?child=${f.student_id}`} link="All feedback" />
                 <figure className="pt-3">
                   <blockquote className="text-[16px] leading-snug text-ink">
                     “{f.going_well ?? f.headline}”
