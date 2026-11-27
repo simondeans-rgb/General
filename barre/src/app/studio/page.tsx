@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { RotateCcw, Plus, Pencil, CalendarOff } from 'lucide-react';
+import { StudentLoginAge } from '@/components/app/family-care';
 import { Shell } from '@/components/app/shell';
 import { FrameworkSettings, ChipSettings } from '@/components/app/progress-settings';
 import { PackSettings } from '@/components/app/pack-settings';
@@ -61,7 +62,7 @@ export default function StudioSettings() {
           ))}
         </div>
         <div role="tabpanel" id={`st-panel-${tab}`} aria-labelledby={`st-tab-${tab}`} className="space-y-10">
-          {tab === 'school' && <><StudioDetails /><WaitlistSettings /><AboutDemo /></>}
+          {tab === 'school' && <><StudioDetails /><WaitlistSettings /><StudentLoginAge /><AboutDemo /></>}
           {tab === 'places' && <><Locations /><Rooms /></>}
           {tab === 'terms' && <Terms />}
           {tab === 'teaching' && <>

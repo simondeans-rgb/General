@@ -107,6 +107,20 @@ export function MedicalBrief({ brief, layout = 'side' }: { brief: Brief; layout?
             </li>
           ))}
         </ul>
+        {/* Who may collect, and who may not (UR-17). Guardians may collect unless listed. */}
+        {brief.collection && brief.collection.length > 0 && (
+          <div className="mt-3">
+            <h3 className="text-[14px] font-semibold text-ink-2">Collection</h3>
+            <ul className="mt-0.5 space-y-0.5 text-[14px]">
+              {brief.collection.map((c, n) => (
+                <li key={n} className={cn(!c.allowed && 'font-semibold text-critical')}>
+                  {c.allowed ? 'May collect: ' : 'May not collect: '}{c.name}
+                  {c.relationship ? <span className="font-normal text-ink-3"> · {c.relationship}</span> : null}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {/* Consent is always stated; "not recorded" is never hidden (UR-08). */}
         <BriefConsentLines studentId={briefStudentId(brief)} photo={brief.photo_consent} />
       </section>

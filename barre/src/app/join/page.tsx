@@ -246,7 +246,7 @@ function AdultDropIn({ slug, school, about, info }: { slug: string; school: Scho
   const rows = useQuery({ queryKey: ['public-dropins', slug],
     queryFn: () => readAs<DropIn>(null, `select * from app.public_drop_in_sessions($1)`, [slug]) });
   const [pick, setPick] = React.useState<DropIn | null>(null);
-  const [f, setF] = React.useState({ name: '', email: '', phone: '', emergency_name: '', emergency_phone: '', website: '', privacy_ack: false, marketing: false });
+  const [f, setF] = React.useState({ name: '', email: '', phone: '', emergency_name: '', emergency_phone: '', website: '', privacy_ack: false, marketing: false, adult_confirm: false });
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF(x => ({ ...x, [k]: e.target.value }));
   const book = useMutation({
     mutationFn: async () => (await runAs(null, q => q<{ r: string }>(`select app.public_adult_drop_in($1, $2, $3::jsonb) r`, [slug, pick!.session_id, JSON.stringify(f)])))[0]?.r,
@@ -263,7 +263,7 @@ function AdultDropIn({ slug, school, about, info }: { slug: string; school: Scho
         next="Come again whenever you like: book each class here, or ask the school about a class pack." />
     </section>
   );
-  const ok = f.name.trim() && /@.+\./.test(f.email) && f.phone.trim() && f.emergency_phone.trim() && f.privacy_ack;
+  const ok = f.name.trim() && /@.+\./.test(f.email) && f.phone.trim() && f.emergency_phone.trim() && f.privacy_ack && f.adult_confirm;
   return (
     <section aria-labelledby="j-adults" className="space-y-4">
       <div className="border-b-2 border-ink pb-2">
@@ -300,6 +300,12 @@ function AdultDropIn({ slug, school, about, info }: { slug: string; school: Scho
             <Field label="Their phone" htmlFor="ad-ep" required><Input id="ad-ep" type="tel" value={f.emergency_phone} onChange={set('emergency_phone')} /></Field>
           </div>
           <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden className="absolute -left-[9999px] size-px opacity-0" value={f.website} onChange={set('website')} />
+          {/* Adult classes book the adult, never a child on the same email (UR-06). */}
+          <label className="flex min-h-[44px] items-center gap-3 text-[14px]">
+            <input type="checkbox" checked={f.adult_confirm} className="size-[18px] accent-[var(--color-accent)]"
+                   onChange={e => setF(x => ({ ...x, adult_confirm: e.target.checked }))} />
+            I am 18 or over, and booking for myself
+          </label>
           <Consent school={school} ack={f.privacy_ack} marketing={f.marketing} who="you"
                    onAck={v => setF(x => ({ ...x, privacy_ack: v }))} onMarketing={v => setF(x => ({ ...x, marketing: v }))} />
           {book.error != null && <ErrorState error={book.error} />}

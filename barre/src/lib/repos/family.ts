@@ -50,7 +50,8 @@ select cs.id, cs.class_id, c.name, cs.starts_at, cs.ends_at, cs.status,
  order by 4`;
 
 export const MY_CHILDREN = `
-select s.id, s.first_name, s.last_name, s.date_of_birth,
+select s.id, s.first_name, s.last_name, s.date_of_birth, s.is_adult,
+       s.self_guardian_id in (select g.id from guardian g where g.user_id = auth.uid()) as is_me,
        (select string_agg(c.name, ', ' order by c.name) from enrolment e
           join class c on c.id = e.class_id
          where e.student_id = s.id and e.status = 'active' and e.deleted_at is null) as class_names,
@@ -106,6 +107,30 @@ select g.id, g.full_name, g.email, g.phone, g.relationship, g.user_id = auth.uid
  order by (g.user_id = auth.uid()) desc nulls last, g.is_primary desc, g.full_name`;
 export const UPDATE_GUARDIAN = `
 update guardian set full_name = $2, email = nullif($3, ''), phone = nullif($4, ''), updated_at = now() where id = $1`;
+
+/** Office-set limits on what this guardian's account shows (UR-17). */
+export type MyAccess = { see_schedule: boolean; see_payments: boolean; see_feedback: boolean; see_medical: boolean };
+export const MY_ACCESS = `select * from app.my_access()`;
+/** "Ask the office to change" another guardian's details (UR-05). */
+export const ASK_TO_CHANGE_GUARDIAN = `select app.ask_to_change_guardian($1, $2) as id`;
+
+/* ── Who may collect each child (UR-17). Parents keep the "may collect" list;
+   a "may not collect" entry is the office's and is not shown here. ────── */
+export type Collector = { id: string; student_id: string; full_name: string; relationship: string | null; phone: string | null };
+export const MY_COLLECTORS = `
+select c.id, c.student_id, c.full_name, c.relationship, c.phone from collection_permission c
+ where c.deleted_at is null and c.allowed order by c.created_at`;
+export const ADD_COLLECTOR = `
+insert into collection_permission (student_id, full_name, relationship, phone, allowed)
+values ($1, btrim($2), nullif(btrim($3), ''), nullif(btrim($4), ''), true) returning id`;
+export const REMOVE_COLLECTOR = `select app.remove_collection_person($1)`;
+
+/* ── A teenager's own login (UR-16) ─────────────────────────────────────── */
+export type ChildLogin = { student_id: string; first_name: string; age: number; min_age: number;
+  state: 'too_young' | 'none' | 'invited' | 'pending' | 'on' | 'off'; email: string | null };
+export const MY_CHILDREN_LOGINS = `select * from app.my_children_logins()`;
+export const SET_STUDENT_LOGIN = `select app.set_student_login($1, $2) as r`;
+export const INVITE_STUDENT = `select app.guardian_invite_student($1, $2) as token`;
 
 export type Contact = { id: string; student_id: string; full_name: string; relationship: string | null; phone: string };
 export const MY_CONTACTS = `

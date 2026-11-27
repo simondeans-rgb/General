@@ -115,6 +115,11 @@ export function Shell({
   useBrandedManifest(branded ? studio!.name : null, branded ? studio!.brand_colour : null);
   const router = useRouter();
   const pathname = usePathname();
+  // A student's access ends the moment a parent switches their login off, or
+  // until one approves it (UR-16): the database already returns nothing.
+  const self = useRows<{ id: string | null }>(['student-self-check'], `select app.student_self_id() as id`, [],
+    { enabled: session?.role === 'student' });
+  const loginOff = session?.role === 'student' && self.isSuccess && !self.data?.[0]?.id;
 
   React.useEffect(() => {
     if (loaded && !session) router.replace('/');
@@ -124,6 +129,16 @@ export function Shell({
 
   // A route the signed-in role may not use is a redirect, not a 403 page: the
   // person is not an intruder, they are simply in the wrong place.
+  if (loginOff) {
+    return (
+      <div className="grid min-h-dvh place-items-center p-6">
+        <EmptyState title="Your login is off"
+          body="A parent or carer needs to approve your login, or has switched it off. Ask them, or the school, if you think this is wrong."
+          action={<Button variant="primary" onClick={() => { signOut(); router.replace('/'); }}>Sign out</Button>} />
+      </div>
+    );
+  }
+
   if (!allow.includes(session.role)) {
     return (
       <div className="grid min-h-dvh place-items-center p-6">
