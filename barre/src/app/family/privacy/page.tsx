@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
+import { useFamilyVoice } from '@/components/app/adult-self';
 import { readAs, runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import { Button, ErrorState, Field, SectionHead } from '@/components/ui';
@@ -16,6 +17,7 @@ import * as V from '@/lib/repos/privacy';
  * a way to ask the school to delete them.
  */
 export default function FamilyPrivacy() {
+  const voice = useFamilyVoice();
   const { session } = useSession();
   const qc = useQueryClient();
   const download = useMutation({
@@ -43,7 +45,7 @@ export default function FamilyPrivacy() {
     <Shell title="Privacy and your data" allow={['guardian']}>
       <div className="mx-auto max-w-2xl space-y-12">
         <section aria-labelledby="who-h">
-          <SectionHead id="who-h" title="Who sees what about your child" />
+          <SectionHead id="who-h" title={voice.solo ? 'Who sees what about you' : 'Who sees what about your child'} />
           <dl className="divide-y divide-line">
             {V.WHO_SEES.map(r => (
               <div key={r.who} className="py-3.5">
@@ -61,15 +63,15 @@ export default function FamilyPrivacy() {
         <section aria-labelledby="fix-h">
           <SectionHead id="fix-h" title="Putting something right" />
           <ul className="mt-2 list-disc space-y-1.5 pl-5 text-[0.9062rem] text-ink-2">
-            <li>Emergency contacts and photo, video and social media consent: change them yourself on <Link href="/family/children" className="font-semibold text-accent-text underline">Your family</Link>.</li>
-            <li>Medical details, or a child’s name or date of birth: <Link href="/family/enquiries" className="font-semibold text-accent-text underline">tell the studio</Link>, so there is a record of who changed what.</li>
+            <li>Emergency contacts and photo, video and social media consent: change them yourself on <Link href="/family/children" className="font-semibold text-accent-text underline">{voice.solo ? 'Your details' : 'Your family'}</Link>.</li>
+            <li>Medical details, or {voice.solo ? 'your' : 'a child’s'} name or date of birth: <Link href="/family/enquiries" className="font-semibold text-accent-text underline">tell the studio</Link>, so there is a record of who changed what.</li>
           </ul>
         </section>
 
         <section aria-labelledby="dl-h">
-          <SectionHead id="dl-h" title="Download your family’s data" />
+          <SectionHead id="dl-h" title={voice.solo ? 'Download your data' : 'Download your family’s data'} />
           <p className="mt-2 text-[0.9062rem] text-ink-2">
-            One file with your family, children, medical details, emergency contacts, consents, classes, attendance, invoices, payments, messages, requests and the feedback shared with you.
+            One file with {voice.solo ? 'your details, your' : 'your family, children,'} medical details, emergency contacts, consents, classes, attendance, invoices, payments, messages, requests and the feedback shared with you.
             The office’s own notes and teachers’ private notes are not included; ask the studio if you want a complete copy, which they must give you within one month.
           </p>
           {download.error != null && <ErrorState error={download.error} />}
@@ -88,7 +90,7 @@ export default function FamilyPrivacy() {
             <>
               <p className="mt-2 text-[0.9062rem] text-ink-2">
                 The office will delete or anonymise what it no longer needs. Some records must be kept for a set time: invoices and payments for six years, and any safeguarding record for as long as the school’s safeguarding policy requires.
-                If your children are still in classes, the school will talk to you first.
+                {voice.solo ? 'If you are still booked into classes, the school will talk to you first.' : 'If your children are still in classes, the school will talk to you first.'}
               </p>
               <Field label="Anything the office should know" htmlFor="del-note" hint="Optional.">
                 <textarea id="del-note" rows={2} value={note} onChange={e => setNote(e.target.value)}

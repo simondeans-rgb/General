@@ -6,6 +6,7 @@ import { readAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import { downloadIcs } from '@/lib/ics';
 import { Shell } from '@/components/app/shell';
+import { useFamilyVoice } from '@/components/app/adult-self';
 import { Diary, MY_DIARY, diaryToCalendar, type DiaryItem } from '@/components/app/diary';
 
 /**
@@ -13,11 +14,12 @@ import { Diary, MY_DIARY, diaryToCalendar, type DiaryItem } from '@/components/a
  * competitions, exams and private lessons for every child, in one list.
  */
 export default function FamilySchedule() {
+  const voice = useFamilyVoice();
   return (
     <Shell title="Schedule" subtitle="Classes, rehearsals, shows and exams · next four weeks" allow={['guardian']}
       actionsInline actions={<CalendarButton />}>
       <div className="mx-auto max-w-2xl">
-        <Diary family empty="Classes, rehearsals and events show here once your child is enrolled or entered." />
+        <Diary family empty={voice.solo ? 'Your classes and events show here once you’re booked in.' : 'Classes, rehearsals and events show here once your child is enrolled or entered.'} />
       </div>
     </Shell>
   );

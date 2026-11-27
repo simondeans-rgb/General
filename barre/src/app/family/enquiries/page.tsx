@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MessageSquarePlus } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Shell } from '@/components/app/shell';
+import { useFamilyVoice } from '@/components/app/adult-self';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
@@ -79,6 +80,7 @@ export default function ParentEnquiries() {
 }
 
 function AskDialog({ onClose }: { onClose: () => void }) {
+  const voice = useFamilyVoice();
   const { session } = useSession();
   const qc = useQueryClient();
   const children = useRows<{ id: string; first_name: string; last_name: string }>(
@@ -117,9 +119,9 @@ function AskDialog({ onClose }: { onClose: () => void }) {
             <h2 id="ask-t" className="text-[1.0625rem] font-semibold tracking-tight">Ask the studio</h2>
             <div className="mt-4 space-y-3">
               {(children.data?.length ?? 0) > 1 && (
-                <Field label="About which child" htmlFor="ask-child">
+                <Field label={voice.self ? 'Who is it about' : 'About which child'} htmlFor="ask-child">
                   <Select id="ask-child" value={studentId} onChange={e => setStudentId(e.target.value)}>
-                    {children.data?.map(c => <option key={c.id} value={c.id}>{c.first_name} {c.last_name}</option>)}
+                    {children.data?.map(c => <option key={c.id} value={c.id}>{c.id === voice.self?.id ? 'Me' : `${c.first_name} ${c.last_name}`}</option>)}
                   </Select>
                 </Field>
               )}

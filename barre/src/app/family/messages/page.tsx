@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { CornerUpLeft, Send, X } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
+import { useFamilyVoice } from '@/components/app/adult-self';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
@@ -19,6 +20,7 @@ type Tab = 'studio' | 'notices';
  * sent to their children's classes. Like a messaging app, not an email client.
  */
 export default function FamilyMessages() {
+  const voice = useFamilyVoice();
   const { session } = useSession();
   const qc = useQueryClient();
   const [tab, setTab] = React.useState<Tab>('studio');
@@ -137,7 +139,7 @@ export default function FamilyMessages() {
           <div>
             {notices.isLoading && <div className="space-y-3">{[0, 1].map(i => <Skeleton key={i} className="h-20" />)}</div>}
             {notices.data?.length === 0 && <EmptyState
-              title="No notices" body="Announcements to your children’s classes show here." />}
+              title="No notices" body={voice.solo ? 'Announcements to your classes show here.' : 'Announcements to your children’s classes show here.'} />}
             <ul className="divide-y divide-line border-t-2 border-ink">
               {notices.data?.map(b => (
                 <li key={b.id} className="py-4">

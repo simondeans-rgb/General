@@ -19,6 +19,7 @@ import { ChildClassesSheet, AddChildSheet } from '@/components/app/family-classe
 import { DropIns } from '@/components/app/drop-ins';
 import { FamilyConsents } from '@/components/app/consents';
 import { ChildLogin, CollectionList } from '@/components/app/family-care';
+import { BookForMyself, useFamilyVoice } from '@/components/app/adult-self';
 import { AbsenceDialog as SharedAbsenceDialog } from '@/components/app/absence-report';
 import { ageFrom, dateShort } from '@/lib/format';
 
@@ -35,9 +36,11 @@ export default function FamilyChildren() {
   const [reporting, setReporting] = React.useState<Child | null>(null);
   const [browsing, setBrowsing] = React.useState<Child | null>(null);
   const [adding, setAdding] = React.useState(false);
+  // An adult student on their own reads about themselves, not a family (UR-21).
+  const voice = useFamilyVoice();
 
   return (
-    <Shell title="Your family" allow={['guardian']}
+    <Shell title={voice.solo ? 'Your details' : 'Your family'} allow={['guardian']}
       actions={<Button size="sm" onClick={() => setAdding(true)}><UserPlus className="size-4" aria-hidden /> Add a child</Button>}>
       <div className="mx-auto max-w-2xl space-y-12 lg:max-w-[1180px]">
         {children.isLoading && <Skeleton className="h-40" />}
@@ -48,14 +51,14 @@ export default function FamilyChildren() {
         {children.data?.map(c => (
           <section key={c.id} aria-labelledby={`child-${c.id}`}>
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b-2 border-ink pb-2">
-              <h2 id={`child-${c.id}`} className="font-display text-[1.5rem] leading-none">{c.first_name} {c.last_name}{c.is_me ? ' (you)' : ''}</h2>
-              <span className="text-[0.8125rem] text-ink-3">{c.is_adult ? 'Adult' : `${ageFrom(c.date_of_birth)} · born ${dateShort(c.date_of_birth)}`}</span>
+              <h2 id={`child-${c.id}`} className="font-display text-[1.5rem] leading-none">{c.first_name} {c.last_name}{c.is_me && !voice.solo ? ' (you)' : ''}</h2>
+              <span className="text-[0.8125rem] text-ink-3">{c.is_me ? 'Adult student' : c.is_adult ? 'Adult' : `${ageFrom(c.date_of_birth)} · born ${dateShort(c.date_of_birth)}`}</span>
             </div>
             {/* Desktop: details on the left, actions and practice alongside. */}
             <div className="grid gap-x-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
             <div className="min-w-0">
             <dl className="divide-y divide-line text-[0.9062rem]">
-              <Row label="Classes">{c.class_names ?? <span className="text-ink-3">Not in a class yet</span>}</Row>
+              <Row label="Classes">{c.class_names ?? <span className="text-ink-3">{c.is_me ? 'You’re not in a class yet' : 'Not in a class yet'}</span>}</Row>
               {c.attendance_pct != null && (
                 <Row label="Attendance">
                   <span className="flex items-center gap-2.5">
@@ -64,12 +67,12 @@ export default function FamilyChildren() {
                   </span>
                 </Row>
               )}
-              <FamilyConsents studentId={c.id} name={c.first_name} />
+              <FamilyConsents studentId={c.id} name={c.is_me ? 'you' : c.first_name} />
               {c.has_alert && (
                 <Row label="Medical">
                   <span className="font-semibold text-critical">{c.allergies ?? 'On record'}</span>
                   <p className="mt-1 text-[0.8125rem] text-ink-3">
-                    {c.first_name}’s teachers see allergies, conditions, medication, the emergency plan, emergency contacts and photo consent, for the classes they teach. The family doctor and the rest of the record stay with the office.
+                    {c.is_me ? 'Your' : `${c.first_name}’s`} teachers see allergies, conditions, medication, the emergency plan, emergency contacts and photo consent, for the classes they teach. The family doctor and the rest of the record stay with the office.
                     To change any of it,{' '}
                     <Link href="/family/enquiries" className="font-semibold text-accent-text underline">tell the studio</Link>,
                     so there is a record of who changed what.
@@ -85,27 +88,30 @@ export default function FamilyChildren() {
             <aside className="min-w-0 lg:pt-3">
             <div className="flex flex-wrap gap-2 border-t border-line py-3 lg:border-t-0 lg:pt-0">
               <Button onClick={() => setBrowsing(c)}>
-                <Sparkles className="size-4" aria-hidden /> Classes and trials
+                <Sparkles className="size-4" aria-hidden /> {c.is_me ? 'Book a class' : 'Classes and trials'}
               </Button>
               <Button onClick={() => setReporting(c)}>
                 <CalendarOff className="size-4" aria-hidden /> Report an absence
               </Button>
             </div>
-            <div className="pt-4"><PracticeLog studentId={c.id} who={c.first_name} bare /></div>
+            <div className="pt-4"><PracticeLog studentId={c.id} who={c.is_me ? 'you' : c.first_name} bare /></div>
             </aside>
             </div>
           </section>
         ))}
+
+        {/* A parent who dances too books in their own name (UR-21). */}
+        {children.data && <BookForMyself />}
 
         <div className="grid gap-12 lg:grid-cols-2">
           {children.data && <div className="min-w-0"><DropIns children={children.data} /></div>}
           <div className="min-w-0"><YourDetails /></div>
         </div>
 
-        {/* Everything about the family that is not a child, one tap away. */}
+        {/* Everything else, one tap away. */}
         <nav aria-label="More" className="divide-y divide-line border-t-2 border-ink">
           {[
-            ['/family/feedback', 'Teacher feedback', 'Notes, skills and milestones'],
+            ['/family/feedback', voice.solo ? 'Feedback from your teachers' : 'Teacher feedback', 'Notes, skills and milestones'],
             ['/family/events', 'Shows and events', 'What’s coming up, and entries'],
             ['/family/enquiries', 'Requests', 'Private lessons, questions, medical updates'],
             ['/family/privacy', 'Privacy and your data', 'Who sees what, download your data, ask to delete'],
