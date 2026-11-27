@@ -34,6 +34,8 @@ describe('skill frameworks (R-020)', () => {
       expect((await q(`select app.record_skill($1, $2, 'secure') id`, [kid.id, tap]))[0].id).toBeNull();   // no-op repeat
       const [row] = (await q(`select * from app.student_skills($1)`, [kid.id])).filter((r: any) => r.skill_id === tap);
       expect(row).toMatchObject({ level: 'secure', previous: 'developing' });
+      // UR-48: by default a level reaches the student with the share step.
+      expect((await q(`select app.share_skills($1) n`, [kid.id]))[0].n).toBe(1);
       await as(svc, AMIR);
       const tl = await q(`select * from app.student_timeline($1)`, [kid.id]);
       expect(tl.some((t: any) => t.kind === 'skill' && t.level === 'secure' && t.previous === 'developing')).toBe(true);
