@@ -119,6 +119,9 @@ function NextClass({ s, onAskCover }: { s: T.TeachSession | null; onAskCover: ()
         {[s.location, s.room,
           `${s.enrolled} booked${s.trials ? ` + ${plural(s.trials, 'trial')}` : ''}`].filter(Boolean).join(' · ')}
       </p>
+      {s.reported_absent && (
+        <p className="mt-1 text-[15px] text-ink-2"><span className="font-semibold">{s.reported_absent}</span> — reported absent</p>
+      )}
       {(s.covering || s.cover_requested) && (
         <p className="mt-1 text-[14px] font-semibold text-ink-2">{s.covering ? 'You are covering this class' : 'Cover requested · the office will confirm'}</p>
       )}
@@ -179,9 +182,10 @@ function CoverRequestSheet({ s, onClose }: { s: T.TeachSession; onClose: () => v
   const { session } = useSession();
   const qc = useQueryClient();
   const [reason, setReason] = React.useState('');
+  const [handover, setHandover] = React.useState('');
   const [sent, setSent] = React.useState(false);
   const ask = useMutation({
-    mutationFn: () => runAs(session, q => q(T.REQUEST_COVER, [s.id, reason.trim()])),
+    mutationFn: () => runAs(session, q => q(T.REQUEST_COVER_HANDOVER, [s.id, reason.trim(), handover.trim() || null])),
     onSuccess: () => { setSent(true); qc.invalidateQueries({ queryKey: ['db'] }); },
   });
   if (sent) return <RecordSheet title="Asked" onClose={onClose} onSave={onClose} saveLabel="Done">
@@ -191,6 +195,10 @@ function CoverRequestSheet({ s, onClose }: { s: T.TeachSession; onClose: () => v
       onClose={onClose} onSave={() => ask.mutate()} saving={ask.isPending} error={ask.error} canSave={reason.trim().length >= 3} saveLabel="Send to the office">
       <Field label="Why" htmlFor="cr-r" required hint="Only the office sees this.">
         <Input id="cr-r" value={reason} onChange={e => setReason(e.target.value)} placeholder="Hospital appointment" />
+      </Field>
+      <Field label="Handover for whoever covers" htmlFor="cr-h" hint="Optional. The plan, music, children to watch. Shown on their register.">
+        <textarea id="cr-h" rows={3} value={handover} onChange={e => setHandover(e.target.value)}
+          className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-[15px] focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
       </Field>
     </RecordSheet>
   );
@@ -213,7 +221,8 @@ function TeachRow({ s, showDay, onAskCover }: { s: T.TeachSession; showDay?: boo
     : done ? ['Register done', 'text-positive font-semibold']
     : started ? ['Register due', 'text-caution font-semibold']
     : null;
-  const meta = [s.room, `${expected} expected${s.trials ? ` · ${plural(s.trials, 'trial')}` : ''}`].filter(Boolean).join(' · ');
+  const meta = [s.room, `${expected} expected${s.trials ? ` · ${plural(s.trials, 'trial')}` : ''}`,
+    s.reported_absent && `${s.reported_absent} — reported absent`].filter(Boolean).join(' · ');
 
   const inner = (
     <div className="grid min-h-14 grid-cols-[4.25rem_minmax(0,1fr)_auto] items-center gap-x-3 py-3">

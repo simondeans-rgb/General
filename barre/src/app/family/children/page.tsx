@@ -17,6 +17,7 @@ import * as F from '@/lib/repos/family';
 import { YourDetails, EmergencyContacts } from '@/components/app/family-details';
 import { ChildClassesSheet, AddChildSheet } from '@/components/app/family-classes';
 import { DropIns } from '@/components/app/drop-ins';
+import { AbsenceDialog as SharedAbsenceDialog } from '@/components/app/absence-report';
 import { ageFrom, dateShort } from '@/lib/format';
 
 type Child = {
@@ -134,63 +135,10 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
-/** Reporting an absence sends a message to the studio; it does not write the
- *  register. A parent marking their own child absent in advance is a request,
- *  and the teacher still takes the register on the day. */
+/** Reporting an absence reaches the session: the register is pre-marked
+ *  "Excused · reported by parent", which the teacher can change, the teacher
+ *  sees it on Today, and the office gets a copy (UR-07). The form lives in
+ *  components/app/absence-report, shared with students of 13 and over. */
 function AbsenceDialog({ child, onClose }: { child: Child; onClose: () => void }) {
-  const { session } = useSession();
-  const qc = useQueryClient();
-  const [when, setWhen] = React.useState(() => new Date().toISOString().slice(0, 10));
-  const [reason, setReason] = React.useState('');
-  const [done, setDone] = React.useState(false);
-
-  const send = useMutation({
-    mutationFn: async () => runAs(session, q => q(F.REPORT_ABSENCE, [
-      child.id, new Date(when).toISOString(),
-      reason.trim() || `${child.first_name} will not be at class.`,
-    ])),
-    onSuccess: () => { setDone(true); qc.invalidateQueries({ queryKey: ['db'] }); },
-  });
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 sm:items-center" onClick={onClose}>
-      <div role="dialog" aria-modal="true" aria-labelledby="absence-title"
-           onClick={e => e.stopPropagation()}
-           className="max-h-[88dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-[var(--radius-xl)] border border-line bg-surface p-4 pb-safe shadow-lg sm:rounded-[var(--radius-xl)]">
-        {done ? (
-          <div className="py-2">
-            <p className="font-display text-[22px] uppercase leading-none tracking-[-0.01em] text-positive [font-stretch:80%]">Sent</p>
-            <p id="absence-title" className="mt-1.5 font-semibold">The studio has been told</p>
-            <p className="mt-1 text-sm text-ink-2">
-              Your message is in {child.first_name}&rsquo;s file. The teacher will see it before class.
-            </p>
-            <Button className="mt-4 w-full" variant="primary" onClick={onClose}>Done</Button>
-          </div>
-        ) : (
-          <>
-            <h2 id="absence-title" className="text-[17px] font-semibold tracking-tight">
-              Report an absence
-            </h2>
-            <p className="mt-0.5 text-sm text-ink-2">For {child.first_name}</p>
-            <div className="mt-4 space-y-3">
-              <Field label="Which day" htmlFor="absence-date">
-                <Input id="absence-date" type="date" value={when} onChange={e => setWhen(e.target.value)} />
-              </Field>
-              <Field label="Anything the teacher should know" htmlFor="absence-reason"
-                     hint="Optional. A short note is plenty.">
-                <Input id="absence-reason" value={reason} onChange={e => setReason(e.target.value)}
-                       placeholder="School trip, unwell, family holiday…" />
-              </Field>
-            </div>
-            {send.isError && <div className="mt-3"><ErrorState error={send.error} /></div>}
-            <div className="mt-4 flex gap-2">
-              <Button className="flex-1" onClick={onClose}>Cancel</Button>
-              <Button className="flex-1" variant="primary" loading={send.isPending}
-                      onClick={() => send.mutate()}>Send</Button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
+  return <SharedAbsenceDialog studentId={child.id} firstName={child.first_name} onClose={onClose} />;
 }

@@ -5,6 +5,8 @@ import * as React from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
+import { AbsenceDialog, MakeUpOffers } from '@/components/app/absence-report';
+import { Button } from '@/components/ui';
 import { useRows } from '@/lib/query';
 import { PracticeLog } from '@/components/app/practice';
 import { Goals, Milestones } from '@/components/app/progress';
@@ -34,6 +36,10 @@ export default function LearnHome() {
   const me = useRows<{ id: string }>(['student-self'], `select app.student_self_id() as id`);
   const myId = me.data?.[0]?.id;
   const milestones = useRows<P.Milestone>(['milestones', myId], P.MILESTONES, [myId], { enabled: !!myId });
+  // Students of 13 and over can say they can't make a class (UR-49).
+  const canReport = useRows<{ who: string | null }>(['may-report', myId], `select app.may_report_absence($1) as who`, [myId], { enabled: !!myId }).data?.[0]?.who === 'student';
+  const myName = useRows<{ first_name: string }>(['student-name', myId], `select coalesce(preferred_name, first_name) as first_name from student where id = $1`, [myId], { enabled: !!myId }).data?.[0]?.first_name ?? '';
+  const [reporting, setReporting] = React.useState(false);
 
   const upcoming = (timetable.data ?? []).filter(s => s.status !== 'cancelled');
   const next = upcoming[0];
@@ -76,9 +82,14 @@ export default function LearnHome() {
                   ))}
                 </ul>
               )}
-              <Link href="/learn/timetable" className="mt-1 inline-flex min-h-[44px] items-center text-[13px] font-semibold text-accent-text hover:underline">Full timetable</Link>
+              <div className="mt-1 flex flex-wrap items-center gap-x-4">
+                <Link href="/learn/timetable" className="inline-flex min-h-[44px] items-center text-[13px] font-semibold text-accent-text hover:underline">Full timetable</Link>
+                {canReport && myId && <Button size="sm" variant="ghost" onClick={() => setReporting(true)}>I can’t make it</Button>}
+              </div>
             </section>
           )}
+          {reporting && myId && <AbsenceDialog studentId={myId} firstName={myName} self onClose={() => setReporting(false)} />}
+          <MakeUpOffers />
           {!next && !timetable.isLoading && (
             <EmptyState title="Nothing coming up" body="Your classes show here once the next term is published." />
           )}

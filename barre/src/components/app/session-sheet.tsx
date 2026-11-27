@@ -37,6 +37,16 @@ export function SessionSheet({ session: s, onClose, initial = 'menu' }: { sessio
   const [start, setStart] = React.useState(time(s.starts_at));
   const [room, setRoom] = React.useState(s.room_id ?? '');
   const [teacher, setTeacher] = React.useState('');
+  const [handover, setHandover] = React.useState('');
+  const [override, setOverride] = React.useState(false);
+  // Warn before a teacher is double-booked, travel between sites included (UR-27).
+  const clashes = useRows<{ session_id: string; class_name: string; starts_at: string; ends_at: string; location: string | null; needs_travel: boolean }>(
+    ['cover-clashes', s.id, teacher], Q.COVER_CLASHES, [s.id, teacher], { enabled: mode === 'cover' && !!teacher });
+  const clash = clashes.data ?? [];
+  React.useEffect(() => { setOverride(false); }, [teacher]);
+  const savedHandover = useRows<{ handover_note: string | null }>(['session-handover', s.id], Q.SESSION_HANDOVER, [s.id], { enabled: mode === 'cover' }).data?.[0]?.handover_note;
+  React.useEffect(() => { if (savedHandover) setHandover(h => h || savedHandover); }, [savedHandover]);
+  const trials = s.trials ?? 0;
 
   React.useEffect(() => {
     if (mode === 'cancel') setMessage(`Sorry — ${when} is cancelled${reason ? ` (${reason.trim()})` : ''}. We will see you next week.`);
@@ -57,13 +67,13 @@ export function SessionSheet({ session: s, onClose, initial = 'menu' }: { sessio
         const local = new Date(`${date}T${start}:00`);
         return q(Q.MOVE_SESSION, [s.id, local.toISOString(), room || null, message, notify]);
       }
-      return q(Q.COVER_SESSION, [s.id, teacher || null, message, notify]);
+      return q(Q.COVER_SESSION, [s.id, teacher || null, message, notify, handover.trim() || null, override]);
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['db'] });
-      setDone(mode === 'cancel' ? `Cancelled.${notify ? ` ${families} famil${families === 1 ? 'y has' : 'ies have'} been told, and the teacher.` : ''}`
+      setDone(mode === 'cancel' ? `Cancelled.${notify ? ` ${families} famil${families === 1 ? 'y has' : 'ies have'} been told, and the teacher.` : ''}${trials ? ` ${trials} trial${trials === 1 ? ' needs' : 's need'} a new date — see Enrolment.` : ''}`
         : mode === 'move' ? `Moved.${notify ? ` ${families} famil${families === 1 ? 'y has' : 'ies have'} been told.` : ''}`
-        : 'Cover arranged. The teacher has the register and safety notes on their Today screen.');
+        : 'Cover arranged. The teacher has the register, safety notes and handover on their Today screen on the day.');
     },
   });
 
@@ -122,7 +132,8 @@ export function SessionSheet({ session: s, onClose, initial = 'menu' }: { sessio
 
   return (
     <RecordSheet title={title} subtitle={when} onClose={onClose} onSave={() => run.mutate()} saving={run.isPending}
-      error={run.error} canSave={valid && message.trim().length > 3 || (mode === 'cover' && !teacher && s.covered)}
+      error={run.error} canSave={(valid && message.trim().length > 3 || (mode === 'cover' && !teacher && s.covered))
+        && !(mode === 'cover' && teacher && (clashes.isLoading || (clash.length > 0 && !override)))}
       saveLabel={mode === 'cancel' ? (notify ? `Cancel and tell ${families} famil${families === 1 ? 'y' : 'ies'}` : 'Cancel session')
         : mode === 'move' ? (notify ? `Move and tell ${families} famil${families === 1 ? 'y' : 'ies'}` : 'Move session')
         : teacher || !s.covered ? 'Arrange cover' : 'Back to the usual teacher'}>
@@ -152,6 +163,22 @@ export function SessionSheet({ session: s, onClose, initial = 'menu' }: { sessio
             <option value="">{s.covered ? `Back to ${s.usual_teacher ?? 'the usual teacher'}` : 'Choose a teacher…'}</option>
             {staff.data?.map(t => <option key={t.id} value={t.id}>{t.display_name}</option>)}
           </Select>
+        </Field>
+      )}
+      {mode === 'cover' && teacher && clash.length > 0 && (
+        <div className="space-y-2">
+          <Notice word="Clash" tone="critical" title={`${staff.data?.find(x => x.id === teacher)?.display_name ?? 'This teacher'} is teaching then`}
+            detail={clash.map(c => `${c.class_name} ${time(c.starts_at)}–${time(c.ends_at)}${c.location ? ` at ${c.location}` : ''}${c.needs_travel ? ' (another site: no time to travel)' : ''}`).join(' · ')} />
+          <label className="flex min-h-[44px] items-start gap-3 text-[14px]">
+            <input type="checkbox" checked={override} onChange={e => setOverride(e.target.checked)} className="mt-0.5 size-[18px] accent-[var(--color-accent)]" />
+            <span>Assign anyway<span className="block text-[12.5px] text-ink-3">Only if this is planned, for example a shared class.</span></span>
+          </label>
+        </div>
+      )}
+      {mode === 'cover' && teacher && (
+        <Field label="Handover for the cover teacher" htmlFor="ss-handover" hint="The plan, music, children to watch. Shown on their register.">
+          <textarea id="ss-handover" rows={3} value={handover} onChange={e => setHandover(e.target.value)}
+            className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
         </Field>
       )}
       <label className="flex min-h-[44px] items-start gap-3 text-[14px]">

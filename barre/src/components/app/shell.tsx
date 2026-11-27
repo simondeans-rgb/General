@@ -205,7 +205,8 @@ export function Shell({
             {/* On a phone the page's own buttons take a row of their own, under the title. */}
             {actions && <div className={cn('flex justify-end', actionsInline ? '' : 'order-last w-full lg:order-none lg:w-auto')}>{actions}</div>}
             {(session.role === 'owner' || session.role === 'admin') && <AssistantLauncher />}
-            {session.role !== 'student' && <NotificationBell />}
+            {/* Students get a bell too, for cancellations and cover (UR-49). */}
+            <NotificationBell />
             <PersonSwitcher className="lg:hidden" />
           </div>
           <SchoolSwitcher className="border-t border-line lg:hidden" />
