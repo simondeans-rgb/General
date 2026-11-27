@@ -22,6 +22,7 @@ import { PersonSwitcher } from './person-switcher';
 import { SchoolSwitcher } from './school-switcher';
 import { useBrandedManifest } from './pwa';
 import { NotificationBell } from './notifications';
+import { ScopeNotice } from './role-scope';
 import dynamic from 'next/dynamic';
 // Office-only, so families and teachers never download it (R-062).
 const AssistantLauncher = dynamic(() => import('./assistant').then(m => m.AssistantLauncher), { ssr: false });
@@ -249,6 +250,7 @@ export function Shell({
           </div>
         )}
         <main id="main" className="flex-1 px-4 pb-24 pt-5 lg:px-8 lg:pb-12 lg:pt-7">
+          <ScopeNotice />
           {children}
           {/* On a phone the sidebar's name and credit are not visible. */}
           {branded && (

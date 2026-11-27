@@ -8,6 +8,7 @@ import { RetentionCard } from '@/components/app/safeguarding';
 import { HistoryCard } from '@/components/app/history-card';
 import { RecordSheet } from '@/components/app/record-sheet';
 import { InviteLink } from '@/components/app/invite-link';
+import { useRoleScopes, ScopeButton, effectiveAccess } from '@/components/app/role-scope';
 import { BrandSettings, ImagerySettings } from '@/components/app/brand-settings';
 import { useRows } from '@/lib/query';
 import { runAs, readAs } from '@/lib/db/client';
@@ -110,6 +111,8 @@ function Team({ isOwner, studioId }: { isOwner: boolean; studioId?: string }) {
   const [removing, setRemoving] = React.useState<A.Member | null>(null);
   const [tab, setTab] = React.useState<'staff' | 'families'>('staff');
   const [link, setLink] = React.useState<string | null>(null);
+  // Several locations: who covers which, and what that lets them do (UR-33).
+  const scopes = useRoleScopes();
 
   const act = useMutation({
     mutationFn: (fn: (q: any) => Promise<unknown>) => runAs(session, fn),
@@ -157,7 +160,13 @@ function Team({ isOwner, studioId }: { isOwner: boolean; studioId?: string }) {
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-semibold">{m.full_name}{m.is_me && <span className="font-normal text-ink-3"> (you)</span>}</span>
                   <span className="block truncate text-[0.8125rem] text-ink-3">{m.email}{m.detail ? ` · ${m.detail}` : ''}</span>
+                  {scopes.multi && staffRoles.includes(m.role) && (
+                    <span className="mt-0.5 block text-[0.8125rem] text-ink-2">{effectiveAccess(m.role, scopes.names(scopes.scopeOf(m.id)))}</span>
+                  )}
                 </span>
+                {scopes.multi && isOwner && !session?.platform && (m.role === 'admin' || m.role === 'teacher') && (
+                  <ScopeButton membershipId={m.id} name={m.full_name} role={m.role} scope={scopes.scopeOf(m.id)} locations={scopes.locations} />
+                )}
                 {isOwner && staffRoles.includes(m.role) && !session?.platform ? (
                   <Select aria-label={`Role for ${m.full_name}`} className="h-9 w-[150px] text-[0.8125rem]" value={m.role}
                     onChange={e => act.mutate(q => q(A.SET_ROLE, [m.id, e.target.value]))}>
