@@ -8,6 +8,7 @@ import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import { Button, EmptyState, ErrorState, Field, Input, Notice, Select, Skeleton } from '@/components/ui';
 import * as B from '@/lib/repos/billing';
+import { useLocationFilter } from '@/components/app/location-filter';
 import { money, dateShort, isoDate } from '@/lib/format';
 
 const RULE_TEXT = {
@@ -44,9 +45,14 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
   const [due, setDue] = React.useState(() => isoDate(new Date(Date.now() + 14 * 86400_000)));
   const [done, setDone] = React.useState<string | null>(null);
 
+  // The preview can be narrowed to one location (UR-33); the run still covers every location.
+  const loc = useLocationFilter();
+  const classLoc = useRows<{ id: string; location: string }>(['class-locations'], B.CLASS_LOCATIONS, [], { enabled: !!loc.control });
   const families = React.useMemo(() => {
+    const where = new Map((classLoc.data ?? []).map(c => [c.id, c.location]));
     const m = new Map<string, { name: string; lines: B.BillingLine[]; gross: number; discount: number }>();
     for (const l of lines.data ?? []) {
+      if (loc.current && where.get(l.class_id) !== loc.current) continue;
       const f = m.get(l.family_id) ?? { name: l.family_name, lines: [], gross: 0, discount: 0 };
       f.lines.push(l);
       f.gross += Math.round(Number(l.quantity) * l.unit_minor);
@@ -54,7 +60,8 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
       m.set(l.family_id, f);
     }
     return [...m.values()];
-  }, [lines.data]);
+  }, [lines.data, loc.current, classLoc.data]);
+  const runCount = React.useMemo(() => new Set((lines.data ?? []).map(l => l.family_id)).size, [lines.data]);
   const total = families.reduce((n, f) => n + f.gross - f.discount, 0);
   const discounts = families.reduce((n, f) => n + f.discount, 0);
   const draft = runs.data?.find(r => r.status === 'draft');
@@ -131,6 +138,12 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
                 <Input id="run-due" type="date" value={due} onChange={e => setDue(e.target.value)} />
               </Field>
             </div>
+            {loc.control && (
+              <div className="mt-3 space-y-1">
+                {loc.control}
+                {loc.current && <p className="text-[0.8125rem] text-ink-3">Showing {loc.current} only. The run itself raises invoices for every location.</p>}
+              </div>
+            )}
             {lines.isLoading && <div className="pt-4"><Skeleton className="h-24" /></div>}
             {lines.error && <div className="pt-4"><ErrorState error={lines.error} /></div>}
             {lines.data?.length === 0 && (
@@ -173,11 +186,12 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
                 )}
               </div>
             )}
-            {families.length > 0 && (
+            {runCount > 0 && (
               <>
+                {families.length === 0 && <p className="mt-5 text-[0.875rem] text-ink-2">No family at {loc.current} is in this run.</p>}
                 <div className="mt-5 flex items-end justify-between gap-4 border-b border-line pb-3">
                   <div>
-                    <p className="label">To invoice</p>
+                    <p className="label">To invoice{loc.current ? ` at ${loc.current}` : ''}</p>
                     <p className="stat-number mt-1 text-[1.75rem] leading-none">{money(total)}</p>
                   </div>
                   <p className="text-right text-[0.8125rem] text-ink-3">
@@ -211,8 +225,8 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
                     disabled={!!draft || (include.length > 0 && reason.trim().length < 3)} loading={act.isPending}
                     onClick={() => act.mutate({ sql: B.CREATE_BILLING_RUN,
                       params: [term, due, month || null, include.length ? include : null, include.length ? reason.trim() : null],
-                      msg: `${families.length} draft invoices raised for ${periodName}. Nothing has been sent yet.` })}>
-                    Raise {families.length} draft invoices
+                      msg: `${runCount} draft invoices raised for ${periodName}. Nothing has been sent yet.` })}>
+                    Raise {runCount} draft invoices{loc.current ? ' (every location)' : ''}
                   </Button>
                   <p className="mt-2 text-center text-[0.8125rem] text-ink-3">
                     {draft ? 'Send or discard the drafts above first.'

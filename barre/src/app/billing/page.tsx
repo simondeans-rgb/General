@@ -15,6 +15,7 @@ import { downloadCsv } from '@/lib/csv';
 import { BillingRunPanel } from '@/components/app/billing-run';
 import { FamilyAccount } from '@/components/app/family-account';
 import { PaymentRemindersSheet } from '@/components/app/payment-reminders';
+import { useLocationFilter } from '@/components/app/location-filter';
 import { cardPaymentsEnabled, invoiceState } from '@/lib/payments/invoice-status';
 import { useSession } from '@/lib/auth/session';
 import { useSelection } from '@/lib/use-selection';
@@ -71,9 +72,13 @@ function Billing() {
   const [creating, setCreating] = React.useState(false);
   const [running, setRunning] = React.useState(false);
   const [reminding, setReminding] = React.useState(false);
+  // Schools with more than one location can narrow every list to one (UR-33).
+  const loc = useLocationFilter();
+  const atLoc = React.useMemo(() => (invoices.data ?? []).filter(i => !loc.current || (i.locations ?? []).includes(loc.current)),
+    [invoices.data, loc.current]);
 
   const counts = React.useMemo(() => {
-    const d = invoices.data ?? [];
+    const d = atLoc;
     return {
       attention: d.filter(i => i.failed || i.overdue || i.status === 'draft').length,
       open: d.filter(i => isOpen(i.status)).length,
@@ -81,7 +86,7 @@ function Billing() {
       paid: d.filter(i => i.status === 'paid').length,
       all: d.length,
     } satisfies Record<Filter, number>;
-  }, [invoices.data]);
+  }, [atLoc]);
 
   // Land somewhere useful: if nothing needs action, show what is open.
   const landed = React.useRef(false);
@@ -93,7 +98,7 @@ function Billing() {
 
   const shown = React.useMemo(() => {
     const q = query.trim().toLowerCase();
-    return (invoices.data ?? []).filter(i => {
+    return atLoc.filter(i => {
       if (filter === 'attention' && !(i.failed || i.overdue || i.status === 'draft')) return false;
       if (filter === 'open' && !isOpen(i.status)) return false;
       if (filter === 'draft' && i.status !== 'draft') return false;
@@ -101,7 +106,7 @@ function Billing() {
       if (q && !`${i.number} ${i.family_name} ${i.lines ?? ''}`.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [invoices.data, filter, query]);
+  }, [atLoc, filter, query]);
 
   const s = summary.data;
 
@@ -109,7 +114,7 @@ function Billing() {
     <Shell title="Billing" help={<>Invoices for every family. Use <b>Billing runs</b> to raise a whole term’s (or month’s) invoices at once: check the drafts, then send them together. Discounts — sibling, multi-class and per-family bursaries — are applied automatically. <b>Export</b> gives your accountant spreadsheets, aged debt and a Xero import file.</>} allow={['owner', 'admin']}
       subtitle={s ? `${money(s.outstanding_minor)} outstanding across ${s.owing_families} famil${s.owing_families === 1 ? 'y' : 'ies'}` : undefined}
       actions={<div className="flex gap-2">
-        <ExportButton />
+        <ExportButton location={loc.current || null} />
         <Button size="sm" aria-label="Billing runs" onClick={() => setRunning(true)}>
           <CalendarRange className="size-4" aria-hidden /> <span className="hidden sm:inline">Billing runs</span>
         </Button>
@@ -145,6 +150,7 @@ function Billing() {
           <section aria-labelledby="inv-h" className="min-w-0">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b-2 border-ink pb-2">
               <h2 id="inv-h" className="section-title flex-1">Invoices</h2>
+              {loc.control}
               {s && s.overdue_invoices > 0 && (
                 <Button size="sm" onClick={() => setReminding(true)}>
                   <Mail className="size-4" aria-hidden /> Remind overdue
@@ -256,13 +262,13 @@ function Billing() {
 }
 
 /** Invoices and payments as spreadsheets, for the accountant (R-012). */
-function ExportButton() {
+function ExportButton({ location }: { location: string | null }) {
   const { session } = useSession();
   const [open, setOpen] = React.useState(false);
   const go = async (what: 'invoices' | 'payments' | 'xero' | 'aged-debt') => {
     setOpen(false);
     const sql = { invoices: B.INVOICES_EXPORT, payments: B.PAYMENTS_EXPORT, xero: B.XERO_EXPORT, 'aged-debt': B.AGED_DEBT_EXPORT }[what];
-    const rows = await readAs<Record<string, string>>(session, sql);
+    const rows = await readAs<Record<string, string>>(session, sql, what === 'aged-debt' ? [location] : []);
     downloadCsv(`${what === 'xero' ? 'xero-sales-invoices' : what}-${isoDate(new Date())}.csv`, rows);
   };
   return (
@@ -274,7 +280,9 @@ function ExportButton() {
         <div role="menu" className="absolute right-0 z-30 mt-1 w-48 overflow-hidden rounded-[var(--radius-md)] border border-line bg-surface shadow-lg">
           <button role="menuitem" className="block w-full px-3 py-2.5 text-left text-sm hover:bg-surface-2" onClick={() => go('invoices')}>Invoices (CSV)</button>
           <button role="menuitem" className="block w-full px-3 py-2.5 text-left text-sm hover:bg-surface-2" onClick={() => go('payments')}>Payments (CSV)</button>
-          <button role="menuitem" className="block w-full px-3 py-2.5 text-left text-sm hover:bg-surface-2" onClick={() => go('aged-debt')}>Aged debt (CSV)</button>
+          <button role="menuitem" className="block w-full px-3 py-2.5 text-left text-sm hover:bg-surface-2" onClick={() => go('aged-debt')}>
+            Aged debt (CSV){location && <span className="block text-[0.75rem] text-ink-3">{location} only</span>}
+          </button>
           <button role="menuitem" className="block w-full border-t border-line px-3 py-2.5 text-left text-sm hover:bg-surface-2" onClick={() => go('xero')}>
             Xero sales invoices
             <span className="block text-[0.75rem] text-ink-3">Import in Xero: Sales › Import</span>
