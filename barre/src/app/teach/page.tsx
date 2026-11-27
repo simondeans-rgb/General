@@ -4,12 +4,13 @@ import * as React from 'react';
 import Link from 'next/link';
 import { ArrowRight, ChevronRight, UserRoundX } from 'lucide-react';
 import { CalendarSubscribe } from '@/components/app/calendar-subscribe';
+import { CrossSchoolAgenda, useStaffSchools } from '@/components/app/cross-school-agenda';
 import { downloadIcs } from '@/lib/ics';
 import { RehearsalList } from '@/components/app/rehearsals';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
 import { useSession } from '@/lib/auth/session';
-import { Button, Field, Input, Skeleton, ErrorState, SectionHead } from '@/components/ui';
+import { Button, Field, Input, Skeleton, ErrorState, SectionHead, ViewTabs } from '@/components/ui';
 import { RecordSheet } from '@/components/app/record-sheet';
 import { medicalLine } from '@/components/app/medical-brief';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -35,6 +36,15 @@ export default function TeachToday() {
   }, [from]);
   const [asking, setAsking] = React.useState<T.TeachSession | null>(null);
   const sessions = useRows<T.TeachSession>(['my-sessions', from], T.MY_SESSIONS, [from, to]);
+  // Teachers at two or more schools can see their week across all of them (UR-47).
+  const schools = useStaffSchools();
+  const multi = schools.length > 1;
+  const [view, setView] = React.useState<'today' | 'week'>('today');
+  React.useEffect(() => {
+    try { if (localStorage.getItem('barre.teach.view') === 'week') setView('week'); } catch {}
+  }, []);
+  const pick = (v: 'today' | 'week') => { setView(v); try { localStorage.setItem('barre.teach.view', v); } catch {} };
+  const week = multi && view === 'week';
 
   const now = new Date();
   const all = sessions.data ?? [];
@@ -47,8 +57,14 @@ export default function TeachToday() {
 
   return (
     <Shell title="Today" subtitle={dateLong(now)} allow={['owner','admin','teacher']}
-           actionsInline actions={<CalendarSubscribe onDownload={() => downloadTeaching(session)} />}>
-      <div className="mx-auto grid max-w-[1040px] gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+           actionsInline actions={<CalendarSubscribe onDownload={() => downloadTeaching(session)} allSchools={multi} />}>
+      {multi && (
+        <div className="mx-auto mb-6 max-w-[1040px]">
+          <ViewTabs label="Show" value={week ? 'week' : 'today'} onChange={pick}
+            options={[['today', 'This school'], ['week', 'My week across schools']]} />
+        </div>
+      )}
+      {week ? <CrossSchoolAgenda /> : <div className="mx-auto grid max-w-[1040px] gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
         {sessions.isLoading && <div className="space-y-4"><Skeleton className="h-24 w-48" /><Skeleton className="h-28" /></div>}
         {sessions.error != null && <ErrorState error={sessions.error} onRetry={() => sessions.refetch()} />}
 
@@ -81,7 +97,7 @@ export default function TeachToday() {
             </div>
           </>
         )}
-      </div>
+      </div>}
       {asking && <CoverRequestSheet s={asking} onClose={() => setAsking(null)} />}
     </Shell>
   );
@@ -268,6 +284,6 @@ async function downloadTeaching(session: ReturnType<typeof useSession>['session'
   const rows = await readAs<T.TeachSession>(session, T.MY_SESSIONS, [from.toISOString(), to.toISOString()]);
   downloadIcs('my-teaching.ics', 'Teaching', rows.filter(s => !s.covered_by).map(s => ({
     id: s.id, title: s.covering ? `${s.name} (cover)` : s.name, starts_at: s.starts_at, ends_at: s.ends_at,
-    location: s.room ?? null, cancelled: s.status === 'cancelled',
+    location: [s.room, s.location].filter(Boolean).join(', ') || null, cancelled: s.status === 'cancelled',
   })));
 }

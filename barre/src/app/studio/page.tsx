@@ -9,6 +9,7 @@ import { FrameworkSettings, ChipSettings } from '@/components/app/progress-setti
 import { PackSettings } from '@/components/app/pack-settings';
 import { BankDetailsSettings } from '@/components/app/bank-details';
 import { RegisterSettings } from '@/components/app/register-settings';
+import { TimetableSharing } from '@/components/app/timetable-sharing';
 import { RecordSheet } from '@/components/app/record-sheet';
 import { useRows, useRow } from '@/lib/query';
 import { resetDemo, runAs } from '@/lib/db/client';
@@ -72,6 +73,7 @@ export default function StudioSettings() {
             <FrameworkSettings />
             <ChipSettings />
             <RegisterSettings />
+            <TimetableSharing />
           </>}
           {tab === 'money' && <><BankDetailsSettings /><PackSettings /></>}
         </div>

@@ -9,7 +9,7 @@ import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import { Button, ErrorState } from '@/components/ui';
 
-const MY_TOKEN = `select token from calendar_token where studio_id = (select id from studio where app.in_scope(id) and id in (select app.studio_ids()) order by name limit 1)`;
+const MY_TOKEN = `select token, all_schools from calendar_token where studio_id = (select id from studio where app.in_scope(id) and id in (select app.studio_ids()) order by name limit 1)`;
 const STUDIO = `select id from studio where app.in_scope(id) and id in (select app.studio_ids()) order by name limit 1`;
 
 /** Where the hosted feed answers (scripts/calendar-feed.mts). */
@@ -22,22 +22,33 @@ const feedUrl = (token: string) => {
  * Add classes to a calendar (R-036): a private link that calendar apps keep
  * up to date, or a one-off file. Making a new link retires the old one.
  */
-export function CalendarSubscribe({ onDownload, label = 'Add to calendar' }: { onDownload: () => void; label?: string }) {
+export function CalendarSubscribe({ onDownload, label = 'Add to calendar', allSchools = false }: {
+  onDownload: () => void; label?: string;
+  /** Staff at several schools may include their other schools in the link (UR-47). */
+  allSchools?: boolean;
+}) {
   const [open, setOpen] = React.useState(false);
   return (
     <>
       <Button size="sm" onClick={() => setOpen(true)} aria-label={label}>
         <CalendarPlus className="size-4" aria-hidden /> <span className="hidden sm:inline">{label}</span>
       </Button>
-      {open && createPortal(<Sheet onClose={() => setOpen(false)} onDownload={onDownload} />, document.body)}
+      {open && createPortal(<Sheet onClose={() => setOpen(false)} onDownload={onDownload} allSchools={allSchools} />, document.body)}
     </>
   );
 }
 
-function Sheet({ onClose, onDownload }: { onClose: () => void; onDownload: () => void }) {
+function Sheet({ onClose, onDownload, allSchools }: { onClose: () => void; onDownload: () => void; allSchools: boolean }) {
   const { session } = useSession();
   const qc = useQueryClient();
-  const tok = useRows<{ token: string }>(['cal-token'], MY_TOKEN).data?.[0]?.token;
+  const row = useRows<{ token: string; all_schools: boolean }>(['cal-token'], MY_TOKEN).data?.[0];
+  const tok = row?.token;
+  const [everyOn, setEveryOn] = React.useState<boolean | null>(null);
+  const every = useMutation({
+    mutationFn: (on: boolean) =>
+      runAs(session, async q => { const [s] = await q<{ id: string }>(STUDIO); await q(`select app.set_calendar_all_schools($1, $2)`, [s!.id, on]); }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['db'] }),
+  });
   const [copied, setCopied] = React.useState(false);
   const act = useMutation({
     mutationFn: (fn: 'app.issue_calendar_token' | 'app.revoke_calendar_token') =>
@@ -65,6 +76,15 @@ function Sheet({ onClose, onDownload }: { onClose: () => void; onDownload: () =>
                   <Copy className="size-4" aria-hidden />
                 </Button>
               </div>
+              {allSchools && (
+                <label className="flex min-h-[44px] items-start gap-3 text-[0.875rem]">
+                  <input type="checkbox" checked={everyOn ?? !!row?.all_schools} disabled={every.isPending}
+                    onChange={e => { setEveryOn(e.target.checked); every.mutate(e.target.checked); }} className="mt-0.5 size-[18px] accent-[var(--color-accent)]" />
+                  <span>Include my other schools
+                    <span className="block text-[0.7812rem] text-ink-3">Each school decides whether its classes appear in full or as busy times.</span></span>
+                </label>
+              )}
+              {every.error != null && <ErrorState error={every.error} />}
               {copied && <p role="status" className="text-[0.7812rem] text-positive">Copied. Paste it into your calendar app’s “subscribe” option.</p>}
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" variant="primary" onClick={() => { window.location.href = url; }}>Subscribe</Button>
