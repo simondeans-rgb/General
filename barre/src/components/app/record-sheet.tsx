@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { X, Trash2 } from 'lucide-react';
 import { Button, ErrorState } from '@/components/ui';
+import { SaveErrorSummary, useFirstErrorInView } from '@/components/app/form-error';
 
 /**
  * The shell every small editor in the app shares: a sheet on a phone, a dialog
@@ -14,7 +15,7 @@ import { Button, ErrorState } from '@/components/ui';
  */
 export function RecordSheet({
   title, subtitle, onClose, onSave, saving, error, canSave = true,
-  saveLabel = 'Save', onRemove, removing, removeLabel = 'Remove', removeHint, children,
+  saveLabel = 'Save', onRemove, removing, removeLabel = 'Remove', removeHint, saveHint, children,
 }: {
   title: string;
   subtitle?: React.ReactNode;
@@ -29,6 +30,8 @@ export function RecordSheet({
   removeLabel?: string;
   /** Why removal is unavailable. Shown instead of the button. */
   removeHint?: string | null;
+  /** Why Save is unavailable, shown beside it while canSave is false. */
+  saveHint?: string | null;
   children: React.ReactNode;
 }) {
   const titleId = React.useId();
@@ -50,6 +53,10 @@ export function RecordSheet({
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
+  // A failed save scrolls its error into view and says so beside the button (UR-40).
+  const body = React.useRef<HTMLDivElement>(null);
+  useFirstErrorInView(body, error);
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 sm:items-center sm:p-6"
          onClick={onClose}>
@@ -68,7 +75,7 @@ export function RecordSheet({
           </Button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
+        <div ref={body} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
           <div className="space-y-4">{children}</div>
           {error != null && <div className="mt-4"><ErrorState error={error} /></div>}
           {onRemove && (
@@ -83,7 +90,8 @@ export function RecordSheet({
         </div>
 
         {/* One footer everywhere: cancel, then the one primary action on the right. */}
-        <div className="flex gap-2 border-t border-line bg-surface px-5 py-3 pb-safe sm:justify-end">
+        <div className="flex flex-wrap gap-2 border-t border-line bg-surface px-5 py-3 pb-safe sm:flex-nowrap sm:justify-end">
+          <SaveErrorSummary error={error ?? undefined} reason={!canSave ? saveHint : null} />
           {/* A sheet that only reports something has nothing to cancel. */}
           {onSave !== onClose && <Button className="flex-1 sm:flex-none" variant="ghost" onClick={onClose}>Cancel</Button>}
           <Button className="flex-[2] sm:flex-none" variant="primary" disabled={!canSave}

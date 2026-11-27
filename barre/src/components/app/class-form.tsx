@@ -9,6 +9,7 @@ import { useSession } from '@/lib/auth/session';
 import { Button, ErrorState, Field, Input, Notice, Select, Skeleton } from '@/components/ui';
 import * as C from '@/lib/repos/classes';
 import { cn } from '@/lib/cn';
+import { SaveErrorSummary, useFirstErrorInView } from '@/components/app/form-error';
 
 const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
@@ -126,6 +127,23 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
     && (draft.age_min == null || draft.age_max == null || draft.age_max >= draft.age_min)
     && (!draft.assistant_id || draft.assistant_id !== draft.teacher_id);
 
+  // Why "Create class" is not available yet, said beside the button rather
+  // than left as a greyed-out mystery (UR-40).
+  const missing = !ready ? null
+    : draft.name.trim().length < 2 ? 'Add a name of at least two letters.'
+    : !draft.term_id ? 'Choose a term. Add one in Studio settings first if there is none.'
+    : !draft.dance_style_id ? 'Choose a style.'
+    : !draft.location_id ? 'Choose where it happens.'
+    : !/^\d{2}:\d{2}$/.test(draft.start_time) ? 'Add a start time.'
+    : !(draft.duration_min > 0) ? 'Add how many minutes it lasts.'
+    : !(draft.capacity > 0) ? 'Add how many places there are.'
+    : draft.age_min != null && draft.age_max != null && draft.age_max < draft.age_min ? 'The oldest age cannot be below the youngest.'
+    : draft.assistant_id && draft.assistant_id === draft.teacher_id ? 'The assistant must be someone other than the teacher.'
+    : null;
+
+  const body = React.useRef<HTMLDivElement>(null);
+  useFirstErrorInView(body, save.error);
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 sm:items-center sm:p-6" onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-labelledby="class-form-t" onClick={e => e.stopPropagation()}
@@ -157,7 +175,7 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
               </Button>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
+            <div ref={body} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
             {!ready && !loadError && (
               <div className="space-y-3" aria-busy="true">
                 <p className="text-[13px] text-ink-3">Loading the studio’s styles, rooms and terms…</p>
@@ -339,7 +357,8 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
               {save.isError && <div className="mt-4"><ErrorState error={save.error} /></div>}
             </div>
 
-            <div className="flex gap-2 border-t border-line px-5 py-3 pb-safe sm:justify-end">
+            <div className="flex flex-wrap gap-2 border-t border-line px-5 py-3 pb-safe sm:flex-nowrap sm:justify-end">
+              <SaveErrorSummary error={save.error ?? undefined} reason={missing} />
               <Button className="flex-1 sm:flex-none" variant="ghost" onClick={onClose}>Cancel</Button>
               <Button className="flex-[2] sm:flex-none" variant="primary" disabled={!ready || !valid}
                       loading={save.isPending} onClick={() => save.mutate()}>

@@ -159,6 +159,8 @@ export function StudentSheet({ familyId, familyName, row, onClose }: {
       subtitle={familyName ? `In ${familyName}` : undefined}
       error={save.error} saving={save.isPending}
       canSave={first.trim().length >= 1 && last.trim().length >= 1 && dobSane && !!family}
+      saveHint={!first.trim() || !last.trim() ? 'Add a first and last name.'
+        : !dobSane ? 'Add a date of birth that looks right.' : !family ? 'Choose a family.' : null}
       onSave={() => save.mutate(row
         ? [row.id, first.trim(), last.trim(), preferred, dob, pronouns, school, notes, left || null]
         : [family, first.trim(), last.trim(), preferred, dob, pronouns, school, null, notes])}>

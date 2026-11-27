@@ -176,7 +176,8 @@ export function Skeleton({ className }: { className?: string }) {
   return <div className={cn('skeleton h-4 w-full', className)} aria-hidden />;
 }
 
-export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
+/** The sentence a person should read for an error thrown by the database. */
+export function errorText(error: unknown): string {
   // Database rules raise "CODE: sentence". The sentence is written for people;
   // the code is for tests and logs.
   let message = (error instanceof Error ? error.message : String(error))
@@ -185,6 +186,11 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
   if (/row-level security|read-only transaction|permission denied/i.test(message)) {
     message = 'You don’t have permission to change this. If the account is read-only, nothing here can be changed.';
   }
+  return message;
+}
+
+export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
+  const message = errorText(error);
   return (
     <div role="alert" className="rounded-[var(--radius-lg)] border border-critical/25 bg-critical-soft p-4">
       <p className="font-medium text-critical">Something went wrong</p>
