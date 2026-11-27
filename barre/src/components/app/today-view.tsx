@@ -65,7 +65,7 @@ function NextClass({ s, loading }: { s: Q.SessionRow | null; loading: boolean })
     <section aria-labelledby="next-h" className="flex flex-col gap-x-8 gap-y-3 sm:flex-row sm:items-end">
       <div>
         <p className="label text-accent-text">Next · {when}</p>
-        <p id="next-h" className="display-xl mt-1 text-[4.5rem] text-ink sm:text-[5.5rem]">{time(s.starts_at)}</p>
+        <p id="next-h" className="display-xl mt-1 text-[length:min(4.5rem,22vw)] text-ink sm:text-[length:min(5.5rem,22vw)]">{time(s.starts_at)}</p>
       </div>
       <div className="min-w-0 flex-1 sm:pb-1.5">
         <p className="font-display text-[1.5rem] leading-tight">{s.name}</p>

@@ -200,7 +200,7 @@ function OwnerToday() {
         <div className="flex flex-col gap-x-8 gap-y-3 sm:flex-row sm:items-end">
           <div>
             <p className="label text-accent-text">Next · in 40 min</p>
-            <p className="display-xl mt-1 text-[4.5rem] text-ink sm:text-[5.5rem]">18:30</p>
+            <p className="display-xl mt-1 text-[length:min(4.5rem,22vw)] text-ink sm:text-[length:min(5.5rem,22vw)]">18:30</p>
           </div>
           <div className="min-w-0 flex-1 sm:pb-1.5">
             <p className="font-display text-[1.5rem] leading-tight">Senior Tap</p>
@@ -415,7 +415,7 @@ function HowItStarts() {
         <ol className="mt-8 grid gap-x-12 border-t-2 border-ink md:grid-cols-3">
           {STEPS.map(([k, v], i) => (
             <li key={k} className="border-b border-line py-5 md:border-b-0">
-              <p aria-hidden className="display-xl text-[3rem] text-ink">{i + 1}</p>
+              <p aria-hidden className="display-xl text-[length:min(3rem,22vw)] text-ink">{i + 1}</p>
               <h3 className="mt-3 text-[1.0625rem] font-semibold">{k}</h3>
               <p className="mt-1 text-[0.9375rem] leading-relaxed text-ink-2">{v}</p>
             </li>

@@ -57,7 +57,7 @@ export default function LearnHome() {
           {next && (
             <section aria-labelledby="next-h">
               <p className="label text-accent-text">Next · {relativeDay(next.starts_at)}</p>
-              <p id="next-h" className="display-xl mt-1 text-[4.5rem] text-ink sm:text-[5.5rem]">{time(next.starts_at)}</p>
+              <p id="next-h" className="display-xl mt-1 text-[length:min(4.5rem,22vw)] text-ink sm:text-[length:min(5.5rem,22vw)]">{time(next.starts_at)}</p>
               <p className="mt-1 font-display text-[1.5rem] leading-tight">{next.name}</p>
               <p className="mt-1 text-[0.875rem] text-ink-3">{[next.teacher, next.room, next.location].filter(Boolean).join(' · ')}</p>
               {next.class_id && (

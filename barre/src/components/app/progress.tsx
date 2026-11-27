@@ -346,7 +346,7 @@ export function Milestones({ studentId, celebrate }: { studentId: string; celebr
   return (
     <div>
       <p className="flex items-baseline gap-3">
-        <span className="display-xl text-[3.5rem] leading-none">{n}</span>
+        <span className="display-xl text-[length:min(3.5rem,22vw)] leading-none">{n}</span>
         <span className="text-[0.9375rem] font-semibold leading-snug">milestone{n === 1 ? '' : 's'} reached.
           <span className="block font-normal text-ink-3">{n >= 8 ? 'That’s a full count. Keep moving.' : `${8 - n} more to a full count.`}</span></span>
       </p>

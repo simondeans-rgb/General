@@ -113,7 +113,7 @@ function NextClass({ s, onAskCover }: { s: T.TeachSession | null; onAskCover: ()
   return (
     <section aria-labelledby="next-h">
       <p className="label text-accent-text">Next · {whenLabel}</p>
-      <p className="display-xl mt-1 text-[5rem] text-ink sm:text-[6rem]">{time(s.starts_at)}</p>
+      <p className="display-xl mt-1 text-[length:min(5rem,22vw)] text-ink sm:text-[length:min(6rem,22vw)]">{time(s.starts_at)}</p>
       <h2 id="next-h" className="mt-3 font-display text-[1.625rem] leading-tight">{s.name}</h2>
       <p className="mt-1 text-[0.9375rem] text-ink-3">
         {[s.location, s.room,

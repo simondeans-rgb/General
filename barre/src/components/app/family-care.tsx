@@ -45,9 +45,9 @@ export function ChildLogin({ studentId, name }: { studentId: string; name: strin
   const line: Record<F.ChildLogin['state'], React.ReactNode> = {
     too_young: null,
     none: <span className="text-ink-3">No login. {name} uses the app through you.</span>,
-    invited: <span>Invited{l.email ? ` at ${l.email}` : ''}. Once {name} accepts, you approve it here.</span>,
+    invited: <span className="[overflow-wrap:anywhere]">Invited{l.email ? ` at ${l.email}` : ''}. Once {name} accepts, you approve it here.</span>,
     pending: <span><Word tone="caution">Waiting for you</Word> <span className="ml-1">{name} has accepted the school’s invitation. The login stays off until a parent or carer approves it.</span></span>,
-    on: <span><Word tone="positive">On</Word> <span className="ml-1">{name} signs in{l.email ? ` as ${l.email}` : ''}. Either parent can switch it off at any time.</span></span>,
+    on: <span><Word tone="positive">On</Word> <span className="ml-1 [overflow-wrap:anywhere]">{name} signs in{l.email ? ` as ${l.email}` : ''}. Either parent can switch it off at any time.</span></span>,
     off: <span><Word tone="muted">Off</Word> <span className="ml-1">A parent or carer switched it off. {name} cannot sign in.</span></span>,
   };
 

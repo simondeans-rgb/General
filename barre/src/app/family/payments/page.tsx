@@ -48,7 +48,7 @@ export default function ParentPayments() {
                 <p id="due-h" className={cn('label', owes && 'text-caution')}>
                   {owes ? (due ? `Due ${dueWord(due)}` : 'To pay') : credit ? 'In credit' : 'Balance'}
                 </p>
-                <p className="display-xl mt-1 text-[3.5rem] leading-none sm:text-[4.5rem]">
+                <p className="display-xl mt-1 text-[length:min(3.5rem,13vw)] leading-none sm:text-[length:min(4.5rem,13vw)]">
                   {owes ? money(balance.data.balance_minor) : credit ? money(-Number(balance.data.balance_minor)) : '£0.00'}
                 </p>
                 <p className="mt-2 text-[0.9375rem] text-ink-2">
@@ -238,15 +238,15 @@ function ComingUp() {
           </ul>
         </div>
       ))}
-      {!!rows.data?.length && (
+      {!!rows.data?.length && (<>
         <dl className="pt-2.5 text-[0.9062rem]">
           <div className="flex gap-4 font-semibold"><dt className="flex-1">Total coming up</dt><dd className="tnum">{money(total)}</dd></div>
           {toPay !== total && (
             <div className="flex gap-4 text-ink-2"><dt className="flex-1">Not yet paid</dt><dd className="tnum">{money(toPay)}</dd></div>
           )}
-          <p className="mt-1 text-[0.7812rem] text-ink-3">Estimates use this term’s prices. The studio confirms the amount on each invoice.</p>
         </dl>
-      )}
+        <p className="mt-1 text-[0.7812rem] text-ink-3">Estimates use this term’s prices. The studio confirms the amount on each invoice.</p>
+      </>)}
     </section>
   );
 }

@@ -89,7 +89,7 @@ export default function Onboarding() {
           <div>
             <p className="label">Progress</p>
             <p id="ob-progress" className="mt-1 flex items-baseline gap-2">
-              <span className="display-xl text-[4rem]">{rows.data ? done : '–'}</span>
+              <span className="display-xl text-[length:min(4rem,22vw)]">{rows.data ? done : '–'}</span>
               <span className="text-[0.9375rem] text-ink-2">of {STEPS.length} steps done</span>
             </p>
             <Beats value={done} max={STEPS.length} size="lg" label={`${done} of ${STEPS.length} steps done`} className="mt-3" />

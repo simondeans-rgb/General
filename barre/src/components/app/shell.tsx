@@ -207,9 +207,10 @@ export function Shell({
             {branded
               ? <SchoolMark name={studio!.name} logo={logoFor(studio!)} className="size-8 lg:hidden" />
               : <SwayvoIcon className="size-8 lg:hidden" />}
-            <div className="min-w-0 flex-1">
-              <h1 className="page-title truncate tracking-tight">{title}</h1>
-              {subtitle && <div className="mt-0.5 truncate text-[0.8125rem] text-ink-3">{subtitle}</div>}
+            {/* At least 9rem for the title: with large text the buttons wrap to a second row instead. */}
+            <div className="min-w-[min(100%,9rem)] flex-1">
+              <h1 className="page-title line-clamp-2 break-words tracking-tight">{title}</h1>
+              {subtitle && <div className="mt-0.5 line-clamp-2 text-[0.8125rem] text-ink-3">{subtitle}</div>}
             </div>
             {help && (
               <button onClick={() => setHelpOpen(o => !o)} aria-expanded={helpOpen} aria-controls="page-help"
@@ -327,11 +328,11 @@ function MobileTabs({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
         {shown.map(item => <TabLink key={item.href} item={item} pathname={pathname} />)}
         {rest.length > 0 && (
           <button onClick={() => setOpen(true)} aria-haspopup="dialog" aria-label="More sections"
-            className={cn('relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 pt-2 text-[0.6875rem] font-medium',
+            className={cn('relative flex min-h-[56px] min-w-0 flex-1 flex-col items-center justify-center gap-1 px-0.5 pt-2 text-[0.6875rem] font-medium',
               rest.some(i => groupActive(pathname, i)) ? 'text-ink' : 'text-ink-3')}>
             {rest.some(i => groupActive(pathname, i)) && <span aria-hidden className="absolute left-1/2 top-0 h-[3px] w-6 -translate-x-1/2 rounded-b-[2px] bg-accent" />}
             <MoreHorizontal className="size-[20px]" aria-hidden />
-            <span>More</span>
+            <span className="max-w-full truncate">More</span>
           </button>
         )}
       </nav>
@@ -382,11 +383,11 @@ function TabLink({ item, pathname }: { item: NavItem; pathname: string }) {
   const Icon = item.icon;
   return (
     <Link href={item.href} aria-current={active ? 'page' : undefined}
-      className={cn('relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 pt-2 text-[0.6875rem]',
+      className={cn('relative flex min-h-[56px] min-w-0 flex-1 flex-col items-center justify-center gap-1 px-0.5 pt-2 text-[0.6875rem]',
         active ? 'text-ink' : 'text-ink-3')}>
       {active && <span aria-hidden className="absolute left-1/2 top-0 h-[3px] w-6 -translate-x-1/2 rounded-b-[2px] bg-accent" />}
       <Icon className="size-[20px]" aria-hidden strokeWidth={active ? 2.3 : 1.8} />
-      <span className={active ? 'font-semibold' : 'font-medium'}>{item.label}</span>
+      <span className={cn('max-w-full truncate', active ? 'font-semibold' : 'font-medium')}>{item.label}</span>
     </Link>
   );
 }
