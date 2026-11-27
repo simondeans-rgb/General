@@ -29,3 +29,15 @@ export const BRIEF_CONSENTS = `select app.consent_now($1, 'video') as video_cons
 export function consentWord(v: boolean | null | undefined): string {
   return v === true ? 'Given' : v === false ? 'Not given' : 'Not recorded';
 }
+
+/** The school's own words for each kind (UR-08, migration 0053): $1 studio
+ *  or null, $2 student or null. Falls back to the standard wording above. */
+export type ConsentLabel = { kind: ConsentKind; label: string; description: string; renamed: boolean };
+export const CONSENT_LABELS = `select * from app.consent_labels($1::uuid, $2::uuid)`;
+/** $1 studio, $2 kind, $3 label (empty = standard wording), $4 explanation. */
+export const SET_CONSENT_LABEL = `select app.set_consent_label($1, $2, $3, $4)`;
+
+/** A student of 13+ (signed in as themselves): their consents, read-only. */
+export type MyConsent = { kind: ConsentKind; label: string; description: string; granted: boolean | null;
+  disputed: boolean; changed_at: string | null; ask: string };
+export const MY_CONSENTS = `select * from app.my_consents()`;

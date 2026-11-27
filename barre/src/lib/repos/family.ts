@@ -166,6 +166,15 @@ export type DropInSession = { session_id: string; class_name: string; style: str
 export const DROP_IN_SESSIONS = `select d.* from studio s, app.drop_in_sessions(s.id) d where s.id in (select app.studio_ids()) order by d.starts_at`;
 export const BOOK_DROP_IN = `select app.book_drop_in($1, $2) as r`;
 export const CANCEL_DROP_IN = `select app.cancel_drop_in($1) as r`;
+/** "Book for myself" (UR-21): the signed-in parent's own adult record, made
+ *  once and reused. $1 date of birth or null, $2 "I am 18 or over",
+ *  $3/$4 someone to ring in an emergency (a booking needs one). */
+export const BOOK_FOR_MYSELF = `select app.book_for_myself($1::date, coalesce($2::boolean, false), $3, $4) as id`;
+/** Whether the signed-in parent has their own adult record, and an emergency contact on it. */
+export const MY_SELF_RECORD = `
+select s.id, exists (select 1 from emergency_contact ec where ec.student_id = s.id and ec.deleted_at is null) as has_contact
+  from student s join guardian g on g.id = s.self_guardian_id
+ where g.user_id = auth.uid() and s.deleted_at is null limit 1`;
 export type MyDropIn = { id: string; student_id: string; first_name: string; class_name: string; starts_at: string; paid_with: string };
 export const MY_DROP_INS = `
 select d.id, d.student_id, s.first_name, c.name as class_name, cs.starts_at,
