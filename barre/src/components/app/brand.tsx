@@ -15,7 +15,7 @@ export function SchoolMark({ name, logo, className }: { name: string; logo: stri
     );
   }
   return (
-    <span aria-hidden className={cn('grid shrink-0 place-items-center rounded-lg bg-accent text-[13px] font-semibold text-on-accent', className)}>
+    <span aria-hidden className={cn('grid shrink-0 place-items-center rounded-lg bg-accent text-[0.8125rem] font-semibold text-on-accent', className)}>
       {monogram(name)}
     </span>
   );
@@ -24,7 +24,7 @@ export function SchoolMark({ name, logo, className }: { name: string; logo: stri
 /** The credit line. Small, quiet, always there. */
 export function PoweredBy({ className }: { className?: string }) {
   return (
-    <span className={cn('mt-0.5 flex items-center gap-1 text-[11px] text-ink-3', className)}>
+    <span className={cn('mt-0.5 flex items-center gap-1 text-[0.6875rem] text-ink-3', className)}>
       powered by
       {/* Always Swayvo’s own logo: ink on light styles, white on dark. */}
       <SwayvoLogo className="swayvo-on-light h-[0.95em] translate-y-[0.06em]" tone="ink" title="Swayvo" />

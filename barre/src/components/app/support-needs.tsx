@@ -30,20 +30,20 @@ export function SupportNote({ studentId, note, editable }: { studentId: string; 
     mutationFn: () => runAs(session, q => q(P.SET_SUPPORT_NOTE, [studentId, text])),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['db'] }),
   });
-  if (!editable) return note ? <p className="whitespace-pre-wrap text-[14.5px]">{note}</p> : null;
+  if (!editable) return note ? <p className="whitespace-pre-wrap text-[0.9062rem]">{note}</p> : null;
   return (
     <div className="space-y-2">
-      <label htmlFor={`support-${studentId}`} className="block text-[13px] text-ink-3">
+      <label htmlFor={`support-${studentId}`} className="block text-[0.8125rem] text-ink-3">
         What helps this child in class. Their teachers see it; the family and the child do not.
       </label>
       <textarea id={`support-${studentId}`} rows={3} maxLength={500} value={text} onChange={e => setText(e.target.value)}
-        className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-[15px] focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
+        className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-[0.9375rem] focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
       {save.error != null && <ErrorState error={save.error} />}
       <div className="flex items-center gap-3">
         <Button size="sm" loading={save.isPending} disabled={text.trim() === (note ?? '').trim()} onClick={() => save.mutate()}>
           {text.trim() ? 'Save support note' : 'Remove support note'}
         </Button>
-        {save.isSuccess && text.trim() === (note ?? '').trim() && <span role="status" className="text-[13px] text-positive">Saved</span>}
+        {save.isSuccess && text.trim() === (note ?? '').trim() && <span role="status" className="text-[0.8125rem] text-positive">Saved</span>}
       </div>
     </div>
   );

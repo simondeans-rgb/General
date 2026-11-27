@@ -65,8 +65,8 @@ export function PaymentRemindersSheet({ onClose }: { onClose: () => void }) {
                    border border-line bg-surface shadow-lg sm:rounded-[var(--radius-xl)]">
         <div className="flex items-start gap-3 border-b border-line p-4">
           <div className="min-w-0 flex-1">
-            <h2 id="rem-t" className="font-display text-[20px] font-[800] leading-tight [font-stretch:112%]">Remind overdue families</h2>
-            <p className="text-[13px] text-ink-2">One message to each family, in the app, filled in with what they owe.</p>
+            <h2 id="rem-t" className="font-display text-[1.25rem] font-[800] leading-tight [font-stretch:112%]">Remind overdue families</h2>
+            <p className="text-[0.8125rem] text-ink-2">One message to each family, in the app, filled in with what they owe.</p>
           </div>
           <button onClick={onClose} aria-label="Close" className="grid size-10 place-items-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-ink">
             <X className="size-4" aria-hidden />
@@ -75,7 +75,7 @@ export function PaymentRemindersSheet({ onClose }: { onClose: () => void }) {
 
         {sent !== null ? (
           <div className="space-y-4 p-4">
-            <p role="status" className="flex items-center gap-2 border-l-2 border-positive py-1 pl-3 text-[15px]">
+            <p role="status" className="flex items-center gap-2 border-l-2 border-positive py-1 pl-3 text-[0.9375rem]">
               <CheckCircle2 className="size-4 shrink-0 text-positive" aria-hidden />
               Sent to {sent} famil{sent === 1 ? 'y' : 'ies'}. Each is in their messages and their history.
             </p>
@@ -89,7 +89,7 @@ export function PaymentRemindersSheet({ onClose }: { onClose: () => void }) {
               {fams.data?.length === 0 && <EmptyState title="Nobody is overdue" body="There is no one to remind." />}
               {!!fams.data?.length && (
                 <fieldset>
-                  <legend className="mb-1.5 text-[13px] font-medium text-ink-2">
+                  <legend className="mb-1.5 text-[0.8125rem] font-medium text-ink-2">
                     {chosen.length} of {fams.data.length} families · <span className="tnum">{money(total)}</span> overdue
                   </legend>
                   <ul className="max-h-60 divide-y divide-line overflow-y-auto border-y border-line">
@@ -99,7 +99,7 @@ export function PaymentRemindersSheet({ onClose }: { onClose: () => void }) {
                                onChange={() => toggle(f.family_id)} className="size-5 accent-[var(--color-accent)]" />
                         <label htmlFor={`rf-${f.family_id}`} className="min-w-0 flex-1">
                           <span className="block font-medium">{f.family_name}</span>
-                          <span className="block truncate text-[12.5px] text-ink-3">
+                          <span className="block truncate text-[0.7812rem] text-ink-3">
                             {f.invoices} · due {dateShort(f.oldest_due)}
                             {f.last_reminded ? ` · last reminded ${dateShort(f.last_reminded)}` : ''}
                             {!f.uses_app ? ' · not using the app yet' : ''}
@@ -107,7 +107,7 @@ export function PaymentRemindersSheet({ onClose }: { onClose: () => void }) {
                         </label>
                         <span className="tnum font-medium">{money(f.overdue_minor)}</span>
                         <button type="button" onClick={() => setPreviewFor(f.family_id)}
-                          className="min-h-10 rounded-[var(--radius-sm)] px-2 text-[13px] font-semibold text-accent-text hover:underline"
+                          className="min-h-10 rounded-[var(--radius-sm)] px-2 text-[0.8125rem] font-semibold text-accent-text hover:underline"
                           aria-label={`Preview the reminder for ${f.family_name}`}>Preview</button>
                       </li>
                     ))}
@@ -138,8 +138,8 @@ export function PaymentRemindersSheet({ onClose }: { onClose: () => void }) {
                   {preview.error != null && <ErrorState error={preview.error} />}
                   {preview.data && (
                     <>
-                      <p className="mt-1.5 text-[14px] font-semibold">{preview.data.subject}</p>
-                      <p className="mt-1 whitespace-pre-line text-[14px] text-ink-2">{preview.data.body}</p>
+                      <p className="mt-1.5 text-[0.875rem] font-semibold">{preview.data.subject}</p>
+                      <p className="mt-1 whitespace-pre-line text-[0.875rem] text-ink-2">{preview.data.body}</p>
                     </>
                   )}
                 </section>

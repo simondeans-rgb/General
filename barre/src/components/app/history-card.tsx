@@ -65,7 +65,7 @@ export function HistoryCard() {
         {!!rows.data?.length && <HistoryList rows={rows.data} showRecord />}
         {rows.data?.length === limit && (limit < 1000
           ? <Button size="sm" variant="ghost" className="-ml-2 mt-2" onClick={() => setLimit(l => Math.min(1000, l * 4))}>Show more</Button>
-          : <p className="pt-2 text-[12.5px] text-ink-3">Showing the latest 1,000. Narrow the filters to see further back.</p>)}
+          : <p className="pt-2 text-[0.7812rem] text-ink-3">Showing the latest 1,000. Narrow the filters to see further back.</p>)}
       </div>
     </Card>
   );

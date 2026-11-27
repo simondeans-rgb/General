@@ -71,11 +71,11 @@ export default function TeachToday() {
               <section aria-labelledby="fortnight-h">
                 <SectionHead id="fortnight-h" title="Next two weeks" meta={later.length ? plural(later.length, 'class', 'classes') : undefined} />
                 {later.length === 0
-                  ? <p className="py-3 text-[14.5px] text-ink-3">Nothing else on your timetable for two weeks.</p>
+                  ? <p className="py-3 text-[0.9062rem] text-ink-3">Nothing else on your timetable for two weeks.</p>
                   : <ul className="divide-y divide-line">
                       {later.map(s => <li key={s.id}><TeachRow s={s} showDay onAskCover={() => setAsking(s)} /></li>)}
                     </ul>}
-                {later.length > 0 && <p className="pt-3 text-[13px] text-ink-3">Can’t make one? Ask the office for cover from its row.</p>}
+                {later.length > 0 && <p className="pt-3 text-[0.8125rem] text-ink-3">Can’t make one? Ask the office for cover from its row.</p>}
               </section>
               <RehearsalList days={21} />
             </div>
@@ -94,7 +94,7 @@ function NextClass({ s, onAskCover }: { s: T.TeachSession | null; onAskCover: ()
   if (!s) return (
     <section aria-labelledby="next-h">
       <p className="label">Next</p>
-      <h2 id="next-h" className="mt-2 font-display text-[28px] leading-tight">Nothing on for two weeks</h2>
+      <h2 id="next-h" className="mt-2 font-display text-[1.75rem] leading-tight">Nothing on for two weeks</h2>
       <p className="mt-1 text-ink-3">New classes and cover appear here as soon as the office adds them.</p>
     </section>
   );
@@ -113,25 +113,25 @@ function NextClass({ s, onAskCover }: { s: T.TeachSession | null; onAskCover: ()
   return (
     <section aria-labelledby="next-h">
       <p className="label text-accent-text">Next · {whenLabel}</p>
-      <p className="display-xl mt-1 text-[80px] text-ink sm:text-[96px]">{time(s.starts_at)}</p>
-      <h2 id="next-h" className="mt-3 font-display text-[26px] leading-tight">{s.name}</h2>
-      <p className="mt-1 text-[15px] text-ink-3">
+      <p className="display-xl mt-1 text-[5rem] text-ink sm:text-[6rem]">{time(s.starts_at)}</p>
+      <h2 id="next-h" className="mt-3 font-display text-[1.625rem] leading-tight">{s.name}</h2>
+      <p className="mt-1 text-[0.9375rem] text-ink-3">
         {[s.location, s.room,
           `${s.enrolled} booked${s.trials ? ` + ${plural(s.trials, 'trial')}` : ''}`].filter(Boolean).join(' · ')}
       </p>
       {s.reported_absent && (
-        <p className="mt-1 text-[15px] text-ink-2"><span className="font-semibold">{s.reported_absent}</span> — reported absent</p>
+        <p className="mt-1 text-[0.9375rem] text-ink-2"><span className="font-semibold">{s.reported_absent}</span> — reported absent</p>
       )}
       {(s.covering || s.cover_requested) && (
-        <p className="mt-1 text-[14px] font-semibold text-ink-2">{s.covering ? 'You are covering this class' : 'Cover requested · the office will confirm'}</p>
+        <p className="mt-1 text-[0.875rem] font-semibold text-ink-2">{s.covering ? 'You are covering this class' : 'Cover requested · the office will confirm'}</p>
       )}
 
       {flagged.length > 0 && (
         <div role="note" className={cn('mt-4 border-l-4 py-0.5 pl-3', urgent ? 'border-critical' : 'border-caution')}>
-          <p className={cn('text-[15px] font-semibold', urgent ? 'text-critical' : 'text-caution')}>
+          <p className={cn('text-[0.9375rem] font-semibold', urgent ? 'text-critical' : 'text-caution')}>
             {plural(flagged.length, 'medical note')}
           </p>
-          <ul className="mt-0.5 space-y-0.5 text-[15px] text-ink">
+          <ul className="mt-0.5 space-y-0.5 text-[0.9375rem] text-ink">
             {flagged.slice(0, 4).map(r => (
               <li key={r.student_id}>
                 <span className="font-semibold">{r.preferred_name ?? r.first_name} {r.last_name}</span>
@@ -164,13 +164,13 @@ function AfterClass({ done, upcoming }: { done: T.TeachSession | null; upcoming:
   return (
     <section aria-labelledby="after-h" className="rounded-[var(--radius-lg)] bg-surface-2 p-4">
       <h2 id="after-h" className="section-title">After class</h2>
-      <p className="mt-1 text-[15px] text-ink-2">
+      <p className="mt-1 text-[0.9375rem] text-ink-2">
         {done ? `${s.name} is done. Two lines of feedback while it’s fresh?`
               : `When ${s.name} finishes, tap a child and what fits. Families see it once you share.`}
       </p>
       {done && (
         <Link href={`/teach/feedback/?session=${s.id}`}
-              className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-[15px] font-semibold text-accent-text hover:underline">
+              className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-[0.9375rem] font-semibold text-accent-text hover:underline">
           Give feedback for {s.name} <ArrowRight className="size-4" aria-hidden />
         </Link>
       )}
@@ -198,7 +198,7 @@ function CoverRequestSheet({ s, onClose }: { s: T.TeachSession; onClose: () => v
       </Field>
       <Field label="Handover for whoever covers" htmlFor="cr-h" hint="Optional. The plan, music, children to watch. Shown on their register.">
         <textarea id="cr-h" rows={3} value={handover} onChange={e => setHandover(e.target.value)}
-          className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-[15px] focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
+          className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-[0.9375rem] focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
       </Field>
     </RecordSheet>
   );
@@ -227,12 +227,12 @@ function TeachRow({ s, showDay, onAskCover }: { s: T.TeachSession; showDay?: boo
   const inner = (
     <div className="grid min-h-14 grid-cols-[4.25rem_minmax(0,1fr)_auto] items-center gap-x-3 py-3">
       <span className={cn('leading-tight', cancelled && 'text-ink-3')}>
-        {showDay && <span className="block text-[12.5px] text-ink-3">{dayLabel(s.starts_at)}</span>}
-        <span className={cn('font-display text-[19px] tnum', cancelled && 'line-through')}>{time(s.starts_at)}</span>
+        {showDay && <span className="block text-[0.7812rem] text-ink-3">{dayLabel(s.starts_at)}</span>}
+        <span className={cn('font-display text-[1.1875rem] tnum', cancelled && 'line-through')}>{time(s.starts_at)}</span>
       </span>
       <span className="min-w-0">
         <span className={cn('block truncate font-semibold', (cancelled || coveredByOther) && 'text-ink-3')}>{s.name}</span>
-        <span className="block truncate text-[13px] text-ink-3">
+        <span className="block truncate text-[0.8125rem] text-ink-3">
           {status && <span className={status[1]}>{status[0]}</span>}
           {status && !cancelled && !coveredByOther && <span aria-hidden> · </span>}
           {!cancelled && !coveredByOther && meta}

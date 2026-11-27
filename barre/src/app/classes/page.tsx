@@ -104,13 +104,13 @@ function ClassLine({ c, active, onSelect }: { c: C.ClassRow; active: boolean; on
     <button onClick={onSelect} aria-current={active || undefined}
       className={cn('grid w-full grid-cols-[4.25rem_minmax(0,1fr)_auto] items-center gap-x-4 px-1 py-3 text-left hover:bg-surface-2/60 sm:grid-cols-[4.25rem_minmax(0,1fr)_auto_5rem]',
         active && 'bg-surface-2 shadow-[inset_3px_0_0_var(--color-accent)]')}>
-      <span className="font-display text-[19px] leading-none tnum">{c.start_time.slice(0,5)}</span>
+      <span className="font-display text-[1.1875rem] leading-none tnum">{c.start_time.slice(0,5)}</span>
       <span className="min-w-0">
         <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
           <span className="truncate font-semibold">{c.name}</span>
-          {c.style && <StyleMark colour={c.colour} name={c.style} className="text-[13px] text-ink-3" />}
+          {c.style && <StyleMark colour={c.colour} name={c.style} className="text-[0.8125rem] text-ink-3" />}
         </span>
-        <span className="mt-0.5 block truncate text-[13px] text-ink-3">
+        <span className="mt-0.5 block truncate text-[0.8125rem] text-ink-3">
           {[c.teacher, c.room, c.age_min != null ? `Ages ${c.age_max != null ? `${c.age_min}–${c.age_max}` : `${c.age_min}+`}` : null]
             .filter(Boolean).join(' · ')}
         </span>
@@ -118,9 +118,9 @@ function ClassLine({ c, active, onSelect }: { c: C.ClassRow; active: boolean; on
       {/* Capacity as beats and a number: never the meter alone. */}
       <Beats value={c.enrolled} max={c.capacity} tone={full || nearly ? 'caution' : 'accent'} label={`${c.enrolled} of ${c.capacity} places`} className="hidden sm:inline-flex" />
       <span className="text-right leading-tight">
-        <span className={cn('block text-[13.5px] tnum', full || nearly ? 'font-semibold text-caution' : 'text-ink-2')}>{c.enrolled}/{c.capacity}</span>
-        {c.waiting > 0 ? <span className="block text-[12px] font-semibold text-critical">{c.waiting} waiting</span>
-          : full ? <span className="block text-[12px] text-caution">Full</span> : null}
+        <span className={cn('block text-[0.8438rem] tnum', full || nearly ? 'font-semibold text-caution' : 'text-ink-2')}>{c.enrolled}/{c.capacity}</span>
+        {c.waiting > 0 ? <span className="block text-[0.75rem] font-semibold text-critical">{c.waiting} waiting</span>
+          : full ? <span className="block text-[0.75rem] text-caution">Full</span> : null}
       </span>
     </button>
   );
@@ -161,7 +161,7 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
               ['Trials', c.trials_enabled ? 'Open for trials' : 'Not taking trials'],
             ]} />
             <Link href={`/class/?id=${c.id}`}
-                  className="mt-1 flex min-h-[44px] items-center gap-2 border-t border-line text-[14px] font-semibold text-accent-text hover:underline">
+                  className="mt-1 flex min-h-[44px] items-center gap-2 border-t border-line text-[0.875rem] font-semibold text-accent-text hover:underline">
               Videos, music and notes for this class
               <ChevronRight className="ml-auto size-4" aria-hidden />
             </Link>
@@ -174,7 +174,7 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
             <Button variant="ghost" onClick={() => setDuplicating(true)}><Copy className="size-4" aria-hidden /> Duplicate</Button>
           </div>
           {full && (
-            <p className="-mt-4 mb-7 text-[13px] text-ink-2"><Word tone="caution">Full</Word> New names join the waiting list and are offered the next place automatically.</p>
+            <p className="-mt-4 mb-7 text-[0.8125rem] text-ink-2"><Word tone="caution">Full</Word> New names join the waiting list and are offered the next place automatically.</p>
           )}
 
           <DetailSection title={`Register (${roster.data?.length ?? 0})`}>
@@ -185,13 +185,13 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
                 <li key={s.id} className="flex items-center gap-2 py-1.5">
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-1.5">
-                      <span className="truncate text-[14px] font-medium">{s.first_name} {s.last_name}</span>
-                      {s.has_alert && <span className="shrink-0 text-[12px] font-semibold text-critical">Medical</span>}
+                      <span className="truncate text-[0.875rem] font-medium">{s.first_name} {s.last_name}</span>
+                      {s.has_alert && <span className="shrink-0 text-[0.75rem] font-semibold text-critical">Medical</span>}
                     </span>
-                    <span className="block truncate text-[12.5px] text-ink-3">{ageFrom(s.date_of_birth)} · {s.family_name}</span>
+                    <span className="block truncate text-[0.7812rem] text-ink-3">{ageFrom(s.date_of_birth)} · {s.family_name}</span>
                   </span>
                   {s.attendance_pct != null && (
-                    <span className={cn('tnum shrink-0 text-[12.5px]',
+                    <span className={cn('tnum shrink-0 text-[0.7812rem]',
                       s.attendance_pct >= 85 ? 'text-ink-3' : 'font-medium text-caution')}>{s.attendance_pct}%</span>
                   )}
                   <Button size="sm" variant="ghost"
@@ -217,17 +217,17 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
                 {waitlist.data!.map(w => (
                   <li key={w.id} className="py-2">
                     <div className="flex items-center gap-3">
-                      <span className="w-6 shrink-0 font-display text-[17px] tnum">{w.position}</span>
-                      <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{w.first_name} {w.last_name}
+                      <span className="w-6 shrink-0 font-display text-[1.0625rem] tnum">{w.position}</span>
+                      <span className="min-w-0 flex-1 truncate text-[0.875rem] font-medium">{w.first_name} {w.last_name}
                         <span className="font-normal text-ink-3"> · {ageFrom(w.date_of_birth)}</span></span>
                       {w.status === 'offered' && <Word>Offered</Word>}
-                      <span className="shrink-0 truncate text-[12px] text-ink-3">{w.family_name}</span>
+                      <span className="shrink-0 truncate text-[0.75rem] text-ink-3">{w.family_name}</span>
                     </div>
                     <WaitlistActions entry={w} free={free} />
                   </li>
                 ))}
               </ol>
-              <p className="mt-2 text-[13px] text-ink-3">
+              <p className="mt-2 text-[0.8125rem] text-ink-3">
                 When a place frees up, the family at position 1 is offered it first. One offer goes out per free place,
                 and an offer lasts {free?.offer_days ?? 3} day{free?.offer_days === 1 ? '' : 's'} before passing to the next family.
               </p>

@@ -72,10 +72,10 @@ function PlanCard({ acct }: { acct?: A.AccountRow }) {
         ? `${acct.plan_name}${acct.price_minor ? ` · ${money(acct.price_minor)} a month` : ''}` : 'No plan set'} />
       <div className="space-y-4 pt-3">
         {acct.status === 'trialling' && acct.trial_ends_on && (
-          <p className="text-[14.5px] text-ink-2">Your free trial runs until <strong className="font-semibold text-ink">{dateShort(acct.trial_ends_on)}</strong>.</p>
+          <p className="text-[0.9062rem] text-ink-2">Your free trial runs until <strong className="font-semibold text-ink">{dateShort(acct.trial_ends_on)}</strong>.</p>
         )}
         {acct.status_reason && (acct.status === 'suspended' || acct.status === 'cancelled' || acct.status === 'past_due') && (
-          <p className="border-l-2 border-caution py-1 pl-3 text-[14.5px]"><strong className="font-semibold text-caution">{STATUS[acct.status]}.</strong> {acct.status_reason}</p>
+          <p className="border-l-2 border-caution py-1 pl-3 text-[0.9062rem]"><strong className="font-semibold text-caution">{STATUS[acct.status]}.</strong> {acct.status_reason}</p>
         )}
         <dl className="grid grid-cols-3 gap-4">
           {rows.map(([label, used, cap]) => {
@@ -84,17 +84,17 @@ function PlanCard({ acct }: { acct?: A.AccountRow }) {
               <div key={label} className="min-w-0">
                 <dt className="label">{label}</dt>
                 <dd className="mt-1 flex flex-wrap items-baseline gap-x-1.5">
-                  <span className="stat-number text-[26px] leading-none">{used}</span>
-                  <span className="tnum text-[13px] text-ink-3">{cap ? `of ${cap}` : 'no limit'}</span>
+                  <span className="stat-number text-[1.625rem] leading-none">{used}</span>
+                  <span className="tnum text-[0.8125rem] text-ink-3">{cap ? `of ${cap}` : 'no limit'}</span>
                 </dd>
                 {cap != null && <dd className="mt-2"><Beats value={used} max={cap} tone={pct >= 90 ? 'caution' : 'accent'} label={`${used} of ${cap} ${label.toLowerCase()}`} />
-                  {pct >= 90 && <span className="ml-2 text-[13px] font-semibold text-caution">Nearly full</span>}</dd>}
+                  {pct >= 90 && <span className="ml-2 text-[0.8125rem] font-semibold text-caution">Nearly full</span>}</dd>}
               </div>
             );
           })}
         </dl>
-        <p className="text-[13px] text-ink-3">Students on the plan are every child record the school holds, including trial children and those who have left; Reports counts only those in a class now.</p>
-        <p className="text-[13px] text-ink-3">To change plan, contact Swayvo. Nothing is ever deleted for being over a limit — you just cannot add more.</p>
+        <p className="text-[0.8125rem] text-ink-3">Students on the plan are every child record the school holds, including trial children and those who have left; Reports counts only those in a class now.</p>
+        <p className="text-[0.8125rem] text-ink-3">To change plan, contact Swayvo. Nothing is ever deleted for being over a limit — you just cannot add more.</p>
       </div>
     </Card>
   );
@@ -136,8 +136,8 @@ function Team({ isOwner, studioId }: { isOwner: boolean; studioId?: string }) {
       <div role="tablist" aria-label="People with access" className="flex gap-1 border-b border-line">
         {([['staff', 'Staff', count(staffRoles)], ['families', 'Parents and students', count(['guardian', 'student'])]] as const).map(([k, l, n]) => (
           <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
-            className={cn('-mb-px h-11 border-b-2 px-2.5 text-[14px]', tab === k ? 'border-ink font-semibold text-ink' : 'border-transparent text-ink-2 hover:text-ink')}>
-            {l} <span className="tnum text-[12px] text-ink-3">{n}</span>
+            className={cn('-mb-px h-11 border-b-2 px-2.5 text-[0.875rem]', tab === k ? 'border-ink font-semibold text-ink' : 'border-transparent text-ink-2 hover:text-ink')}>
+            {l} <span className="tnum text-[0.75rem] text-ink-3">{n}</span>
           </button>
         ))}
       </div>
@@ -148,24 +148,24 @@ function Team({ isOwner, studioId }: { isOwner: boolean; studioId?: string }) {
       {groups.map(([role, list]) => (
         <section key={role} aria-label={ROLE[role]!.plural}>
           <div className="mt-5 border-b border-line pb-1.5">
-            <h3 className="text-[14px] font-semibold">{ROLE[role]!.plural} <span className="tnum font-normal text-ink-3">{list.length}</span></h3>
-            <p className="text-[13px] text-ink-3">{ROLE[role]!.does}</p>
+            <h3 className="text-[0.875rem] font-semibold">{ROLE[role]!.plural} <span className="tnum font-normal text-ink-3">{list.length}</span></h3>
+            <p className="text-[0.8125rem] text-ink-3">{ROLE[role]!.does}</p>
           </div>
           <ul className="divide-y divide-line">
             {list.map(m => (
               <li key={m.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2.5">
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-semibold">{m.full_name}{m.is_me && <span className="font-normal text-ink-3"> (you)</span>}</span>
-                  <span className="block truncate text-[13px] text-ink-3">{m.email}{m.detail ? ` · ${m.detail}` : ''}</span>
+                  <span className="block truncate text-[0.8125rem] text-ink-3">{m.email}{m.detail ? ` · ${m.detail}` : ''}</span>
                 </span>
                 {isOwner && staffRoles.includes(m.role) && !session?.platform ? (
-                  <Select aria-label={`Role for ${m.full_name}`} className="h-9 w-[150px] text-[13px]" value={m.role}
+                  <Select aria-label={`Role for ${m.full_name}`} className="h-9 w-[150px] text-[0.8125rem]" value={m.role}
                     onChange={e => act.mutate(q => q(A.SET_ROLE, [m.id, e.target.value]))}>
                     <option value="owner">Owner</option>
                     <option value="admin">Administrator</option>
                     <option value="teacher">Teacher</option>
                   </Select>
-                ) : <span className="text-[13px] text-ink-2">{ROLE[m.role]!.label}</span>}
+                ) : <span className="text-[0.8125rem] text-ink-2">{ROLE[m.role]!.label}</span>}
                 {canRemove(m) && !session?.platform && (
                   <Button size="sm" variant="ghost" aria-label={`Remove ${m.full_name}’s access`} onClick={() => setRemoving(m)}>
                     <UserMinus className="size-4" aria-hidden />
@@ -179,13 +179,13 @@ function Team({ isOwner, studioId }: { isOwner: boolean; studioId?: string }) {
 
       {!!invites.data?.length && (
         <div className="mt-6">
-          <h3 className="border-b border-line pb-1.5 text-[14px] font-semibold">Invited, not joined yet <span className="tnum font-normal text-ink-3">{invites.data.length}</span></h3>
+          <h3 className="border-b border-line pb-1.5 text-[0.875rem] font-semibold">Invited, not joined yet <span className="tnum font-normal text-ink-3">{invites.data.length}</span></h3>
           <ul className="divide-y divide-line">
             {invites.data.map(i => (
               <li key={i.id} className="flex flex-wrap items-center gap-2 py-2.5 text-sm">
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate"><span className="font-semibold">{i.full_name ?? i.email}</span> <span className="text-[13px] text-ink-2">· {ROLE[i.role]?.label ?? i.role}</span></span>
-                  <span className="block truncate text-[13px] text-ink-3">
+                  <span className="block truncate"><span className="font-semibold">{i.full_name ?? i.email}</span> <span className="text-[0.8125rem] text-ink-2">· {ROLE[i.role]?.label ?? i.role}</span></span>
+                  <span className="block truncate text-[0.8125rem] text-ink-3">
                     {i.email}{i.family_name ? ` · ${i.family_name}` : ''}{i.student_name ? ` · for ${i.student_name}` : ''} · expires {dateShort(i.expires_at)}
                   </span>
                 </span>
@@ -256,7 +256,7 @@ function InviteSheet({ studioId, isOwner, onClose }: { studioId: string; isOwner
     <RecordSheet title="Invite someone" onClose={onClose} onSave={() => send.mutate()} saving={send.isPending}
       error={send.error} canSave={valid} saveLabel="Create invitation">
       <fieldset>
-        <legend className="mb-1.5 text-[13px] font-medium text-ink-2">Role</legend>
+        <legend className="mb-1.5 text-[0.8125rem] font-medium text-ink-2">Role</legend>
         <div className="space-y-1.5">
           {roles.map(r => (
             <label key={r} className={cn('flex cursor-pointer items-start gap-3 rounded-[var(--radius-md)] border p-2.5',
@@ -264,7 +264,7 @@ function InviteSheet({ studioId, isOwner, onClose }: { studioId: string; isOwner
               <input type="radio" name="role" value={r} checked={role === r} onChange={() => setRole(r)} className="mt-1 accent-[var(--color-accent)]" />
               <span>
                 <span className="block text-sm font-medium">{ROLE[r]!.label}</span>
-                <span className="block text-[12.5px] text-ink-2">{ROLE[r]!.does}</span>
+                <span className="block text-[0.7812rem] text-ink-2">{ROLE[r]!.does}</span>
               </span>
             </label>
           ))}
@@ -316,16 +316,16 @@ function SupportCard({ studioId }: { studioId: string }) {
     <Card>
       <CardHeader title="Swayvo support" subtitle="Let Swayvo’s team see your account when you need help" />
       <div className="space-y-4 pt-3">
-        <p className="text-[14.5px] text-ink-2">
+        <p className="text-[0.9062rem] text-ink-2">
           Swayvo cannot see your families, children or money unless you allow it here. Access is read-only, ends when
           you say, and never includes health records. Every time support opens your account it is listed below.
         </p>
         {live ? (
           <div className="border-l-2 border-positive py-1 pl-3">
-            <p className="text-[14.5px] font-semibold">
+            <p className="text-[0.9062rem] font-semibold">
               <span className="text-positive">Support can look</span> until {dateShort(live.expires_at)} {time(live.expires_at)}
             </p>
-            <p className="mt-0.5 text-[13px] text-ink-2">{live.reason}</p>
+            <p className="mt-0.5 text-[0.8125rem] text-ink-2">{live.reason}</p>
             <Button size="sm" className="mt-2.5" loading={revoke.isPending} onClick={() => revoke.mutate()}>
               <ShieldOff className="size-4" aria-hidden /> End access now
             </Button>
@@ -349,8 +349,8 @@ function SupportCard({ studioId }: { studioId: string }) {
         {(grant.error ?? revoke.error) != null && <ErrorState error={grant.error ?? revoke.error} />}
         {!!visits.data?.length && (
           <div>
-            <h3 className="border-b border-line pb-1.5 text-[14px] font-semibold">When support looked</h3>
-            <ul className="divide-y divide-line text-[14px] text-ink-2">
+            <h3 className="border-b border-line pb-1.5 text-[0.875rem] font-semibold">When support looked</h3>
+            <ul className="divide-y divide-line text-[0.875rem] text-ink-2">
               {visits.data.map((v, n) => <li key={n} className="py-2">{relativeDay(v.at)} {time(v.at)} — {v.summary}</li>)}
             </ul>
           </div>
@@ -383,12 +383,12 @@ function ExportCard({ name }: { name?: string }) {
     <Card>
       <CardHeader title="Your data" subtitle="Everything your school holds in Swayvo, in one file" />
       <div className="flex flex-wrap items-center gap-3 pt-3">
-        <p className="min-w-0 flex-1 text-[14.5px] text-ink-2">
+        <p className="min-w-0 flex-1 text-[0.9062rem] text-ink-2">
           Families, children, health and consent records, classes, registers, invoices, payments and messages — as JSON.
           It contains personal data about children: store it securely.
         </p>
         <Button loading={state === 'working'} onClick={run}><Download className="size-4" aria-hidden /> Export everything</Button>
-        {state === 'done' && <p role="status" className="w-full text-[13px] text-positive">Downloaded.</p>}
+        {state === 'done' && <p role="status" className="w-full text-[0.8125rem] text-positive">Downloaded.</p>}
         {state instanceof Error && <div className="w-full"><ErrorState error={state} /></div>}
       </div>
     </Card>

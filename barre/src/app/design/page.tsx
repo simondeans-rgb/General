@@ -18,7 +18,7 @@ export default function DesignSystem() {
         <div>
           <SwayvoLogo className="h-9 swayvo-on-light" />
           <SwayvoLogo tone="white" className="h-9 swayvo-on-dark" title={null} />
-          <h1 className="display-xl mt-6 text-[44px] sm:text-[64px]">Design system</h1>
+          <h1 className="display-xl mt-6 text-[2.75rem] sm:text-[4rem]">Design system</h1>
           <p className="mt-2 max-w-xl text-ink-2">The real components the product is built from. Rules and reasons are in docs/brand/DESIGN-SYSTEM.md.</p>
         </div>
         <div role="group" aria-label="School style" className="flex gap-1">
@@ -45,7 +45,7 @@ export default function DesignSystem() {
             ['caution', 'Warning', 'with a word'], ['critical', 'Critical', 'with a word'], ['info', 'Info', 'with a word']].map(([t, n, u]) => (
             <div key={t} className="bg-surface p-3">
               <div className="h-12 rounded-[var(--radius-sm)] border border-line" style={{ background: `var(--color-${t})` }} />
-              <p className="mt-2 text-[13.5px] font-semibold">{n}</p><p className="text-[12.5px] text-ink-3">{u}</p>
+              <p className="mt-2 text-[0.8438rem] font-semibold">{n}</p><p className="text-[0.7812rem] text-ink-3">{u}</p>
             </div>
           ))}
         </div>
@@ -53,13 +53,13 @@ export default function DesignSystem() {
 
       <Section title="Type">
         <div className="space-y-5">
-          <p className="display-xl text-[72px]">18:30</p>
+          <p className="display-xl text-[4.5rem]">18:30</p>
           <p className="page-title">Page title · Archivo 800</p>
-          <p className="stat-number text-[30px]">£2,088.00</p>
-          <p className="font-display text-[22px]">Contemporary Seniors</p>
+          <p className="stat-number text-[1.875rem]">£2,088.00</p>
+          <p className="font-display text-[1.375rem]">Contemporary Seniors</p>
           <p className="section-title">Section title, sentence case</p>
           <p className="max-w-prose">Body text in Inter at 15px. Plain, warm and specific: “Junior Tap is done. Two lines of feedback while it’s fresh?”</p>
-          <p className="text-[13px] text-ink-3">Meta line · Studio Two · Marcus Bell</p>
+          <p className="text-[0.8125rem] text-ink-3">Meta line · Studio Two · Marcus Bell</p>
           <p className="label">Label · sparingly</p>
         </div>
       </Section>
@@ -75,9 +75,9 @@ export default function DesignSystem() {
       <Section title="The count (Beats)">
         <ul className="divide-y divide-line">
           {[[11, 16, 'Places · 11 of 16'], [7, 13, 'Term · week 7 of 13'], [3, 8, 'Skill · developing'], [6, 8, 'Skill · secure'], [8, 8, 'Skill · mastered'], [0, 8, 'Skill · not yet']].map(([v, m, l]) => (
-            <li key={String(l)} className="flex items-center gap-4 py-3"><Beats value={Number(v)} max={Number(m)} label={String(l)} /><span className="text-[14px]">{l}</span></li>
+            <li key={String(l)} className="flex items-center gap-4 py-3"><Beats value={Number(v)} max={Number(m)} label={String(l)} /><span className="text-[0.875rem]">{l}</span></li>
           ))}
-          <li className="flex items-center gap-4 py-3"><Beats value={8} max={8} size="lg" tone="positive" label="Register complete" /><span className="text-[14px]">Large · success</span></li>
+          <li className="flex items-center gap-4 py-3"><Beats value={8} max={8} size="lg" tone="positive" label="Register complete" /><span className="text-[0.875rem]">Large · success</span></li>
         </ul>
       </Section>
 
@@ -105,7 +105,7 @@ export default function DesignSystem() {
       <Section title="States">
         <div className="grid gap-8 sm:grid-cols-3">
           <div className="card"><EmptyState title="Nothing needs you" body="No failed payments, and everyone is turning up." action={<Button size="sm">View timetable</Button>} /></div>
-          <div className="space-y-3"><Skeleton className="h-6 w-1/2" /><Skeleton className="h-12" /><Skeleton className="h-12" /><p className="flex items-center gap-2 text-[13px] text-ink-3"><Spinner /> Loading</p></div>
+          <div className="space-y-3"><Skeleton className="h-6 w-1/2" /><Skeleton className="h-12" /><Skeleton className="h-12" /><p className="flex items-center gap-2 text-[0.8125rem] text-ink-3"><Spinner /> Loading</p></div>
           <ErrorState error={new Error('INVALID: that class is full — try another date')} onRetry={() => undefined} />
         </div>
       </Section>

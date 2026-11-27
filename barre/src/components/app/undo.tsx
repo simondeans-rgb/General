@@ -53,7 +53,7 @@ export function UndoToaster() {
   return createPortal(
     <div className="pointer-events-none fixed inset-x-0 bottom-20 z-[80] flex flex-col items-center gap-2 px-4 sm:bottom-6" aria-live="polite">
       {list.map(p => (
-        <div key={p.id} role="status" className="pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-[var(--radius-md)] bg-ink px-4 py-3 text-[14px] text-ink-invert shadow-lg">
+        <div key={p.id} role="status" className="pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-[var(--radius-md)] bg-ink px-4 py-3 text-[0.875rem] text-ink-invert shadow-lg">
           <span className="min-w-0 flex-1">{p.error ? `Could not remove: ${p.error}` : `${p.label} removed`}</span>
           <button onClick={() => undo(p.id)} className="inline-flex min-h-[40px] items-center gap-1.5 font-semibold underline-offset-2 hover:underline">
             <Undo2 className="size-4" aria-hidden /> {p.error ? 'Dismiss' : 'Undo'}

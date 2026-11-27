@@ -105,7 +105,7 @@ export function FirstTimetable({ onDone }: { onDone?: () => void }) {
           detail={`${done.sessions} sessions were made for the term. Assign teachers, ages and descriptions from Classes when you are ready.`} />
         <div className="flex flex-wrap gap-2">
           <Button size="sm" onClick={() => { setDone(null); setRows([blank(styles.data?.[0]?.id ?? '')]); }}>Add more</Button>
-          <a href="/schedule" className="inline-flex min-h-9 items-center text-[13.5px] font-semibold text-accent-text hover:underline">See the week</a>
+          <a href="/schedule" className="inline-flex min-h-9 items-center text-[0.8438rem] font-semibold text-accent-text hover:underline">See the week</a>
         </div>
       </div>
     );
@@ -115,7 +115,7 @@ export function FirstTimetable({ onDone }: { onDone?: () => void }) {
     <div ref={box} className="space-y-5">
       {(needPlace || needTerm || needStyle) && (
         <div className="space-y-3">
-          <p className="text-[14px] text-ink-2">First, the few things every class needs. You can add rooms, more places and breaks later in School settings.</p>
+          <p className="text-[0.875rem] text-ink-2">First, the few things every class needs. You can add rooms, more places and breaks later in School settings.</p>
           {needPlace && (
             <Field label="Where do you teach?" htmlFor="ft-place" required hint="The hall or studio’s name.">
               <Input id="ft-place" value={place} onChange={e => setPlace(e.target.value)} placeholder="St Mary’s Hall" />
@@ -134,7 +134,7 @@ export function FirstTimetable({ onDone }: { onDone?: () => void }) {
               </Field>
             </div>
           )}
-          {needTerm && <p className="text-[12.5px] text-ink-3">The term is published straight away, so families see its classes. Add half-term breaks later; sessions in a break can be regenerated from the class.</p>}
+          {needTerm && <p className="text-[0.7812rem] text-ink-3">The term is published straight away, so families see its classes. Add half-term breaks later; sessions in a break can be regenerated from the class.</p>}
           {needStyle && (
             <Field label="Dance style" htmlFor="ft-style" required hint="Add more styles later.">
               <Input id="ft-style" value={styleName} onChange={e => setStyleName(e.target.value)} placeholder="Ballet" />
@@ -183,16 +183,16 @@ export function FirstTimetable({ onDone }: { onDone?: () => void }) {
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               {(styles.data?.length ?? 0) > 1 && (
-                <Select aria-label={`Style of ${r.name || 'this class'}`} value={r.style} className="h-9 w-auto text-[13.5px]"
+                <Select aria-label={`Style of ${r.name || 'this class'}`} value={r.style} className="h-9 w-auto text-[0.8438rem]"
                         onChange={e => set(r.key, { style: e.target.value })}>
                   {styles.data!.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </Select>
               )}
-              <label className="flex items-center gap-1.5 text-[13px] text-ink-2">
+              <label className="flex items-center gap-1.5 text-[0.8125rem] text-ink-2">
                 <Copy className="size-3.5" aria-hidden />
                 <select aria-label={`Copy ${r.name || 'this class'} to another day`} value=""
                         onChange={e => { if (e.target.value !== '') copyTo(r, Number(e.target.value)); }}
-                        className="h-9 rounded-[var(--radius-sm)] border border-line-strong bg-surface px-2 text-[13.5px] text-ink">
+                        className="h-9 rounded-[var(--radius-sm)] border border-line-strong bg-surface px-2 text-[0.8438rem] text-ink">
                   <option value="">Copy to…</option>
                   {WEEK.filter(d => d !== r.day).map(d => <option key={d} value={d}>{DAYS[d]}</option>)}
                 </select>

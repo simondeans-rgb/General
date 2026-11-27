@@ -32,20 +32,20 @@ export function BankDetailsSettings() {
         action={owner && sid ? <Button size="sm" onClick={() => setEditing(true)}><Pencil className="size-4" aria-hidden /> {b ? 'Edit' : 'Add'}</Button> : undefined} />
       {(studio.isLoading || bank.isLoading) && <div className="pt-3"><Skeleton className="h-14" /></div>}
       {!bank.isLoading && !b && (
-        <p className="pt-3 text-[14px] text-ink-2">
+        <p className="pt-3 text-[0.875rem] text-ink-2">
           Not set yet. Families are shown their payment reference only, and asked to contact you for the account details.
         </p>
       )}
       {b && (
-        <dl className="grid grid-cols-1 gap-x-6 divide-y divide-line text-[14.5px] sm:grid-cols-2 sm:divide-y-0">
+        <dl className="grid grid-cols-1 gap-x-6 divide-y divide-line text-[0.9062rem] sm:grid-cols-2 sm:divide-y-0">
           <Fact label="Account name" value={b.payee_name} />
           <Fact label="Sort code" value={b.sort_code} />
           <Fact label="Account number" value={b.account_number} />
           <Fact label="IBAN" value={b.iban ?? 'Not given'} />
         </dl>
       )}
-      {b && <p className="pt-2 text-[12.5px] text-ink-3">Last changed {dateShort(b.updated_at)}. Every change is kept in the audit trail.</p>}
-      {!owner && <p className="pt-2 text-[13px] text-ink-3">Only the studio owner can change these.</p>}
+      {b && <p className="pt-2 text-[0.7812rem] text-ink-3">Last changed {dateShort(b.updated_at)}. Every change is kept in the audit trail.</p>}
+      {!owner && <p className="pt-2 text-[0.8125rem] text-ink-3">Only the studio owner can change these.</p>}
       {editing && sid && <BankSheet studioId={sid} current={b} onClose={() => setEditing(false)} />}
     </Card>
   );
@@ -54,7 +54,7 @@ export function BankDetailsSettings() {
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0 py-3 sm:border-b sm:border-line">
-      <dt className="text-[13px] text-ink-3">{label}</dt>
+      <dt className="text-[0.8125rem] text-ink-3">{label}</dt>
       <dd className="tnum mt-0.5 break-words font-medium">{value}</dd>
     </div>
   );

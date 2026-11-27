@@ -37,12 +37,12 @@ export function RegisterDemo() {
   return (
     <div className="w-full max-w-[390px] rounded-[var(--radius-xl)] bg-surface text-ink shadow-lg">
       <div className="border-b border-line px-4 pb-3 pt-4">
-        <p className="font-display text-[22px] leading-tight">Junior Tap</p>
-        <p className="text-[14px] text-ink-3">Tuesday 1 December · 16:30 · Studio Two</p>
+        <p className="font-display text-[1.375rem] leading-tight">Junior Tap</p>
+        <p className="text-[0.875rem] text-ink-3">Tuesday 1 December · 16:30 · Studio Two</p>
       </div>
       <div className="px-4 pb-2">
         <div className="flex items-center gap-3 border-b-2 border-ink py-3" aria-live="polite">
-          <p className="min-w-0 flex-1 text-[15px] tnum">
+          <p className="min-w-0 flex-1 text-[0.9375rem] tnum">
             <span className="font-semibold">{here} here · {absent} absent</span>
             <span className="text-ink-3"> · {left ? `${left} to mark` : 'all marked'}</span>
           </p>
@@ -54,9 +54,9 @@ export function RegisterDemo() {
             return (
               <li key={d.name} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 py-2.5">
                 <span className="min-w-0">
-                  <span className="block truncate text-[17px] font-semibold leading-tight">{d.name}</span>
-                  {d.med && <span className="mt-0.5 block text-[14px] font-semibold leading-snug text-caution">{d.med}</span>}
-                  <span className="mt-0.5 block text-[13px] text-ink-3">
+                  <span className="block truncate text-[1.0625rem] font-semibold leading-tight">{d.name}</span>
+                  {d.med && <span className="mt-0.5 block text-[0.875rem] font-semibold leading-snug text-caution">{d.med}</span>}
+                  <span className="mt-0.5 block text-[0.8125rem] text-ink-3">
                     {d.trial && <span className="mr-1.5 rounded-[var(--radius-sm)] bg-peach-soft px-1.5 py-px font-semibold text-ink">Trial</span>}
                     {d.meta}
                   </span>
@@ -65,12 +65,12 @@ export function RegisterDemo() {
                   className={cn('grid h-12 w-[8.75rem] grid-cols-2 overflow-hidden rounded-[var(--radius-lg)] border-[1.5px] min-[400px]:w-[9.5rem]',
                     m === 'here' ? 'border-positive' : m === 'absent' ? 'border-critical' : 'border-line-strong')}>
                   <button type="button" aria-pressed={m === 'here'} aria-label={`Here — ${d.name}`} onClick={() => set(i, 'here')}
-                    className={cn('flex items-center justify-center gap-1 text-[15px] font-semibold transition-colors',
+                    className={cn('flex items-center justify-center gap-1 text-[0.9375rem] font-semibold transition-colors',
                       m === 'here' ? 'bg-positive-soft text-positive' : 'text-ink-2 hover:bg-surface-2')}>
                     {m === 'here' && <Check className="size-4" strokeWidth={2.5} aria-hidden />}Here
                   </button>
                   <button type="button" aria-pressed={m === 'absent'} aria-label={`Absent — ${d.name}`} onClick={() => set(i, 'absent')}
-                    className={cn('flex items-center justify-center gap-1 border-l-[1.5px] text-[15px] font-semibold transition-colors',
+                    className={cn('flex items-center justify-center gap-1 border-l-[1.5px] text-[0.9375rem] font-semibold transition-colors',
                       m === 'here' ? 'border-positive' : m === 'absent' ? 'border-critical' : 'border-line-strong',
                       m === 'absent' ? 'bg-critical-soft text-critical' : 'text-ink-2 hover:bg-surface-2')}>
                     {m === 'absent' && <X className="size-4" strokeWidth={2.5} aria-hidden />}Absent
@@ -82,7 +82,7 @@ export function RegisterDemo() {
         </ul>
       </div>
       <div className="flex items-center gap-3 border-t border-line px-4 py-3">
-        <p className="min-w-0 flex-1 text-[14px] text-ink-3">{left ? `${left} to mark` : <span className="font-semibold text-ink">Everyone is marked.</span>}</p>
+        <p className="min-w-0 flex-1 text-[0.875rem] text-ink-3">{left ? `${left} to mark` : <span className="font-semibold text-ink">Everyone is marked.</span>}</p>
         <Button type="button" variant="primary" disabled={!left}
           onClick={() => setMarks(ms => ms.map(x => x ?? 'here'))}>Mark the rest here</Button>
       </div>
@@ -111,19 +111,19 @@ export function SchoolSamples() {
             <div data-theme={s.theme} style={vars} inert
               className="overflow-hidden rounded-[var(--radius-xl)] border border-line bg-canvas">
               <div className="flex items-center gap-3 border-b border-line bg-surface px-4 py-3">
-                <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent text-[13px] font-semibold text-on-accent">
+                <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent text-[0.8125rem] font-semibold text-on-accent">
                   {monogram(s.school)}
                 </span>
                 <span className="min-w-0">
-                  <span className="block truncate font-display text-[16px] leading-tight">{s.school}</span>
+                  <span className="block truncate font-display text-[1rem] leading-tight">{s.school}</span>
                   <PoweredBy />
                 </span>
               </div>
               <div className="px-4 pb-5 pt-4">
                 <p className="label text-accent-text">Next · Saturday</p>
-                <p className="display-xl mt-1 text-[56px]">{s.when}</p>
-                <p className="mt-2 font-display text-[19px] leading-tight">{s.cls}</p>
-                <p className="mt-1 flex items-center gap-2 text-[14px] text-ink-2">
+                <p className="display-xl mt-1 text-[3.5rem]">{s.when}</p>
+                <p className="mt-2 font-display text-[1.1875rem] leading-tight">{s.cls}</p>
+                <p className="mt-1 flex items-center gap-2 text-[0.875rem] text-ink-2">
                   <Beats value={s.n} max={s.cap} label={`${s.n} of ${s.cap} places`} />
                   <span className="tnum">{s.n} of {s.cap}{s.n === s.cap ? ' · full' : ''}</span>
                   <span className="text-ink-3">· {s.room}</span>
@@ -131,7 +131,7 @@ export function SchoolSamples() {
                 <Button variant="primary" className="mt-4 w-full" tabIndex={-1}>Open register</Button>
               </div>
             </div>
-            <p className="mt-2 text-[13px] text-ink-3">
+            <p className="mt-2 text-[0.8125rem] text-ink-3">
               {s.school} · {t.name} style, {p.name.toLowerCase()} colours
             </p>
           </li>

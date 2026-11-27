@@ -60,16 +60,16 @@ export function MedicalBrief({ brief, layout = 'side' }: { brief: Brief; layout?
     <div className={cn('grid gap-x-8 gap-y-5', layout === 'side' && 'sm:grid-cols-2')}>
       <section aria-label="Medical" className={cn('border-l-4 pl-3',
         tone === 'critical' ? 'border-critical' : tone === 'caution' ? 'border-caution' : 'border-line')}>
-        <h3 className={cn('text-[14px] font-semibold',
+        <h3 className={cn('text-[0.875rem] font-semibold',
           tone === 'critical' ? 'text-critical' : tone === 'caution' ? 'text-caution' : 'text-ink-2')}>
           {tone === 'critical' ? 'Urgent medical alert' : tone === 'caution' ? 'Medical information' : 'Medical'}
         </h3>
-        {!brief.has_medical_need && <p className="mt-0.5 text-[14px] text-ink-2">Nothing recorded.</p>}
+        {!brief.has_medical_need && <p className="mt-0.5 text-[0.875rem] text-ink-2">Nothing recorded.</p>}
         {recorded.length > 0 && (
-          <dl className="mt-1.5 space-y-1.5 text-[14.5px]">
+          <dl className="mt-1.5 space-y-1.5 text-[0.9062rem]">
             {recorded.map(([k, v]) => (
               <div key={k}>
-                <dt className="text-[13px] text-ink-3">{k}</dt>
+                <dt className="text-[0.8125rem] text-ink-3">{k}</dt>
                 <dd className="text-ink">{v}</dd>
               </div>
             ))}
@@ -77,16 +77,16 @@ export function MedicalBrief({ brief, layout = 'side' }: { brief: Brief; layout?
         )}
         {brief.action_plan && (
           <div className="mt-2">
-            <p className="text-[13px] text-ink-3">In an emergency</p>
-            <p className="text-[14.5px] font-semibold text-ink">{brief.action_plan}</p>
+            <p className="text-[0.8125rem] text-ink-3">In an emergency</p>
+            <p className="text-[0.9062rem] font-semibold text-ink">{brief.action_plan}</p>
           </div>
         )}
       </section>
 
       <section aria-label="Emergency contacts">
-        <h3 className="text-[14px] font-semibold text-ink-2">Emergency contacts</h3>
+        <h3 className="text-[0.875rem] font-semibold text-ink-2">Emergency contacts</h3>
         {contacts.length === 0 && (
-          <p className="mt-0.5 text-[14px] font-semibold text-caution">None recorded. Tell the office.</p>
+          <p className="mt-0.5 text-[0.875rem] font-semibold text-caution">None recorded. Tell the office.</p>
         )}
         <ul className="divide-y divide-line">
           {contacts.map((c, n) => (
@@ -95,14 +95,14 @@ export function MedicalBrief({ brief, layout = 'side' }: { brief: Brief; layout?
                 <a href={`tel:${c.phone.replace(/\s+/g, '')}`}
                    className="-mx-2 flex min-h-[48px] items-center gap-3 rounded-[var(--radius-md)] px-2 hover:bg-surface-2">
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[14.5px] font-medium">{c.name}{c.relationship ? <span className="font-normal text-ink-3"> · {c.relationship}</span> : null}</span>
-                    <span className="tnum block text-[13.5px] text-ink-2">{c.phone}</span>
+                    <span className="block text-[0.9062rem] font-medium">{c.name}{c.relationship ? <span className="font-normal text-ink-3"> · {c.relationship}</span> : null}</span>
+                    <span className="tnum block text-[0.8438rem] text-ink-2">{c.phone}</span>
                   </span>
-                  <span className="inline-flex items-center gap-1 text-[13.5px] font-semibold text-accent-text">
+                  <span className="inline-flex items-center gap-1 text-[0.8438rem] font-semibold text-accent-text">
                     <Phone className="size-3.5" aria-hidden />Call</span>
                 </a>
               ) : (
-                <span className="block py-2 text-[14.5px]">{c.name}</span>
+                <span className="block py-2 text-[0.9062rem]">{c.name}</span>
               )}
             </li>
           ))}
@@ -110,8 +110,8 @@ export function MedicalBrief({ brief, layout = 'side' }: { brief: Brief; layout?
         {/* Who may collect, and who may not (UR-17). Guardians may collect unless listed. */}
         {brief.collection && brief.collection.length > 0 && (
           <div className="mt-3">
-            <h3 className="text-[14px] font-semibold text-ink-2">Collection</h3>
-            <ul className="mt-0.5 space-y-0.5 text-[14px]">
+            <h3 className="text-[0.875rem] font-semibold text-ink-2">Collection</h3>
+            <ul className="mt-0.5 space-y-0.5 text-[0.875rem]">
               {brief.collection.map((c, n) => (
                 <li key={n} className={cn(!c.allowed && 'font-semibold text-critical')}>
                   {c.allowed ? 'May collect: ' : 'May not collect: '}{c.name}

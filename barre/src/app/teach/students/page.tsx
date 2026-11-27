@@ -74,12 +74,12 @@ function MyStudents() {
             <ViewTabs label="Which students" value={view} onChange={setView}
               options={[['all', 'Everyone'], ['support', `May need support${support.data ? ` · ${needing}` : ''}`]]} />
             {view === 'support' && (
-              <p className="text-[13px] text-ink-3">Absent two or more times in a row, skills marked not started, medical notes or a support note from the office. Staff only; families never see this list.</p>
+              <p className="text-[0.8125rem] text-ink-3">Absent two or more times in a row, skills marked not started, medical notes or a support note from the office. Staff only; families never see this list.</p>
             )}
             <section aria-labelledby="students-h">
               <div className="mb-1 flex items-baseline gap-3 border-b-2 border-ink pb-2">
                 <h2 id="students-h" className="section-title flex-1">{view === 'support' ? 'May need support' : onlyNeeds ? 'With medical notes' : q ? 'Matching' : 'Everyone you teach'}</h2>
-                {rows.data && <span className="text-[13px] text-ink-3">{list.length} · attendance this term</span>}
+                {rows.data && <span className="text-[0.8125rem] text-ink-3">{list.length} · attendance this term</span>}
               </div>
               {rows.isLoading && <div className="space-y-3 pt-3">{[0,1,2].map(i => <Skeleton key={i} className="h-12" />)}</div>}
               {rows.error != null && <ErrorState error={rows.error} onRetry={() => rows.refetch()} />}
@@ -99,16 +99,16 @@ function MyStudents() {
                           selected === s.id && 'bg-accent-soft/60 shadow-[inset_3px_0_0_var(--color-accent)]')}>
                         <span className="min-w-0">
                           <span className="block truncate font-semibold">{s.preferred_name ?? s.first_name} {s.last_name}</span>
-                          {med && <span className={cn('block truncate text-[13.5px] font-semibold', s.requires_alert ? 'text-critical' : 'text-caution')}>{med}</span>}
-                          {why.length > 0 && <span className="block truncate text-[13.5px] text-ink-2">{why.join(' · ')}</span>}
-                          <span className="block truncate text-[13px] text-ink-3">
+                          {med && <span className={cn('block truncate text-[0.8438rem] font-semibold', s.requires_alert ? 'text-critical' : 'text-caution')}>{med}</span>}
+                          {why.length > 0 && <span className="block truncate text-[0.8438rem] text-ink-2">{why.join(' · ')}</span>}
+                          <span className="block truncate text-[0.8125rem] text-ink-3">
                             {[ageFrom(s.date_of_birth) != null && `Age ${ageFrom(s.date_of_birth)}`, s.class_names].filter(Boolean).join(' · ')}
                           </span>
                         </span>
                         {s.attendance_pct != null && (
                           <span className="flex items-center gap-2">
                             <Beats value={s.attendance_pct} max={100} size="sm" tone={low ? 'caution' : 'ink'} label={`${s.attendance_pct}% attendance`} className="hidden sm:inline-flex" />
-                            <span className={cn('tnum w-11 text-right text-[14px]', low ? 'font-semibold text-caution' : 'text-ink-2')}>
+                            <span className={cn('tnum w-11 text-right text-[0.875rem]', low ? 'font-semibold text-caution' : 'text-ink-2')}>
                               {s.attendance_pct}%{low && <span className="sr-only"> attendance, low</span>}
                             </span>
                           </span>
@@ -131,7 +131,7 @@ function MyStudents() {
                 <>
                   <DetailSection title="Safety">
                     <MedicalBrief brief={current} layout="stack" />
-                    <p className="mt-3 text-[13px] text-ink-3">Kept up to date by the office. GP details stay with them.</p>
+                    <p className="mt-3 text-[0.8125rem] text-ink-3">Kept up to date by the office. GP details stay with them.</p>
                   </DetailSection>
                   <DetailSection title="Last feedback">
                     <LastFeedback studentId={current.id} name={current.preferred_name ?? current.first_name} empty="No feedback written yet." />
@@ -157,7 +157,7 @@ function MyStudents() {
                   {(ageFrom(current.date_of_birth) ?? 0) >= 13 && (
                     <DetailSection title="Their reflections">
                       <Reflections studentId={current.id} />
-                      <p className="mt-1.5 text-[13px] text-ink-3">Only you, their other teachers and the student see these. If one worries you, follow your safeguarding procedure.</p>
+                      <p className="mt-1.5 text-[0.8125rem] text-ink-3">Only you, their other teachers and the student see these. If one worries you, follow your safeguarding procedure.</p>
                     </DetailSection>
                   )}
                   <DetailSection title="Milestones"><Milestones studentId={current.id} /></DetailSection>

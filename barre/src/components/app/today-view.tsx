@@ -56,7 +56,7 @@ export function TodayView() {
 function NextClass({ s, loading }: { s: Q.SessionRow | null; loading: boolean }) {
   if (loading) return <Skeleton className="h-36" />;
   if (!s) return (
-    <div><p className="label">Next</p><p className="mt-2 font-display text-[28px] leading-tight">No more classes today</p>
+    <div><p className="label">Next</p><p className="mt-2 font-display text-[1.75rem] leading-tight">No more classes today</p>
       <p className="mt-1 text-ink-3">Tomorrow’s timetable is on the schedule.</p></div>
   );
   const mins = Math.round((new Date(s.starts_at).getTime() - Date.now()) / 60000);
@@ -65,12 +65,12 @@ function NextClass({ s, loading }: { s: Q.SessionRow | null; loading: boolean })
     <section aria-labelledby="next-h" className="flex flex-col gap-x-8 gap-y-3 sm:flex-row sm:items-end">
       <div>
         <p className="label text-accent-text">Next · {when}</p>
-        <p id="next-h" className="display-xl mt-1 text-[72px] text-ink sm:text-[88px]">{time(s.starts_at)}</p>
+        <p id="next-h" className="display-xl mt-1 text-[4.5rem] text-ink sm:text-[5.5rem]">{time(s.starts_at)}</p>
       </div>
       <div className="min-w-0 flex-1 sm:pb-1.5">
-        <p className="font-display text-[24px] leading-tight">{s.name}</p>
-        <p className="mt-1 text-[14px] text-ink-3">{[s.teacher, s.room, s.location].filter(Boolean).join(' · ')}</p>
-        <p className="mt-1 flex items-center gap-2 text-[14px] text-ink-2">
+        <p className="font-display text-[1.5rem] leading-tight">{s.name}</p>
+        <p className="mt-1 text-[0.875rem] text-ink-3">{[s.teacher, s.room, s.location].filter(Boolean).join(' · ')}</p>
+        <p className="mt-1 flex items-center gap-2 text-[0.875rem] text-ink-2">
           <Beats value={s.enrolled} max={s.capacity} label={`${s.enrolled} of ${s.capacity} places`} />
           <span className="tnum">{s.enrolled} of {s.capacity}{s.trials ? ` · ${s.trials} trial${s.trials === 1 ? '' : 's'}` : ''}</span>
         </p>
@@ -97,16 +97,16 @@ function TodaysClasses({ rows, loading, error, retry }: { rows?: Q.SessionRow[];
           return (
             <li key={s.id}>
               <Link href={`/teach/register/?session=${s.id}`} className="grid grid-cols-[4.25rem_minmax(0,1fr)_auto] items-center gap-x-4 py-3 hover:bg-surface-2/60 sm:grid-cols-[4.25rem_minmax(0,1fr)_auto_3.5rem]">
-                <span className={cn('font-display text-[19px] tnum', cancelled && 'text-ink-3 line-through')}>{time(s.starts_at)}</span>
+                <span className={cn('font-display text-[1.1875rem] tnum', cancelled && 'text-ink-3 line-through')}>{time(s.starts_at)}</span>
                 <span className="min-w-0">
                   <span className={cn('block truncate font-semibold', cancelled && 'text-ink-3')}>{s.name}</span>
-                  <span className="block truncate text-[13px] text-ink-3">
+                  <span className="block truncate text-[0.8125rem] text-ink-3">
                     {cancelled ? <span className="font-semibold uppercase tracking-wide text-critical">Cancelled{s.cancel_reason ? ` · ${s.cancel_reason}` : ''}</span>
                       : [s.covered ? `${s.teacher} (cover)` : s.teacher, s.room].filter(Boolean).join(' · ')}
                   </span>
                 </span>
                 {!cancelled && <Beats value={s.enrolled} max={s.capacity} label={`${s.enrolled} of ${s.capacity} places`} className="hidden sm:inline-flex" />}
-                <span className="tnum text-right text-[13.5px] text-ink-2">{cancelled ? '' : `${s.enrolled}/${s.capacity}`}</span>
+                <span className="tnum text-right text-[0.8438rem] text-ink-2">{cancelled ? '' : `${s.enrolled}/${s.capacity}`}</span>
               </Link>
             </li>
           );
@@ -162,12 +162,12 @@ function NeedsAttention() {
         {items.map(i => (
           <li key={i.key}>
             <Link href={i.href} className="group grid grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-x-3 py-3">
-              <span className={cn('font-display text-[28px] leading-none tnum', i.tone === 'critical' ? 'text-critical' : i.tone === 'caution' ? 'text-caution' : 'text-ink')}>{i.n}</span>
+              <span className={cn('font-display text-[1.75rem] leading-none tnum', i.tone === 'critical' ? 'text-critical' : i.tone === 'caution' ? 'text-caution' : 'text-ink')}>{i.n}</span>
               <span className="min-w-0">
                 <span className="block font-semibold leading-snug">{i.headline}{i.tone === 'critical' && <span className="sr-only"> (urgent)</span>}</span>
-                {i.detail && <span className="block truncate text-[13px] text-ink-3">{i.detail}</span>}
+                {i.detail && <span className="block truncate text-[0.8125rem] text-ink-3">{i.detail}</span>}
               </span>
-              <span className="flex items-center gap-1 text-[13px] font-semibold text-accent-text group-hover:underline">{i.action}<ArrowRight className="size-3.5" aria-hidden /></span>
+              <span className="flex items-center gap-1 text-[0.8125rem] font-semibold text-accent-text group-hover:underline">{i.action}<ArrowRight className="size-3.5" aria-hidden /></span>
             </Link>
           </li>
         ))}
@@ -184,10 +184,10 @@ function Money() {
       <SectionHead title="Money" href="/billing" link="Billing" />
       {!s ? <Skeleton className="mt-3 h-16" /> : (
         <dl className="grid grid-cols-2 gap-6 pt-3">
-          <div><dt className="label">Outstanding</dt><dd className="stat-number mt-1 text-[30px] leading-none">{money(s.outstanding_minor)}</dd>
-            <dd className="mt-1 text-[13px] text-ink-3">{s.owing_families} famil{s.owing_families === 1 ? 'y' : 'ies'}{Number(s.overdue_minor) > 0 ? ` · ${money(s.overdue_minor)} overdue` : ''}</dd></div>
-          <div><dt className="label">Collected, 30 days</dt><dd className="stat-number mt-1 text-[30px] leading-none">{money(s.collected_30d_minor)}</dd>
-            <dd className="mt-1 text-[13px] text-ink-3">Card, transfer and cash</dd></div>
+          <div><dt className="label">Outstanding</dt><dd className="stat-number mt-1 text-[1.875rem] leading-none">{money(s.outstanding_minor)}</dd>
+            <dd className="mt-1 text-[0.8125rem] text-ink-3">{s.owing_families} famil{s.owing_families === 1 ? 'y' : 'ies'}{Number(s.overdue_minor) > 0 ? ` · ${money(s.overdue_minor)} overdue` : ''}</dd></div>
+          <div><dt className="label">Collected, 30 days</dt><dd className="stat-number mt-1 text-[1.875rem] leading-none">{money(s.collected_30d_minor)}</dd>
+            <dd className="mt-1 text-[0.8125rem] text-ink-3">Card, transfer and cash</dd></div>
         </dl>
       )}
     </section>
@@ -201,7 +201,7 @@ function MiniList<T>({ title, rows, empty, render, href, link }: {
   return (
     <section className="min-w-0">
       <div className="mb-1 flex items-baseline gap-3"><h2 className="section-title flex-1">{title}</h2>
-        {href && <Link href={href} className="text-[13px] font-semibold text-accent-text hover:underline">{link}</Link>}</div>
+        {href && <Link href={href} className="text-[0.8125rem] font-semibold text-accent-text hover:underline">{link}</Link>}</div>
       {rows.isLoading && <Skeleton className="mt-2 h-20" />}
       {rows.data?.length === 0 && <p className="py-3 text-sm text-ink-3">{empty}</p>}
       <ul className="divide-y divide-line">{rows.data?.slice(0, 4).map((r, i) => <li key={i} className="py-2.5">{render(r)}</li>)}</ul>
@@ -213,15 +213,15 @@ function RecentEnrolments() {
   const rows = useRows<{ id: string; started_on: string; first_name: string; last_name: string; class_name: string }>(['recent-enrolments'], Q.RECENT_ENROLMENTS);
   return <MiniList title="New in class" rows={rows} empty="No new enrolments yet." render={r => (
     <div className="flex items-baseline justify-between gap-3"><span className="min-w-0"><span className="font-medium">{r.first_name} {r.last_name}</span>
-      <span className="block truncate text-[13px] text-ink-3">{r.class_name}</span></span><span className="shrink-0 text-[12.5px] text-ink-3">{relativeDay(r.started_on)}</span></div>)} />;
+      <span className="block truncate text-[0.8125rem] text-ink-3">{r.class_name}</span></span><span className="shrink-0 text-[0.7812rem] text-ink-3">{relativeDay(r.started_on)}</span></div>)} />;
 }
 
 function UpcomingTrials() {
   const rows = useRows<{ id: string; who: string; class_name: string; starts_at: string | null; status: string }>(['upcoming-trials'], Q.UPCOMING_TRIALS);
   return <MiniList title="Trials coming up" rows={rows} href="/enrolment" link="Enrolment" empty="No trials booked." render={r => (
     <div className="flex items-baseline justify-between gap-3"><span className="min-w-0"><span className="font-medium">{r.who}</span>
-      <span className="block truncate text-[13px] text-ink-3">{r.class_name}</span></span>
-      <span className="shrink-0 text-[12.5px] text-ink-3">{r.starts_at ? `${relativeDay(r.starts_at)} ${time(r.starts_at)}` : 'Not booked'}</span></div>)} />;
+      <span className="block truncate text-[0.8125rem] text-ink-3">{r.class_name}</span></span>
+      <span className="shrink-0 text-[0.7812rem] text-ink-3">{r.starts_at ? `${relativeDay(r.starts_at)} ${time(r.starts_at)}` : 'Not booked'}</span></div>)} />;
 }
 
 function RecentMessages() {
@@ -229,6 +229,6 @@ function RecentMessages() {
   const who = (r: { kind: string; family_name: string | null; class_name: string | null }) => r.kind === 'direct' ? r.family_name : r.kind === 'class_broadcast' ? r.class_name : 'Everyone';
   return <MiniList title="Recent messages" rows={rows} href="/inbox" link="Messages" empty="No messages yet." render={r => (
     <div><div className="flex items-baseline justify-between gap-3"><span className="min-w-0 truncate font-medium">{r.subject || r.body}</span>
-      <span className="shrink-0 text-[12.5px] text-ink-3">{relativeDay(r.sent_at)}</span></div>
-      <span className="block truncate text-[13px] text-ink-3">{who(r)}</span></div>)} />;
+      <span className="shrink-0 text-[0.7812rem] text-ink-3">{relativeDay(r.sent_at)}</span></div>
+      <span className="block truncate text-[0.8125rem] text-ink-3">{who(r)}</span></div>)} />;
 }

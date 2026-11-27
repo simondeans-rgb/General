@@ -66,8 +66,8 @@ export function ResourceRow({ r, canManage }: {
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <p className="font-semibold">{r.title}</p>
-          {r.description && <p className="mt-0.5 text-[14px] leading-relaxed text-ink-2">{r.description}</p>}
-          <p className="mt-0.5 text-[13px] text-ink-3">
+          {r.description && <p className="mt-0.5 text-[0.875rem] leading-relaxed text-ink-2">{r.description}</p>}
+          <p className="mt-0.5 text-[0.8125rem] text-ink-3">
             <span className={cn('font-semibold', r.kind === 'video' || r.kind === 'audio' ? 'text-ink-2' : 'text-ink-3')}>{KIND_LABEL[r.kind] ?? r.kind}</span>
             {[r.category, r.scope_label, length, r.size_bytes != null ? formatBytes(r.size_bytes) : null, r.added_by ? `added by ${r.added_by}` : null]
               .filter(Boolean).map((t, i) => <span key={i} className="tnum"> · {t}</span>)}
@@ -94,7 +94,7 @@ export function ResourceRow({ r, canManage }: {
         </div>
       </div>
 
-      {failed && <p role="alert" className="mt-2 text-[12.5px] text-critical">{failed}</p>}
+      {failed && <p role="alert" className="mt-2 text-[0.7812rem] text-critical">{failed}</p>}
       {remove.isError && <div className="mt-2"><ErrorState error={remove.error} /></div>}
 
       {url && (

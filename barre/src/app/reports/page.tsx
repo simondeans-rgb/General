@@ -57,7 +57,7 @@ function Reports() {
       <div className="mx-auto max-w-[1240px] space-y-10">
         {multi && (
           <div className="flex flex-wrap items-center gap-3">
-            <label htmlFor="r-loc" className="text-[14px] font-semibold">Location</label>
+            <label htmlFor="r-loc" className="text-[0.875rem] font-semibold">Location</label>
             <Select id="r-loc" value={loc ?? ''} onChange={e => setLoc(e.target.value)} className="w-auto min-w-48">
               <option value="">All locations</option>
               {locations.data!.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
@@ -88,7 +88,7 @@ function Reports() {
             <Small label={loc ? 'Outstanding, whole school' : 'Outstanding'} loading={h.isLoading} value={d && money(d.outstanding_minor)} href="/billing" />
             <Small label={loc ? 'Collected, 30 days, whole school' : 'Collected, 30 days'} loading={h.isLoading} value={d && money(d.collected_30d_minor)} href="/billing" />
           </dl>
-          <p className="mt-2 text-[13px] text-ink-3">Active students are children in at least one class today, each counted once. Your plan’s student count on Account also includes trial children and those who have left.</p>
+          <p className="mt-2 text-[0.8125rem] text-ink-3">Active students are children in at least one class today, each counted once. Your plan’s student count on Account also includes trial children and those who have left.</p>
         </section>
 
         {multi && !loc && <LocationCompare />}
@@ -99,7 +99,7 @@ function Reports() {
             <div className="pt-4">
               {weeks.isLoading && <Skeleton className="h-36" />}
               {weeks.data && <WeekBars rows={weeks.data} />}
-              <p className="mt-3 text-[13px] text-ink-3">Excused absences are left out. Weeks under 75% show in amber.</p>
+              <p className="mt-3 text-[0.8125rem] text-ink-3">Excused absences are left out. Weeks under 75% show in amber.</p>
             </div>
           </section>
 
@@ -122,7 +122,7 @@ function Reports() {
               </Select>
             } />
           {classes.isLoading && <div className="space-y-3 pt-3">{[0,1,2].map(i => <Skeleton key={i} className="h-10" />)}</div>}
-          {classes.data && shownClasses.length === 0 && <p className="py-4 text-[14px] text-ink-3">No class is under {under}% full.</p>}
+          {classes.data && shownClasses.length === 0 && <p className="py-4 text-[0.875rem] text-ink-3">No class is under {under}% full.</p>}
           {!!shownClasses.length && (
             <div className="hidden grid-cols-[minmax(0,1fr)_220px_110px] gap-x-6 border-b border-line py-2 sm:grid" aria-hidden>
               <span className="label">Class</span><span className="label">Places</span><span className="label text-right">Attendance</span>
@@ -139,7 +139,7 @@ function Reports() {
                   <Link href={`/classes?id=${c.id}`} className="grid min-h-12 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-6 gap-y-1 py-2.5 hover:bg-surface-2/60 sm:grid-cols-[minmax(0,1fr)_220px_110px]">
                     <span className="col-start-1 row-start-1 min-w-0 sm:col-start-auto sm:row-start-auto">
                       <span className="block truncate font-semibold">{c.name}</span>
-                      <span className="flex flex-wrap items-center gap-x-1.5 text-[13px] text-ink-3">
+                      <span className="flex flex-wrap items-center gap-x-1.5 text-[0.8125rem] text-ink-3">
                         {c.style && <><span aria-hidden className={cn('size-2 shrink-0 rounded-[2px]', STYLE_BG[c.colour ?? ''] ?? 'bg-ink-3')} />{c.style}</>}
                         {multi && !loc && c.location && <span>· {c.location}</span>}
                         {c.waiting > 0 && <span className="font-semibold text-caution">· {c.waiting} waiting</span>}
@@ -148,14 +148,14 @@ function Reports() {
                       </span>
                     </span>
                     <span className="col-span-2 row-start-2 flex items-center gap-2.5 sm:col-span-1 sm:row-start-auto">
-                      {dropIn ? <span className="text-[13.5px] text-ink-2">Drop-in: booked by the class</span> : <>
+                      {dropIn ? <span className="text-[0.8438rem] text-ink-2">Drop-in: booked by the class</span> : <>
                         <Beats value={c.enrolled} max={c.capacity} tone={full ? 'caution' : 'accent'} label={`${c.enrolled} of ${c.capacity} places`} />
-                        <span className="tnum text-[13.5px] text-ink-2">{c.enrolled} of {c.capacity}{full && <span className="font-semibold text-caution"> · full</span>}</span>
+                        <span className="tnum text-[0.8438rem] text-ink-2">{c.enrolled} of {c.capacity}{full && <span className="font-semibold text-caution"> · full</span>}</span>
                       </>}
                     </span>
-                    <span className="tnum col-start-2 row-start-1 text-right text-[14px] sm:col-start-auto sm:row-start-auto">
-                      {att == null ? <span className="text-[13px] text-ink-3">No registers</span>
-                        : <span className={cn(att < 75 ? 'font-semibold text-caution' : 'text-ink')}>{att}%<span className="sr-only"> attendance</span>{att < 75 && <span className="text-[12.5px]"> low</span>}</span>}
+                    <span className="tnum col-start-2 row-start-1 text-right text-[0.875rem] sm:col-start-auto sm:row-start-auto">
+                      {att == null ? <span className="text-[0.8125rem] text-ink-3">No registers</span>
+                        : <span className={cn(att < 75 ? 'font-semibold text-caution' : 'text-ink')}>{att}%<span className="sr-only"> attendance</span>{att < 75 && <span className="text-[0.7812rem]"> low</span>}</span>}
                     </span>
                   </Link>
                 </li>
@@ -226,17 +226,17 @@ function Retention() {
             {terms.data.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
           </Select>) : undefined} />
       {sum.isLoading && <Skeleton className="mt-3 h-20" />}
-      {s && !s.previous_term && <p className="py-4 text-[14px] text-ink-3">This is the first term in Swayvo, so there is nothing to compare with yet. Retention appears once a second term starts.</p>}
+      {s && !s.previous_term && <p className="py-4 text-[0.875rem] text-ink-3">This is the first term in Swayvo, so there is nothing to compare with yet. Retention appears once a second term starts.</p>}
       {s?.previous_term && (
         <>
           <dl className="grid grid-cols-2 gap-x-6 gap-y-4 pt-4 sm:grid-cols-4">
-            <div><dt className="label">Carried on</dt><dd className="stat-number mt-1 text-[30px] leading-none">{pct(s.continuing, s.previous) ?? 0}%</dd>
-              <dd className="mt-1 text-[13px] text-ink-3">{s.continuing} of {s.previous} from {s.previous_term}</dd></div>
-            <div><dt className="label">Did not come back</dt><dd className="stat-number mt-1 text-[30px] leading-none">{s.lapsed}</dd></div>
-            <div><dt className="label">New this term</dt><dd className="stat-number mt-1 text-[30px] leading-none">{s.new}</dd></div>
-            <div><dt className="label">In {s.current_term}</dt><dd className="stat-number mt-1 text-[30px] leading-none">{s.current}</dd></div>
+            <div><dt className="label">Carried on</dt><dd className="stat-number mt-1 text-[1.875rem] leading-none">{pct(s.continuing, s.previous) ?? 0}%</dd>
+              <dd className="mt-1 text-[0.8125rem] text-ink-3">{s.continuing} of {s.previous} from {s.previous_term}</dd></div>
+            <div><dt className="label">Did not come back</dt><dd className="stat-number mt-1 text-[1.875rem] leading-none">{s.lapsed}</dd></div>
+            <div><dt className="label">New this term</dt><dd className="stat-number mt-1 text-[1.875rem] leading-none">{s.new}</dd></div>
+            <div><dt className="label">In {s.current_term}</dt><dd className="stat-number mt-1 text-[1.875rem] leading-none">{s.current}</dd></div>
           </dl>
-          <p className="mt-2 text-[13px] text-ink-3">A student counts in a term if they were in any of its classes. Moving class is not leaving.</p>
+          <p className="mt-2 text-[0.8125rem] text-ink-3">A student counts in a term if they were in any of its classes. Moving class is not leaving.</p>
           <ViewTabs className="mt-5" label="Retention by" value={by} onChange={setBy} options={[['class', 'By class'], ['style', 'By style'], ['age', 'By age']]} />
           <div className="overflow-x-auto">
             <table className="w-full min-w-[480px] text-sm">
@@ -260,13 +260,13 @@ function Retention() {
           {!!lapsed.data?.length && (
             <div className="mt-6">
               <div className="flex flex-wrap items-baseline gap-3 border-b border-ink pb-1.5">
-                <h3 className="flex-1 text-[14px] font-semibold">To contact: {lapsed.data.length} who did not come back</h3>
+                <h3 className="flex-1 text-[0.875rem] font-semibold">To contact: {lapsed.data.length} who did not come back</h3>
                 <Button size="sm" variant="ghost" onClick={() => downloadCsv(`lapsed-${isoDate(new Date())}.csv`, lapsed.data!.map(l => ({
                   student: l.student, family: l.family, last_class: l.last_class, contact: l.contact ?? '', phone: l.phone ?? '', email: l.email ?? '' })))}>
                   <Download className="size-4" aria-hidden /> CSV
                 </Button>
               </div>
-              <ul className="divide-y divide-line text-[14px]">
+              <ul className="divide-y divide-line text-[0.875rem]">
                 {lapsed.data.map(l => (
                   <li key={l.student_id} className="flex flex-wrap items-baseline gap-x-3 py-2">
                     <Link href={`/people?id=${l.family_id}`} className="min-w-0 flex-1 font-semibold hover:underline">{l.student}</Link>
@@ -295,9 +295,9 @@ function Kpi({ label, value, note, change, loading, href }: {
       <dt className="label">{href ? <Link href={href} className="hover:text-ink hover:underline">{label}</Link> : label}</dt>
       {loading ? <dd><Skeleton className="mt-2 h-8 w-20" /></dd> : (
         <dd className="mt-1.5 flex flex-wrap items-baseline gap-x-2">
-          <span className="stat-number text-[30px] leading-none lg:text-[34px]">{value ?? '—'}</span>
+          <span className="stat-number text-[1.875rem] leading-none lg:text-[2.125rem]">{value ?? '—'}</span>
           {typeof change === 'number' && (
-            <span className={cn('inline-flex items-center gap-0.5 text-[13px] font-semibold tnum',
+            <span className={cn('inline-flex items-center gap-0.5 text-[0.8125rem] font-semibold tnum',
               change > 0 ? 'text-positive' : change < 0 ? 'text-critical' : 'text-ink-3')}>
               {change > 0 ? <ArrowUpRight className="size-3.5" aria-hidden /> : change < 0 ? <ArrowDownRight className="size-3.5" aria-hidden /> : <Minus className="size-3.5" aria-hidden />}
               {change > 0 ? `up ${change}` : change < 0 ? `down ${-change}` : 'no change'}
@@ -305,7 +305,7 @@ function Kpi({ label, value, note, change, loading, href }: {
           )}
         </dd>
       )}
-      {note && <dd className="mt-1.5 text-[13px] text-ink-3">{note}</dd>}
+      {note && <dd className="mt-1.5 text-[0.8125rem] text-ink-3">{note}</dd>}
     </div>
   );
 }
@@ -313,8 +313,8 @@ function Kpi({ label, value, note, change, loading, href }: {
 function Small({ label, value, loading, href }: { label: string; value?: React.ReactNode; loading?: boolean; href?: string }) {
   return (
     <div className="min-w-0 py-3 sm:px-4 sm:first:pl-0">
-      <dt className="text-[13px] text-ink-3">{href ? <Link href={href} className="hover:text-ink hover:underline">{label}</Link> : label}</dt>
-      <dd className="tnum mt-0.5 text-[17px] font-semibold">{loading ? <Skeleton className="h-5 w-14" /> : value ?? '—'}</dd>
+      <dt className="text-[0.8125rem] text-ink-3">{href ? <Link href={href} className="hover:text-ink hover:underline">{label}</Link> : label}</dt>
+      <dd className="tnum mt-0.5 text-[1.0625rem] font-semibold">{loading ? <Skeleton className="h-5 w-14" /> : value ?? '—'}</dd>
     </div>
   );
 }
@@ -328,7 +328,7 @@ function WeekBars({ rows }: { rows: R.WeekRow[] }) {
           const p = pct(w.attended, w.marked);
           return (
             <div key={w.week} className="flex h-full flex-1 flex-col items-center justify-end gap-1">
-              <span className={cn('tnum text-[12px]', p != null && p < 75 ? 'font-semibold text-caution' : 'text-ink-2')}>{p == null ? '' : `${p}%`}</span>
+              <span className={cn('tnum text-[0.75rem]', p != null && p < 75 ? 'font-semibold text-caution' : 'text-ink-2')}>{p == null ? '' : `${p}%`}</span>
               <span className={cn('w-full max-w-9 rounded-t-[2px]', p == null ? 'bg-surface-3' : p < 75 ? 'bg-caution' : last === w.week ? 'bg-accent' : 'bg-ink-2')}
                     style={{ height: p == null ? '4px' : `${Math.max(6, p)}%` }} />
             </div>
@@ -336,7 +336,7 @@ function WeekBars({ rows }: { rows: R.WeekRow[] }) {
         })}
       </div>
       <div className="mt-1.5 flex gap-2 border-t border-line pt-1.5" aria-hidden>
-        {rows.map((w, n) => <span key={w.week} className="flex-1 text-center text-[12px] text-ink-3">
+        {rows.map((w, n) => <span key={w.week} className="flex-1 text-center text-[0.75rem] text-ink-3">
           {n === rows.length - 1 ? 'This week' : dateShort(w.week)}</span>)}
       </div>
       {/* The same figures as a table, for anyone not reading bars. */}
@@ -368,7 +368,7 @@ function MonthTable({ rows }: { rows: R.MonthRow[] }) {
             <td className="py-2 pr-3">
               <span className="flex items-center gap-2">
                 <span aria-hidden className="h-2 rounded-[2px] bg-ink-2" style={{ width: `${(Number(r.collected_minor) / max) * 100}%`, minWidth: Number(r.collected_minor) ? 4 : 0 }} />
-                <span className="tnum shrink-0 text-[13.5px] font-medium">{money(r.collected_minor)}</span>
+                <span className="tnum shrink-0 text-[0.8438rem] font-medium">{money(r.collected_minor)}</span>
               </span>
             </td>
             <td className="tnum py-2 text-right">{r.joined}</td>
@@ -389,23 +389,23 @@ function Pulse({ d }: { d: R.Headline }) {
     <section aria-labelledby="r-pulse">
       <SectionHead id="r-pulse" title="Studio Pulse" meta="Preview" />
       <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3 pt-4">
-        <p className="max-w-xl text-[14.5px] text-ink-2">One health score from five rates you already have.</p>
+        <p className="max-w-xl text-[0.9062rem] text-ink-2">One health score from five rates you already have.</p>
         {result.score != null
-          ? <p className="stat-number text-[40px] leading-none">{result.score}<span className="text-[16px] text-ink-3"> / 100</span></p>
-          : <p className="max-w-[280px] text-[13px] text-ink-3"><Info className="mr-1 inline size-3.5 align-[-2px]" aria-hidden />{result.reason}</p>}
+          ? <p className="stat-number text-[2.5rem] leading-none">{result.score}<span className="text-[1rem] text-ink-3"> / 100</span></p>
+          : <p className="max-w-[280px] text-[0.8125rem] text-ink-3"><Info className="mr-1 inline size-3.5 align-[-2px]" aria-hidden />{result.reason}</p>}
       </div>
       <ul className="mt-5 grid divide-y divide-line border-y border-line sm:grid-cols-5 sm:divide-x sm:divide-y-0">
         {components.map(c => (
           <li key={c.key} className="py-4 sm:px-4 sm:first:pl-0 sm:last:pr-0">
-            <p className="text-[13px] font-semibold text-ink">{c.label}</p>
-            <p className="stat-number mt-1 text-[24px] leading-none">
-              {c.value == null ? <span className="font-sans text-[14px] font-normal text-ink-3">Not enough data</span> : `${Math.round(c.value * 100)}%`}
+            <p className="text-[0.8125rem] font-semibold text-ink">{c.label}</p>
+            <p className="stat-number mt-1 text-[1.5rem] leading-none">
+              {c.value == null ? <span className="font-sans text-[0.875rem] font-normal text-ink-3">Not enough data</span> : `${Math.round(c.value * 100)}%`}
             </p>
-            <p className="mt-2 text-[13px] text-ink-3" title={`${c.definition} ${c.basis}.`}>Counts {Math.round(c.weight * 100)}%</p>
+            <p className="mt-2 text-[0.8125rem] text-ink-3" title={`${c.definition} ${c.basis}.`}>Counts {Math.round(c.weight * 100)}%</p>
           </li>
         ))}
       </ul>
-      <details className="mt-3 text-[13px] text-ink-3">
+      <details className="mt-3 text-[0.8125rem] text-ink-3">
         <summary className="cursor-pointer font-semibold text-ink-2">How the score works</summary>
         <ul className="mt-2 space-y-1">{components.map(c => <li key={c.key}><b className="text-ink-2">{c.label}:</b> {c.definition} ({c.basis})</li>)}
           <li>The score appears after {MIN_HISTORY_DAYS} days of history and once every rate has at least 20 in its sample.</li></ul>

@@ -22,7 +22,7 @@ export function useLocationFilter() {
   const choose = (v: string) => { setName(v); try { if (v) localStorage.setItem(KEY, v); else localStorage.removeItem(KEY); } catch { /* ignore */ } };
   const keep = React.useCallback((loc: string | null | undefined) => !current || loc === current, [current]);
   const control = multi ? (
-    <label className="inline-flex items-center gap-2 text-[14px]">
+    <label className="inline-flex items-center gap-2 text-[0.875rem]">
       <span className="font-semibold">Location</span>
       <Select aria-label="Location" value={current} onChange={e => choose(e.target.value)} className="w-auto">
         <option value="">All locations</option>

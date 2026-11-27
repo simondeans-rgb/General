@@ -55,17 +55,17 @@ function Sheet({ onClose, onDownload }: { onClose: () => void; onDownload: () =>
         </div>
         <section className="space-y-2">
           <h3 className="font-medium">Keep it up to date</h3>
-          <p className="text-[13px] text-ink-2">A private link for Apple, Google or Outlook calendar. Changes and cancellations appear on their own. Anyone with the link can see these classes, so keep it to yourself.</p>
+          <p className="text-[0.8125rem] text-ink-2">A private link for Apple, Google or Outlook calendar. Changes and cancellations appear on their own. Anyone with the link can see these classes, so keep it to yourself.</p>
           {url ? (
             <>
               <div className="flex gap-2">
                 <input readOnly value={url} aria-label="Calendar link" onFocus={e => e.currentTarget.select()}
-                  className="min-w-0 flex-1 rounded-[var(--radius-md)] border border-line bg-surface-2 px-3 py-2 font-mono text-[12px]" />
+                  className="min-w-0 flex-1 rounded-[var(--radius-md)] border border-line bg-surface-2 px-3 py-2 font-mono text-[0.75rem]" />
                 <Button size="sm" aria-label="Copy link" onClick={() => navigator.clipboard?.writeText(url).then(() => setCopied(true))}>
                   <Copy className="size-4" aria-hidden />
                 </Button>
               </div>
-              {copied && <p role="status" className="text-[12.5px] text-positive">Copied. Paste it into your calendar app’s “subscribe” option.</p>}
+              {copied && <p role="status" className="text-[0.7812rem] text-positive">Copied. Paste it into your calendar app’s “subscribe” option.</p>}
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" variant="primary" onClick={() => { window.location.href = url; }}>Subscribe</Button>
                 <Button size="sm" variant="ghost" loading={act.isPending} onClick={() => act.mutate('app.issue_calendar_token')}>
@@ -77,12 +77,12 @@ function Sheet({ onClose, onDownload }: { onClose: () => void; onDownload: () =>
           ) : (
             <Button size="sm" variant="primary" loading={act.isPending} onClick={() => act.mutate('app.issue_calendar_token')}>Make my link</Button>
           )}
-          <p className="text-[12px] text-ink-3">In this demo the link is made but not served; it starts working once Swayvo is hosted.</p>
+          <p className="text-[0.75rem] text-ink-3">In this demo the link is made but not served; it starts working once Swayvo is hosted.</p>
           {act.error != null && <ErrorState error={act.error} />}
         </section>
         <section className="space-y-2 border-t border-line pt-4">
           <h3 className="font-medium">Or download a copy</h3>
-          <p className="text-[13px] text-ink-2">The next 16 weeks as a file. It won’t change if the timetable does.</p>
+          <p className="text-[0.8125rem] text-ink-2">The next 16 weeks as a file. It won’t change if the timetable does.</p>
           <Button size="sm" onClick={onDownload}><Download className="size-4" aria-hidden /> Download</Button>
         </section>
       </div>

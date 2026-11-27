@@ -169,10 +169,10 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
           <>
             <div className="flex items-start gap-3 border-b border-line px-5 pb-3 pt-4">
               <div className="min-w-0 flex-1">
-                <h2 id="class-form-t" className="font-display text-[20px] leading-tight">
+                <h2 id="class-form-t" className="font-display text-[1.25rem] leading-tight">
                   {editing ? 'Edit class' : 'New class'}
                 </h2>
-                <p className="mt-1 text-[13.5px] text-ink-3">
+                <p className="mt-1 text-[0.8438rem] text-ink-3">
                   {editing ? 'Changes apply from here on.' : 'The term’s sessions are created for you.'}
                 </p>
               </div>
@@ -184,7 +184,7 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
             <div ref={body} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
             {!ready && !loadError && (
               <div className="space-y-3" aria-busy="true">
-                <p className="text-[13px] text-ink-3">Loading the studio’s styles, rooms and terms…</p>
+                <p className="text-[0.8125rem] text-ink-3">Loading the studio’s styles, rooms and terms…</p>
                 {[0,1,2,3].map(i => <Skeleton key={i} className="h-16" />)}
               </div>
             )}
@@ -339,13 +339,13 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
               </Field>
 
               <fieldset className="space-y-1">
-                <legend className="mb-2 w-full border-b border-ink pb-1.5 text-[14px] font-semibold">How families find it</legend>
+                <legend className="mb-2 w-full border-b border-ink pb-1.5 text-[0.875rem] font-semibold">How families find it</legend>
                 {([
                   ['trials_enabled', 'Taking trial bookings'],
                   ['trial_needs_approval', 'Trials need the teacher’s say-so first'],
                   ['waitlist_enabled', 'Keep a waiting list when it is full'],
                 ] as const).map(([k, label]) => (
-                  <label key={k} className="flex min-h-[44px] items-center gap-3 text-[14px]">
+                  <label key={k} className="flex min-h-[44px] items-center gap-3 text-[0.875rem]">
                     <input type="checkbox" checked={draft[k]} className="size-[18px] accent-[var(--color-accent)]"
                            onChange={e => set(k, e.target.checked)} />
                     {label}
@@ -362,7 +362,7 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
               </fieldset>
 
               {draft.age_min != null && draft.age_max != null && draft.age_max < draft.age_min && (
-                <p role="alert" className="flex items-center gap-1.5 text-[12.5px] text-critical">
+                <p role="alert" className="flex items-center gap-1.5 text-[0.7812rem] text-critical">
                   <AlertTriangle className="size-3.5" aria-hidden /> The oldest age cannot be below the youngest.
                 </p>
               )}
@@ -387,5 +387,5 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
 }
 
 function FormPart({ title }: { title: string }) {
-  return <h3 className="border-b border-ink pb-1.5 pt-2 text-[14px] font-semibold first:pt-0">{title}</h3>;
+  return <h3 className="border-b border-ink pb-1.5 pt-2 text-[0.875rem] font-semibold first:pt-0">{title}</h3>;
 }

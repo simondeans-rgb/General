@@ -111,7 +111,7 @@ function Grouped({ sessions, view }: { sessions: Q.SessionRow[]; view: View }) {
         const isToday = date === isoDate(new Date());
         return (
           <section key={key}>
-            <SectionHead title={<>{date ? dateLong(date) : label}{isToday && <span className="ml-2 text-[13px] font-semibold text-accent-text">Today</span>}</>}
+            <SectionHead title={<>{date ? dateLong(date) : label}{isToday && <span className="ml-2 text-[0.8125rem] font-semibold text-accent-text">Today</span>}</>}
               meta={`${rows.length} class${rows.length === 1 ? '' : 'es'} · ${heads} booked`} />
             <ul className="divide-y divide-line">
               {rows.map(s => <li key={s.id}><SessionRow session={s} onSelect={() => setOpen(s)} /></li>)}

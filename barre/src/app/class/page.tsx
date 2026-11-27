@@ -80,18 +80,18 @@ function Summary({ c }: { c: H.ClassDetail }) {
   const where = [c.location, c.room].filter(Boolean).join(' · ');
   return (
     <section aria-labelledby="class-when">
-      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13.5px] text-ink-3">
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.8438rem] text-ink-3">
         {c.style && <StyleMark colour={c.colour} name={c.style} />}
         {c.level && <span>{c.level}</span>}
         {c.i_teach && <span className="font-semibold text-ink">You teach this</span>}
       </p>
       <p id="class-when" className="mt-2 flex flex-wrap items-baseline gap-x-3">
-        <span className="font-display text-[40px] leading-none tnum">{clock(c.start_time)}</span>
-        <span className="text-[15px] font-semibold">{DAYS[c.day_of_week] ?? ''}s · {c.duration_min} min</span>
+        <span className="font-display text-[2.5rem] leading-none tnum">{clock(c.start_time)}</span>
+        <span className="text-[0.9375rem] font-semibold">{DAYS[c.day_of_week] ?? ''}s · {c.duration_min} min</span>
       </p>
-      {c.description && <p className="mt-3 max-w-prose text-[15px] leading-relaxed text-ink-2">{c.description}</p>}
+      {c.description && <p className="mt-3 max-w-prose text-[0.9375rem] leading-relaxed text-ink-2">{c.description}</p>}
 
-      <dl className="mt-5 divide-y divide-line border-y border-line text-[14px]">
+      <dl className="mt-5 divide-y divide-line border-y border-line text-[0.875rem]">
         {where && <Fact label="Where" value={where} />}
         {c.teacher && <Fact label="Taught by"
               value={[c.teacher, c.assistant && `with ${c.assistant}`].filter(Boolean).join(' ')} />}
@@ -226,8 +226,8 @@ function AddMaterial({ classId, className, onClose }: {
           <>
             <div className="flex items-start gap-3 border-b border-line px-5 pb-3 pt-4">
               <div className="min-w-0 flex-1">
-                <h2 id="add-material-t" className="font-display text-[20px] leading-tight">Add material</h2>
-                <p className="mt-1 text-[13.5px] text-ink-3">Goes to everyone in {className}.</p>
+                <h2 id="add-material-t" className="font-display text-[1.25rem] leading-tight">Add material</h2>
+                <p className="mt-1 text-[0.8438rem] text-ink-3">Goes to everyone in {className}.</p>
               </div>
               <Button size="sm" variant="ghost" aria-label="Close" onClick={onClose} className="-mr-2 -mt-1">
                 <X className="size-4" aria-hidden />
@@ -281,18 +281,18 @@ function AddMaterial({ classId, className, onClose }: {
               </Field>
 
               <fieldset>
-                <legend className="mb-1 text-[13px] font-medium text-ink-2">Who can see it</legend>
-                <label className="flex min-h-[44px] items-center gap-3 text-[14px]">
+                <legend className="mb-1 text-[0.8125rem] font-medium text-ink-2">Who can see it</legend>
+                <label className="flex min-h-[44px] items-center gap-3 text-[0.875rem]">
                   <input type="checkbox" checked={forStudents} className="size-[18px] accent-[var(--color-accent)]"
                          onChange={e => setForStudents(e.target.checked)} />
                   Students in this class
                 </label>
-                <label className="flex min-h-[44px] items-center gap-3 text-[14px]">
+                <label className="flex min-h-[44px] items-center gap-3 text-[0.875rem]">
                   <input type="checkbox" checked={forGuardians} className="size-[18px] accent-[var(--color-accent)]"
                          onChange={e => setForGuardians(e.target.checked)} />
                   Their parents
                 </label>
-                <p className="mt-1 text-[12.5px] text-ink-3">
+                <p className="mt-1 text-[0.7812rem] text-ink-3">
                   Untick both and it stays visible to staff only.
                 </p>
               </fieldset>
@@ -302,7 +302,7 @@ function AddMaterial({ classId, className, onClose }: {
 
             <div className="flex flex-wrap items-center gap-2 border-t border-line px-5 py-3 pb-safe sm:justify-end">
               {save.isPending && mode === 'file' && (
-                <p className="flex w-full items-center gap-2 text-[12.5px] text-ink-3 sm:mr-auto sm:w-auto">
+                <p className="flex w-full items-center gap-2 text-[0.7812rem] text-ink-3 sm:mr-auto sm:w-auto">
                   <Spinner className="size-3" /> Storing the file…
                 </p>
               )}

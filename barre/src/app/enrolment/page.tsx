@@ -50,8 +50,8 @@ function Board({ rows, onOpen }: { rows: Enq[]; onOpen: (o: Opened) => void }) {
               onDragOver={e => { if (drag) { e.preventDefault(); setOver(col.key); } }} onDragLeave={() => setOver(null)}
               onDrop={e => { e.preventDefault(); if (drag && !col.stages.includes(drag.stage)) moveTo(drag, col.key); setDrag(null); setOver(null); }}
               className={cn('flex w-56 shrink-0 flex-col rounded-[var(--radius-md)] lg:w-auto lg:min-w-0', over === col.key && 'bg-surface-2 ring-2 ring-accent-line')}>
-              <h3 className="mb-2 flex items-baseline justify-between border-b-2 border-ink pb-1.5 text-[14px] font-semibold">
-                {col.label}<span className="font-display text-[17px] tnum">{list.length}</span>
+              <h3 className="mb-2 flex items-baseline justify-between border-b-2 border-ink pb-1.5 text-[0.875rem] font-semibold">
+                {col.label}<span className="font-display text-[1.0625rem] tnum">{list.length}</span>
               </h3>
               <ul className="space-y-2">
                 {list.map(e => {
@@ -60,14 +60,14 @@ function Board({ rows, onOpen }: { rows: Enq[]; onOpen: (o: Opened) => void }) {
                     <li key={e.id} draggable onDragStart={() => setDrag(e)} onDragEnd={() => { setDrag(null); setOver(null); }}
                       className={cn('cursor-grab rounded-[var(--radius-md)] border bg-surface p-2.5 active:cursor-grabbing', overdue ? 'border-critical/50' : 'border-line')}>
                       <button onClick={() => onOpen({ e })} className="block w-full text-left font-semibold leading-tight hover:underline">{e.child_name ?? e.contact_name}</button>
-                      <p className="mt-0.5 truncate text-[12.5px] text-ink-3">{e.class_name ?? 'No class chosen'}</p>
-                      <p className="truncate text-[12.5px] text-ink-3">{e.contact_name}</p>
-                      {overdue && <p className="mt-1.5 leading-tight"><Word tone="critical">Overdue</Word> <span className="text-[12px] text-critical">{dateShort(e.next_action_on!)}</span></p>}
-                      {e.trial_starts_at && <p className="mt-1 text-[12px] text-ink-3">Trial {dateShort(e.trial_starts_at)} {time(e.trial_starts_at)}</p>}
+                      <p className="mt-0.5 truncate text-[0.7812rem] text-ink-3">{e.class_name ?? 'No class chosen'}</p>
+                      <p className="truncate text-[0.7812rem] text-ink-3">{e.contact_name}</p>
+                      {overdue && <p className="mt-1.5 leading-tight"><Word tone="critical">Overdue</Word> <span className="text-[0.75rem] text-critical">{dateShort(e.next_action_on!)}</span></p>}
+                      {e.trial_starts_at && <p className="mt-1 text-[0.75rem] text-ink-3">Trial {dateShort(e.trial_starts_at)} {time(e.trial_starts_at)}</p>}
                       {canBookTrial(e) && <Button size="sm" className="mt-2 w-full" onClick={() => onOpen({ e, booking: true })}>Book a trial</Button>}
-                      <label className="mt-2 flex items-center gap-1.5 text-[12.5px] text-ink-3">Move to
+                      <label className="mt-2 flex items-center gap-1.5 text-[0.7812rem] text-ink-3">Move to
                         <select value={col.key} onChange={x => moveTo(e, x.target.value)}
-                          className="h-11 min-w-0 flex-1 rounded-[var(--radius-sm)] border border-line-strong bg-surface px-2 text-[13.5px] text-ink lg:h-9">
+                          className="h-11 min-w-0 flex-1 rounded-[var(--radius-sm)] border border-line-strong bg-surface px-2 text-[0.8438rem] text-ink lg:h-9">
                           {COLUMNS.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
                         </select>
                       </label>
@@ -138,7 +138,7 @@ export default function EnrolmentPage() {
                   ['Enquiries', f.total], ['Trials booked', f.booked],
                   ['Attended', f.attended], ['Enrolled', f.converted],
                 ]} />}
-                {f && <p className="mt-3 text-[12.5px] text-ink-3">
+                {f && <p className="mt-3 text-[0.7812rem] text-ink-3">
                   Each line counts enquiries that reached that step, so every number is out of {f.total} enquiries.
                   {f.attended > 0 && ` Of the ${f.attended} who came to a trial, ${f.converted} enrolled (${Math.round((f.converted / f.attended) * 100)}%): the trial conversion shown in Reports.`}
                 </p>}
@@ -167,18 +167,18 @@ export default function EnrolmentPage() {
                   <div className="min-w-0">
                     <p className="flex flex-wrap items-baseline gap-x-2">
                       <button onClick={() => setOpened({ e })} className="text-left font-semibold hover:underline">{e.child_name ?? e.contact_name}</button>
-                      {e.child_dob && <span className="text-[13px] text-ink-3">{ageFrom(e.child_dob)}</span>}
+                      {e.child_dob && <span className="text-[0.8125rem] text-ink-3">{ageFrom(e.child_dob)}</span>}
                     </p>
                     {canBookTrial(e) && <Button size="sm" className="mt-1.5" onClick={() => setOpened({ e, booking: true })}>Book a trial</Button>}
-                    <p className="mt-0.5 text-[13px] text-ink-3">{e.class_name ?? 'No class chosen yet'} · via {e.source}</p>
+                    <p className="mt-0.5 text-[0.8125rem] text-ink-3">{e.class_name ?? 'No class chosen yet'} · via {e.source}</p>
                   </div>
-                  <p className="order-last col-span-2 mt-1 flex min-w-0 flex-wrap gap-x-3 text-[13px] text-ink-2 md:order-none md:col-span-1 md:mt-0 md:block">
+                  <p className="order-last col-span-2 mt-1 flex min-w-0 flex-wrap gap-x-3 text-[0.8125rem] text-ink-2 md:order-none md:col-span-1 md:mt-0 md:block">
                     <span className="block">{e.contact_name}</span>
                     {e.contact_email && <a href={`mailto:${e.contact_email}`} className="block truncate text-accent-text hover:underline">{e.contact_email}</a>}
                     {e.contact_phone && <a href={`tel:${e.contact_phone}`} className="block tnum hover:text-ink">{e.contact_phone}</a>}
                   </p>
                   <span className="text-right md:text-left"><Word tone={stage.tone}>{stage.label}</Word></span>
-                  <span className={cn('hidden text-right text-[13px] md:block', overdue && open ? 'font-semibold text-critical' : 'text-ink-3')}>
+                  <span className={cn('hidden text-right text-[0.8125rem] md:block', overdue && open ? 'font-semibold text-critical' : 'text-ink-3')}>
                     {e.next_action_on && open ? `${overdue ? 'Overdue' : 'Next'} ${dateShort(e.next_action_on)}` : ''}
                   </span>
                 </li>
@@ -217,13 +217,13 @@ function Trials() {
             <li key={t.id} className="grid grid-cols-[4.25rem_minmax(0,1fr)] items-start gap-x-4 gap-y-2 px-1 py-3 sm:grid-cols-[4.25rem_minmax(0,1fr)_auto]">
               <span className="leading-none">
                 {t.starts_at ? <>
-                  <span className="block font-display text-[19px] tnum">{time(t.starts_at)}</span>
-                  <span className="mt-1 block text-[12.5px] text-ink-3">{relativeDay(t.starts_at)}</span>
-                </> : <span className="block pt-1 text-[13px] text-ink-3">No date</span>}
+                  <span className="block font-display text-[1.1875rem] tnum">{time(t.starts_at)}</span>
+                  <span className="mt-1 block text-[0.7812rem] text-ink-3">{relativeDay(t.starts_at)}</span>
+                </> : <span className="block pt-1 text-[0.8125rem] text-ink-3">No date</span>}
               </span>
               <div className="min-w-0">
                 <p className="font-semibold">{t.student_name ?? t.contact_name ?? 'Someone'}</p>
-                <p className="mt-0.5 text-[13px] text-ink-3">{t.class_name}{!t.student_id && ' · no child record yet'}</p>
+                <p className="mt-0.5 text-[0.8125rem] text-ink-3">{t.class_name}{!t.student_id && ' · no child record yet'}</p>
               </div>
               <div className="col-start-2 sm:col-start-3"><TrialActions trial={t} /></div>
             </li>
@@ -245,13 +245,13 @@ function Funnel({ steps }: { steps: [string, number][] }) {
         const drop = prev != null && prev > 0 ? Math.round(((prev - n) / prev) * 100) : null;
         return (
           <li key={label} className="flex items-center gap-3">
-            <span className="w-28 shrink-0 text-[14px] text-ink-2">{label}</span>
+            <span className="w-28 shrink-0 text-[0.875rem] text-ink-2">{label}</span>
             <span aria-hidden className="h-5 flex-1 overflow-hidden rounded-[2px] bg-surface-2">
               <span className="block h-full rounded-[2px] bg-ink"
                     style={{ width: `${Math.max(3, (n / max) * 100)}%` }} />
             </span>
-            <span className="w-10 shrink-0 text-right font-display text-[19px] tnum">{n}</span>
-            <span className="tnum w-12 shrink-0 text-right text-[13px] text-ink-3">
+            <span className="w-10 shrink-0 text-right font-display text-[1.1875rem] tnum">{n}</span>
+            <span className="tnum w-12 shrink-0 text-right text-[0.8125rem] text-ink-3">
               {drop != null && drop > 0 ? `−${drop}%` : ''}
             </span>
           </li>
@@ -270,10 +270,10 @@ function PublicPageLink() {
   const url = typeof window === 'undefined' ? path : window.location.origin + path;
   return (
     <section>
-      <SectionHead title="Your trial booking page" action={<a href={path} target="_blank" rel="noreferrer" className="text-[13px] font-semibold text-accent-text hover:underline">Open</a>} />
-      <p className="pt-2 text-[14px] text-ink-2">Put this on your website. Families book a trial, and it lands here and on the register.</p>
+      <SectionHead title="Your trial booking page" action={<a href={path} target="_blank" rel="noreferrer" className="text-[0.8125rem] font-semibold text-accent-text hover:underline">Open</a>} />
+      <p className="pt-2 text-[0.875rem] text-ink-2">Put this on your website. Families book a trial, and it lands here and on the register.</p>
       <div className="mt-3 flex items-center gap-2">
-        <code className="min-w-0 flex-1 truncate rounded-[var(--radius-sm)] bg-surface-2 px-2.5 py-2 text-[13px] text-ink-2">{url}</code>
+        <code className="min-w-0 flex-1 truncate rounded-[var(--radius-sm)] bg-surface-2 px-2.5 py-2 text-[0.8125rem] text-ink-2">{url}</code>
         <Button size="sm" onClick={() => { navigator.clipboard?.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 2000); }}>
           {copied ? 'Copied' : 'Copy link'}
         </Button>

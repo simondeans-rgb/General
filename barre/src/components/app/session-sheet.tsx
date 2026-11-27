@@ -91,7 +91,7 @@ export function SessionSheet({ session: s, onClose, initial = 'menu' }: { sessio
       <RecordSheet title={s.name} subtitle={`${dateLong(s.starts_at)} · ${time(s.starts_at)}–${time(s.ends_at)}${s.room ? ` · ${s.room}` : ''}`}
         onClose={onClose} onSave={onClose} saveLabel="Close">
         {cancelled && <Notice word="Cancelled" tone="critical" title={s.cancel_reason || 'This session will not run'} />}
-        <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-1.5 text-[14px]">
+        <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-1.5 text-[0.875rem]">
           {s.teacher && <><dt className="text-ink-3">Teacher</dt><dd>{s.teacher}{s.covered ? <span className="text-ink-3"> · covering for {s.usual_teacher}</span> : ''}</dd></>}
           <dt className="text-ink-3">Booked</dt>
           <dd className="flex items-center gap-2"><Beats value={s.enrolled} max={s.capacity} label={`${s.enrolled} of ${s.capacity} places`} />
@@ -109,8 +109,8 @@ export function SessionSheet({ session: s, onClose, initial = 'menu' }: { sessio
             const inner = (
               <span className={cn('flex min-h-[56px] items-center gap-3 px-1 py-2.5 text-left', disabled && 'opacity-50')}>
                 <I className={cn('size-4 shrink-0', key === 'cancel' ? 'text-critical' : 'text-ink-3')} aria-hidden />
-                <span className="min-w-0 flex-1"><span className={cn('block text-[15px] font-semibold', key === 'cancel' && 'text-critical')}>{label as string}</span>
-                  <span className="block text-[13px] text-ink-3">{hint as string}</span></span>
+                <span className="min-w-0 flex-1"><span className={cn('block text-[0.9375rem] font-semibold', key === 'cancel' && 'text-critical')}>{label as string}</span>
+                  <span className="block text-[0.8125rem] text-ink-3">{hint as string}</span></span>
               </span>
             );
             return (
@@ -122,7 +122,7 @@ export function SessionSheet({ session: s, onClose, initial = 'menu' }: { sessio
             );
           })}
         </ul>
-        {s.register_closed && !cancelled && <p className="text-[12.5px] text-ink-3">This session has been taught, so it can no longer be changed.</p>}
+        {s.register_closed && !cancelled && <p className="text-[0.7812rem] text-ink-3">This session has been taught, so it can no longer be changed.</p>}
       </RecordSheet>
     );
   }
@@ -154,7 +154,7 @@ export function SessionSheet({ session: s, onClose, initial = 'menu' }: { sessio
               {rooms.data?.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
             </Select>
           </Field>
-          <p className="text-[12.5px] text-ink-3">The session keeps its length. Only this session moves.</p>
+          <p className="text-[0.7812rem] text-ink-3">The session keeps its length. Only this session moves.</p>
         </>
       )}
       {mode === 'cover' && (
@@ -169,9 +169,9 @@ export function SessionSheet({ session: s, onClose, initial = 'menu' }: { sessio
         <div className="space-y-2">
           <Notice word="Clash" tone="critical" title={`${staff.data?.find(x => x.id === teacher)?.display_name ?? 'This teacher'} is teaching then`}
             detail={clash.map(c => `${c.class_name} ${time(c.starts_at)}–${time(c.ends_at)}${c.location ? ` at ${c.location}` : ''}${c.needs_travel ? ' (another site: no time to travel)' : ''}`).join(' · ')} />
-          <label className="flex min-h-[44px] items-start gap-3 text-[14px]">
+          <label className="flex min-h-[44px] items-start gap-3 text-[0.875rem]">
             <input type="checkbox" checked={override} onChange={e => setOverride(e.target.checked)} className="mt-0.5 size-[18px] accent-[var(--color-accent)]" />
-            <span>Assign anyway<span className="block text-[12.5px] text-ink-3">Only if this is planned, for example a shared class.</span></span>
+            <span>Assign anyway<span className="block text-[0.7812rem] text-ink-3">Only if this is planned, for example a shared class.</span></span>
           </label>
         </div>
       )}
@@ -181,10 +181,10 @@ export function SessionSheet({ session: s, onClose, initial = 'menu' }: { sessio
             className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
         </Field>
       )}
-      <label className="flex min-h-[44px] items-start gap-3 text-[14px]">
+      <label className="flex min-h-[44px] items-start gap-3 text-[0.875rem]">
         <input type="checkbox" checked={notify} onChange={e => setNotify(e.target.checked)} className="mt-0.5 size-[18px] accent-[var(--color-accent)]" />
         <span>{mode === 'cover' ? 'Tell the families too' : `Tell the ${families} famil${families === 1 ? 'y' : 'ies'} and the teacher`}
-          <span className="block text-[12.5px] text-ink-3">{mode === 'cover' ? 'The covering teacher is always told.' : 'A class notice, plus a notification each.'}</span></span>
+          <span className="block text-[0.7812rem] text-ink-3">{mode === 'cover' ? 'The covering teacher is always told.' : 'A class notice, plus a notification each.'}</span></span>
       </label>
       {(notify || mode === 'cover') && (
         <Field label="Message" htmlFor="ss-msg">

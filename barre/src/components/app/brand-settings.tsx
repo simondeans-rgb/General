@@ -116,7 +116,7 @@ export function BrandSettings({ canEdit }: { canEdit: boolean }) {
       <div className="space-y-8 pt-4">
         {/* 1. The style */}
         <fieldset disabled={!canEdit}>
-          <legend className="mb-2 text-[14px] font-semibold">1 · Style</legend>
+          <legend className="mb-2 text-[0.875rem] font-semibold">1 · Style</legend>
           <div role="radiogroup" aria-label="Style" className="grid gap-3 sm:grid-cols-2">
             {(Object.values(THEMES) as Theme[]).map(th => {
               const on = th.id === theme;
@@ -132,7 +132,7 @@ export function BrandSettings({ canEdit }: { canEdit: boolean }) {
                     <span className={cn('mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border', on ? 'border-ink bg-ink text-ink-invert' : 'border-line-strong')}>
                       {on && <Check className="size-3" aria-hidden />}
                     </span>
-                    <span><span className="block font-semibold">{th.name}</span><span className="block text-[13px] text-ink-3">{th.tagline}</span></span>
+                    <span><span className="block font-semibold">{th.name}</span><span className="block text-[0.8125rem] text-ink-3">{th.tagline}</span></span>
                   </div>
                 </button>
               );
@@ -144,15 +144,15 @@ export function BrandSettings({ canEdit }: { canEdit: boolean }) {
           <div className="space-y-5">
             {/* 2. Colours */}
             <fieldset disabled={!canEdit}>
-              <legend className="mb-1 text-[14px] font-semibold">2 · Colours</legend>
-              <p className="mb-3 text-[13px] text-ink-3">Pick a pairing made for {t.name}, or enter the exact colours from your brand guidelines.</p>
+              <legend className="mb-1 text-[0.875rem] font-semibold">2 · Colours</legend>
+              <p className="mb-3 text-[0.8125rem] text-ink-3">Pick a pairing made for {t.name}, or enter the exact colours from your brand guidelines.</p>
               <div role="radiogroup" aria-label="Colour pairings" className="flex flex-wrap gap-2">
                 {t.presets.map(p => {
                   const on = colour === p.accent && second === p.secondary;
                   return (
                     <button key={p.name} type="button" role="radio" aria-checked={on} title={p.name} aria-label={`${p.name}: ${p.accent.toUpperCase()} and ${p.secondary.toUpperCase()}`}
                       onClick={() => { setColour(p.accent); setSecond(p.secondary); }}
-                      className={cn('flex min-h-10 items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-[13px]', on ? 'border-ink ring-1 ring-ink font-semibold' : 'border-line-strong hover:border-ink-3')}>
+                      className={cn('flex min-h-10 items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-[0.8125rem]', on ? 'border-ink ring-1 ring-ink font-semibold' : 'border-line-strong hover:border-ink-3')}>
                       <span className="flex">
                         <span className="size-6 rounded-full ring-2 ring-surface" style={{ background: p.accent }} />
                         <span className="-ml-2 size-6 rounded-full ring-2 ring-surface" style={{ background: p.secondary }} />
@@ -167,7 +167,7 @@ export function BrandSettings({ canEdit }: { canEdit: boolean }) {
                 <HexField id="br-hex2" label="Second colour" hint={t.dark ? 'The downbeat, and highlights on dark screens' : 'The downbeat and small accents'} value={second} onChange={setSecond} />
               </div>
               {(palette.darkText || palette.textDeepened) && (
-                <p className="mt-2 flex items-start gap-1.5 text-[12.5px] text-ink-2">
+                <p className="mt-2 flex items-start gap-1.5 text-[0.7812rem] text-ink-2">
                   <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
                   <span>
                     Your colour is used exactly{palette.darkText ? '; it is light, so text on your buttons will be black to stay readable' : ''}.
@@ -181,7 +181,7 @@ export function BrandSettings({ canEdit }: { canEdit: boolean }) {
 
             {/* 3. Name and logo */}
             <div className="space-y-4">
-              <p className="text-[14px] font-semibold">3 · Name and logo</p>
+              <p className="text-[0.875rem] font-semibold">3 · Name and logo</p>
               <Field label="School name" htmlFor="br-name" required>
                 <Input id="br-name" value={name} onChange={e => setName(e.target.value)} disabled={!canEdit} maxLength={120} />
               </Field>
@@ -196,7 +196,7 @@ export function BrandSettings({ canEdit }: { canEdit: boolean }) {
                   </div>
                 )}
               </div>
-              <p className="text-[13px] text-ink-3">
+              <p className="text-[0.8125rem] text-ink-3">
                 {logoError ? <span role="alert" className="text-critical">{logoError}</span>
                   : `PNG, JPG, WebP or SVG. A square logo on a transparent background works best${t.dark ? ' — use a light version on the dark Urban style' : ''}. Without one, your initials are used.`}
               </p>
@@ -209,9 +209,9 @@ export function BrandSettings({ canEdit }: { canEdit: boolean }) {
                 {(colour !== t.accent || second !== t.secondary) && (
                   <Button variant="ghost" onClick={() => { setColour(t.accent); setSecond(t.secondary); }}>Use {t.name}’s own colours</Button>
                 )}
-                {saved && <span role="status" className="flex items-center gap-1 text-[13px] text-positive"><Check className="size-4" aria-hidden /> Saved — everyone sees it now</span>}
+                {saved && <span role="status" className="flex items-center gap-1 text-[0.8125rem] text-positive"><Check className="size-4" aria-hidden /> Saved — everyone sees it now</span>}
               </div>
-            ) : <p className="text-[12.5px] text-ink-3">Only the school’s owner can change its brand.</p>}
+            ) : <p className="text-[0.7812rem] text-ink-3">Only the school’s owner can change its brand.</p>}
           </div>
 
           {/* What parents will see, before anyone else does. */}
@@ -232,7 +232,7 @@ function HexField({ id, label, hint, value, onChange }: { id: string; label: str
   const ok = !!normaliseHex(text);
   return (
     <div>
-      <label htmlFor={id} className="block text-[13px] font-medium text-ink-2">{label}</label>
+      <label htmlFor={id} className="block text-[0.8125rem] font-medium text-ink-2">{label}</label>
       <div className="mt-1.5 flex items-center gap-2">
         <label className="relative size-10 shrink-0 cursor-pointer overflow-hidden rounded-[var(--radius-md)] border border-line" style={{ background: value }} title="Choose visually">
           <input type="color" value={value} className="absolute inset-0 cursor-pointer opacity-0" aria-label={`${label}: choose visually`}
@@ -241,7 +241,7 @@ function HexField({ id, label, hint, value, onChange }: { id: string; label: str
         <Input id={id} value={text} className="tnum w-32 uppercase" spellCheck={false} autoComplete="off" maxLength={7}
                aria-invalid={!ok} onChange={e => { setText(e.target.value); const h = normaliseHex(e.target.value); if (h) onChange(h); }} />
       </div>
-      <p className="mt-1.5 text-[12.5px]">{ok ? <span className="text-ink-3">{hint}</span>
+      <p className="mt-1.5 text-[0.7812rem]">{ok ? <span className="text-ink-3">{hint}</span>
         : <span role="alert" className="text-critical">Enter a hex code like #C2563C.</span>}</p>
     </div>
   );
@@ -263,16 +263,16 @@ function MiniScreen({ school, logo }: { school: string; logo: string | null; dar
   return (
     <div className="h-40 overflow-hidden bg-canvas p-3 text-ink">
       <div className="flex items-center gap-1.5">
-        <SchoolMark name={school} logo={logo} className="size-5 text-[8px]" />
-        <span className="truncate text-[10px] font-semibold">{school}</span>
+        <SchoolMark name={school} logo={logo} className="size-5 text-[0.5rem]" />
+        <span className="truncate text-[0.625rem] font-semibold">{school}</span>
       </div>
-      <p className="mt-3 text-[8px] font-semibold uppercase tracking-[0.08em] text-accent-text">Next · Tuesday</p>
-      <p className="display-xl text-[34px]">17:30</p>
+      <p className="mt-3 text-[0.5rem] font-semibold uppercase tracking-[0.08em] text-accent-text">Next · Tuesday</p>
+      <p className="display-xl text-[2.125rem]">17:30</p>
       <div className="mt-1 flex items-center justify-between gap-2">
-        <span className="truncate text-[10px] font-semibold">Grade 3 Ballet</span>
+        <span className="truncate text-[0.625rem] font-semibold">Grade 3 Ballet</span>
         <MiniCount h={9} w={2} />
       </div>
-      <span className="mt-2 block rounded-[4px] bg-accent py-1 text-center text-[9px] font-semibold text-on-accent">Book a class</span>
+      <span className="mt-2 block rounded-[4px] bg-accent py-1 text-center text-[0.5625rem] font-semibold text-on-accent">Book a class</span>
     </div>
   );
 }
@@ -283,41 +283,41 @@ function PhonePreview({ school, logo }: { school: string; logo: string | null; d
     <div className="flex h-[520px] flex-col bg-canvas text-ink">
       <div className="flex items-center justify-between px-4 pb-2 pt-4">
         <span className="flex items-center gap-2">
-          <SchoolMark name={school} logo={logo} className="size-7 text-[10px]" />
-          <span className="max-w-[140px] truncate text-[12px] font-semibold">{school}</span>
+          <SchoolMark name={school} logo={logo} className="size-7 text-[0.625rem]" />
+          <span className="max-w-[140px] truncate text-[0.75rem] font-semibold">{school}</span>
         </span>
         <Bell className="size-4 text-ink-2" aria-hidden />
       </div>
       <div className="flex-1 space-y-4 overflow-hidden px-4 pt-2">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-accent-text">Next · Emma · Tuesday</p>
-          <p className="display-xl mt-0.5 text-[52px]">17:30</p>
-          <p className="font-display text-[16px] font-[800] leading-tight [font-stretch:112%]">Grade 3 Ballet</p>
-          <p className="text-[11px] text-ink-3">Miss Freya · Studio One</p>
+          <p className="text-[0.625rem] font-semibold uppercase tracking-[0.08em] text-accent-text">Next · Emma · Tuesday</p>
+          <p className="display-xl mt-0.5 text-[3.25rem]">17:30</p>
+          <p className="font-display text-[1rem] font-[800] leading-tight [font-stretch:112%]">Grade 3 Ballet</p>
+          <p className="text-[0.6875rem] text-ink-3">Miss Freya · Studio One</p>
         </div>
         <div className="border-t-2 border-ink pt-2">
-          <p className="font-display text-[15px] uppercase leading-none tracking-[-0.01em] [font-stretch:80%]">Moved</p>
-          <p className="mt-1 text-[11.5px] font-semibold leading-snug">Thursday Tap moves to Studio Two</p>
-          <p className="text-[10.5px] text-ink-3">Same time, same teacher.</p>
+          <p className="font-display text-[0.9375rem] uppercase leading-none tracking-[-0.01em] [font-stretch:80%]">Moved</p>
+          <p className="mt-1 text-[0.7188rem] font-semibold leading-snug">Thursday Tap moves to Studio Two</p>
+          <p className="text-[0.6562rem] text-ink-3">Same time, same teacher.</p>
         </div>
         <div className="border-t border-line pt-2">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold">Pliés</span>
+            <span className="text-[0.6875rem] font-semibold">Pliés</span>
             <MiniCount h={11} w={3} />
           </div>
-          <p className="text-[10.5px] text-ink-3">Secure · from Miss Freya’s last feedback</p>
+          <p className="text-[0.6562rem] text-ink-3">Secure · from Miss Freya’s last feedback</p>
         </div>
-        <span className="block rounded-[var(--radius-md)] bg-accent py-2.5 text-center text-[13px] font-semibold text-on-accent">Book a class</span>
+        <span className="block rounded-[var(--radius-md)] bg-accent py-2.5 text-center text-[0.8125rem] font-semibold text-on-accent">Book a class</span>
       </div>
       <div className="flex border-t border-line bg-surface">
         {[[Home, 'Home', true], [CalendarDays, 'Schedule', false], [MessageSquare, 'Messages', false], [TrendingUp, 'Progress', false]].map(([I, l, on]) => {
           const Icon = I as React.ElementType;
-          return <span key={l as string} className={cn('relative flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px]', on ? 'font-semibold text-ink' : 'text-ink-3')}>
+          return <span key={l as string} className={cn('relative flex flex-1 flex-col items-center gap-0.5 py-2 text-[0.625rem]', on ? 'font-semibold text-ink' : 'text-ink-3')}>
             {on && <span className="absolute top-0 h-0.5 w-5 bg-accent" />}
             <Icon className="size-4" aria-hidden />{l as string}</span>;
         })}
       </div>
-      <div className="bg-surface pb-2 text-center"><PoweredBy className="justify-center text-[9.5px]" /></div>
+      <div className="bg-surface pb-2 text-center"><PoweredBy className="justify-center text-[0.5938rem]" /></div>
     </div>
   );
 }
@@ -375,11 +375,11 @@ export function ImagerySettings({ canEdit }: { canEdit: boolean }) {
       <CardHeader title="Photos" subtitle="A photo of your school for your public page and families’ home screen, and a light logo for dark screens." />
       <div className="grid gap-x-8 gap-y-6 pt-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <p className="text-[14px] font-semibold">Hero photo</p>
+          <p className="text-[0.875rem] font-semibold">Hero photo</p>
           {s.hero_url
             // eslint-disable-next-line @next/next/no-img-element
             ? <img src={s.hero_url} alt="Hero photo" className="aspect-[16/7] w-full rounded-[var(--radius-md)] object-cover" />
-            : <div className="grid aspect-[16/7] place-items-center rounded-[var(--radius-md)] border border-dashed border-line-strong text-[12.5px] text-ink-3">No photo yet</div>}
+            : <div className="grid aspect-[16/7] place-items-center rounded-[var(--radius-md)] border border-dashed border-line-strong text-[0.7812rem] text-ink-3">No photo yet</div>}
           {canEdit && (
             <div className="flex gap-2">
               <label className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-[var(--radius-md)] border border-line-strong bg-surface px-3 text-sm font-semibold hover:bg-surface-2 focus-within:ring-4 focus-within:ring-accent-line/12">
@@ -389,15 +389,15 @@ export function ImagerySettings({ canEdit }: { canEdit: boolean }) {
               {s.hero_url && <Button size="sm" variant="ghost" onClick={() => save.mutate({ hero: null, light: s.logo_light_url })}><Trash2 className="size-4" aria-hidden /> Remove</Button>}
             </div>
           )}
-          <p className="text-[13px] text-ink-3">Cropped to a wide banner and compressed on this device. If it shows children, make sure their families agreed to photos.</p>
+          <p className="text-[0.8125rem] text-ink-3">Cropped to a wide banner and compressed on this device. If it shows children, make sure their families agreed to photos.</p>
         </div>
         <div className="space-y-2">
-          <p className="text-[14px] font-semibold">Light logo</p>
+          <p className="text-[0.875rem] font-semibold">Light logo</p>
           <div data-theme="urban" className="grid h-24 place-items-center rounded-[var(--radius-md)] bg-canvas p-3">
             {s.logo_light_url
               // eslint-disable-next-line @next/next/no-img-element
               ? <img src={s.logo_light_url} alt="Light logo" className="max-h-16 object-contain" />
-              : <span className="text-[13px] text-ink-3">No light logo</span>}
+              : <span className="text-[0.8125rem] text-ink-3">No light logo</span>}
           </div>
           {canEdit && (
             <div className="flex gap-2">
@@ -408,7 +408,7 @@ export function ImagerySettings({ canEdit }: { canEdit: boolean }) {
               {s.logo_light_url && <Button size="sm" variant="ghost" onClick={() => save.mutate({ hero: s.hero_url, light: null })}><Trash2 className="size-4" aria-hidden /> Remove</Button>}
             </div>
           )}
-          <p className="text-[13px] text-ink-3">Used with the Urban style{s.theme === 'urban' ? ' (your current style)' : ''}, where screens are dark.</p>
+          <p className="text-[0.8125rem] text-ink-3">Used with the Urban style{s.theme === 'urban' ? ' (your current style)' : ''}, where screens are dark.</p>
         </div>
         {(err || save.error != null) && <div className="sm:col-span-2"><ErrorState error={err ?? save.error} /></div>}
       </div>

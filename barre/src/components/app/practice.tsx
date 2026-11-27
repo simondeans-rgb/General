@@ -44,11 +44,11 @@ export function PracticeLog({ studentId, who = 'you', bare }: { studentId: strin
     <section aria-label={bare ? `Practice, ${who}` : undefined}>
       <div className={cn('flex items-baseline gap-3', bare ? 'pb-1' : 'mb-1 border-b-2 border-ink pb-2')}>
         <H className="section-title min-w-0 flex-1">Practice</H>
-        <span className="text-[13px] text-ink-3">{who === 'you' ? 'Your teacher sees the weekly total' : 'The teacher sees the weekly total'}</span>
+        <span className="text-[0.8125rem] text-ink-3">{who === 'you' ? 'Your teacher sees the weekly total' : 'The teacher sees the weekly total'}</span>
       </div>
       <p className="flex items-baseline gap-2 pt-2">
-        <span className="stat-number text-[28px] leading-none tnum">{total}</span>
-        <span className="text-[14px] text-ink-2">min this week{total > 0 ? (who === 'you' ? '. Well done.' : `. Nice work, ${who}.`) : ''}</span>
+        <span className="stat-number text-[1.75rem] leading-none tnum">{total}</span>
+        <span className="text-[0.875rem] text-ink-2">min this week{total > 0 ? (who === 'you' ? '. Well done.' : `. Nice work, ${who}.`) : ''}</span>
       </p>
       <form className="flex flex-wrap items-center gap-2 py-3" onSubmit={e => { e.preventDefault(); log.mutate({ mins: Number(mins), what }); }}>
         <label className="flex items-center gap-1.5 text-sm"><Timer className="size-4 text-ink-3" aria-hidden />
@@ -56,10 +56,10 @@ export function PracticeLog({ studentId, who = 'you', bare }: { studentId: strin
         <Input aria-label="What was practised" className="h-11 min-w-0 flex-1 basis-40" placeholder="e.g. shuffles, splits" maxLength={200} value={what} onChange={e => setWhat(e.target.value)} />
         <Button type="submit" variant={bare ? 'secondary' : 'primary'} className="h-11" disabled={!(Number(mins) > 0)} loading={log.isPending}>Log</Button>
       </form>
-      <p role="status" className="min-h-[1.25rem] pb-2 text-[13.5px] font-semibold text-positive">{log.isPending ? <span className="font-normal text-ink-3">Saving…</span> : saved}</p>
+      <p role="status" className="min-h-[1.25rem] pb-2 text-[0.8438rem] font-semibold text-positive">{log.isPending ? <span className="font-normal text-ink-3">Saving…</span> : saved}</p>
       {log.error != null && <div className="pb-3"><ErrorState error={log.error} /></div>}
       {!!recent.data?.length && (
-        <ul className="divide-y divide-line border-t border-line text-[14px]">
+        <ul className="divide-y divide-line border-t border-line text-[0.875rem]">
           {recent.data.slice(0, 4).map(r => (
             <li key={r.id} className="flex gap-3 py-2"><span className="w-16 shrink-0 text-ink-3 tnum">{dateShort(r.practised_on)}</span>
               <span className="min-w-0 flex-1 truncate">{r.what ?? 'Practice'}</span><span className="tnum">{r.minutes} min</span></li>
@@ -74,7 +74,7 @@ export function PracticeLog({ studentId, who = 'you', bare }: { studentId: strin
 export function PracticeSummary({ studentId }: { studentId: string }) {
   const weeks = useRows<E.PracticeWeek>(['practice-weekly-4'], E.PRACTICE_WEEKLY, [4]);
   const mine = (weeks.data ?? []).filter(w => w.student_id === studentId);
-  if (!mine.length) return <p className="text-[13px] text-ink-3">No practice logged in the last four weeks.</p>;
+  if (!mine.length) return <p className="text-[0.8125rem] text-ink-3">No practice logged in the last four weeks.</p>;
   return (
     <ul className="space-y-1 text-sm">
       {mine.map(w => <li key={w.week_start} className="flex justify-between"><span>Week of {dateShort(w.week_start)}</span>

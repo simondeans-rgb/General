@@ -76,14 +76,14 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
         className="max-h-[92dvh] w-full max-w-2xl overflow-y-auto overscroll-contain rounded-t-[var(--radius-xl)]
                    border border-line bg-surface px-5 pb-safe pt-4 shadow-lg sm:rounded-[var(--radius-xl)] sm:px-6">
         <div className="sticky top-0 z-10 -mx-5 mb-2 flex items-center justify-between bg-surface px-5 py-2 sm:-mx-6 sm:px-6">
-          <h2 id="run-t" className="font-display text-[22px] font-[800] leading-tight [font-stretch:112%]">Billing runs</h2>
+          <h2 id="run-t" className="font-display text-[1.375rem] font-[800] leading-tight [font-stretch:112%]">Billing runs</h2>
           <button onClick={onClose} aria-label="Close" className="grid size-10 place-items-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-ink">
             <X className="size-4" aria-hidden />
           </button>
         </div>
 
         {done && (
-          <p role="status" className="mb-4 flex items-center gap-2 border-l-2 border-positive py-1 pl-3 text-[14px] text-ink">
+          <p role="status" className="mb-4 flex items-center gap-2 border-l-2 border-positive py-1 pl-3 text-[0.875rem] text-ink">
             <CheckCircle2 className="size-4 shrink-0 text-positive" aria-hidden /> {done}
           </p>
         )}
@@ -112,7 +112,7 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
 
           <section aria-labelledby="run-prev">
             <Head id="run-prev" title="New run" meta={month ? 'Monthly classes' : 'Term and course fees'} />
-            <p className="mt-2 text-[13px] text-ink-3">{month
+            <p className="mt-2 text-[0.8125rem] text-ink-3">{month
               ? 'Monthly classes for this month only. Children already invoiced for the month are left out.'
               : 'Monthly classes are billed month by month instead.'}</p>
             <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -139,23 +139,23 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
             {!!skipped.data?.length && (
               <div className="mt-5">
                 <p className="label">Already billed for this period — skipped ({skipped.data.length})</p>
-                <p className="mt-1 text-[13px] text-ink-3">
+                <p className="mt-1 text-[0.8125rem] text-ink-3">
                   These families already have a tuition invoice for {periodName} that does not name its classes, so the run leaves them out.
                   Include one only if that invoice was for something else.
                 </p>
                 <ul className="mt-2 max-h-56 divide-y divide-line overflow-y-auto border-y border-line">
                   {skipped.data.map(f => (
-                    <li key={f.family_id} className="flex items-center gap-3 py-2 text-[14px]">
+                    <li key={f.family_id} className="flex items-center gap-3 py-2 text-[0.875rem]">
                       <input type="checkbox" id={`skip-${f.family_id}`} className="size-5 accent-[var(--color-accent)]"
                         checked={include.includes(f.family_id)}
                         onChange={e => setInclude(x => e.target.checked ? [...x, f.family_id] : x.filter(y => y !== f.family_id))} />
                       <label htmlFor={`skip-${f.family_id}`} className="min-w-0 flex-1">
                         <span className="block font-medium">{f.family_name}</span>
-                        <span className="block truncate text-[12.5px] text-ink-3">
+                        <span className="block truncate text-[0.7812rem] text-ink-3">
                           Billed on {f.invoices} · <span className="tnum">{money(f.billed_minor)}</span>
                         </span>
                       </label>
-                      <span className="shrink-0 text-right text-[12.5px] text-ink-3">
+                      <span className="shrink-0 text-right text-[0.7812rem] text-ink-3">
                         {include.includes(f.family_id) ? 'Included' : 'Include anyway'}<br />
                         <span className="tnum text-ink-2">{money(f.would_raise_minor)}</span>
                       </span>
@@ -178,9 +178,9 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
                 <div className="mt-5 flex items-end justify-between gap-4 border-b border-line pb-3">
                   <div>
                     <p className="label">To invoice</p>
-                    <p className="stat-number mt-1 text-[28px] leading-none">{money(total)}</p>
+                    <p className="stat-number mt-1 text-[1.75rem] leading-none">{money(total)}</p>
                   </div>
-                  <p className="text-right text-[13px] text-ink-3">
+                  <p className="text-right text-[0.8125rem] text-ink-3">
                     {families.length} families
                     {discounts > 0 && <><br /><span className="tnum">{money(discounts)}</span> of discounts</>}
                   </p>
@@ -192,7 +192,7 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
                         <span className="font-semibold">{f.name}</span>
                         <span className="tnum font-semibold">{money(f.gross - f.discount)}</span>
                       </div>
-                      <ul className="mt-0.5 space-y-0.5 text-[13px] text-ink-2">
+                      <ul className="mt-0.5 space-y-0.5 text-[0.8125rem] text-ink-2">
                         {f.lines.map(l => (
                           <li key={l.student_id + l.class_id} className="flex justify-between gap-3">
                             <span className="min-w-0 truncate">{l.student_name.split(' ')[0]} · {l.description}
@@ -214,7 +214,7 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
                       msg: `${families.length} draft invoices raised for ${periodName}. Nothing has been sent yet.` })}>
                     Raise {families.length} draft invoices
                   </Button>
-                  <p className="mt-2 text-center text-[13px] text-ink-3">
+                  <p className="mt-2 text-center text-[0.8125rem] text-ink-3">
                     {draft ? 'Send or discard the drafts above first.'
                       : include.length > 0 && reason.trim().length < 3 ? 'Say why the included families are billed again.'
                       : 'Drafts first. Nothing reaches families until you send.'}
@@ -226,7 +226,7 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
 
           <section aria-labelledby="run-disc">
             <Head id="run-disc" title="Discounts" meta="Applied automatically" />
-            <p className="mt-2 text-[13px] text-ink-3">Where both apply, the larger one is used.</p>
+            <p className="mt-2 text-[0.8125rem] text-ink-3">Where both apply, the larger one is used.</p>
             <ul className="divide-y divide-line">
               {rules.data?.map(r => <RuleRow key={r.id} r={r} onChange={x => setRule.mutate(x)} />)}
             </ul>
@@ -238,7 +238,7 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
           {runs.data && runs.data.some(r => r.status === 'issued') && (
             <section aria-labelledby="run-old">
               <Head id="run-old" title="Earlier runs" />
-              <ul className="divide-y divide-line text-[14px]">
+              <ul className="divide-y divide-line text-[0.875rem]">
                 {runs.data.filter(r => r.status === 'issued').map(r => (
                   <li key={r.id} className="flex justify-between gap-3 py-2.5">
                     <span>{r.period_month ? monthName(r.period_month) : r.term_name} <span className="text-ink-3">· sent {dateShort(r.issued_at!)}</span></span>
@@ -258,7 +258,7 @@ function Head({ id, title, meta, action }: { id?: string; title: string; meta?: 
   return (
     <div className="flex items-center gap-3 border-b-2 border-ink pb-2">
       <h3 id={id} className="section-title flex-1">{title}</h3>
-      {meta && <span className="text-[13px] text-ink-3">{meta}</span>}
+      {meta && <span className="text-[0.8125rem] text-ink-3">{meta}</span>}
       {action}
     </div>
   );
@@ -281,7 +281,7 @@ function RuleRow({ r, onChange }: { r: B.DiscountRule; onChange: (r: B.DiscountR
                onChange={e => onChange({ ...r, enabled: e.target.checked })} />
         <span>
           <span className="block font-medium">{label}</span>
-          <span className="block text-[13px] text-ink-3">{RULE_TEXT[r.kind](r.from_nth)}</span>
+          <span className="block text-[0.8125rem] text-ink-3">{RULE_TEXT[r.kind](r.from_nth)}</span>
         </span>
       </label>
       <span className="flex items-center gap-1.5 text-sm">
@@ -336,15 +336,15 @@ function FamilyDiscounts() {
     <section aria-labelledby="run-fam">
       <Head id="run-fam" title="Family discounts"
         action={!adding && <Button size="sm" variant="ghost" onClick={() => setAdding(true)}><Plus className="size-4" aria-hidden /> Add</Button>} />
-      <p className="mt-2 text-[13px] text-ink-3">Bursaries, staff rates and other agreements. Families only see the word “Discount”.</p>
-      {rows.data?.length === 0 && !adding && <p className="py-3 text-[14px] text-ink-3">None yet.</p>}
+      <p className="mt-2 text-[0.8125rem] text-ink-3">Bursaries, staff rates and other agreements. Families only see the word “Discount”.</p>
+      {rows.data?.length === 0 && !adding && <p className="py-3 text-[0.875rem] text-ink-3">None yet.</p>}
       {!!rows.data?.length && (
         <ul className="divide-y divide-line">
           {rows.data.map(d => (
             <li key={d.id} className="flex items-center gap-3 py-2.5 text-sm">
               <span className="min-w-0 flex-1">
                 <span className="block font-medium">{d.family_name}</span>
-                <span className="block text-[12.5px] text-ink-2">
+                <span className="block text-[0.7812rem] text-ink-2">
                   {REASONS[d.reason]}{d.note ? ` · ${d.note}` : ''}{d.ends_on ? ` · until ${dateShort(d.ends_on)}` : ''}
                 </span>
               </span>
@@ -357,7 +357,7 @@ function FamilyDiscounts() {
           ))}
         </ul>
       )}
-      {ended && !end.error && <p role="status" className="mt-2 text-[13px] text-ink-2">{ended}</p>}
+      {ended && !end.error && <p role="status" className="mt-2 text-[0.8125rem] text-ink-2">{ended}</p>}
       {end.error != null && <div className="mt-2"><ErrorState error={end.error} /></div>}
       {adding && (
         <div className="mt-2 grid gap-3 border-t border-line pt-4 sm:grid-cols-2">

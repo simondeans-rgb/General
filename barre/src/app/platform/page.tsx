@@ -90,7 +90,7 @@ function Schools() {
               {([['all', 'All'], ['trialling', 'Trial'], ['active', 'Active'], ['attention', 'Need attention'], ['cancelled', 'Cancelled']] as const)
                 .map(([k, l]) => (
                   <button key={k} role="tab" aria-selected={filter === k} onClick={() => setFilter(k)}
-                    className={cn('h-10 shrink-0 rounded-[var(--radius-md)] px-3 text-[14px]',
+                    className={cn('h-10 shrink-0 rounded-[var(--radius-md)] px-3 text-[0.875rem]',
                       filter === k ? 'bg-ink font-semibold text-ink-invert' : 'text-ink-2 hover:bg-surface-2 hover:text-ink')}>{l}</button>
                 ))}
             </div>
@@ -118,17 +118,17 @@ function Schools() {
                         selected === s.id && 'bg-accent-soft/60 hover:bg-accent-soft/60')}>
                       <span className="min-w-0">
                         <span className="block truncate font-semibold">{s.name}</span>
-                        <span className="block truncate text-[13px] text-ink-3">
+                        <span className="block truncate text-[0.8125rem] text-ink-3">
                           {s.owner_names ?? (s.pending_invites ? 'Owner invited — not joined yet' : 'No owner')}
                         </span>
                       </span>
-                      <span className={cn('hidden min-w-0 text-[14px] text-ink-2', selected ? 'xl:block' : 'md:block')}>
+                      <span className={cn('hidden min-w-0 text-[0.875rem] text-ink-2', selected ? 'xl:block' : 'md:block')}>
                         {s.plan_name ?? '—'}{s.price_minor ? <span className="tnum text-ink-3"> · {money(s.price_minor)}/mo</span> : ''}
                       </span>
-                      <span className={cn('tnum hidden text-[14px]', selected ? 'xl:block' : 'md:block', over ? 'font-semibold text-caution' : 'text-ink-2')}>
-                        {s.students}{s.max_students ? ` / ${s.max_students}` : ''}{over && <span className="block text-[12.5px]">Over limit</span>}
+                      <span className={cn('tnum hidden text-[0.875rem]', selected ? 'xl:block' : 'md:block', over ? 'font-semibold text-caution' : 'text-ink-2')}>
+                        {s.students}{s.max_students ? ` / ${s.max_students}` : ''}{over && <span className="block text-[0.7812rem]">Over limit</span>}
                       </span>
-                      <span className={cn('text-right text-[13.5px] font-semibold', TONE_TEXT[st.tone] ?? 'text-ink-2')}>{st.label}</span>
+                      <span className={cn('text-right text-[0.8438rem] font-semibold', TONE_TEXT[st.tone] ?? 'text-ink-2')}>{st.label}</span>
                     </button>
                   </li>
                 );
@@ -153,11 +153,11 @@ function Tile({ label, value, note, tone, onClick, action }: {
     <div className="min-w-0 lg:px-6 lg:first:pl-0 lg:last:pr-0">
       <dt className="label">{label}</dt>
       {value == null ? <dd><Skeleton className="mt-2 h-8 w-20" /></dd> :
-        <dd className={cn('stat-number mt-1.5 text-[28px] leading-none lg:text-[32px]', tone === 'caution' && 'text-caution')}>{value}</dd>}
-      {note && <dd className="mt-1.5 text-[13px] text-ink-3">{note}</dd>}
+        <dd className={cn('stat-number mt-1.5 text-[1.75rem] leading-none lg:text-[2rem]', tone === 'caution' && 'text-caution')}>{value}</dd>}
+      {note && <dd className="mt-1.5 text-[0.8125rem] text-ink-3">{note}</dd>}
       {onClick && action && (
         <dd><button type="button" onClick={onClick}
-          className="-ml-1 mt-0.5 inline-flex min-h-8 items-center rounded-[var(--radius-sm)] px-1 text-[13px] font-semibold text-accent-text hover:underline [@media(pointer:coarse)]:min-h-11">
+          className="-ml-1 mt-0.5 inline-flex min-h-8 items-center rounded-[var(--radius-sm)] px-1 text-[0.8125rem] font-semibold text-accent-text hover:underline [@media(pointer:coarse)]:min-h-11">
           {action} →</button></dd>
       )}
     </div>
@@ -204,12 +204,12 @@ function SchoolPanel({ id, school: s, onClose }: { id: string; school?: P.School
   return (
     <DetailPanel open onClose={onClose} title={s.name} subtitle={`${s.slug} · joined ${dateShort(s.created_at)}`}>
       <div className="mb-6">
-        <p className="text-[14px]">
+        <p className="text-[0.875rem]">
           <span className={cn('font-semibold', TONE_TEXT[st.tone] ?? 'text-ink')}>{st.label}</span>
           {s.status === 'trialling' && s.trial_ends_on && <span className="text-ink-2"> · ends {dateShort(s.trial_ends_on)}</span>}
           {s.status === 'cancelled' && s.data_deletion_due_on && <span className="text-ink-2"> · data deleted from {dateShort(s.data_deletion_due_on)}</span>}
         </p>
-        {s.status_reason && <p className="mt-1 text-[14px] text-ink-2">{s.status_reason}</p>}
+        {s.status_reason && <p className="mt-1 text-[0.875rem] text-ink-2">{s.status_reason}</p>}
         {/* The actions that make sense from where the account is now. */}
         <div className="mt-3 flex flex-wrap gap-2">
           {s.status === 'trialling' && <>
@@ -253,10 +253,10 @@ function SchoolPanel({ id, school: s, onClose }: { id: string; school?: P.School
         <Button size="sm" variant="ghost" onClick={() => setSheet('invite')}><MailPlus className="size-3.5" aria-hidden /> Invite owner or admin</Button>}>
         <dl className="grid grid-cols-5 gap-2 text-center">
           {([['Owners', s.owners], ['Admins', s.admins], ['Teachers', s.teachers], ['Parents', s.guardians], ['Students', s.student_logins]] as const).map(([l, n]) => (
-            <div key={l} className="min-w-0"><dd className="stat-number text-[20px] leading-none">{n}</dd><dt className="mt-1 truncate text-[12px] text-ink-3">{l}</dt></div>
+            <div key={l} className="min-w-0"><dd className="stat-number text-[1.25rem] leading-none">{n}</dd><dt className="mt-1 truncate text-[0.75rem] text-ink-3">{l}</dt></div>
           ))}
         </dl>
-        <p className="mt-3 text-[13px] text-ink-3">
+        <p className="mt-3 text-[0.8125rem] text-ink-3">
           Swayvo sees how many — the school manages who, from its Account page.
         </p>
         {liveInvites.length > 0 && (
@@ -265,7 +265,7 @@ function SchoolPanel({ id, school: s, onClose }: { id: string; school?: P.School
               <li key={i.id} className="flex flex-wrap items-center gap-2 py-2.5 text-sm">
                 <span className="min-w-0 flex-1">
                   <span className="block truncate">{i.full_name ?? i.email} <span className="text-ink-3">· invited as {i.role}</span></span>
-                  <span className="block text-[13px] text-ink-3">{i.email} · sent {relativeDay(i.created_at)} · expires {dateShort(i.expires_at)}</span>
+                  <span className="block text-[0.8125rem] text-ink-3">{i.email} · sent {relativeDay(i.created_at)} · expires {dateShort(i.expires_at)}</span>
                 </span>
                 <Button size="sm" onClick={() => reissue.mutate(i)} loading={reissue.isPending}>New link</Button>
                 <Button size="sm" variant="ghost" onClick={() => revoke.mutate(i.id)}>Withdraw</Button>
@@ -279,14 +279,14 @@ function SchoolPanel({ id, school: s, onClose }: { id: string; school?: P.School
       <DetailSection title="Support access">
         {s.support_until ? (
           <div className="border-l-2 border-positive py-1 pl-3">
-            <p className="text-[14px] font-semibold"><span className="text-positive">Granted</span> by the owner until {dateShort(s.support_until)} {time(s.support_until)}</p>
-            <p className="mt-1 text-[13px] text-ink-2">A read-only view of the school as an administrator sees it, without health records. Opening it is logged on the school’s record.</p>
+            <p className="text-[0.875rem] font-semibold"><span className="text-positive">Granted</span> by the owner until {dateShort(s.support_until)} {time(s.support_until)}</p>
+            <p className="mt-1 text-[0.8125rem] text-ink-2">A read-only view of the school as an administrator sees it, without health records. Opening it is logged on the school’s record.</p>
             <Button size="sm" variant="primary" className="mt-2.5" loading={support.isPending} onClick={() => support.mutate(undefined)}>
               Open read-only view
             </Button>
           </div>
         ) : (
-          <p className="text-[14px] text-ink-2">
+          <p className="text-[0.875rem] text-ink-2">
             <span className="font-semibold text-ink">Not granted.</span> The owner can let Swayvo support in for up to a week from their Account page.
           </p>
         )}
@@ -298,7 +298,7 @@ function SchoolPanel({ id, school: s, onClose }: { id: string; school?: P.School
           {events.data?.map((e, n) => (
             <li key={n} className="py-2 text-sm">
               <span className="block">{e.summary ?? e.action}</span>
-              <span className="block text-[13px] text-ink-3">{e.actor ?? 'System'} · {relativeDay(e.at)} {time(e.at)}</span>
+              <span className="block text-[0.8125rem] text-ink-3">{e.actor ?? 'System'} · {relativeDay(e.at)} {time(e.at)}</span>
             </li>
           ))}
         </ol>
@@ -322,7 +322,7 @@ function Usage({ label, used, cap }: { label: string; used: number; cap: number 
   const pct = cap ? Math.min(100, Math.round((used / cap) * 100)) : 0;
   const over = cap != null && used > cap;
   return (
-    <div className="flex items-center justify-between gap-3 text-[14px]">
+    <div className="flex items-center justify-between gap-3 text-[0.875rem]">
       <span className="text-ink-2">{label}</span>
       <span className="flex items-center gap-2.5">
         {cap != null && <Beats value={used} max={cap} tone={pct >= 90 ? 'caution' : 'accent'} label={`${used} of ${cap}`} />}

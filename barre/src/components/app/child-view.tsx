@@ -42,31 +42,31 @@ export function ChildView({ student, notes, onClose }: {
       className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-canvas px-4 pb-safe pt-6">
       <div className="mx-auto max-w-lg space-y-8 pb-10">
         <div className="flex items-start gap-3">
-          <h2 id="child-view-h" className="min-w-0 flex-1 font-display text-[34px] leading-tight">Well done, {student.first_name}</h2>
+          <h2 id="child-view-h" className="min-w-0 flex-1 font-display text-[2.125rem] leading-tight">Well done, {student.first_name}</h2>
           <Button autoFocus onClick={onClose}>Done</Button>
         </div>
         {notes.slice(0, 3).map(n => (
           <section key={n.id} className="space-y-3 border-t-2 border-ink pt-4">
-            <p className="text-[14px] text-ink-3">{n.class_name ?? 'Class'} · {relativeDay(n.shared_at!)}</p>
-            {n.going_well && <p className="text-[24px] font-semibold leading-snug">{decorate(n.going_well)}{n.going_well}</p>}
-            {n.work_on && <p className="text-[20px] leading-snug"><span className="font-semibold">Next time, try: </span>{n.work_on}</p>}
+            <p className="text-[0.875rem] text-ink-3">{n.class_name ?? 'Class'} · {relativeDay(n.shared_at!)}</p>
+            {n.going_well && <p className="text-[1.5rem] font-semibold leading-snug">{decorate(n.going_well)}{n.going_well}</p>}
+            {n.work_on && <p className="text-[1.25rem] leading-snug"><span className="font-semibold">Next time, try: </span>{n.work_on}</p>}
           </section>
         ))}
         {!!milestones.data?.length && (
           <section className="border-t-2 border-ink pt-4">
-            <h3 className="text-[20px] font-semibold">Things you have done</h3>
-            <ul className="mt-2 space-y-1 text-[20px]">{milestones.data.slice(0, 5).map(m => <li key={m.id}>{m.title}</li>)}</ul>
+            <h3 className="text-[1.25rem] font-semibold">Things you have done</h3>
+            <ul className="mt-2 space-y-1 text-[1.25rem]">{milestones.data.slice(0, 5).map(m => <li key={m.id}>{m.title}</li>)}</ul>
           </section>
         )}
         {done.length > 0 && (
           <section className="border-t-2 border-ink pt-4">
-            <h3 className="text-[20px] font-semibold">Your dance skills</h3>
-            <ul className="mt-2 space-y-2 text-[19px]">
+            <h3 className="text-[1.25rem] font-semibold">Your dance skills</h3>
+            <ul className="mt-2 space-y-2 text-[1.1875rem]">
               {done.map(s => <li key={s.skill_id} className="flex flex-wrap gap-x-3"><span className="font-medium">{s.skill}</span><span className="text-ink-2">{KID_WORDS[s.level!]}</span></li>)}
             </ul>
           </section>
         )}
-        <p className="text-[14px] text-ink-3">This is the view to show {student.first_name}. Children under 13 don’t have their own login; you choose what to share.</p>
+        <p className="text-[0.875rem] text-ink-3">This is the view to show {student.first_name}. Children under 13 don’t have their own login; you choose what to share.</p>
       </div>
     </div>
   );

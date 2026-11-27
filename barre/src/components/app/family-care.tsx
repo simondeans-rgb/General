@@ -55,7 +55,7 @@ export function ChildLogin({ studentId, name }: { studentId: string; name: strin
     <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-4 py-3">
       <dt className="text-ink-3">Own login</dt>
       <dd className="min-w-0">
-        <p className="text-[14.5px]">{line[l.state]}</p>
+        <p className="text-[0.9062rem]">{line[l.state]}</p>
         {set.error != null && <div className="mt-2"><ErrorState error={set.error} /></div>}
         <div className="mt-2 flex flex-wrap gap-2">
           {(l.state === 'pending' || l.state === 'off') && (
@@ -72,7 +72,7 @@ export function ChildLogin({ studentId, name }: { studentId: string; name: strin
             <Button size="sm" onClick={() => setInviting(true)}>Invite {name}</Button>
           )}
         </div>
-        <p className="mt-1.5 text-[12.5px] text-ink-3">
+        <p className="mt-1.5 text-[0.7812rem] text-ink-3">
           The school gives students their own login from age {l.min_age}. They see their classes, feedback and practice, never payments.
         </p>
       </dd>
@@ -88,7 +88,7 @@ function InviteChildSheet({ studentId, name, onClose }: { studentId: string; nam
   if (link) {
     return (
       <RecordSheet title={`Invitation for ${name}`} onClose={onClose} onSave={onClose} saveLabel="Done">
-        <p className="text-[14.5px] text-ink-2">Because you sent it, {name}’s login works as soon as they accept.</p>
+        <p className="text-[0.9062rem] text-ink-2">Because you sent it, {name}’s login works as soon as they accept.</p>
         <InviteLink link={link} />
       </RecordSheet>
     );
@@ -135,13 +135,13 @@ export function CollectionList({ studentId, name }: { studentId: string; name: s
     <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-4 py-3">
       <dt className="text-ink-3">Who may collect</dt>
       <dd className="min-w-0">
-        <p className="text-[13px] text-ink-3">You, and anyone listed here. The teacher sees this list at the register.</p>
+        <p className="text-[0.8125rem] text-ink-3">You, and anyone listed here. The teacher sees this list at the register.</p>
         <ul className="mt-1 space-y-0.5">
           {list.map(c => (
             <li key={c.id} className="flex items-center gap-2">
               <span className="min-w-0 flex-1"><span className="font-medium">{c.full_name}</span>
                 {c.relationship ? <span className="text-ink-3"> ({c.relationship})</span> : null}
-                {c.phone ? <span className="block tnum text-[13.5px] text-ink-2">{c.phone}</span> : null}</span>
+                {c.phone ? <span className="block tnum text-[0.8438rem] text-ink-2">{c.phone}</span> : null}</span>
               <Button size="sm" variant="ghost" loading={remove.isPending && remove.variables === c.id}
                       onClick={() => remove.mutate(c.id)} aria-label={`Remove ${c.full_name}`}>
                 <Trash2 className="size-3.5" aria-hidden />
@@ -152,7 +152,7 @@ export function CollectionList({ studentId, name }: { studentId: string; name: s
         <Button size="sm" variant="ghost" className="-ml-3 mt-1" onClick={() => setAdding(true)}>
           <Plus className="size-4" aria-hidden /> Add someone
         </Button>
-        <p className="mt-1 text-[12.5px] text-ink-3">
+        <p className="mt-1 text-[0.7812rem] text-ink-3">
           If someone must not collect {name}, <Link href="/family/enquiries" className="font-semibold text-accent-text underline">tell the office</Link>.
         </p>
       </dd>
@@ -202,14 +202,14 @@ export function OfficeCollection({ studentId, name }: { studentId: string; name:
   return (
     <div>
       <div className="flex items-center gap-2 border-b border-ink pb-1">
-        <h3 className="min-w-0 flex-1 text-[14px] font-semibold">Who may collect</h3>
+        <h3 className="min-w-0 flex-1 text-[0.875rem] font-semibold">Who may collect</h3>
         <Button size="sm" variant="ghost" onClick={() => setAdding(true)}><Plus className="size-4" aria-hidden /> Add</Button>
       </div>
       {rows.isLoading && <Skeleton className="mt-2 h-8" />}
-      {rows.data?.length === 0 && <p className="mt-1 text-[13.5px] text-ink-3">Only the family’s guardians.</p>}
+      {rows.data?.length === 0 && <p className="mt-1 text-[0.8438rem] text-ink-3">Only the family’s guardians.</p>}
       <ul className="divide-y divide-line">
         {rows.data?.map(c => (
-          <li key={c.id} className="flex min-h-[44px] items-center gap-2 text-[14px]">
+          <li key={c.id} className="flex min-h-[44px] items-center gap-2 text-[0.875rem]">
             <span className="min-w-0 flex-1">
               {!c.allowed && <Word tone="critical" className="mr-1.5">May not collect</Word>}
               <span className="font-medium">{c.full_name}</span>
@@ -248,10 +248,10 @@ export function GuardianAccessFields({ guardianId }: { guardianId: string }) {
   if (!a) return rows.isLoading ? <Skeleton className="h-24" /> : null;
   return (
     <fieldset>
-      <legend className="mb-1 text-[13px] font-medium text-ink-2">Shared care</legend>
-      <p className="mb-1 text-[12.5px] text-ink-3">Everything is on unless the office restricts it, for example under a court order. Changes apply at once.</p>
+      <legend className="mb-1 text-[0.8125rem] font-medium text-ink-2">Shared care</legend>
+      <p className="mb-1 text-[0.7812rem] text-ink-3">Everything is on unless the office restricts it, for example under a court order. Changes apply at once.</p>
       {FLAGS.map(([k, label]) => (
-        <label key={k} className="flex min-h-[44px] items-center gap-3 text-[14px]">
+        <label key={k} className="flex min-h-[44px] items-center gap-3 text-[0.875rem]">
           <input type="checkbox" checked={!!a[k]} className="size-[18px] accent-[var(--color-accent)]"
                  onChange={e => set.mutate({ flags: { [k]: e.target.checked } })} />
           {label}
@@ -266,7 +266,7 @@ export function GuardianAccessFields({ guardianId }: { guardianId: string }) {
           </div>
         </Field>
       ) : a.has_note ? (
-        <p className="text-[13px] text-ink-3">The safeguarding lead holds a note about this.</p>
+        <p className="text-[0.8125rem] text-ink-3">The safeguarding lead holds a note about this.</p>
       ) : null}
       {set.error != null && <ErrorState error={set.error} />}
     </fieldset>
@@ -297,7 +297,7 @@ export function StudentLoginAge() {
             </Select>
           </Field>
         ) : (
-          <p className="text-[13px] text-ink-3">Only the studio owner can change this.</p>
+          <p className="text-[0.8125rem] text-ink-3">Only the studio owner can change this.</p>
         )}
         {set.error != null && <ErrorState error={set.error} />}
       </div>

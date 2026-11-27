@@ -27,7 +27,7 @@ export default function PlansPage() {
         {plans.error && <ErrorState error={plans.error} />}
         {plans.data && (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[560px] text-[14.5px]">
+            <table className="w-full min-w-[560px] text-[0.9062rem]">
               <caption className="sr-only">Plans</caption>
               <thead className="border-b-2 border-ink text-left">
                 <tr>
@@ -45,8 +45,8 @@ export default function PlansPage() {
                   const on = schools.data?.filter(s => s.plan_code === p.code && s.status !== 'cancelled').length ?? 0;
                   return (
                     <tr key={p.id}>
-                      <th scope="row" className="py-3 pr-3 text-left font-semibold">{p.name}{p.is_trial && <span className="ml-2 text-[13px] font-medium text-info">Trial</span>}</th>
-                      <td className="stat-number px-3 py-3 text-right text-[20px]">{p.price_minor ? money(p.price_minor) : 'Free'}</td>
+                      <th scope="row" className="py-3 pr-3 text-left font-semibold">{p.name}{p.is_trial && <span className="ml-2 text-[0.8125rem] font-medium text-info">Trial</span>}</th>
+                      <td className="stat-number px-3 py-3 text-right text-[1.25rem]">{p.price_minor ? money(p.price_minor) : 'Free'}</td>
                       <td className="tnum px-3 py-3 text-right">{limit(p.max_students)}</td>
                       <td className="tnum px-3 py-3 text-right">{limit(p.max_locations)}</td>
                       <td className="tnum px-3 py-3 text-right">{limit(p.max_staff)}</td>
@@ -62,7 +62,7 @@ export default function PlansPage() {
             </table>
           </div>
         )}
-        <p className="max-w-2xl text-[13px] text-ink-3">
+        <p className="max-w-2xl text-[0.8125rem] text-ink-3">
           Taking payment from schools (Stripe Billing) is not connected yet: plans set limits and the console’s revenue
           figure, and you invoice schools yourself for now. Moving a school to a smaller plan never deletes anything — it
           only stops new additions past the limit.

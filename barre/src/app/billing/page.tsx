@@ -161,10 +161,10 @@ function Billing() {
               {FILTERS.map(f => (
                 <button key={f.key} role="tab" aria-selected={filter === f.key}
                   onClick={() => setFilter(f.key)}
-                  className={cn('flex h-10 shrink-0 items-center gap-1.5 rounded-[var(--radius-md)] px-3 text-[14px]',
+                  className={cn('flex h-10 shrink-0 items-center gap-1.5 rounded-[var(--radius-md)] px-3 text-[0.875rem]',
                     filter === f.key ? 'bg-ink font-semibold text-ink-invert' : 'text-ink-2 hover:bg-surface-2 hover:text-ink')}>
                   {f.label}
-                  {invoices.data && <span className={cn('tnum text-[12px]',
+                  {invoices.data && <span className={cn('tnum text-[0.75rem]',
                     filter === f.key ? 'opacity-75' : 'text-ink-3')}>{counts[f.key]}</span>}
                 </button>
               ))}
@@ -184,7 +184,7 @@ function Billing() {
 
             {/* Desktop: an aligned ledger, because the office compares rows. */}
             {shown.length > 0 && (
-              <table className="hidden w-full text-[14.5px] md:table">
+              <table className="hidden w-full text-[0.9062rem] md:table">
                 <thead className="border-b border-line text-left">
                   <tr>
                     <th scope="col" className="label py-2.5 pr-3 font-semibold">Invoice</th>
@@ -205,7 +205,7 @@ function Billing() {
                           aria-current={selected === i.id || undefined}>
                           {i.number}
                         </button>
-                        <span className="block max-w-[240px] truncate text-[13px] text-ink-3">{i.lines}</span>
+                        <span className="block max-w-[240px] truncate text-[0.8125rem] text-ink-3">{i.lines}</span>
                       </td>
                       <td className="px-3 py-2.5 align-top">{i.family_name}</td>
                       <td className="tnum whitespace-nowrap px-3 py-2.5 align-top text-ink-2">{dateShort(i.due_on)}</td>
@@ -227,7 +227,7 @@ function Billing() {
                     className={cn('grid min-h-14 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 py-3 text-left', selected === i.id && 'bg-accent-soft/60')}>
                     <span className="min-w-0">
                       <span className="block truncate font-semibold">{i.family_name}</span>
-                      <span className="mt-0.5 block truncate text-[13px] text-ink-3">
+                      <span className="mt-0.5 block truncate text-[0.8125rem] text-ink-3">
                         <span className="tnum">{i.number}</span> · due {dateShort(i.due_on)}
                       </span>
                     </span>
@@ -235,7 +235,7 @@ function Billing() {
                       <span className={cn('tnum block font-semibold', !isOpen(i.status) && 'font-normal text-ink-3')}>
                         {money(isOpen(i.status) ? outstanding(i) : i.total_minor)}
                       </span>
-                      <span className="block text-[13px]"><InvoiceStatus i={i} /></span>
+                      <span className="block text-[0.8125rem]"><InvoiceStatus i={i} /></span>
                     </span>
                   </button>
                 </li>
@@ -277,7 +277,7 @@ function ExportButton() {
           <button role="menuitem" className="block w-full px-3 py-2.5 text-left text-sm hover:bg-surface-2" onClick={() => go('aged-debt')}>Aged debt (CSV)</button>
           <button role="menuitem" className="block w-full border-t border-line px-3 py-2.5 text-left text-sm hover:bg-surface-2" onClick={() => go('xero')}>
             Xero sales invoices
-            <span className="block text-[12px] text-ink-3">Import in Xero: Sales › Import</span>
+            <span className="block text-[0.75rem] text-ink-3">Import in Xero: Sales › Import</span>
           </button>
         </div>
       )}
@@ -293,13 +293,13 @@ function Stat({ label, value, note, tone, loading, onClick, action }: {
     <div className="min-w-0 lg:px-6 lg:first:pl-0 lg:last:pr-0">
       <dt className="label">{label}</dt>
       {loading ? <dd><Skeleton className="mt-2 h-8 w-28" /></dd> : (
-        <dd className={cn('stat-number mt-1.5 text-[28px] leading-none lg:text-[32px]',
+        <dd className={cn('stat-number mt-1.5 text-[1.75rem] leading-none lg:text-[2rem]',
           tone === 'caution' && 'text-caution', tone === 'critical' && 'text-critical')}>{value}</dd>
       )}
-      {note && <dd className="mt-1.5 text-[13px] text-ink-3">{note}</dd>}
+      {note && <dd className="mt-1.5 text-[0.8125rem] text-ink-3">{note}</dd>}
       {onClick && action && (
         <dd><button type="button" onClick={onClick} aria-label={`${action}: show the invoices that need action`}
-          className="-ml-1 mt-0.5 inline-flex min-h-8 items-center gap-1 rounded-[var(--radius-sm)] px-1 text-[13px] font-semibold text-accent-text hover:underline [@media(pointer:coarse)]:min-h-11">
+          className="-ml-1 mt-0.5 inline-flex min-h-8 items-center gap-1 rounded-[var(--radius-sm)] px-1 text-[0.8125rem] font-semibold text-accent-text hover:underline [@media(pointer:coarse)]:min-h-11">
           {action}<ArrowRight className="size-3.5" aria-hidden /></button></dd>
       )}
     </div>
@@ -345,7 +345,7 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
       {i && (
         <>
           <div className="mb-5">
-            <p className="text-[13px] text-ink-3">
+            <p className="text-[0.8125rem] text-ink-3">
               <span className={cn('font-semibold', i.overdue ? 'text-caution' : (STATUS[i.status] ?? STATUS.draft!).tone === 'positive' ? 'text-positive' : 'text-ink')}>
                 {i.overdue ? 'Overdue' : (STATUS[i.status] ?? STATUS.draft!).label}
               </span>
@@ -353,13 +353,13 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
               {' · '}{i.issued_on ? `Issued ${dateShort(i.issued_on)}, ` : ''}due {dateShort(i.due_on)}
             </p>
             <p className="label mt-4">{isOpen(i.status) ? 'Still to pay' : 'Total'}</p>
-            <p className="stat-number mt-1 text-[36px] leading-none">
+            <p className="stat-number mt-1 text-[2.25rem] leading-none">
               {money(isOpen(i.status) ? owed : i.total_minor)}
             </p>
             {isOpen(i.status) && Number(i.paid_minor) > 0 && (
-              <p className="tnum mt-1.5 text-[13px] text-ink-2">{money(i.paid_minor)} of {money(i.total_minor)} paid</p>
+              <p className="tnum mt-1.5 text-[0.8125rem] text-ink-2">{money(i.paid_minor)} of {money(i.total_minor)} paid</p>
             )}
-            {i.status === 'void' && i.void_reason && <p className="mt-1.5 text-[13px] text-ink-2">Voided: {i.void_reason}</p>}
+            {i.status === 'void' && i.void_reason && <p className="mt-1.5 text-[0.8125rem] text-ink-2">Voided: {i.void_reason}</p>}
           </div>
 
           {/* The next sensible action first, the rest beside it. */}
@@ -399,7 +399,7 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
                 <li key={it.id} className="flex items-start gap-3 py-2.5 text-sm">
                   <span className="min-w-0 flex-1">
                     <span className="block">{it.description}</span>
-                    <span className="block text-[12px] text-ink-3">
+                    <span className="block text-[0.75rem] text-ink-3">
                       {KIND_LABEL[it.kind] ?? it.kind}
                       {it.student_name ? ` · ${it.student_name}` : ''}
                       {Number(it.quantity) !== 1 ? ` · ${Number(it.quantity)} × ${money(it.unit_minor)}` : ''}
@@ -419,7 +419,7 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
                 <span className="flex-1">Total</span><span className="tnum">{money(i.total_minor)}</span>
               </li>
             </ul>
-            {i.note && <p className="mt-2 text-[13px] text-ink-2">{i.note}</p>}
+            {i.note && <p className="mt-2 text-[0.8125rem] text-ink-2">{i.note}</p>}
           </DetailSection>
 
           <DetailSection title="Payments">
@@ -436,10 +436,10 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-1.5">
                         {METHOD_LABEL[p.method] ?? p.method}
-                        {!ok && p.failure_code && <span className="text-[13px] font-semibold text-critical">Failed · {p.failure_code.replace(/_/g, ' ')}</span>}
-                        {refunded > 0 && <span className="text-[13px] font-medium text-info">{money(refunded)} refunded</span>}
+                        {!ok && p.failure_code && <span className="text-[0.8125rem] font-semibold text-critical">Failed · {p.failure_code.replace(/_/g, ' ')}</span>}
+                        {refunded > 0 && <span className="text-[0.8125rem] font-medium text-info">{money(refunded)} refunded</span>}
                       </span>
-                      <span className="block text-[12px] text-ink-3">
+                      <span className="block text-[0.75rem] text-ink-3">
                         {dateShort(p.succeeded_at ?? p.created_at)}{p.note ? ` · ${p.note}` : ''}
                       </span>
                     </span>
@@ -460,7 +460,7 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
                   <li key={c.id} className="flex items-start gap-3 py-2.5 text-sm">
                     <span className="min-w-0 flex-1">
                       <span className="block">Credit note <span className="tnum">{c.number}</span></span>
-                      <span className="block text-[12px] text-ink-3">
+                      <span className="block text-[0.75rem] text-ink-3">
                         {dateShort(c.created_at)} · {c.reason} · {creditNoteWhere(c)}
                       </span>
                     </span>
@@ -470,7 +470,7 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
               </ul>
             )}
             {payments.data?.some(p => p.method === 'card' && p.succeeded_at) && (
-              <p className="mt-2 text-[12.5px] text-ink-3">
+              <p className="mt-2 text-[0.7812rem] text-ink-3">
                 Card payments are refunded from the payment provider; the refund appears here once it confirms.
               </p>
             )}
@@ -579,18 +579,18 @@ function RefundSheet({ payment, invoice, onClose }: { payment: B.PaymentRow; inv
       onClose={onClose} onSave={() => save.mutate(undefined)} saving={save.isPending} error={save.error}
       canSave={minor != null && minor > 0 && minor <= left && reason.trim().length >= 3} saveLabel="Record refund">
       <fieldset className="space-y-2">
-        <legend className="mb-1 text-[13px] font-medium text-ink-2">What is this refund for?</legend>
+        <legend className="mb-1 text-[0.8125rem] font-medium text-ink-2">What is this refund for?</legend>
         <label className="flex items-start gap-2.5 text-sm">
           <input type="radio" name="ref-mode" className="mt-0.5 size-5 accent-[var(--color-accent)]"
                  checked={mode === 'credit_note'} onChange={() => setMode('credit_note')} />
           <span><span className="block font-medium">They were charged too much</span>
-            <span className="block text-[13px] text-ink-3">A class cancelled, a fee waived. Issues a credit note; {invoice.number} stays settled.</span></span>
+            <span className="block text-[0.8125rem] text-ink-3">A class cancelled, a fee waived. Issues a credit note; {invoice.number} stays settled.</span></span>
         </label>
         <label className="flex items-start gap-2.5 text-sm">
           <input type="radio" name="ref-mode" className="mt-0.5 size-5 accent-[var(--color-accent)]"
                  checked={mode === 'mistake'} onChange={() => setMode('mistake')} />
           <span><span className="block font-medium">The payment was recorded by mistake</span>
-            <span className="block text-[13px] text-ink-3">The payment is reversed and {invoice.number} is owed again.</span></span>
+            <span className="block text-[0.8125rem] text-ink-3">The payment is reversed and {invoice.number} is owed again.</span></span>
         </label>
       </fieldset>
       <Field label="Amount" htmlFor="ref-a" required
@@ -630,12 +630,12 @@ function CreditNoteSheet({ invoice, credited, cashPaid, onClose }: {
         <Input id="cn-r" value={reason} onChange={e => setReason(e.target.value)} maxLength={200} placeholder="Class cancelled 1 Dec" />
       </Field>
       <fieldset className="space-y-2">
-        <legend className="mb-1 text-[13px] font-medium text-ink-2">Where the money goes</legend>
+        <legend className="mb-1 text-[0.8125rem] font-medium text-ink-2">Where the money goes</legend>
         <label className="flex items-start gap-2.5 text-sm">
           <input type="radio" name="cn-s" className="mt-0.5 size-5 accent-[var(--color-accent)]"
                  checked={settle === 'account'} onChange={() => setSettle('account')} />
           <span><span className="block font-medium">Keep it as credit</span>
-            <span className="block text-[13px] text-ink-3">
+            <span className="block text-[0.8125rem] text-ink-3">
               {owed > 0 ? `Comes off the ${money(owed)} still owed on this invoice; anything over goes off their next invoice.`
                         : 'Held on their account and taken off their next invoice.'}
             </span></span>
@@ -644,7 +644,7 @@ function CreditNoteSheet({ invoice, credited, cashPaid, onClose }: {
           <input type="radio" name="cn-s" className="mt-0.5 size-5 accent-[var(--color-accent)]"
                  checked={settle === 'refund'} onChange={() => setSettle('refund')} />
           <span><span className="block font-medium">Give the money back</span>
-            <span className="block text-[13px] text-ink-3">Hand it back first, by transfer or cash. It is recorded as a refund.</span></span>
+            <span className="block text-[0.8125rem] text-ink-3">Hand it back first, by transfer or cash. It is recorded as a refund.</span></span>
         </label>
       </fieldset>
     </RecordSheet>
@@ -772,8 +772,8 @@ function NewInvoiceSheet({ onClose, onCreated, familyId }: {
         className="flex max-h-[92dvh] w-full max-w-xl flex-col overflow-hidden rounded-t-[var(--radius-xl)]
                    border border-line bg-surface shadow-lg sm:rounded-[var(--radius-xl)]">
         <div className="border-b border-line p-4">
-          <h2 id="ni-t" className="font-display text-[20px] font-[800] leading-tight [font-stretch:112%]">New invoice</h2>
-          <p className="text-[13px] text-ink-2">Lines are itemised for the family exactly as you write them.</p>
+          <h2 id="ni-t" className="font-display text-[1.25rem] font-[800] leading-tight [font-stretch:112%]">New invoice</h2>
+          <p className="text-[0.8125rem] text-ink-2">Lines are itemised for the family exactly as you write them.</p>
         </div>
         <div className="flex-1 space-y-4 overflow-y-auto overscroll-contain p-4">
           <Field label="Family" htmlFor="ni-f" required>
@@ -796,7 +796,7 @@ function NewInvoiceSheet({ onClose, onCreated, familyId }: {
           )}
 
           <fieldset>
-            <legend className="mb-1.5 text-[13px] font-medium text-ink-2">Lines</legend>
+            <legend className="mb-1.5 text-[0.8125rem] font-medium text-ink-2">Lines</legend>
             {lines.map((l, n) => {
               const minor = toMinor(l.amount);
               return (
@@ -818,7 +818,7 @@ function NewInvoiceSheet({ onClose, onCreated, familyId }: {
                       <Trash2 className="size-4" aria-hidden />
                     </Button>
                   </div>
-                  {!!l.amount && minor == null && <p role="alert" className="mt-1 text-[12.5px] text-critical">Enter an amount like 45.00</p>}
+                  {!!l.amount && minor == null && <p role="alert" className="mt-1 text-[0.7812rem] text-critical">Enter an amount like 45.00</p>}
                 </div>
               );
             })}
@@ -848,7 +848,7 @@ function NewInvoiceSheet({ onClose, onCreated, familyId }: {
         <div className="border-t border-line p-4 pb-safe">
           <div className="mb-3 flex items-baseline justify-between text-sm">
             <span className="text-ink-2">{fam ? fam.name : 'Total'}</span>
-            <span className="stat-number text-[24px]">{money(total)}</span>
+            <span className="stat-number text-[1.5rem]">{money(total)}</span>
           </div>
           <div className="flex gap-2">
             <Button className="flex-1" onClick={onClose}>Cancel</Button>

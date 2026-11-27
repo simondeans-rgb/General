@@ -41,7 +41,7 @@ export function RaiseConcernSheet({ student, staff, onClose }: {
   });
   if (sent) return <RecordSheet title="Concern recorded" onClose={onClose} onSave={onClose} saveLabel="Done">
     <p className="text-sm text-ink-2">The safeguarding lead and the owner have been told. You will not see it in the app again — that is deliberate. If a child is in immediate danger, call 999.</p>
-    <p className="text-[13.5px] text-ink-3">Reference {sent.id.slice(0, 8).toUpperCase()} · {dateShort(sent.at)} {time(sent.at)}</p>
+    <p className="text-[0.8438rem] text-ink-3">Reference {sent.id.slice(0, 8).toUpperCase()} · {dateShort(sent.at)} {time(sent.at)}</p>
   </RecordSheet>;
   const subjectOk = kind === 'child' ? !!childId : kind === 'staff' ? !!staffId : who.trim().length >= 2;
   const about = student ? `About ${student.first_name}` : staff ? `About ${staff.name}` : undefined;
@@ -49,7 +49,7 @@ export function RaiseConcernSheet({ student, staff, onClose }: {
     <RecordSheet title="Raise a safeguarding concern" subtitle={about} onClose={onClose}
       saving={raise.isPending} error={raise.error} canSave={subjectOk && summary.trim().length >= 10} saveLabel="Send to the safeguarding lead"
       onSave={() => raise.mutate()}>
-      <p className="border-l-2 border-critical py-1 pl-3 text-[14px]">
+      <p className="border-l-2 border-critical py-1 pl-3 text-[0.875rem]">
         <strong className="font-semibold text-critical">If a child is in immediate danger, call 999 first.</strong> Write what you saw or were told, in their words where you can. Do not investigate.
       </p>
       {!fixed && (
@@ -88,7 +88,7 @@ export function RaiseConcernSheet({ student, staff, onClose }: {
         </Field>
       )}
       {kind === 'staff' && (
-        <p className="text-[13.5px] text-ink-2">
+        <p className="text-[0.8438rem] text-ink-2">
           This is an allegation. Only the safeguarding lead and the owner see it, never the person it is about. The lead follows the
           local authority designated officer (LADO) process.
         </p>
@@ -127,10 +127,10 @@ export function StaffChecks({ staffId, readOnly = false }: { staffId: string; re
         {rows.data?.map(c => (
           <li key={c.id} className="flex items-center justify-between gap-2 py-1.5 text-sm">
             <span>{G.CHECK_LABEL[c.kind]}{c.reference ? ` · ${c.reference}` : ''} · {dateShort(c.checked_on)}</span>
-            {c.expires_on && <span className={soon(c.expires_on) ? 'shrink-0 text-[13px] font-semibold text-critical' : 'shrink-0 text-[13px] text-ink-3'}>{new Date(c.expires_on) < new Date() ? 'Expired' : 'Expires'} {dateShort(c.expires_on)}</span>}
+            {c.expires_on && <span className={soon(c.expires_on) ? 'shrink-0 text-[0.8125rem] font-semibold text-critical' : 'shrink-0 text-[0.8125rem] text-ink-3'}>{new Date(c.expires_on) < new Date() ? 'Expired' : 'Expires'} {dateShort(c.expires_on)}</span>}
           </li>
         ))}
-        {rows.data?.length === 0 && <li className="text-[13px] text-ink-3">No checks recorded.</li>}
+        {rows.data?.length === 0 && <li className="text-[0.8125rem] text-ink-3">No checks recorded.</li>}
       </ul>
       {!readOnly && <>
       <div className="grid grid-cols-2 gap-2">
@@ -144,7 +144,7 @@ export function StaffChecks({ staffId, readOnly = false }: { staffId: string; re
       {add.error != null && <ErrorState error={add.error} />}
       <Button size="sm" disabled={!f.checked} loading={add.isPending} onClick={() => add.mutate()}>Add check</Button>
       </>}
-      <p className="text-[12px] text-ink-3">{readOnly ? 'Only the owner records checks.' : 'The office and the safeguarding lead can see these.'} The owner and the lead are told 30 days before anything expires.</p>
+      <p className="text-[0.75rem] text-ink-3">{readOnly ? 'Only the owner records checks.' : 'The office and the safeguarding lead can see these.'} The owner and the lead are told 30 days before anything expires.</p>
     </div>
   );
 }
@@ -190,17 +190,17 @@ export function RetentionCard({ studioId }: { studioId: string }) {
         </div>
         {Object.keys(m).length > 0 && <Button size="sm" loading={save.isPending} onClick={() => save.mutate()}>Save periods</Button>}
         {save.error != null && <ErrorState error={save.error} />}
-        <p className="border-t border-line pt-3 text-[14.5px]">Due now: <b>{med}</b> medical record{med === 1 ? '' : 's'} to delete, <b>{anon}</b> child{anon === 1 ? '' : 'ren'} to anonymise,
+        <p className="border-t border-line pt-3 text-[0.9062rem]">Due now: <b>{med}</b> medical record{med === 1 ? '' : 's'} to delete, <b>{anon}</b> child{anon === 1 ? '' : 'ren'} to anonymise,
           {' '}<b>{pros}</b> old enquir{pros === 1 ? 'y' : 'ies'} to remove, <b>{fin}</b> famil{fin === 1 ? 'y' : 'ies'} to anonymise on invoices
           {pol.concern_months ? <>, <b>{con}</b> closed concern{con === 1 ? '' : 's'} to delete</> : ''}.
           {pol.last_run_at ? ` Last run ${dateShort(pol.last_run_at)}.` : ''}</p>
         {held.length > 0 && (
           <div>
-            <p className="text-[14.5px]"><b>{held.length}</b> child{held.length === 1 ? '' : 'ren'} held back from anonymising, because of a safeguarding record:</p>
-            <ul className="mt-1 divide-y divide-line text-[14px]">
+            <p className="text-[0.9062rem]"><b>{held.length}</b> child{held.length === 1 ? '' : 'ren'} held back from anonymising, because of a safeguarding record:</p>
+            <ul className="mt-1 divide-y divide-line text-[0.875rem]">
               {held.map(h => <li key={h.student_id} className="flex flex-wrap justify-between gap-x-3 py-1.5"><span>{h.who}</span><span className="text-ink-3">{h.reason}</span></li>)}
             </ul>
-            <p className="mt-1 text-[12.5px] text-ink-3">The safeguarding lead reviews holds on the Safeguarding page.</p>
+            <p className="mt-1 text-[0.7812rem] text-ink-3">The safeguarding lead reviews holds on the Safeguarding page.</p>
           </div>
         )}
         {done && <p role="status" className="text-sm text-positive">{done}</p>}

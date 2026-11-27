@@ -137,8 +137,8 @@ export function ImportWizard({ onClose, initial = 'families' }: { onClose: () =>
                    border border-line bg-surface shadow-lg sm:rounded-[var(--radius-xl)]">
         <div className="flex items-start gap-3 border-b border-line px-5 pb-3 pt-4">
           <div className="min-w-0 flex-1">
-            <h2 id="imp-t" className="font-display text-[20px] leading-tight">{K.title}</h2>
-            <p className="mt-1 text-[13.5px] text-ink-3">{K.sub}</p>
+            <h2 id="imp-t" className="font-display text-[1.25rem] leading-tight">{K.title}</h2>
+            <p className="mt-1 text-[0.8438rem] text-ink-3">{K.sub}</p>
           </div>
           <Button size="sm" variant="ghost" onClick={onClose} aria-label="Close" className="-mr-2 -mt-1">
             <X className="size-4" aria-hidden />
@@ -147,7 +147,7 @@ export function ImportWizard({ onClose, initial = 'families' }: { onClose: () =>
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
         {done ? (
-          <div className="space-y-3 text-[14px]">
+          <div className="space-y-3 text-[0.875rem]">
             {kind === 'families' && <Notice word="Imported" tone="positive" title={`${done.families} new families and ${done.children} children`}
               detail={`${done.enrolled} class places taken${done.medical ? `; ${done.medical} medical notes added to records` : ''}.${done.skipped ? ` ${done.skipped} children were already here and were left alone.` : ''}`} />}
             {kind === 'classes' && <Notice word="Imported" tone="positive" title={`${done.classes} classes with ${done.sessions} sessions`}
@@ -164,16 +164,16 @@ export function ImportWizard({ onClose, initial = 'families' }: { onClose: () =>
             <ViewTabs label="What to import" value={kind} onChange={switchKind}
               options={[['classes', '1. Timetable'], ['families', '2. Families'], ['balances', '3. Balances']]} />
             <section className="space-y-3">
-              <p className="text-[14px] text-ink-2">Export from your current system or spreadsheet as CSV.{' '}
+              <p className="text-[0.875rem] text-ink-2">Export from your current system or spreadsheet as CSV.{' '}
                 {kind === 'families' && 'Brothers and sisters go into one family by their parent’s email or phone number.'}
                 {kind === 'classes' && 'New dance styles and rooms are added for you; a teacher not on your staff list is left blank to fill in later.'}
                 {kind === 'balances' && 'Families are matched by parent email, else family name, so import families first. A negative balance is credit.'}</p>
               {kind === 'balances' && (
                 <div className="flex flex-wrap items-end gap-4">
-                  <label className="grid gap-1 text-[14px]"><span className="font-semibold">Balances as at</span>
+                  <label className="grid gap-1 text-[0.875rem]"><span className="font-semibold">Balances as at</span>
                     <Input type="date" value={asAt} max={new Date().toISOString().slice(0, 10)} onChange={e => { setAsAt(e.target.value); setCheck(null); }} className="w-44" /></label>
                   {currentTerm && (
-                    <label className="flex min-h-[44px] items-center gap-2 text-[14px]">
+                    <label className="flex min-h-[44px] items-center gap-2 text-[0.875rem]">
                       <input type="checkbox" className="size-[18px] accent-[var(--color-accent)]" checked={termBilled} onChange={e => { setTermBilled(e.target.checked); setCheck(null); }} />
                       These balances already include {currentTerm.name} fees (so the next billing run skips them)
                     </label>
@@ -186,16 +186,16 @@ export function ImportWizard({ onClose, initial = 'families' }: { onClose: () =>
                   <input type="file" accept=".csv,text/csv" className="sr-only" onChange={e => e.target.files?.[0] && read(e.target.files[0])} />
                 </label>
                 <Button size="sm" variant="ghost" onClick={template}><Download className="size-4" aria-hidden /> Template</Button>
-                {file && <span className="text-[13px] text-ink-3">{file} · {body.length} rows</span>}
+                {file && <span className="text-[0.8125rem] text-ink-3">{file} · {body.length} rows</span>}
               </div>
             </section>
 
             {head.length > 0 && (
               <section>
-                <h3 className="mb-2 border-b border-ink pb-1.5 text-[14px] font-semibold">Match your columns</h3>
+                <h3 className="mb-2 border-b border-ink pb-1.5 text-[0.875rem] font-semibold">Match your columns</h3>
                 <div className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
                   {FIELDS.map(f => (
-                    <label key={f.key} className="flex items-center gap-2 text-[14px]">
+                    <label key={f.key} className="flex items-center gap-2 text-[0.875rem]">
                       <span className="w-36 shrink-0">{f.label}{f.required && <span className="text-critical" aria-hidden> *</span>}</span>
                       <Select aria-label={f.label} value={String(map[f.key] ?? -1)}
                         onChange={e => { setMap(m => ({ ...m, [f.key]: Number(e.target.value) })); setCheck(null); }}>
@@ -210,9 +210,9 @@ export function ImportWizard({ onClose, initial = 'families' }: { onClose: () =>
 
             {head.length > 0 && unmapped.length > 0 && (
               <section className="space-y-2 border-l-2 border-caution pl-3">
-                <p className="text-[14px] font-semibold">{unmapped.length} column{unmapped.length === 1 ? '' : 's'} will not be imported</p>
-                <p className="text-[13.5px] text-ink-2">{unmapped.map(c => `“${c.h}”`).join(', ')}. Match them above if they belong somewhere; otherwise keep a copy of the file.</p>
-                <label className="flex min-h-[44px] items-center gap-2 text-[14px]">
+                <p className="text-[0.875rem] font-semibold">{unmapped.length} column{unmapped.length === 1 ? '' : 's'} will not be imported</p>
+                <p className="text-[0.8438rem] text-ink-2">{unmapped.map(c => `“${c.h}”`).join(', ')}. Match them above if they belong somewhere; otherwise keep a copy of the file.</p>
+                <label className="flex min-h-[44px] items-center gap-2 text-[0.875rem]">
                   <input type="checkbox" className="size-[18px] accent-[var(--color-accent)]" checked={ackUnmapped} onChange={e => setAckUnmapped(e.target.checked)} />
                   I understand these columns will not be imported
                 </label>
@@ -224,7 +224,7 @@ export function ImportWizard({ onClose, initial = 'families' }: { onClose: () =>
                   ? <Notice word="Ready" tone="positive" title={`All ${check.rows} rows are fine`} detail={kind === 'families' ? `About ${check.families} families.` : undefined} />
                   : <Notice word="Fix first" tone="critical" title={`${check.errors.length} problem${check.errors.length === 1 ? '' : 's'} to fix in the file`} detail="Nothing has been imported." />}
                 {check.errors.length > 0 && (
-                  <ul className="max-h-48 divide-y divide-line overflow-y-auto border-y border-line text-[13.5px]">
+                  <ul className="max-h-48 divide-y divide-line overflow-y-auto border-y border-line text-[0.8438rem]">
                     {check.errors.map((e, i) => (
                       <li key={i} className="flex gap-3 py-1.5">
                         <span className="w-14 shrink-0 font-semibold text-critical tnum">Row {e.row + 1}</span> {e.message}
@@ -232,7 +232,7 @@ export function ImportWizard({ onClose, initial = 'families' }: { onClose: () =>
                     ))}
                   </ul>
                 )}
-                {check.warnings.map((w, i) => <p key={i} className="text-[13px] text-caution">{w.message}.</p>)}
+                {check.warnings.map((w, i) => <p key={i} className="text-[0.8125rem] text-caution">{w.message}.</p>)}
               </section>
             )}
             {call.error != null && <ErrorState error={call.error} />}

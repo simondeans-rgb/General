@@ -58,7 +58,7 @@ export default function StudioSettings() {
         <div role="tablist" aria-label="Settings" className="-mx-1 flex gap-1 overflow-x-auto border-b border-line px-1">
           {TABS.map(([k, l]) => (
             <button key={k} role="tab" aria-selected={tab === k} aria-controls={`st-panel-${k}`} id={`st-tab-${k}`} onClick={() => go(k)}
-              className={cn('-mb-px h-11 shrink-0 border-b-2 px-2 text-[14.5px] sm:px-3', tab === k ? 'border-ink font-semibold text-ink' : 'border-transparent text-ink-2 hover:text-ink')}>
+              className={cn('-mb-px h-11 shrink-0 border-b-2 px-2 text-[0.9062rem] sm:px-3', tab === k ? 'border-ink font-semibold text-ink' : 'border-transparent text-ink-2 hover:text-ink')}>
               {l}
             </button>
           ))}
@@ -98,7 +98,7 @@ function StudioDetails() {
           : undefined} />
       {studio.isPending && <div className="pt-3"><Skeleton className="h-14" /></div>}
       {s && (
-        <dl className="grid grid-cols-1 gap-x-6 divide-y divide-line text-[14.5px] sm:grid-cols-2 sm:divide-y-0">
+        <dl className="grid grid-cols-1 gap-x-6 divide-y divide-line text-[0.9062rem] sm:grid-cols-2 sm:divide-y-0">
           <Fact label="Name" value={s.name} />
           <Fact label="Timezone" value={s.timezone} />
           <Fact label="Email" value={s.contact_email ?? 'Not set'} />
@@ -107,7 +107,7 @@ function StudioDetails() {
         </dl>
       )}
       {!isOwner && (
-        <p className="pt-3 text-[13px] text-ink-3">
+        <p className="pt-3 text-[0.8125rem] text-ink-3">
           Only the studio owner can change these. Administrators run everything else.
         </p>
       )}
@@ -150,7 +150,7 @@ function WaitlistSettings() {
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0 py-3 sm:border-b sm:border-line">
-      <dt className="text-[13px] text-ink-3">{label}</dt>
+      <dt className="text-[0.8125rem] text-ink-3">{label}</dt>
       <dd className="mt-0.5 break-words font-medium">{value}</dd>
     </div>
   );
@@ -218,11 +218,11 @@ function Locations() {
               className="flex min-h-12 w-full items-baseline gap-3 py-3 text-left hover:bg-surface-2/60">
               <span className="min-w-0 flex-1">
                 <span className="block font-semibold">{l.name}</span>
-                <span className="block text-[13px] text-ink-3">
+                <span className="block text-[0.8125rem] text-ink-3">
                   {[l.address_line1, l.city, l.postcode].filter(Boolean).join(', ') || 'No address'}
                 </span>
               </span>
-              <span className="tnum shrink-0 text-[13px] text-ink-2">
+              <span className="tnum shrink-0 text-[0.8125rem] text-ink-2">
                 {l.rooms} room{l.rooms === 1 ? '' : 's'} · {l.classes} classes
               </span>
             </button>
@@ -301,9 +301,9 @@ function Rooms() {
               className="flex min-h-12 w-full items-baseline gap-3 py-3 text-left hover:bg-surface-2/60">
               <span className="min-w-0 flex-1">
                 <span className="block font-semibold">{r.name}</span>
-                <span className="block text-[13px] text-ink-3">{r.location}</span>
+                <span className="block text-[0.8125rem] text-ink-3">{r.location}</span>
               </span>
-              <span className="tnum shrink-0 text-[13px] text-ink-2">
+              <span className="tnum shrink-0 text-[0.8125rem] text-ink-2">
                 {r.capacity ? `holds ${r.capacity}` : 'no limit'} · {r.classes} classes
               </span>
             </button>
@@ -378,11 +378,11 @@ function Terms() {
           <li key={t.id} className="flex min-h-14 items-center gap-3 py-2">
             <button onClick={() => setOpen(t)} className="min-w-0 flex-1 py-1 text-left hover:underline">
               <span className="block font-semibold">{t.name}</span>
-              <span className="block text-[13px] text-ink-3">
+              <span className="block text-[0.8125rem] text-ink-3">
                 {dateShort(t.starts_on)} – {dateShort(t.ends_on)} · {t.classes} classes
               </span>
             </button>
-            <span className={cn('text-[13px] font-semibold', t.status === 'published' ? 'text-positive' : 'text-ink-3')}>
+            <span className={cn('text-[0.8125rem] font-semibold', t.status === 'published' ? 'text-positive' : 'text-ink-3')}>
               {t.status === 'published' ? 'Live' : t.status === 'draft' ? 'Draft' : 'Archived'}
             </span>
             <Button size="sm" variant="ghost" onClick={() => setBreaksFor(t)}
@@ -460,7 +460,7 @@ function BreaksSheet({ term, onClose }: { term: S.Term; onClose: () => void }) {
       onSave={() => add.mutate([term.id, name.trim(), from, to])}>
       {rows.isPending && <Skeleton className="h-12" />}
       {!rows.isPending && rows.data?.length === 0 && (
-        <p className="text-[13px] text-ink-3">
+        <p className="text-[0.8125rem] text-ink-3">
           None yet. Half-terms and bank holidays go here, and the generator skips them.
         </p>
       )}
@@ -470,7 +470,7 @@ function BreaksSheet({ term, onClose }: { term: S.Term; onClose: () => void }) {
             <li key={b.id} className="flex items-center gap-2 py-2">
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-medium">{b.name}</span>
-                <span className="block text-[12.5px] text-ink-2">
+                <span className="block text-[0.7812rem] text-ink-2">
                   {dateShort(b.starts_on)} – {dateShort(b.ends_on)}
                 </span>
               </span>
@@ -480,7 +480,7 @@ function BreaksSheet({ term, onClose }: { term: S.Term; onClose: () => void }) {
           ))}
         </ul>
       )}
-      <p className="pt-1 text-[12.5px] text-ink-3">
+      <p className="pt-1 text-[0.7812rem] text-ink-3">
         Adding a break does not remove sessions already generated — regenerate the
         class from its edit form to apply it.
       </p>
@@ -516,12 +516,12 @@ function Styles() {
       <div className="flex flex-wrap gap-2 pt-3">
         {rows.data?.map(s => (
           <button key={s.id} onClick={() => setOpen(s)} aria-label={`Edit ${s.name}`}
-            className="inline-flex min-h-10 items-center gap-2 rounded-[var(--radius-md)] border border-line-strong bg-surface px-3 text-[14px] font-medium hover:border-ink-3">
+            className="inline-flex min-h-10 items-center gap-2 rounded-[var(--radius-md)] border border-line-strong bg-surface px-3 text-[0.875rem] font-medium hover:border-ink-3">
             <span aria-hidden className={cn('size-2.5 rounded-[2px]', STYLE_BG[s.colour] ?? 'bg-ink-3')} />{s.name}
           </button>
         ))}
         {!rows.isPending && rows.data?.length === 0 &&
-          <p className="text-[13px] text-ink-3">Ballet, tap, street — however you group your teaching.</p>}
+          <p className="text-[0.8125rem] text-ink-3">Ballet, tap, street — however you group your teaching.</p>}
       </div>
       {open && <StyleSheet row={open === 'new' ? null : open} onClose={() => setOpen(null)} />}
     </Card>
@@ -553,8 +553,8 @@ function StyleSheet({ row, onClose }: { row: S.Style | null; onClose: () => void
         </Select>
       </Field>
       <div className="flex items-center gap-2 pt-1">
-        <span className="text-[13px] text-ink-3">Preview</span>
-        <span className="inline-flex items-center gap-2 text-[14px] font-medium"><span aria-hidden className={cn('size-2.5 rounded-[2px]', STYLE_BG[colour] ?? 'bg-ink-3')} />{name.trim() || 'Style'}</span>
+        <span className="text-[0.8125rem] text-ink-3">Preview</span>
+        <span className="inline-flex items-center gap-2 text-[0.875rem] font-medium"><span aria-hidden className={cn('size-2.5 rounded-[2px]', STYLE_BG[colour] ?? 'bg-ink-3')} />{name.trim() || 'Style'}</span>
       </div>
     </RecordSheet>
   );
@@ -575,12 +575,12 @@ function Levels() {
       <div className="flex flex-wrap gap-2 pt-3">
         {rows.data?.map(l => (
           <button key={l.id} onClick={() => setOpen(l)} aria-label={`Edit ${l.name}`}
-            className="inline-flex min-h-10 items-center rounded-[var(--radius-md)] border border-line-strong bg-surface px-3 text-[14px] font-medium hover:border-ink-3">
+            className="inline-flex min-h-10 items-center rounded-[var(--radius-md)] border border-line-strong bg-surface px-3 text-[0.875rem] font-medium hover:border-ink-3">
             {l.name}
           </button>
         ))}
         {!rows.isPending && rows.data?.length === 0 &&
-          <p className="text-[13px] text-ink-3">Primary, Grade 1, Intermediate — your progression.</p>}
+          <p className="text-[0.8125rem] text-ink-3">Primary, Grade 1, Intermediate — your progression.</p>}
       </div>
       {open && <LevelSheet row={open === 'new' ? null : open} onClose={() => setOpen(null)} />}
     </Card>
@@ -614,7 +614,7 @@ function AboutDemo() {
     <Card>
       <CardHeader title="About this demo" />
       <div className="max-w-2xl space-y-3 pt-3">
-        <p className="text-[14px] leading-relaxed text-ink-2">
+        <p className="text-[0.875rem] leading-relaxed text-ink-2">
           This demo runs a real database inside your browser, with the same rules as the live product. Nothing is sent anywhere.
         </p>
         <ResetDemo />
@@ -631,7 +631,7 @@ function ResetDemo() {
     return (
       <div className="border-l-2 border-caution py-1 pl-3">
         <p className="text-sm font-semibold">Rebuild the demo school?</p>
-        <p className="mt-0.5 text-[13px] text-ink-2">
+        <p className="mt-0.5 text-[0.8125rem] text-ink-2">
           Everything you have changed — registers, classes, setup — will be discarded.
         </p>
         <div className="mt-3 flex gap-2">

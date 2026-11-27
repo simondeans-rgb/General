@@ -66,7 +66,7 @@ export function BulkMessageSheet({ families, filterLabel, onClose }: {
           <Field label="Message" htmlFor="bm-body" required hint="Write {{family}} where the family’s name should go.">
             <textarea id="bm-body" rows={6} value={body} onChange={e => setBody(e.target.value)} className={textarea} />
           </Field>
-          <p className="text-[13px] text-ink-3">Sent in the app. Families with email or text switched on are not emailed: delivery is not connected yet.</p>
+          <p className="text-[0.8125rem] text-ink-3">Sent in the app. Families with email or text switched on are not emailed: delivery is not connected yet.</p>
         </>
       ) : (
         <>
@@ -74,12 +74,12 @@ export function BulkMessageSheet({ families, filterLabel, onClose }: {
             <div className="border-l-2 border-line-strong pl-3">
               <p className="label">As {first.name} will see it</p>
               {subject && <p className="mt-1 font-semibold">{merge(subject, first.name)}</p>}
-              <p className="mt-1 whitespace-pre-wrap text-[14px] text-ink-2">{merge(body, first.name)}</p>
+              <p className="mt-1 whitespace-pre-wrap text-[0.875rem] text-ink-2">{merge(body, first.name)}</p>
             </div>
           )}
           <div>
             <p className="label">Going to</p>
-            <p className="mt-1 text-[13.5px] text-ink-2">{families.map(f => f.name).join(', ')}</p>
+            <p className="mt-1 text-[0.8438rem] text-ink-2">{families.map(f => f.name).join(', ')}</p>
           </div>
           <Button size="sm" variant="ghost" className="-ml-2" onClick={() => setStep('write')}>Change the message</Button>
         </>
@@ -106,13 +106,13 @@ export function DuplicatesSheet({ onClose }: { onClose: () => void }) {
     <RecordSheet title="Possible duplicates" subtitle="Families that may be the same household" onClose={onClose}
       onSave={onClose} saveLabel="Done" error={undo.error}>
       {dups.isPending && <Skeleton className="h-24" />}
-      {dups.data?.length === 0 && <p className="text-[14px] text-ink-3">No likely duplicates. Families are compared by guardian email and phone, children’s names and birthdays, and family name.</p>}
+      {dups.data?.length === 0 && <p className="text-[0.875rem] text-ink-3">No likely duplicates. Families are compared by guardian email and phone, children’s names and birthdays, and family name.</p>}
       <ul className="divide-y divide-line">
         {dups.data?.map(d => (
           <li key={d.keep_id + d.other_id} className="flex items-start gap-3 py-2.5">
             <span className="min-w-0 flex-1">
               <span className="block font-semibold">{d.keep_name} and {d.other_name}</span>
-              <span className="block text-[13px] text-ink-3">{d.reason}</span>
+              <span className="block text-[0.8125rem] text-ink-3">{d.reason}</span>
             </span>
             <Button size="sm" onClick={() => setPair(d)}>Compare</Button>
           </li>
@@ -120,10 +120,10 @@ export function DuplicatesSheet({ onClose }: { onClose: () => void }) {
       </ul>
       {!!merges.data?.length && (
         <div>
-          <p className="border-b border-ink pb-1 text-[14px] font-semibold">Recent merges</p>
+          <p className="border-b border-ink pb-1 text-[0.875rem] font-semibold">Recent merges</p>
           <ul className="divide-y divide-line">
             {merges.data.map(m => (
-              <li key={m.id} className="flex items-center gap-3 py-2 text-[13.5px]">
+              <li key={m.id} className="flex items-center gap-3 py-2 text-[0.8438rem]">
                 <span className="min-w-0 flex-1">{m.merged_name} into {m.kept_name} · {dateShort(m.merged_at)}
                   {m.undone_at && <span className="text-ink-3"> · undone</span>}</span>
                 {m.can_undo && (
@@ -175,7 +175,7 @@ function MergeSheet({ pair, onClose, onBack }: { pair: H.Duplicate; onClose: () 
     <div className="min-w-0">
       <p className="label">{title}</p>
       <p className="mt-0.5 font-semibold">{f.name}</p>
-      <ul className="mt-1 space-y-0.5 text-[13px] text-ink-2">
+      <ul className="mt-1 space-y-0.5 text-[0.8125rem] text-ink-2">
         {people.data?.filter(p => p.family_id === f.id).map((p, i) => <li key={i}><span className="text-ink-3">{p.kind}:</span> {p.name}</li>)}
       </ul>
     </div>
@@ -192,7 +192,7 @@ function MergeSheet({ pair, onClose, onBack }: { pair: H.Duplicate; onClose: () 
       <Button size="sm" variant="ghost" className="-ml-2" onClick={() => setSwap(s => !s)}>
         <ArrowLeftRight className="size-4" aria-hidden /> Keep {gone.name} instead
       </Button>
-      <div className="border-l-2 border-line-strong pl-3 text-[13.5px] text-ink-2">
+      <div className="border-l-2 border-line-strong pl-3 text-[0.8438rem] text-ink-2">
         {preview.isPending ? 'Working out what moves…' : preview.data?.length
           ? <>Moves to {keep.name}: {preview.data.map(p => `${p.n} ${LABEL[p.tbl] ?? p.tbl.replace(/_/g, ' ')}`).join(', ')}.</>
           : <>{gone.name} has nothing attached; it is simply hidden.</>}

@@ -47,7 +47,7 @@ export function EnquirySheet({ enquiry: e, onClose, startClosing = false, startB
       saveHint={closing ? 'Say briefly why, so the funnel shows it.' : null}
       onSave={() => closing ? close.mutate([e.id, reason.trim()])
         : canBookTrial(e) ? setBooking(true) : onClose()}>
-      <dl className="grid grid-cols-[7rem_minmax(0,1fr)] gap-x-3 gap-y-2 text-[14px]">
+      <dl className="grid grid-cols-[7rem_minmax(0,1fr)] gap-x-3 gap-y-2 text-[0.875rem]">
         <dt className="text-ink-3">Stage</dt>
         <dd><Word tone={e.stage === 'enrolled' ? 'positive' : e.stage === 'closed_lost' ? 'muted' : 'ink'}>{STAGE_LABEL[e.stage] ?? e.stage}</Word>
           {e.closed_reason && <span className="ml-2 text-ink-2">{e.closed_reason}</span>}</dd>
@@ -65,7 +65,7 @@ export function EnquirySheet({ enquiry: e, onClose, startClosing = false, startB
       </dl>
 
       {e.live_trial && open && (
-        <p className="text-[13px] text-ink-3">
+        <p className="text-[0.8125rem] text-ink-3">
           A trial is booked. Mark Came or No show under Trials after the class, and Joining when they take a place.
           The enquiry moves on by itself.
         </p>

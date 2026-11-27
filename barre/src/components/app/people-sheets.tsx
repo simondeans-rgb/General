@@ -115,13 +115,13 @@ export function GuardianSheet({ familyId, row, onClose }: {
         <Input id="g-phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} />
       </Field>
       <fieldset>
-        <legend className="mb-1 text-[13px] font-medium text-ink-2">Their role</legend>
-        <label className="flex min-h-[44px] items-center gap-3 text-[14px]">
+        <legend className="mb-1 text-[0.8125rem] font-medium text-ink-2">Their role</legend>
+        <label className="flex min-h-[44px] items-center gap-3 text-[0.875rem]">
           <input type="checkbox" checked={primary} className="size-[18px] accent-[var(--color-accent)]"
                  onChange={e => setPrimary(e.target.checked)} />
           Main contact for the family
         </label>
-        <label className="flex min-h-[44px] items-center gap-3 text-[14px]">
+        <label className="flex min-h-[44px] items-center gap-3 text-[0.875rem]">
           <input type="checkbox" checked={billing} className="size-[18px] accent-[var(--color-accent)]"
                  onChange={e => setBilling(e.target.checked)} />
           Receives invoices
@@ -281,7 +281,7 @@ export function MedicalSheet({ studentId, studentName, onClose }: {
       {!loaded && <Skeleton className="h-24" />}
       {loaded && (
         <>
-          <p className="flex gap-2 border-l-2 border-line-strong pl-3 text-[13px] text-ink-2">
+          <p className="flex gap-2 border-l-2 border-line-strong pl-3 text-[0.8125rem] text-ink-2">
             <ShieldAlert className="mt-0.5 size-4 shrink-0 text-ink-3" aria-hidden />
             <span>
               Health data. Teachers of this child’s classes see the allergies,
@@ -291,12 +291,12 @@ export function MedicalSheet({ studentId, studentName, onClose }: {
             </span>
           </p>
 
-          <label className="flex min-h-[44px] items-start gap-3 text-[14px]">
+          <label className="flex min-h-[44px] items-start gap-3 text-[0.875rem]">
             <input type="checkbox" checked={alert} className="mt-0.5 size-[18px] accent-[var(--color-accent)]"
                    onChange={e => setAlert(e.target.checked)} />
             <span>
               <span className="font-semibold">Urgent — show a red alert</span>
-              <span className="mt-0.5 block text-[13px] text-ink-3">
+              <span className="mt-0.5 block text-[0.8125rem] text-ink-3">
                 For anything a teacher must act on quickly. Without it, teachers still see an amber
                 marker and every detail below.
               </span>
@@ -332,7 +332,7 @@ export function MedicalSheet({ studentId, studentName, onClose }: {
           </div>
 
           {m?.updated_at && (
-            <p className="text-[12.5px] text-ink-3">
+            <p className="text-[0.7812rem] text-ink-3">
               Last changed {dateShort(m.updated_at)}
               {m.updated_by_name ? ` by ${m.updated_by_name}` : ''}.
             </p>
@@ -358,14 +358,14 @@ function EmergencyContacts({ studentId, rows }: { studentId: string; rows: P.Eme
   return (
     <div>
       <div className="flex items-center gap-2 border-b border-ink pb-1">
-        <p className="flex-1 text-[14px] font-semibold">Emergency contacts</p>
+        <p className="flex-1 text-[0.875rem] font-semibold">Emergency contacts</p>
         {!adding && <Button size="sm" variant="ghost" onClick={() => setAdding(true)}>
           <Plus className="size-4" aria-hidden /> Add
         </Button>}
       </div>
 
       {rows.length === 0 && !adding && (
-        <p className="mt-2 flex items-center gap-1.5 text-[13px] font-semibold text-caution">
+        <p className="mt-2 flex items-center gap-1.5 text-[0.8125rem] font-semibold text-caution">
           <AlertTriangle className="size-3.5" aria-hidden />
           None recorded. A teacher has nobody to ring.
         </p>
@@ -377,7 +377,7 @@ function EmergencyContacts({ studentId, rows }: { studentId: string; rows: P.Eme
             <li key={c.id} className="flex items-center gap-2 py-2">
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-medium">{c.full_name}</span>
-                <span className="block text-[12.5px] text-ink-2">
+                <span className="block text-[0.7812rem] text-ink-2">
                   {[c.relationship, c.phone].filter(Boolean).join(' · ')}
                 </span>
               </span>
@@ -465,14 +465,14 @@ export function StaffSheet({ row, onClose }: { row: P.StaffRow | null; onClose: 
       {/* Adding someone to the timetable and giving them a login are different
           decisions, and the database treats them differently: staff_member is
           admin-writable, membership is owner-only. */}
-      <p className="border-l-2 border-line-strong pl-3 text-[13px] text-ink-2">
+      <p className="border-l-2 border-line-strong pl-3 text-[0.8125rem] text-ink-2">
         {row?.user_id
           ? 'This teacher has a login and can take their own registers.'
           : 'They will appear on the timetable straight away. Giving them a login to take registers is a separate step, and only the owner can do it.'}
       </p>
       {row && (isOwner || role === 'admin') && (
         <div className="pt-2">
-          <p className="mb-2 border-b border-ink pb-1 text-[14px] font-semibold">Checks and training</p>
+          <p className="mb-2 border-b border-ink pb-1 text-[0.875rem] font-semibold">Checks and training</p>
           <StaffChecks staffId={row.id} readOnly={!isOwner} />
         </div>
       )}
@@ -481,7 +481,7 @@ export function StaffSheet({ row, onClose }: { row: P.StaffRow | null; onClose: 
           <Button size="sm" variant="ghost" onClick={() => setConcern(true)}>
             <ShieldAlert className="size-4" aria-hidden /> Raise a concern about {row.display_name}
           </Button>
-          <p className="mt-1 text-[12.5px] text-ink-3">Goes to the safeguarding lead and the owner, never to them.</p>
+          <p className="mt-1 text-[0.7812rem] text-ink-3">Goes to the safeguarding lead and the owner, never to them.</p>
         </div>
       )}
       {concern && row && <RaiseConcernSheet staff={{ id: row.id, name: row.display_name }} onClose={() => setConcern(false)} />}

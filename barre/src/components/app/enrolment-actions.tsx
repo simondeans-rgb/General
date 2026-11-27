@@ -86,8 +86,8 @@ export function EnrolSheet({ classId, className, full, onClose }: {
         {([['enrol', 'Give a place'], ['wait', 'Waiting list']] as const).map(([m, label]) => (
           <button key={m} role="tab" aria-selected={mode === m} onClick={() => setMode(m)}
             className={mode === m
-              ? 'min-h-[40px] rounded-[calc(var(--radius-md)-2px)] border border-line-strong bg-surface px-3 text-[14px] font-semibold text-ink'
-              : 'min-h-[40px] rounded-[calc(var(--radius-md)-2px)] px-3 text-[14px] text-ink-2 hover:text-ink'}>
+              ? 'min-h-[40px] rounded-[calc(var(--radius-md)-2px)] border border-line-strong bg-surface px-3 text-[0.875rem] font-semibold text-ink'
+              : 'min-h-[40px] rounded-[calc(var(--radius-md)-2px)] px-3 text-[0.875rem] text-ink-2 hover:text-ink'}>
             {label}
           </button>
         ))}
@@ -100,7 +100,7 @@ export function EnrolSheet({ classId, className, full, onClose }: {
 
       {candidates.isPending && <Skeleton className="h-24" />}
       {!candidates.isPending && list.length === 0 && (
-        <p className="text-[13px] text-ink-3">
+        <p className="text-[0.8125rem] text-ink-3">
           {q ? 'Nobody matches that.' : outside && !anyAge
             ? 'Nobody else of the right age. Include other ages below if you mean to.'
             : 'Every child on your books is already in this class or waiting for it.'}
@@ -120,7 +120,7 @@ export function EnrolSheet({ classId, className, full, onClose }: {
         </Field>
       )}
       {outside > 0 && (
-        <label className="flex min-h-[44px] items-center gap-3 text-[14px]">
+        <label className="flex min-h-[44px] items-center gap-3 text-[0.875rem]">
           <input type="checkbox" checked={anyAge} className="size-[18px] accent-[var(--color-accent)]"
                  onChange={e => setAnyAge(e.target.checked)} />
           Include {outside} child{outside === 1 ? '' : 'ren'} outside the age range
@@ -177,7 +177,7 @@ export function WithdrawSheet({ enrolmentId, name, onClose }: {
       <div role="radiogroup" aria-label="What is happening" className="grid grid-cols-2 gap-1 rounded-[var(--radius-md)] bg-surface-2 p-1">
         {([['leave', 'Leaving this class'], ['move', 'Moving to another']] as const).map(([k, l]) => (
           <button key={k} role="radio" aria-checked={mode === k} onClick={() => setMode(k)}
-            className={`min-h-[40px] rounded-[calc(var(--radius-md)-2px)] text-[14px] ${mode === k ? 'border border-line-strong bg-surface font-semibold text-ink' : 'text-ink-2 hover:text-ink'}`}>{l}</button>
+            className={`min-h-[40px] rounded-[calc(var(--radius-md)-2px)] text-[0.875rem] ${mode === k ? 'border border-line-strong bg-surface font-semibold text-ink' : 'text-ink-2 hover:text-ink'}`}>{l}</button>
         ))}
       </div>
       {mode === 'move' && (
@@ -189,7 +189,7 @@ export function WithdrawSheet({ enrolmentId, name, onClose }: {
           </Select>
         </Field>
       )}
-      <p className="text-[13px] text-ink-2">
+      <p className="text-[0.8125rem] text-ink-2">
         Their attendance and feedback history stays with them. The place they leave is offered straight away to
         whoever has waited longest for this class.
       </p>
@@ -248,7 +248,7 @@ export function MoveSheet({ enrolmentId, studentName, age, familyId, from, onClo
         <Notice word="Moved" tone="positive" title={`${studentName} is now in ${done}`}
           detail={`Their history comes with them. The place in ${from.name} goes to its waiting list, if anyone is waiting.${tell ? ' The family has a message in the app.' : ''}`} />
         {diff !== 0 && sameBasis && (
-          <p className="text-[13.5px] text-ink-2">
+          <p className="text-[0.8438rem] text-ink-2">
             {done} costs {money(Math.abs(diff))} {diff > 0 ? 'more' : 'less'} {PER[target!.pricing] ?? ''}. Invoices already raised are not changed: adjust the
             next one in <a href="/billing" className="font-semibold text-accent-text hover:underline">Billing</a>.
           </p>
@@ -277,14 +277,14 @@ export function MoveSheet({ enrolmentId, studentName, age, familyId, from, onClo
           detail={`${studentName} is ${age}. You can still move them if the teacher agrees.`} />
       )}
       {target && diff !== 0 && (
-        <p className="text-[13.5px] text-ink-2">
+        <p className="text-[0.8438rem] text-ink-2">
           {sameBasis
             ? <>Price: {money(target.price_minor)} {PER[target.pricing] ?? ''}, {money(Math.abs(diff))} {diff > 0 ? 'more' : 'less'} than {from.name}. Existing invoices are not changed.</>
             : <>{target.name} is charged {PER[target.pricing] ?? target.pricing}, {from.name} {PER[from.pricing] ?? from.pricing}. Check their next invoice.</>}
         </p>
       )}
       {familyId && (
-        <label className="flex min-h-[44px] items-center gap-3 text-[14px]">
+        <label className="flex min-h-[44px] items-center gap-3 text-[0.875rem]">
           <input type="checkbox" checked={tell} className="size-[18px] accent-[var(--color-accent)]"
                  onChange={e => setTell(e.target.checked)} />
           Tell the family in the app
@@ -319,7 +319,7 @@ export function WaitlistActions({ entry, free }: {
   return (
     <div className="mt-1.5">
       {offered && entry.offer_expires_at && (
-        <p className="mb-1.5 text-[12.5px] text-ink-3">Offer open until {dateShort(entry.offer_expires_at)}, then it passes to the next family.</p>
+        <p className="mb-1.5 text-[0.7812rem] text-ink-3">Offer open until {dateShort(entry.offer_expires_at)}, then it passes to the next family.</p>
       )}
       <div className="flex flex-wrap items-center gap-1.5">
         {!offered && (
@@ -336,10 +336,10 @@ export function WaitlistActions({ entry, free }: {
                 aria-label={`${who} declined`} onClick={() => decline.mutate([entry.id, null])}>
           <X className="size-3.5" aria-hidden /> Declined
         </Button>
-        {!offered && why && <span className="text-[12px] text-ink-3">{why}</span>}
+        {!offered && why && <span className="text-[0.75rem] text-ink-3">{why}</span>}
       </div>
       {err != null && (
-        <p role="alert" className="mt-1 text-[12px] text-critical">
+        <p role="alert" className="mt-1 text-[0.75rem] text-critical">
           {/CLASS_FULL/.test(String((err as Error).message))
             ? 'The class is full again — withdraw someone first.'
             : errorText(err)}
@@ -426,7 +426,7 @@ export function BookTrialSheet({ classId: fixedClass, className, enquiry, onClos
       )}
       {sessions.isPending && !!classId && <Skeleton className="h-16" />}
       {!sessions.isPending && sessions.data?.length === 0 && (
-        <p className="text-[13px] text-ink-3">
+        <p className="text-[0.8125rem] text-ink-3">
           This class has no scheduled sessions ahead, so there is nothing to try.
         </p>
       )}
@@ -442,7 +442,7 @@ export function BookTrialSheet({ classId: fixedClass, className, enquiry, onClos
       <div role="radiogroup" aria-label="Which child" className="grid grid-cols-2 gap-1 rounded-[var(--radius-md)] bg-surface-2 p-1">
         {([['new', 'A new child'], ['existing', 'Already at the school']] as const).map(([k, l]) => (
           <button key={k} role="radio" aria-checked={mode === k} onClick={() => setMode(k)}
-            className={`min-h-[40px] rounded-[calc(var(--radius-md)-2px)] text-[14px] ${mode === k ? 'border border-line-strong bg-surface font-semibold text-ink' : 'text-ink-2 hover:text-ink'}`}>{l}</button>
+            className={`min-h-[40px] rounded-[calc(var(--radius-md)-2px)] text-[0.875rem] ${mode === k ? 'border border-line-strong bg-surface font-semibold text-ink' : 'text-ink-2 hover:text-ink'}`}>{l}</button>
         ))}
       </div>
       {mode === 'existing' ? (
@@ -455,7 +455,7 @@ export function BookTrialSheet({ classId: fixedClass, className, enquiry, onClos
         </Field>
       ) : (
         <>
-          {enquiry && <p className="text-[13px] text-ink-3">Filled in from the enquiry. Check the details, then book.</p>}
+          {enquiry && <p className="text-[0.8125rem] text-ink-3">Filled in from the enquiry. Check the details, then book.</p>}
           <div className="grid grid-cols-2 gap-3">
             <Field label="Child’s first name" htmlFor="tn-f" required><Input id="tn-f" value={child.first_name} onChange={set('first_name')} /></Field>
             <Field label="Last name" htmlFor="tn-l"><Input id="tn-l" value={child.last_name} onChange={set('last_name')} /></Field>
@@ -469,7 +469,7 @@ export function BookTrialSheet({ classId: fixedClass, className, enquiry, onClos
             <Field label="Phone" htmlFor="tn-p" required><Input id="tn-p" type="tel" value={child.contact_phone} onChange={set('contact_phone')} /></Field>
             <Field label="Email" htmlFor="tn-e"><Input id="tn-e" type="email" value={child.contact_email} onChange={set('contact_email')} /></Field>
           </div>
-          <p className="text-[13px] text-ink-3">
+          <p className="text-[0.8125rem] text-ink-3">
             The phone number is used as the emergency contact unless you add a different one below. The child appears on the
             teacher’s register, with this contact, from the moment they are booked.
           </p>
@@ -507,7 +507,7 @@ export function TrialActions({ trial }: { trial: C.TrialRow }) {
         <Word tone={TRIAL_TONE[trial.status] ?? 'muted'} className="mr-1 inline-block w-[4.75rem]">{TRIAL_WORD[trial.status] ?? trial.status}</Word>
         {!settled && ahead && (
           <>
-            <span className="text-[12.5px] text-ink-3">Came or joining: after the class</span>
+            <span className="text-[0.7812rem] text-ink-3">Came or joining: after the class</span>
             <Button size="sm" variant="ghost" loading={outcome.isPending}
                     onClick={() => outcome.mutate([trial.id, 'cancelled', null])}>Cancel trial</Button>
           </>
@@ -530,7 +530,7 @@ export function TrialActions({ trial }: { trial: C.TrialRow }) {
         )}
       </div>
       {err != null && (
-        <p role="alert" className="mt-1 text-[12px] text-critical">
+        <p role="alert" className="mt-1 text-[0.75rem] text-critical">
           {/TOO_EARLY/.test(String((err as Error).message))
             ? errorText(err)
             : /NO_CHILD_DETAILS/.test(String((err as Error).message))

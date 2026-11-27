@@ -118,7 +118,7 @@ export default function FamilyHome() {
                 ))}
               </ul>
               {fresh.length > newShown && (
-                <Link href="/family/messages" className="mt-1 inline-flex min-h-[44px] items-center gap-1 text-[13.5px] font-semibold text-accent-text hover:underline">
+                <Link href="/family/messages" className="mt-1 inline-flex min-h-[44px] items-center gap-1 text-[0.8438rem] font-semibold text-accent-text hover:underline">
                   {fresh.length - newShown} more new notice{fresh.length - newShown === 1 ? '' : 's'}<ArrowRight className="size-3.5" aria-hidden />
                 </Link>
               )}
@@ -139,16 +139,16 @@ export default function FamilyHome() {
             return (
               <section key={child.id} aria-labelledby={`kid-${child.id}`}>
                 <div className="mb-1 flex items-baseline gap-3 border-b-2 border-ink pb-2">
-                  <h2 id={`kid-${child.id}`} className="font-display text-[22px] leading-none">{child.first_name}</h2>
-                  <span className="min-w-0 flex-1 truncate text-[13px] text-ink-3">
+                  <h2 id={`kid-${child.id}`} className="font-display text-[1.375rem] leading-none">{child.first_name}</h2>
+                  <span className="min-w-0 flex-1 truncate text-[0.8125rem] text-ink-3">
                     {age != null ? `${age} · ` : ''}{week.length
                       ? `${live} class${live === 1 ? '' : 'es'} this week`
                       : later.length ? 'Nothing this week' : 'No classes booked'}
                   </span>
-                  <Link href="/family/schedule" className="shrink-0 text-[13px] font-semibold text-accent-text hover:underline">Schedule</Link>
+                  <Link href="/family/schedule" className="shrink-0 text-[0.8125rem] font-semibold text-accent-text hover:underline">Schedule</Link>
                 </div>
                 {week.length === 0 && later.length === 0 ? (
-                  <p className="py-3 text-[14.5px] text-ink-2">
+                  <p className="py-3 text-[0.9062rem] text-ink-2">
                     {child.class_names ? 'No classes in the next two weeks.' : `${child.first_name} isn’t in a class yet. `}
                     {!child.class_names && <Link href="/family/children" className="font-semibold text-accent-text hover:underline">Find a class</Link>}
                   </p>
@@ -173,8 +173,8 @@ export default function FamilyHome() {
               <div className="flex flex-wrap items-end gap-x-6 gap-y-3 pt-3">
                 <div className="min-w-0 flex-1">
                   <p className="label">Due{due ? ` ${dueWord(due)}` : ''}</p>
-                  <p className="stat-number mt-1 text-[32px] leading-none tnum">{money(balance.data.balance_minor)}</p>
-                  <p className="mt-1.5 text-[13px] text-ink-3">
+                  <p className="stat-number mt-1 text-[2rem] leading-none tnum">{money(balance.data.balance_minor)}</p>
+                  <p className="mt-1.5 text-[0.8125rem] text-ink-3">
                     {balance.data.failed > 0 ? 'A card payment did not go through.' : `${balance.data.unpaid} invoice${balance.data.unpaid === 1 ? '' : 's'} outstanding`}
                   </p>
                 </div>
@@ -185,7 +185,7 @@ export default function FamilyHome() {
                 </Button></Link>
               </div>
             ) : (
-              <p className="py-3 text-[15px] text-ink-2"><span className="font-semibold text-positive">Paid.</span> Nothing is due.</p>
+              <p className="py-3 text-[0.9375rem] text-ink-2"><span className="font-semibold text-positive">Paid.</span> Nothing is due.</p>
             ))}
           </section>
 
@@ -196,10 +196,10 @@ export default function FamilyHome() {
               <section aria-labelledby="fb-h">
                 <SectionHead id="fb-h" title="Latest feedback" href={`/family/feedback?child=${f.student_id}`} link="All feedback" />
                 <figure className="pt-3">
-                  <blockquote className="text-[16px] leading-snug text-ink">
+                  <blockquote className="text-[1rem] leading-snug text-ink">
                     “{f.going_well ?? f.headline}”
                   </blockquote>
-                  <figcaption className="mt-1.5 text-[13px] text-ink-3">
+                  <figcaption className="mt-1.5 text-[0.8125rem] text-ink-3">
                     {[f.author, `about ${f.student_name.split(' ')[0]}`, f.class_name, f.shared_at ? relativeDay(f.shared_at) : null].filter(Boolean).join(' · ')}
                   </figcaption>
                 </figure>
@@ -210,13 +210,13 @@ export default function FamilyHome() {
           <section aria-labelledby="studio-h">
             <SectionHead id="studio-h" title="From the studio" href="/family/messages" link="Messages" />
             {messages.isLoading && <Skeleton className="mt-3 h-16" />}
-            {messages.data?.length === 0 && <p className="py-3 text-[14.5px] text-ink-3">Nothing from the studio yet.</p>}
+            {messages.data?.length === 0 && <p className="py-3 text-[0.9062rem] text-ink-3">Nothing from the studio yet.</p>}
             <ul className="divide-y divide-line">
               {messages.data?.filter(m => !fresh.slice(0, newShown).some(n => n.id === m.id)).slice(0, 3).map(m => (
                 <li key={m.id} className="py-3">
                   <p className="font-semibold leading-snug">{m.subject}</p>
-                  <p className="mt-0.5 line-clamp-2 text-[14px] text-ink-2">{m.body}</p>
-                  <p className="mt-1 text-[12.5px] text-ink-3">{m.class_name ? `${m.class_name} · ` : ''}{relativeDay(m.sent_at)}</p>
+                  <p className="mt-0.5 line-clamp-2 text-[0.875rem] text-ink-2">{m.body}</p>
+                  <p className="mt-1 text-[0.7812rem] text-ink-3">{m.class_name ? `${m.class_name} · ` : ''}{relativeDay(m.sent_at)}</p>
                 </li>
               ))}
             </ul>
@@ -232,7 +232,7 @@ export default function FamilyHome() {
               <Link key={href} href={href!} className="group flex min-h-[56px] items-center gap-3 py-3">
                 <span className="min-w-0 flex-1">
                   <span className="block font-semibold">{title}</span>
-                  <span className="block text-[13px] text-ink-3">{body}</span>
+                  <span className="block text-[0.8125rem] text-ink-3">{body}</span>
                 </span>
                 <ArrowRight className="size-4 text-ink-3 group-hover:text-ink" aria-hidden />
               </Link>
@@ -275,21 +275,21 @@ function ClassRow({ s, c, later }: { s: F.NextClass; c?: SessionChange; later?: 
       <Link href={`/class/?id=${s.class_id}`} aria-label={`${s.name}, ${day} ${time(s.starts_at)}${cancelled ? ', cancelled' : ''}`}
         className="grid min-h-[56px] grid-cols-[4.75rem_minmax(0,1fr)] items-start gap-x-4 py-3 hover:bg-surface-2/60">
         <span>
-          <span className={cn('block text-[12.5px]', today ? 'font-semibold text-ink' : 'text-ink-3')}>
+          <span className={cn('block text-[0.7812rem]', today ? 'font-semibold text-ink' : 'text-ink-3')}>
             {later ? dayDate(s.starts_at) : day.length > 9 ? day.slice(0, 3) : day}
           </span>
-          <span className={cn('block font-display text-[19px] leading-tight tnum', cancelled && 'text-ink-3 line-through')}>{time(s.starts_at)}</span>
+          <span className={cn('block font-display text-[1.1875rem] leading-tight tnum', cancelled && 'text-ink-3 line-through')}>{time(s.starts_at)}</span>
         </span>
         <span className="min-w-0">
           <span className={cn('block truncate font-semibold', cancelled && 'text-ink-3')}>{s.name}</span>
           {cancelled ? (
-            <span className="mt-0.5 block text-[13px] text-ink-3">
-              <span className="font-display text-[15px] uppercase leading-none tracking-[-0.01em] text-critical [font-stretch:80%]">Cancelled</span>
+            <span className="mt-0.5 block text-[0.8125rem] text-ink-3">
+              <span className="font-display text-[0.9375rem] uppercase leading-none tracking-[-0.01em] text-critical [font-stretch:80%]">Cancelled</span>
               {reasonOf(c)}
             </span>
           ) : (
-            <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[13px] text-ink-3">
-              {moved && <span className="font-display text-[15px] uppercase leading-none tracking-[-0.01em] text-ink [font-stretch:80%]">Moved</span>}
+            <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[0.8125rem] text-ink-3">
+              {moved && <span className="font-display text-[0.9375rem] uppercase leading-none tracking-[-0.01em] text-ink [font-stretch:80%]">Moved</span>}
               <span className="min-w-0 truncate">{[c?.covered && s.teacher ? `${s.teacher} (cover)` : s.teacher, s.room].filter(Boolean).join(' · ')}</span>
               <StyleMark style={s.style} colour={s.colour} className="hidden sm:inline-flex" />
             </span>

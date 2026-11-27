@@ -48,10 +48,10 @@ export default function ParentPayments() {
                 <p id="due-h" className={cn('label', owes && 'text-caution')}>
                   {owes ? (due ? `Due ${dueWord(due)}` : 'To pay') : credit ? 'In credit' : 'Balance'}
                 </p>
-                <p className="display-xl mt-1 text-[56px] leading-none sm:text-[72px]">
+                <p className="display-xl mt-1 text-[3.5rem] leading-none sm:text-[4.5rem]">
                   {owes ? money(balance.data.balance_minor) : credit ? money(-Number(balance.data.balance_minor)) : '£0.00'}
                 </p>
-                <p className="mt-2 text-[15px] text-ink-2">
+                <p className="mt-2 text-[0.9375rem] text-ink-2">
                   {owes
                     ? balance.data.failed > 0
                       ? 'A card payment did not go through. Nothing was taken.'
@@ -100,7 +100,7 @@ function Ledger({ i }: { i: Invoice }) {
     <section aria-label={`Invoice ${i.number}`}>
       <SectionHead title={<span className="tnum">{i.number}</span>} meta={`Issued ${dateShort(i.issued_on)} · due ${dateShort(i.due_on)}`} />
       {items.isLoading && <Skeleton className="mt-3 h-20" />}
-      <dl className="text-[14.5px]">
+      <dl className="text-[0.9062rem]">
         {groups.map(([kid, list]) => (
           <div key={kid} className="border-b border-line py-2">
             {kid && <dt className="label pb-1 pt-1">{kid}</dt>}
@@ -133,8 +133,8 @@ function CopyLine({ label, value, big }: { label: string; value: string; big?: b
   return (
     <div className="flex items-center gap-3 py-2">
       <div className="min-w-0 flex-1">
-        <p className="text-[13px] text-ink-3">{label}</p>
-        <p className={cn('tnum break-all', big ? 'font-display text-[22px] leading-tight' : 'text-[16px] font-semibold')}>{value}</p>
+        <p className="text-[0.8125rem] text-ink-3">{label}</p>
+        <p className={cn('tnum break-all', big ? 'font-display text-[1.375rem] leading-tight' : 'text-[1rem] font-semibold')}>{value}</p>
       </div>
       <Button size="sm" aria-label={`Copy ${label.toLowerCase()} ${value}`}
         onClick={() => navigator.clipboard?.writeText(value.replace(/\s/g, label === 'Account name' ? ' ' : '')).then(() => {
@@ -171,13 +171,13 @@ function HowToPay({ info, invoices }: { info?: B.PaymentInfo; invoices: string[]
             </div>
           ) : (
             <>
-              <p className="mt-0.5 text-[13.5px] text-ink-3">
+              <p className="mt-0.5 text-[0.8438rem] text-ink-3">
                 The studio has not added its bank details here yet. Ask them for the account details, and use this reference.
               </p>
               <CopyLine label="Reference" value={reference} big />
             </>
           )}
-          <p className="mt-1 text-[13.5px] text-ink-3">
+          <p className="mt-1 text-[0.8438rem] text-ink-3">
             {several
               ? `This reference covers all ${invoices.length} invoices (${invoices.join(', ')}), so one transfer is enough. The studio matches it to them.`
               : 'Use this reference so the studio can match your payment. It shows here once they have recorded it.'}
@@ -185,7 +185,7 @@ function HowToPay({ info, invoices }: { info?: B.PaymentInfo; invoices: string[]
         </div>
         <div className="py-3">
           <p className="font-semibold">Card or Apple Pay</p>
-          <p className="mt-0.5 text-[13.5px] text-ink-3">
+          <p className="mt-0.5 text-[0.8438rem] text-ink-3">
             Not available yet: the studio has not connected card payments. Until then, pay by transfer or at the studio;
             they record it and it shows here straight away.
           </p>
@@ -217,16 +217,16 @@ function ComingUp() {
       <SectionHead id="up-h" title="Coming up" meta={rows.data?.length ? 'Fees, events and lessons ahead' : undefined} />
       {rows.isLoading && <Skeleton className="mt-3 h-20" />}
       {rows.error != null && <ErrorState error={rows.error} />}
-      {rows.data?.length === 0 && <p className="py-3 text-[14.5px] text-ink-3">Nothing else is planned yet.</p>}
+      {rows.data?.length === 0 && <p className="py-3 text-[0.9062rem] text-ink-3">Nothing else is planned yet.</p>}
       {groups.map(([kid, list]) => (
         <div key={kid} className="border-b border-line py-2">
           <p className="label pb-1 pt-1">{kid}</p>
           <ul>
             {list.map((r, n) => (
-              <li key={n} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 py-1.5 text-[14.5px]">
+              <li key={n} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 py-1.5 text-[0.9062rem]">
                 <span className="min-w-0">
                   <span className="block">{r.title}</span>
-                  <span className="flex flex-wrap items-baseline gap-x-2 text-[12.5px] text-ink-3">
+                  <span className="flex flex-wrap items-baseline gap-x-2 text-[0.7812rem] text-ink-3">
                     <Word tone={STATE_TONE[r.state]}>{STATE_WORD[r.state]}</Word>
                     <span>{r.due_on ? (r.state === 'expected' ? dateShort(r.due_on) : `due ${dateShort(r.due_on)}`) : 'Date to be set'}</span>
                     {r.invoice_number && <span className="tnum">{r.invoice_number}</span>}
@@ -239,12 +239,12 @@ function ComingUp() {
         </div>
       ))}
       {!!rows.data?.length && (
-        <dl className="pt-2.5 text-[14.5px]">
+        <dl className="pt-2.5 text-[0.9062rem]">
           <div className="flex gap-4 font-semibold"><dt className="flex-1">Total coming up</dt><dd className="tnum">{money(total)}</dd></div>
           {toPay !== total && (
             <div className="flex gap-4 text-ink-2"><dt className="flex-1">Not yet paid</dt><dd className="tnum">{money(toPay)}</dd></div>
           )}
-          <p className="mt-1 text-[12.5px] text-ink-3">Estimates use this term’s prices. The studio confirms the amount on each invoice.</p>
+          <p className="mt-1 text-[0.7812rem] text-ink-3">Estimates use this term’s prices. The studio confirms the amount on each invoice.</p>
         </dl>
       )}
     </section>
@@ -270,22 +270,22 @@ function InvoiceLine({ i }: { i: Invoice }) {
         <span className="min-w-0">
           <span className="flex items-baseline gap-2">
             <span className="tnum font-semibold">{i.number}</span>
-            <span className={cn('text-[13px] font-semibold', TONE[s.tone])}>{s.label}</span>
+            <span className={cn('text-[0.8125rem] font-semibold', TONE[s.tone])}>{s.label}</span>
           </span>
-          <span className="mt-0.5 block text-[13px] text-ink-3">
+          <span className="mt-0.5 block text-[0.8125rem] text-ink-3">
             Issued {dateShort(i.issued_on)} · due {dateShort(i.due_on)}
           </span>
         </span>
         <span className="text-right">
           <span className="tnum block font-semibold">{money(i.total_minor)}</span>
           {outstanding > 0 && i.status !== 'void' && (
-            <span className="tnum block text-[12.5px] text-caution">{money(outstanding)} left</span>
+            <span className="tnum block text-[0.7812rem] text-caution">{money(outstanding)} left</span>
           )}
         </span>
         <ChevronDown className={cn('size-4 text-ink-3 transition-transform', open && 'rotate-180')} aria-hidden />
       </button>
       {open && (
-        <div className="space-y-3 pb-4 pl-3 text-[14px]">
+        <div className="space-y-3 pb-4 pl-3 text-[0.875rem]">
           {items.isLoading && <Skeleton className="h-10" />}
           <ul className="space-y-1.5 border-l-2 border-line pl-3">
             {items.data?.map(it => (
@@ -296,7 +296,7 @@ function InvoiceLine({ i }: { i: Invoice }) {
             ))}
           </ul>
           {payments.data && payments.data.length > 0 && (
-            <ul className="space-y-1.5 border-l-2 border-line pl-3 text-[13px] text-ink-2">
+            <ul className="space-y-1.5 border-l-2 border-line pl-3 text-[0.8125rem] text-ink-2">
               {payments.data.map(p => (
                 <li key={p.id} className="flex gap-3">
                   <span className="flex-1">

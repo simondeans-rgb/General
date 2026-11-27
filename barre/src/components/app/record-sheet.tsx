@@ -68,8 +68,8 @@ export function RecordSheet({
                    sm:rounded-[var(--radius-xl)]">
         <div className="flex items-start gap-3 border-b border-line px-5 pb-3 pt-4">
           <div className="min-w-0 flex-1">
-            <h2 id={titleId} className="font-display text-[20px] leading-tight">{title}</h2>
-            {subtitle && <p className="mt-1 text-[13.5px] text-ink-3">{subtitle}</p>}
+            <h2 id={titleId} className="font-display text-[1.25rem] leading-tight">{title}</h2>
+            {subtitle && <p className="mt-1 text-[0.8438rem] text-ink-3">{subtitle}</p>}
           </div>
           <Button size="sm" variant="ghost" aria-label="Close" onClick={onClose} className="-mr-2 -mt-1">
             <X className="size-4" aria-hidden />
@@ -82,7 +82,7 @@ export function RecordSheet({
           {onRemove && (
             <div className="mt-6 border-t border-line pt-4">
               {removeHint
-                ? <p className="text-[13px] text-ink-3">{removeHint}</p>
+                ? <p className="text-[0.8125rem] text-ink-3">{removeHint}</p>
                 : <Button variant="danger" size="sm" loading={removing} onClick={onRemove}>
                     <Trash2 className="size-4" aria-hidden /> {removeLabel}
                   </Button>}

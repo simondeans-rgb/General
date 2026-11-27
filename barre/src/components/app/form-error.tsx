@@ -37,7 +37,7 @@ export function SaveErrorSummary({ error, reason }: { error?: unknown; reason?: 
   if (!text) return null;
   const alarm = error != null && !limit;
   return (
-    <p className={'flex w-full items-start gap-1.5 text-[12.5px] sm:w-auto sm:flex-1 sm:self-center ' +
+    <p className={'flex w-full items-start gap-1.5 text-[0.7812rem] sm:w-auto sm:flex-1 sm:self-center ' +
                   (alarm ? 'text-critical' : 'text-ink-3')}>
       {alarm && <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden />}
       <span>{text}</span>

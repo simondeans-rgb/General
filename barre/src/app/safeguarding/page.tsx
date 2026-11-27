@@ -61,17 +61,17 @@ export default function SafeguardingPage() {
                 <li key={c.id}>
                   <button onClick={() => setOpen(c)} className="block w-full py-3.5 text-left hover:bg-surface-2/60">
                     {c.immediate_risk && c.status !== 'closed' && (
-                      <p className="mb-1 font-display text-[18px] uppercase leading-none tracking-[-0.01em] text-critical [font-stretch:80%]">At risk</p>
+                      <p className="mb-1 font-display text-[1.125rem] uppercase leading-none tracking-[-0.01em] text-critical [font-stretch:80%]">At risk</p>
                     )}
                     <div className="flex flex-wrap items-baseline gap-x-2">
                       <span className="font-semibold">{c.subject_name ?? c.student_name ?? 'Child'}</span>
                       {c.allegation && <Word tone="critical">Allegation · LADO</Word>}
-                      {c.subject_kind === 'adult' && <span className="text-[13px] text-ink-3">adult</span>}
-                      <span className={cn('text-[13px] font-semibold', STATUS_TEXT[c.status] ?? 'text-ink-3')}>{STATUS_WORD[c.status] ?? c.status}</span>
-                      <span className="ml-auto text-[13px] text-ink-3">{relativeDay(c.created_at)}</span>
+                      {c.subject_kind === 'adult' && <span className="text-[0.8125rem] text-ink-3">adult</span>}
+                      <span className={cn('text-[0.8125rem] font-semibold', STATUS_TEXT[c.status] ?? 'text-ink-3')}>{STATUS_WORD[c.status] ?? c.status}</span>
+                      <span className="ml-auto text-[0.8125rem] text-ink-3">{relativeDay(c.created_at)}</span>
                     </div>
-                    <p className="mt-1 line-clamp-2 text-[14.5px] text-ink-2">{c.summary}</p>
-                    <p className="mt-1 text-[13px] text-ink-3">{G.CATEGORIES.find(x => x[0] === c.category)?.[1]} · raised by {c.raised_by} · {c.actions} action{c.actions === 1 ? '' : 's'}</p>
+                    <p className="mt-1 line-clamp-2 text-[0.9062rem] text-ink-2">{c.summary}</p>
+                    <p className="mt-1 text-[0.8125rem] text-ink-3">{G.CATEGORIES.find(x => x[0] === c.category)?.[1]} · raised by {c.raised_by} · {c.actions} action{c.actions === 1 ? '' : 's'}</p>
                   </button>
                 </li>
               ))}
@@ -108,14 +108,14 @@ function ConcernSheet({ c, onClose }: { c: G.Concern; onClose: () => void }) {
     <RecordSheet title={c.subject_name ?? c.student_name ?? 'Concern'} subtitle={`${dateShort(c.created_at)} · raised by ${c.raised_by}`} onClose={onClose}
       onSave={() => act.mutate()} saving={act.isPending} error={act.error} canSave={note.trim().length > 2} saveLabel="Record action">
       {c.allegation && (
-        <p className="border-l-2 border-critical py-1 pl-3 text-[14px]">
+        <p className="border-l-2 border-critical py-1 pl-3 text-[0.875rem]">
           <strong className="font-semibold text-critical">Allegation about a member of staff.</strong> Follow the LADO process: tell the local authority designated officer within one working day, and do not investigate or tell the person concerned. They cannot see this record.
         </p>
       )}
-      <p className="whitespace-pre-wrap border-l-2 border-ink py-1 pl-3 text-[14.5px]">{c.summary}</p>
+      <p className="whitespace-pre-wrap border-l-2 border-ink py-1 pl-3 text-[0.9062rem]">{c.summary}</p>
       <ol className="divide-y divide-line border-y border-line">
         {actions.data?.map((a, i) => (
-          <li key={i} className="py-2 text-[14px]"><span className="text-[13px] text-ink-3">{dateShort(a.at)} {time(a.at)} · {a.by_name}{a.status_to ? ` · now ${a.status_to}` : ''}</span>
+          <li key={i} className="py-2 text-[0.875rem]"><span className="text-[0.8125rem] text-ink-3">{dateShort(a.at)} {time(a.at)} · {a.by_name}{a.status_to ? ` · now ${a.status_to}` : ''}</span>
             <p>{a.note}</p></li>
         ))}
       </ol>
@@ -158,13 +158,13 @@ function WatchCard({ studioId }: { studioId: string }) {
             <span className="font-semibold">{w.name}</span>
             {w.streak >= G.STREAK_ALERT
               ? <Word tone="critical">{`${w.streak} missed in a row`}</Word>
-              : <span className="text-[13px] text-ink-3">{w.streak ? `${w.streak} missed in a row` : 'No unexplained absences in a row'}</span>}
-            <span className="text-[13px] text-ink-3">{w.last_present ? `Last here ${dateShort(w.last_present)}` : 'Not marked present yet'}</span>
+              : <span className="text-[0.8125rem] text-ink-3">{w.streak ? `${w.streak} missed in a row` : 'No unexplained absences in a row'}</span>}
+            <span className="text-[0.8125rem] text-ink-3">{w.last_present ? `Last here ${dateShort(w.last_present)}` : 'Not marked present yet'}</span>
             <Button size="sm" variant="ghost" className="ml-auto" onClick={() => set.mutate([w.student_id, false, null])}>Stop watching</Button>
-            {w.note && <p className="basis-full text-[13px] text-ink-3">{w.note}</p>}
+            {w.note && <p className="basis-full text-[0.8125rem] text-ink-3">{w.note}</p>}
           </li>
         ))}
-        {rows.data?.length === 0 && <li className="py-3 text-[14px] text-ink-3">No children are being watched.</li>}
+        {rows.data?.length === 0 && <li className="py-3 text-[0.875rem] text-ink-3">No children are being watched.</li>}
       </ul>
       <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
         <Field label="Child" htmlFor="sg-w-kid">
@@ -197,11 +197,11 @@ function HoldsCard({ studioId }: { studioId: string }) {
         {rows.data?.map(h => (
           <li key={h.student_id} className="flex flex-wrap items-baseline gap-x-3 py-2.5">
             <span className="font-semibold">{h.name}</span>
-            <span className="text-[13px] text-ink-3">{h.reason} · {h.set_by}, {dateShort(h.set_at)}</span>
+            <span className="text-[0.8125rem] text-ink-3">{h.reason} · {h.set_by}, {dateShort(h.set_at)}</span>
             <Button size="sm" variant="ghost" className="ml-auto" onClick={() => release.mutate([h.student_id])}>Release</Button>
           </li>
         ))}
-        {rows.data?.length === 0 && <li className="py-3 text-[14px] text-ink-3">No holds.</li>}
+        {rows.data?.length === 0 && <li className="py-3 text-[0.875rem] text-ink-3">No holds.</li>}
       </ul>
       <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
         <Field label="Child" htmlFor="sg-h-kid">
@@ -226,7 +226,7 @@ function StaffChecksCard({ studioId }: { studioId: string }) {
     <Card>
       <CardHeader title="Staff checks" subtitle="The owner records checks on each person’s staff record." />
       {rows.isLoading && <div className="pt-3"><Skeleton className="h-16" /></div>}
-      <ul className="divide-y divide-line text-[14px]">
+      <ul className="divide-y divide-line text-[0.875rem]">
         {rows.data?.map(r => (
           <li key={r.staff_id} className="flex flex-wrap justify-between gap-x-3 py-2">
             <span className="font-medium">{r.name}</span>
@@ -297,9 +297,9 @@ function AccessLog({ studioId }: { studioId: string }) {
   return (
     <Card>
       <CardHeader title="Who has looked" subtitle="Every view, action and export, for the owner and the lead" />
-      <ul className="max-h-72 divide-y divide-line overflow-y-auto text-[14px]">
+      <ul className="max-h-72 divide-y divide-line overflow-y-auto text-[0.875rem]">
         {rows.data?.map((r, i) => <li key={i} className="flex justify-between gap-3 py-2"><span>{r.who} {r.what}</span>
-          <span className="tnum shrink-0 text-[13px] text-ink-3">{dateShort(r.at)} {time(r.at)}</span></li>)}
+          <span className="tnum shrink-0 text-[0.8125rem] text-ink-3">{dateShort(r.at)} {time(r.at)}</span></li>)}
         {rows.data?.length === 0 && <li className="py-3 text-ink-3">Nobody yet.</li>}
       </ul>
     </Card>

@@ -48,13 +48,13 @@ export default function FamilyChildren() {
         {children.data?.map(c => (
           <section key={c.id} aria-labelledby={`child-${c.id}`}>
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b-2 border-ink pb-2">
-              <h2 id={`child-${c.id}`} className="font-display text-[24px] leading-none">{c.first_name} {c.last_name}{c.is_me ? ' (you)' : ''}</h2>
-              <span className="text-[13px] text-ink-3">{c.is_adult ? 'Adult' : `${ageFrom(c.date_of_birth)} · born ${dateShort(c.date_of_birth)}`}</span>
+              <h2 id={`child-${c.id}`} className="font-display text-[1.5rem] leading-none">{c.first_name} {c.last_name}{c.is_me ? ' (you)' : ''}</h2>
+              <span className="text-[0.8125rem] text-ink-3">{c.is_adult ? 'Adult' : `${ageFrom(c.date_of_birth)} · born ${dateShort(c.date_of_birth)}`}</span>
             </div>
             {/* Desktop: details on the left, actions and practice alongside. */}
             <div className="grid gap-x-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
             <div className="min-w-0">
-            <dl className="divide-y divide-line text-[14.5px]">
+            <dl className="divide-y divide-line text-[0.9062rem]">
               <Row label="Classes">{c.class_names ?? <span className="text-ink-3">Not in a class yet</span>}</Row>
               {c.attendance_pct != null && (
                 <Row label="Attendance">
@@ -68,7 +68,7 @@ export default function FamilyChildren() {
               {c.has_alert && (
                 <Row label="Medical">
                   <span className="font-semibold text-critical">{c.allergies ?? 'On record'}</span>
-                  <p className="mt-1 text-[13px] text-ink-3">
+                  <p className="mt-1 text-[0.8125rem] text-ink-3">
                     {c.first_name}’s teachers see allergies, conditions, medication, the emergency plan, emergency contacts and photo consent, for the classes they teach. The family doctor and the rest of the record stay with the office.
                     To change any of it,{' '}
                     <Link href="/family/enquiries" className="font-semibold text-accent-text underline">tell the studio</Link>,
@@ -113,7 +113,7 @@ export default function FamilyChildren() {
             <Link key={href} href={href!} className="group flex min-h-[56px] items-center gap-3 py-3">
               <span className="min-w-0 flex-1">
                 <span className="block font-semibold">{title}</span>
-                <span className="block text-[13px] text-ink-3">{body}</span>
+                <span className="block text-[0.8125rem] text-ink-3">{body}</span>
               </span>
               <ArrowRight className="size-4 text-ink-3 group-hover:text-ink" aria-hidden />
             </Link>

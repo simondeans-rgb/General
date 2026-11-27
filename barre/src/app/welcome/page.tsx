@@ -50,8 +50,8 @@ const ON_BLUE = '[&_a:focus-visible]:outline-white [&_button:focus-visible]:outl
 function SectionIntro({ id, title, children, className }: { id: string; title: React.ReactNode; children?: React.ReactNode; className?: string }) {
   return (
     <div className={cn('max-w-2xl', className)}>
-      <h2 id={id} className="font-display text-[34px] leading-[1.02] tracking-[-0.02em] lg:text-[48px]">{title}</h2>
-      {children && <div className="mt-4 space-y-3 text-[17px] leading-relaxed text-ink-2">{children}</div>}
+      <h2 id={id} className="font-display text-[2.125rem] leading-[1.02] tracking-[-0.02em] lg:text-[3rem]">{title}</h2>
+      {children && <div className="mt-4 space-y-3 text-[1.0625rem] leading-relaxed text-ink-2">{children}</div>}
     </div>
   );
 }
@@ -61,7 +61,7 @@ function Screen({ caption, children, className }: { caption: string; children: R
   return (
     <figure className={cn('min-w-0', className)}>
       <div inert className="overflow-hidden rounded-[var(--radius-xl)] border border-line bg-canvas">{children}</div>
-      <figcaption className="mt-2 text-[13px] text-ink-3">{caption}</figcaption>
+      <figcaption className="mt-2 text-[0.8125rem] text-ink-3">{caption}</figcaption>
     </figure>
   );
 }
@@ -70,7 +70,7 @@ function ScreenTitle({ title, sub }: { title: string; sub?: string }) {
   return (
     <div className="border-b border-line bg-surface px-4 py-3 sm:px-5">
       <p className="page-title">{title}</p>
-      {sub && <p className="mt-0.5 text-[13.5px] text-ink-3">{sub}</p>}
+      {sub && <p className="mt-0.5 text-[0.8438rem] text-ink-3">{sub}</p>}
     </div>
   );
 }
@@ -80,7 +80,7 @@ function Head({ title, meta }: { title: string; meta?: string }) {
   return (
     <div className="mb-1 flex items-baseline gap-3 border-b-2 border-ink pb-2">
       <p className="section-title min-w-0 flex-1">{title}</p>
-      {meta && <span className="text-[13px] text-ink-3">{meta}</span>}
+      {meta && <span className="text-[0.8125rem] text-ink-3">{meta}</span>}
     </div>
   );
 }
@@ -92,28 +92,28 @@ function Hero() {
       <header className={cn(WRAP, 'flex items-center justify-between gap-4 py-5 lg:py-7')}>
         <SwayvoLogo tone="white" className="h-7 lg:h-8" />
         <nav aria-label="Swayvo">
-          <Link href="/" className="rounded-[var(--radius-sm)] px-1 text-[15px] font-semibold underline-offset-4 hover:underline">Sign in</Link>
+          <Link href="/" className="rounded-[var(--radius-sm)] px-1 text-[0.9375rem] font-semibold underline-offset-4 hover:underline">Sign in</Link>
         </nav>
       </header>
       <div className={cn(WRAP, 'grid items-center gap-x-16 gap-y-12 pb-16 pt-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:pb-24 lg:pt-14')}>
         <div className="min-w-0">
-          <h1 id="hero-h" className="font-display text-[48px] font-[850] leading-[0.92] tracking-[-0.025em] [font-stretch:118%] sm:text-[72px] xl:text-[96px]">
+          <h1 id="hero-h" className="font-display text-[3rem] font-[850] leading-[0.92] tracking-[-0.025em] [font-stretch:118%] sm:text-[4.5rem] xl:text-[6rem]">
             Five, six, seven, <span style={{ color: SWAYVO.peach }}>eight.</span>
           </h1>
           <Count />
-          <p className="font-display text-[26px] leading-tight lg:text-[34px]">More time for dance.</p>
-          <p className="mt-3 max-w-xl text-[17px] leading-relaxed text-white/90 lg:text-[20px]">
+          <p className="font-display text-[1.625rem] leading-tight lg:text-[2.125rem]">More time for dance.</p>
+          <p className="mt-3 max-w-xl text-[1.0625rem] leading-relaxed text-white/90 lg:text-[1.25rem]">
             Timetable, registers, money and messages for dance schools, kept on the count. And the part nobody
             else does: each student’s progress, shown to them and their family.
           </p>
           <a href="#contact"
-            className="mt-8 inline-flex h-14 items-center gap-2 rounded-[var(--radius-md)] bg-peach px-6 text-[17px] font-semibold text-ink transition-transform active:translate-y-px">
+            className="mt-8 inline-flex h-14 items-center gap-2 rounded-[var(--radius-md)] bg-peach px-6 text-[1.0625rem] font-semibold text-ink transition-transform active:translate-y-px">
             Book a demo <ArrowRight className="size-4" aria-hidden />
           </a>
         </div>
         <figure className="min-w-0 justify-self-center lg:justify-self-end">
           <RegisterDemo />
-          <figcaption className="mt-3 max-w-[390px] text-[13px] text-white/85">
+          <figcaption className="mt-3 max-w-[390px] text-[0.8125rem] text-white/85">
             The register, as a teacher sees it on a phone. Tap Here or Absent: it works.
           </figcaption>
         </figure>
@@ -158,7 +158,7 @@ function RunsOn() {
             {RUNS_ON.map(([k, v]) => (
               <div key={k} className="grid gap-x-6 gap-y-0.5 py-3 sm:grid-cols-[9rem_minmax(0,1fr)]">
                 <dt className="font-semibold">{k}</dt>
-                <dd className="text-[15px] text-ink-2">{v}</dd>
+                <dd className="text-[0.9375rem] text-ink-2">{v}</dd>
               </div>
             ))}
           </dl>
@@ -172,8 +172,8 @@ function RunsOn() {
 
       <div className={cn(WRAP, 'mt-16 grid items-center gap-x-16 gap-y-8 lg:mt-24 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]')}>
         <div className="min-w-0 lg:order-2">
-          <h3 className="font-display text-[26px] leading-tight lg:text-[34px]">When something changes, families hear it plainly.</h3>
-          <p className="mt-3 max-w-xl text-[17px] leading-relaxed text-ink-2">
+          <h3 className="font-display text-[1.625rem] leading-tight lg:text-[2.125rem]">When something changes, families hear it plainly.</h3>
+          <p className="mt-3 max-w-xl text-[1.0625rem] leading-relaxed text-ink-2">
             A moved class, a cover teacher, a fee coming due: each is set as one word that can’t be missed, with the
             detail underneath. No more lost emails and long chat threads.
           </p>
@@ -200,12 +200,12 @@ function OwnerToday() {
         <div className="flex flex-col gap-x-8 gap-y-3 sm:flex-row sm:items-end">
           <div>
             <p className="label text-accent-text">Next · in 40 min</p>
-            <p className="display-xl mt-1 text-[72px] text-ink sm:text-[88px]">18:30</p>
+            <p className="display-xl mt-1 text-[4.5rem] text-ink sm:text-[5.5rem]">18:30</p>
           </div>
           <div className="min-w-0 flex-1 sm:pb-1.5">
-            <p className="font-display text-[24px] leading-tight">Senior Tap</p>
-            <p className="mt-1 text-[14px] text-ink-3">Priya Raman (cover) · Main Hall · Blackheath Studio</p>
-            <p className="mt-1 flex items-center gap-2 text-[14px] text-ink-2">
+            <p className="font-display text-[1.5rem] leading-tight">Senior Tap</p>
+            <p className="mt-1 text-[0.875rem] text-ink-3">Priya Raman (cover) · Main Hall · Blackheath Studio</p>
+            <p className="mt-1 flex items-center gap-2 text-[0.875rem] text-ink-2">
               <Beats value={11} max={18} label="11 of 18 places" />
               <span className="tnum">11 of 18</span>
             </p>
@@ -220,12 +220,12 @@ function OwnerToday() {
           <ul className="divide-y divide-line">
             {items.map(i => (
               <li key={i.headline} className="grid grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-x-3 py-3">
-                <span className={cn('font-display text-[28px] leading-none tnum', i.tone === 'critical' ? 'text-critical' : 'text-ink')}>{i.n}</span>
+                <span className={cn('font-display text-[1.75rem] leading-none tnum', i.tone === 'critical' ? 'text-critical' : 'text-ink')}>{i.n}</span>
                 <span className="min-w-0">
                   <span className="block font-semibold leading-snug">{i.headline}</span>
-                  <span className="block truncate text-[13px] text-ink-3">{i.detail}</span>
+                  <span className="block truncate text-[0.8125rem] text-ink-3">{i.detail}</span>
                 </span>
-                <span className="flex items-center gap-1 text-[13px] font-semibold text-accent-text">{i.action}<ArrowRight className="size-3.5" aria-hidden /></span>
+                <span className="flex items-center gap-1 text-[0.8125rem] font-semibold text-accent-text">{i.action}<ArrowRight className="size-3.5" aria-hidden /></span>
               </li>
             ))}
           </ul>
@@ -248,14 +248,14 @@ function ParentNotices() {
         </ul>
         <div className="mt-4">
           <div className="mb-1 flex items-baseline gap-3 border-b-2 border-ink pb-2">
-            <p className="font-display text-[22px] leading-none">Amir</p>
-            <span className="text-[13px] text-ink-3">15 · 2 classes this week</span>
+            <p className="font-display text-[1.375rem] leading-none">Amir</p>
+            <span className="text-[0.8125rem] text-ink-3">15 · 2 classes this week</span>
           </div>
           <ul className="divide-y divide-line">
             {[['Today', '18:30', 'Senior Tap', 'Priya Raman (cover) · Main Hall'], ['Today', '19:00', 'Contemporary Seniors', 'Priya Raman · Studio One']].map(([d, t, n, m]) => (
               <li key={t} className="grid grid-cols-[4.25rem_minmax(0,1fr)] items-center gap-x-4 py-3">
-                <span><span className="block text-[13px] text-ink-2">{d}</span><span className="font-display text-[19px] tnum">{t}</span></span>
-                <span className="min-w-0"><span className="block truncate font-semibold">{n}</span><span className="block truncate text-[13px] text-ink-3">{m}</span></span>
+                <span><span className="block text-[0.8125rem] text-ink-2">{d}</span><span className="font-display text-[1.1875rem] tnum">{t}</span></span>
+                <span className="min-w-0"><span className="block truncate font-semibold">{n}</span><span className="block truncate text-[0.8125rem] text-ink-3">{m}</span></span>
               </li>
             ))}
           </ul>
@@ -284,11 +284,11 @@ function Progress() {
             <p>Students see their own story. Parents see it too, so the conversation at home is about the turn that
               finally landed, not the invoice.</p>
           </SectionIntro>
-          <p className="mt-8 border-l-[3px] border-peach pl-4 text-[17px] leading-relaxed">
-            <span className="font-display text-[26px] leading-none">50 classes.</span><br />
+          <p className="mt-8 border-l-[3px] border-peach pl-4 text-[1.0625rem] leading-relaxed">
+            <span className="font-display text-[1.625rem] leading-none">50 classes.</span><br />
             That’s a full count — keep moving.
           </p>
-          <p className="mt-2 text-[13px] text-ink-3">A milestone, as a student sees it.</p>
+          <p className="mt-2 text-[0.8125rem] text-ink-3">A milestone, as a student sees it.</p>
         </div>
         <Screen className="max-w-[560px]" caption="Amir’s feedback screen: a teacher’s note, then each Contemporary skill as a count of eight.">
           <ScreenTitle title="Your feedback" />
@@ -296,10 +296,10 @@ function Progress() {
             <div>
               <Head title="Notes from class" />
               <div className="py-4">
-                <p className="flex items-baseline gap-3"><span className="flex-1 font-semibold">Really strong week</span><span className="text-[13px] text-ink-3">24 Nov</span></p>
-                <p className="mt-1.5 text-[16px] leading-relaxed">“Your timing in the fast section is spot on now, and you kept the shoulders down through the whole barre.”</p>
-                <p className="mt-3 border-l-2 border-accent pl-3 text-[15px] text-ink-2"><span className="font-semibold text-ink">To work on:</span> Spotting on the turns — pick one point on the back wall and stay with it.</p>
-                <p className="mt-3 text-[13px] text-ink-3">Marcus Bell · Senior Tap</p>
+                <p className="flex items-baseline gap-3"><span className="flex-1 font-semibold">Really strong week</span><span className="text-[0.8125rem] text-ink-3">24 Nov</span></p>
+                <p className="mt-1.5 text-[1rem] leading-relaxed">“Your timing in the fast section is spot on now, and you kept the shoulders down through the whole barre.”</p>
+                <p className="mt-3 border-l-2 border-accent pl-3 text-[0.9375rem] text-ink-2"><span className="font-semibold text-ink">To work on:</span> Spotting on the turns — pick one point on the back wall and stay with it.</p>
+                <p className="mt-3 text-[0.8125rem] text-ink-3">Marcus Bell · Senior Tap</p>
               </div>
             </div>
             <div>
@@ -310,7 +310,7 @@ function Progress() {
                   <li key={s.name} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 py-3">
                     <span className="min-w-0">
                       <span className="block truncate font-semibold">{s.name}</span>
-                      <span className={cn('block text-[13px]', s.beats ? 'text-ink-2' : 'text-ink-3')}>{s.level}</span>
+                      <span className={cn('block text-[0.8125rem]', s.beats ? 'text-ink-2' : 'text-ink-3')}>{s.level}</span>
                     </span>
                     <Beats value={s.beats} max={8} size="lg" label={`${s.name}: ${s.level}, ${s.beats} of 8`} />
                   </li>
@@ -343,8 +343,8 @@ function Safe() {
         <ul className="min-w-0 divide-y divide-line border-t-2 border-ink">
           {SAFE.map(([k, v]) => (
             <li key={k} className="py-4">
-              <h3 className="text-[17px] font-semibold">{k}</h3>
-              <p className="mt-1 text-[15px] leading-relaxed text-ink-2">{v}</p>
+              <h3 className="text-[1.0625rem] font-semibold">{k}</h3>
+              <p className="mt-1 text-[0.9375rem] leading-relaxed text-ink-2">{v}</p>
             </li>
           ))}
         </ul>
@@ -384,14 +384,14 @@ function EveryStyle() {
           <p>Ballet to breaking, three-year-olds to adult beginners. Grade exams, festivals, battles and the summer
             show all run on the same count.</p>
         </SectionIntro>
-        <ul aria-label="Styles" className="mt-8 flex flex-wrap gap-x-5 gap-y-1 font-display text-[26px] leading-[1.2] text-ink-2 lg:text-[34px]">
+        <ul aria-label="Styles" className="mt-8 flex flex-wrap gap-x-5 gap-y-1 font-display text-[1.625rem] leading-[1.2] text-ink-2 lg:text-[2.125rem]">
           {STYLES.map(s => <li key={s}>{s}</li>)}
         </ul>
         <ul className="mt-10 grid gap-4 sm:grid-cols-3">
           {PHOTOS.map((p, i) => (
             <li key={p} className={cn('flex aspect-[16/9] items-end sm:aspect-[4/3]', i === 2 && 'hidden sm:flex',
               'rounded-[var(--radius-lg)] border border-dashed border-line-strong bg-surface-2 p-4')}>
-              <p className="text-[13px] leading-snug text-ink-2">{p}</p>
+              <p className="text-[0.8125rem] leading-snug text-ink-2">{p}</p>
             </li>
           ))}
         </ul>
@@ -415,9 +415,9 @@ function HowItStarts() {
         <ol className="mt-8 grid gap-x-12 border-t-2 border-ink md:grid-cols-3">
           {STEPS.map(([k, v], i) => (
             <li key={k} className="border-b border-line py-5 md:border-b-0">
-              <p aria-hidden className="display-xl text-[48px] text-ink">{i + 1}</p>
-              <h3 className="mt-3 text-[17px] font-semibold">{k}</h3>
-              <p className="mt-1 text-[15px] leading-relaxed text-ink-2">{v}</p>
+              <p aria-hidden className="display-xl text-[3rem] text-ink">{i + 1}</p>
+              <h3 className="mt-3 text-[1.0625rem] font-semibold">{k}</h3>
+              <p className="mt-1 text-[0.9375rem] leading-relaxed text-ink-2">{v}</p>
             </li>
           ))}
         </ol>
@@ -433,23 +433,23 @@ function Contact() {
       className={cn('scroll-mt-4 py-16 lg:py-24', ON_BLUE)}>
       <div className={cn(WRAP, 'grid gap-x-16 gap-y-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-end')}>
         <div className="min-w-0">
-          <h2 id="contact-h" className="font-display text-[48px] font-[850] leading-[0.95] tracking-[-0.025em] [font-stretch:118%] lg:text-[72px]">
+          <h2 id="contact-h" className="font-display text-[3rem] font-[850] leading-[0.95] tracking-[-0.025em] [font-stretch:118%] lg:text-[4.5rem]">
             Book a <span style={{ color: SWAYVO.peach }}>demo.</span>
           </h2>
-          <p className="mt-5 max-w-xl text-[17px] leading-relaxed text-white/90 lg:text-[20px]">
+          <p className="mt-5 max-w-xl text-[1.0625rem] leading-relaxed text-white/90 lg:text-[1.25rem]">
             Thirty minutes, with your own timetable on the screen. Email us, say when suits, and tell us a little
             about your school.
           </p>
-          <p className="mt-8 text-[13px] font-semibold uppercase tracking-[0.06em] text-white/85">Email</p>
-          <p className="mt-1 select-all break-all font-display text-[26px] leading-tight sm:text-[34px] lg:text-[48px]">hello@swayvo.example</p>
+          <p className="mt-8 text-[0.8125rem] font-semibold uppercase tracking-[0.06em] text-white/85">Email</p>
+          <p className="mt-1 select-all break-all font-display text-[1.625rem] leading-tight sm:text-[2.125rem] lg:text-[3rem]">hello@swayvo.example</p>
         </div>
         <div className="min-w-0 border-t border-white/30 pt-6">
-          <p className="font-display text-[22px] leading-tight">Can’t wait?</p>
-          <p className="mt-2 text-[15px] leading-relaxed text-white/90">
+          <p className="font-display text-[1.375rem] leading-tight">Can’t wait?</p>
+          <p className="mt-2 text-[0.9375rem] leading-relaxed text-white/90">
             The demo runs in your browser with no sign-up. Choose a person at Northstar Dance Academy, our sample
             school, and see exactly what they would.
           </p>
-          <Link href="/" className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] text-[17px] font-semibold underline underline-offset-4">
+          <Link href="/" className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] text-[1.0625rem] font-semibold underline underline-offset-4">
             Try the demo <ArrowRight className="size-4" aria-hidden />
           </Link>
         </div>
@@ -464,9 +464,9 @@ function Footer() {
       <div className={cn(WRAP, 'flex flex-col gap-4 py-10 sm:flex-row sm:items-end sm:justify-between')}>
         <div>
           <SwayvoLogo className="h-7" />
-          <p className="mt-3 font-display text-[17px]">More time for dance.</p>
+          <p className="mt-3 font-display text-[1.0625rem]">More time for dance.</p>
         </div>
-        <p className="max-w-md text-[13px] text-ink-3 sm:text-right">
+        <p className="max-w-md text-[0.8125rem] text-ink-3 sm:text-right">
           © 2026 Swayvo. Northstar Dance Academy and the people in it are sample data, made up for the demo.
         </p>
       </div>

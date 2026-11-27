@@ -20,18 +20,18 @@ export function TeacherMessageSheet({ student, onClose }: { student: { id: strin
     onSuccess: () => { setSent(true); qc.invalidateQueries({ queryKey: ['db'] }); },
   });
   if (sent) return <RecordSheet title="Sent" onClose={onClose} onSave={onClose} saveLabel="Done">
-    <p className="text-[15px] text-ink-2">It is in the family’s conversation with the studio. Their reply comes to you in Messages, and the office can read it too.</p>
+    <p className="text-[0.9375rem] text-ink-2">It is in the family’s conversation with the studio. Their reply comes to you in Messages, and the office can read it too.</p>
   </RecordSheet>;
   return (
     <RecordSheet title={`Message ${student.first_name}’s family`} onClose={onClose} saving={send.isPending} error={send.error}
       canSave={body.trim().length >= 3} saveLabel="Send" onSave={() => send.mutate()}>
-      <p className="text-[14px] text-ink-2">
+      <p className="text-[0.875rem] text-ink-2">
         The office sees this message and any reply. There are no private channels between staff and families.
       </p>
       <Field label="Subject" htmlFor="tm-s"><Input id="tm-s" value={subject} onChange={e => setSubject(e.target.value)} placeholder={`About ${student.first_name}`} /></Field>
       <Field label="Message" htmlFor="tm-b" required>
         <textarea id="tm-b" rows={5} value={body} onChange={e => setBody(e.target.value)}
-          className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-[15px] focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
+          className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-[0.9375rem] focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
       </Field>
     </RecordSheet>
   );

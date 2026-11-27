@@ -76,13 +76,13 @@ export function PushToggle() {
     },
   });
   if (!supported || !VAPID) {
-    return <p className="text-[13px] text-ink-3">Phone alerts start once your school’s app is hosted. On an iPhone, add the app to your Home Screen first.</p>;
+    return <p className="text-[0.8125rem] text-ink-3">Phone alerts start once your school’s app is hosted. On an iPhone, add the app to your Home Screen first.</p>;
   }
   return (
     <div className="space-y-1.5">
       {state === 'on' ? <p className="text-sm"><span className="font-semibold text-positive">On.</span> Phone alerts reach this device.</p>
         : <Button size="sm" loading={on.isPending} disabled={state === 'blocked'} onClick={() => on.mutate()}><BellRing className="size-4" aria-hidden /> Turn on phone alerts</Button>}
-      {state === 'blocked' && <p className="text-[13px] text-ink-3">Notifications are blocked for this site — allow them in your browser’s settings.</p>}
+      {state === 'blocked' && <p className="text-[0.8125rem] text-ink-3">Notifications are blocked for this site — allow them in your browser’s settings.</p>}
       {on.error != null && <ErrorState error={on.error} />}
     </div>
   );

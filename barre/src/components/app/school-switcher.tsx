@@ -39,7 +39,7 @@ export function SchoolSwitcher({ className }: { className?: string }) {
 
   if (list.length < 2 || !current) return null;
   return (
-    <label className={`flex items-center gap-2 px-3 py-2 text-[13px] ${className ?? ''}`}>
+    <label className={`flex items-center gap-2 px-3 py-2 text-[0.8125rem] ${className ?? ''}`}>
       <SchoolMark name={current.name} logo={current.logo_url} className="size-6" />
       <span className="sr-only">School</span>
       <select value={current.studio_id} aria-label="Switch school"
@@ -50,7 +50,7 @@ export function SchoolSwitcher({ className }: { className?: string }) {
           qc.invalidateQueries();
           router.push(HOME[role] ?? '/');
         }}
-        className="h-9 min-w-0 flex-1 truncate rounded-[var(--radius-md)] border border-line-strong bg-surface px-2 text-[14px] font-medium focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12">
+        className="h-9 min-w-0 flex-1 truncate rounded-[var(--radius-md)] border border-line-strong bg-surface px-2 text-[0.875rem] font-medium focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12">
         {list.map(s => <option key={s.studio_id} value={s.studio_id}>{s.name}</option>)}
       </select>
     </label>

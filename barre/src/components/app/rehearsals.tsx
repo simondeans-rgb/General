@@ -15,18 +15,18 @@ export function RehearsalList({ days = 42 }: { days?: number }) {
     <section aria-labelledby="rehearsals-h">
       <div className="mb-1 flex items-baseline gap-3 border-b-2 border-ink pb-2">
         <h2 id="rehearsals-h" className="section-title flex-1">Rehearsals</h2>
-        <span className="text-[13px] text-ink-3">For the shows coming up</span>
+        <span className="text-[0.8125rem] text-ink-3">For the shows coming up</span>
       </div>
       <ul className="divide-y divide-line">
         {rows.data.map(r => (
           <li key={r.id} className="grid grid-cols-[4.25rem_minmax(0,1fr)] gap-x-3 py-3">
             <span className="leading-tight">
-              <span className="block text-[12.5px] text-ink-3">{dayName(r.starts_at).slice(0, 3)} {dateShort(r.starts_at)}</span>
-              <span className="font-display text-[19px] tnum">{time(r.starts_at)}</span>
+              <span className="block text-[0.7812rem] text-ink-3">{dayName(r.starts_at).slice(0, 3)} {dateShort(r.starts_at)}</span>
+              <span className="font-display text-[1.1875rem] tnum">{time(r.starts_at)}</span>
             </span>
             <span className="min-w-0">
               <span className="block font-semibold">{r.title}</span>
-              <span className="block text-[13px] text-ink-3">{[r.show_title, r.child, r.venue].filter(Boolean).join(' · ')}</span>
+              <span className="block text-[0.8125rem] text-ink-3">{[r.show_title, r.child, r.venue].filter(Boolean).join(' · ')}</span>
             </span>
           </li>
         ))}

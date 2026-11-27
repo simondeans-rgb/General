@@ -56,9 +56,9 @@ export function AssistantLauncher() {
   return (
     <>
       <button onClick={() => setOpen(true)} aria-label="Ask or jump (Command K)"
-        className="hidden h-9 items-center gap-2 rounded-[var(--radius-md)] border border-line-strong bg-surface px-3 text-[13px] text-ink-3 hover:border-ink-3 hover:text-ink sm:flex">
+        className="hidden h-9 items-center gap-2 rounded-[var(--radius-md)] border border-line-strong bg-surface px-3 text-[0.8125rem] text-ink-3 hover:border-ink-3 hover:text-ink sm:flex">
         <Search className="size-4" aria-hidden /> Ask or jump
-        <kbd className="rounded-[var(--radius-sm)] bg-surface-2 px-1.5 text-[11px] font-semibold text-ink-2">⌘K</kbd>
+        <kbd className="rounded-[var(--radius-sm)] bg-surface-2 px-1.5 text-[0.6875rem] font-semibold text-ink-2">⌘K</kbd>
       </button>
       <button onClick={() => setOpen(true)} aria-label="Ask or jump"
         className="grid size-10 place-items-center rounded-full text-ink-2 hover:bg-surface-2 sm:hidden">
@@ -79,7 +79,7 @@ export function AssistantLauncher() {
                   if (e.key === 'ArrowUp') { e.preventDefault(); setActive(a => Math.max(a - 1, 0)); }
                   if (e.key === 'Enter' && views[active]) go(views[active].href);
                 }}
-                className="h-12 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-3" />
+                className="h-12 flex-1 bg-transparent text-[0.9375rem] outline-none placeholder:text-ink-3" />
             </div>
             <ul id="ask-list" role="listbox" className="max-h-[50dvh] overflow-y-auto p-1.5">
               {views.map((v, n) => (
@@ -88,8 +88,8 @@ export function AssistantLauncher() {
                     className={cn('flex min-h-12 w-full items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-left',
                       n === active && 'bg-surface-2')}>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-[14.5px] font-semibold">{v.question}</span>
-                      <span className="block text-[13px] text-ink-3">{v.answer}</span>
+                      <span className="block text-[0.9062rem] font-semibold">{v.question}</span>
+                      <span className="block text-[0.8125rem] text-ink-3">{v.answer}</span>
                     </span>
                     {n === active ? <CornerDownLeft className="size-4 text-ink-3" aria-hidden /> : <ArrowRight className="size-4 text-ink-3" aria-hidden />}
                   </button>
@@ -99,7 +99,7 @@ export function AssistantLauncher() {
             {/* Honest about the gap: no generated answers without a backend. */}
             {!assistant.available && (
               <div className="border-t border-line px-4 py-3">
-                <p className="text-[13px] text-ink-3">
+                <p className="text-[0.8125rem] text-ink-3">
                   {q && !views.length ? 'No saved view answers that yet. ' : ''}
                   The studio assistant is not connected. When it is, it will answer free-text questions from your
                   studio’s data — seeing only what you can see — and show where each answer came from.

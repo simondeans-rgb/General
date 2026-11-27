@@ -106,7 +106,7 @@
     background: var(--color-canvas);
     color: var(--color-ink);
     font-family: var(--font-sans);
-    font-size: 15px;
+    font-size: 0.9375rem;
     line-height: 1.5;
     font-feature-settings: "cv11", "ss01";   /* Inter: single-storey a off, open digits */
     -webkit-font-smoothing: antialiased;
@@ -135,13 +135,13 @@
      width in lists so long class names fit. */
   .font-display { font-family: var(--font-display); font-weight: 800; font-stretch: 112%; letter-spacing: -0.01em; font-variant-numeric: lining-nums tabular-nums; }
   .display-xl { font-family: var(--font-display); font-weight: 850; font-stretch: 125%; letter-spacing: -0.025em; line-height: 0.95; font-variant-numeric: lining-nums tabular-nums; }
-  .page-title { font-family: var(--font-display); font-weight: 800; font-stretch: 112%; font-size: 20px; line-height: 1.1; letter-spacing: -0.015em; }
-  @media (min-width: 1024px) { .page-title { font-size: 26px; } }
+  .page-title { font-family: var(--font-display); font-weight: 800; font-stretch: 112%; font-size: 1.25rem; line-height: 1.1; letter-spacing: -0.015em; }
+  @media (min-width: 1024px) { .page-title { font-size: 1.625rem; } }
   .stat-number { font-family: var(--font-display); font-weight: 800; font-stretch: 112%; letter-spacing: -0.01em; font-variant-numeric: lining-nums tabular-nums; }
   /* Section headings inside a screen: sentence case, ink, not shouting. */
-  .section-title { font-size: 15px; font-weight: 650; letter-spacing: -0.01em; color: var(--color-ink); }
+  .section-title { font-size: 0.9375rem; font-weight: 650; letter-spacing: -0.01em; color: var(--color-ink); }
   /* Small printed labels (Press notices, column heads). */
-  .label { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-ink-3); }
+  .label { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-ink-3); }
 
   /* A surface: white, one hairline, small radius, no shadow. */
   .card { background: var(--color-surface); border: 1px solid var(--color-line); border-radius: var(--radius-lg); }
@@ -174,7 +174,7 @@
 /* Phones: fields at 16px so iOS never zooms; the page never scrolls sideways. */
 @media (pointer: coarse), (max-width: 767px) {
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea {
-    font-size: 16px !important;
+    font-size: 1rem !important;
   }
 }
 html, body { overflow-x: clip; }

@@ -63,21 +63,21 @@ export function AbsenceForm({ studentId, firstName, self = false, onDone }: {
       {options.isLoading && <Skeleton className="h-32" />}
       {options.error != null && <ErrorState error={options.error} />}
       {options.data && list.length === 0 && (
-        <p className="text-[14.5px] text-ink-2">{self ? 'You have' : `${firstName} has`} no classes in the next six weeks. For anything else, send the studio a message.</p>
+        <p className="text-[0.9062rem] text-ink-2">{self ? 'You have' : `${firstName} has`} no classes in the next six weeks. For anything else, send the studio a message.</p>
       )}
       {list.length > 0 && (
         <fieldset>
-          <legend className="text-[14px] font-semibold">Which classes{self ? ' can’t you make' : ` will ${firstName} miss`}?</legend>
-          <p className="text-[13px] text-ink-3">Tick each class. For several days in a row, tick each one.</p>
+          <legend className="text-[0.875rem] font-semibold">Which classes{self ? ' can’t you make' : ` will ${firstName} miss`}?</legend>
+          <p className="text-[0.8125rem] text-ink-3">Tick each class. For several days in a row, tick each one.</p>
           <ul className="mt-2 max-h-[40dvh] divide-y divide-line overflow-y-auto border-y border-line">
             {[...days.entries()].map(([day, items]) => (
               <li key={day} className="py-2">
-                <p className="text-[13px] font-semibold text-ink-3">{day}</p>
+                <p className="text-[0.8125rem] font-semibold text-ink-3">{day}</p>
                 {items.map(o => o.report_id ? (
                   <div key={o.session_id} className="flex min-h-11 items-center gap-3">
-                    <span className="min-w-0 flex-1 text-[14.5px]">
+                    <span className="min-w-0 flex-1 text-[0.9062rem]">
                       <span className="tnum">{time(o.starts_at)}</span> {o.class_name}
-                      <span className="block text-[13px] text-ink-3">Reported absent{o.note ? ` — ${o.note}` : ''}</span>
+                      <span className="block text-[0.8125rem] text-ink-3">Reported absent{o.note ? ` — ${o.note}` : ''}</span>
                     </span>
                     {o.withdrawable && (
                       <Button size="sm" variant="ghost" loading={withdraw.isPending && withdraw.variables === o.report_id}
@@ -85,7 +85,7 @@ export function AbsenceForm({ studentId, firstName, self = false, onDone }: {
                     )}
                   </div>
                 ) : (
-                  <label key={o.session_id} className="flex min-h-11 items-center gap-3 text-[14.5px]">
+                  <label key={o.session_id} className="flex min-h-11 items-center gap-3 text-[0.9062rem]">
                     <input type="checkbox" checked={picked.has(o.session_id)} onChange={() => toggle(o.session_id)}
                       className="size-[18px] shrink-0 accent-[var(--color-accent)]" />
                     <span className={cn('min-w-0 flex-1')}><span className="tnum">{time(o.starts_at)}</span> {o.class_name}</span>
@@ -125,7 +125,7 @@ export function AbsenceDialog({ studentId, firstName, self, onClose }: { student
       <div role="dialog" aria-modal="true" aria-labelledby="absence-title"
            onClick={e => e.stopPropagation()}
            className="max-h-[88dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-[var(--radius-xl)] border border-line bg-surface p-4 pb-safe shadow-lg sm:rounded-[var(--radius-xl)]">
-        <h2 id="absence-title" className="text-[17px] font-semibold tracking-tight">{self ? 'I can’t make it' : 'Report an absence'}</h2>
+        <h2 id="absence-title" className="text-[1.0625rem] font-semibold tracking-tight">{self ? 'I can’t make it' : 'Report an absence'}</h2>
         {!self && <p className="mb-3 mt-0.5 text-sm text-ink-2">For {firstName}</p>}
         {self && <p className="mb-3 mt-0.5 text-sm text-ink-2">Your teacher, your family and the office are told.</p>}
         <AbsenceForm studentId={studentId} firstName={firstName} self={self} onDone={onClose} />
@@ -172,7 +172,7 @@ function OfferRow({ o }: { o: Offer }) {
   return (
     <div className="py-3">
       <p className="font-semibold">{o.first_name}: instead of {o.from_label}</p>
-      <p className="text-[13px] text-ink-3">{o.reason === 'cancelled' ? 'The studio cancelled it.' : 'Reported absent.'} Choose a class with space by {dateLong(o.expires_on)}.</p>
+      <p className="text-[0.8125rem] text-ink-3">{o.reason === 'cancelled' ? 'The studio cancelled it.' : 'Reported absent.'} Choose a class with space by {dateLong(o.expires_on)}.</p>
       {!open ? (
         <div className="mt-2 flex gap-2">
           <Button size="sm" variant="primary" onClick={() => setOpen(true)}>See classes</Button>
@@ -181,13 +181,13 @@ function OfferRow({ o }: { o: Offer }) {
       ) : (
         <div className="mt-2">
           {slots.isLoading && <Skeleton className="h-16" />}
-          {slots.data?.length === 0 && <p className="text-[14px] text-ink-2">No suitable class has space before then. The office can help — send them a message.</p>}
+          {slots.data?.length === 0 && <p className="text-[0.875rem] text-ink-2">No suitable class has space before then. The office can help — send them a message.</p>}
           <ul className="divide-y divide-line">
             {slots.data?.map(sl => (
               <li key={sl.session_id} className="flex min-h-12 items-center gap-3 py-2">
-                <span className="min-w-0 flex-1 text-[14.5px]">
+                <span className="min-w-0 flex-1 text-[0.9062rem]">
                   <span className="block font-semibold">{sl.class_name}</span>
-                  <span className="block text-[13px] text-ink-3">{dateLong(sl.starts_at)} · {time(sl.starts_at)}{sl.location ? ` · ${sl.location}` : ''} · {sl.spaces} space{sl.spaces === 1 ? '' : 's'}</span>
+                  <span className="block text-[0.8125rem] text-ink-3">{dateLong(sl.starts_at)} · {time(sl.starts_at)}{sl.location ? ` · ${sl.location}` : ''} · {sl.spaces} space{sl.spaces === 1 ? '' : 's'}</span>
                 </span>
                 <Button size="sm" loading={book.isPending && book.variables === sl.session_id} onClick={() => book.mutate(sl.session_id)}>Book</Button>
               </li>

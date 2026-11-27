@@ -29,7 +29,7 @@ function Result({ r }: { r: C.CopyResult }) {
       {r.not_fitted.length > 0 && (
         <div className="border-l-2 border-caution py-1 pl-3">
           <p className="font-semibold"><span className="text-caution">No room</span> for {r.not_fitted.length}:</p>
-          <ul className="mt-1 list-disc pl-5 text-[13.5px] text-ink-2">
+          <ul className="mt-1 list-disc pl-5 text-[0.8438rem] text-ink-2">
             {r.not_fitted.map((n, i) => <li key={i}>{n.student} — {n.class}</li>)}
           </ul>
         </div>
@@ -65,10 +65,10 @@ export function TermRollover({ fromTerm, classes, onClose }: { fromTerm: C.TermR
           </Field>
           <label className="flex items-start gap-2.5 text-sm">
             <input type="checkbox" className="mt-0.5 size-5 shrink-0 accent-[var(--color-accent)]" checked={reenrol} onChange={e => setReenrol(e.target.checked)} />
-            <span className="font-semibold">Carry the students over too<span className="block text-[13px] font-normal text-ink-3">Longest-standing first, never beyond a class’s places. Anyone who does not fit is listed.</span></span>
+            <span className="font-semibold">Carry the students over too<span className="block text-[0.8125rem] font-normal text-ink-3">Longest-standing first, never beyond a class’s places. Anyone who does not fit is listed.</span></span>
           </label>
           <fieldset>
-            <legend className="w-full border-b-2 border-ink pb-1.5 text-[14px] font-semibold">Classes <span className="font-normal text-ink-3">{picked.size} of {classes.length} chosen</span></legend>
+            <legend className="w-full border-b-2 border-ink pb-1.5 text-[0.875rem] font-semibold">Classes <span className="font-normal text-ink-3">{picked.size} of {classes.length} chosen</span></legend>
             <ul className="max-h-60 divide-y divide-line overflow-y-auto">
               {classes.map(c => (
                 <li key={c.id}>
@@ -76,7 +76,7 @@ export function TermRollover({ fromTerm, classes, onClose }: { fromTerm: C.TermR
                     <input type="checkbox" className="size-5 shrink-0 accent-[var(--color-accent)]" checked={picked.has(c.id)}
                       onChange={e => setPicked(p => { const n = new Set(p); e.target.checked ? n.add(c.id) : n.delete(c.id); return n; })} />
                     <span className="min-w-0 flex-1 truncate">{c.name}</span>
-                    <span className="tnum text-[13px] text-ink-3">{c.enrolled} students</span>
+                    <span className="tnum text-[0.8125rem] text-ink-3">{c.enrolled} students</span>
                   </label>
                 </li>
               ))}
@@ -95,7 +95,7 @@ export function DuplicateClass({ c, onClose }: { c: C.ClassRow; onClose: () => v
   const [result, setResult] = React.useState<C.CopyResult | null>(null);
   const copy = useCopy(setResult);
   if (result) return <RecordSheet title="Duplicated" onClose={onClose} onSave={onClose} saveLabel="Done">
-    <Result r={result} /><p className="text-[13px] text-ink-2">Edit the copy to change its day, time or name.</p></RecordSheet>;
+    <Result r={result} /><p className="text-[0.8125rem] text-ink-2">Edit the copy to change its day, time or name.</p></RecordSheet>;
   return (
     <RecordSheet title="Duplicate class" subtitle={c.name} onClose={onClose} saving={copy.isPending} error={copy.error}
       saveLabel="Duplicate" onSave={() => copy.mutate({ ids: [c.id], term: to, reenrol: false })}>

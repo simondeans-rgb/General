@@ -36,7 +36,7 @@ export function DatabaseGate({ children }: { children: React.ReactNode }) {
       <div className="mx-auto max-w-lg p-6">
         <SwayvoLogo className="mb-6 h-7" />
         <ErrorState error={error} onRetry={() => location.reload()} />
-        <p className="mt-4 text-[14px] text-ink-2">
+        <p className="mt-4 text-[0.875rem] text-ink-2">
           Swayvo runs Postgres inside your browser for this demo. If it cannot start,
           it is usually private browsing or a browser that blocks storage.
         </p>
@@ -52,9 +52,9 @@ export function DatabaseGate({ children }: { children: React.ReactNode }) {
           <SwayvoLogo className="h-8" />
           <div className="mt-8" role="status" aria-live="polite">
             <Beats value={step * 2} max={8} size="lg" label={`Step ${step} of 4`} className="on-count" />
-            <p className="mt-3 text-[15px] font-semibold text-ink">{COPY[phase]}…</p>
+            <p className="mt-3 text-[0.9375rem] font-semibold text-ink">{COPY[phase]}…</p>
           </div>
-          <p className="mt-2 text-[13px] text-ink-3">
+          <p className="mt-2 text-[0.8125rem] text-ink-3">
             Setting up a real Postgres database in your browser. Only the first load is slow.
           </p>
         </div>

@@ -42,16 +42,16 @@ export function CostumeSection({ eventId, routines }: { eventId: string; routine
         const sized = it.lines.filter(l => l.size).length;
         return (
           <details key={id} className="border-b border-line">
-            <summary className="flex min-h-[44px] cursor-pointer items-center gap-2 py-2 text-[14px]">
+            <summary className="flex min-h-[44px] cursor-pointer items-center gap-2 py-2 text-[0.875rem]">
               <span className="min-w-0 flex-1"><b className="font-semibold">{it.name}</b>{it.routine ? <span className="text-ink-3"> · {it.routine}</span> : ''}</span>
-              <span className={cn('text-[13px] tnum', sized < it.lines.length ? 'font-semibold text-caution' : 'text-ink-3')}>{sized} of {it.lines.length} sizes</span>
+              <span className={cn('text-[0.8125rem] tnum', sized < it.lines.length ? 'font-semibold text-caution' : 'text-ink-3')}>{sized} of {it.lines.length} sizes</span>
             </summary>
-            <ul className="divide-y divide-line border-t border-line pb-2 pl-3 text-[13.5px]">
+            <ul className="divide-y divide-line border-t border-line pb-2 pl-3 text-[0.8438rem]">
               {it.lines.map(l => (
                 <li key={l.student_id} className="flex items-center gap-2 py-1.5">
                   <span className="min-w-0 flex-1 truncate">{l.dancer}</span>
                   <span className={cn('w-20 shrink-0', !l.size && 'text-ink-3')}>{l.size ?? 'No size'}</span>
-                  <Select aria-label={`${it.name} for ${l.dancer}`} className="h-8 w-32 text-[12.5px]" value={l.status}
+                  <Select aria-label={`${it.name} for ${l.dancer}`} className="h-8 w-32 text-[0.7812rem]" value={l.status}
                     onChange={e => write.mutate({ sql: E.SET_COSTUME_STATUS, params: [id, l.student_id, e.target.value] })}>
                     {COSTUME_STATUS.map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </Select>
@@ -61,7 +61,7 @@ export function CostumeSection({ eventId, routines }: { eventId: string; routine
           </details>
         );
       })}
-      <p className="mt-2 text-[13px] text-ink-3">Families give sizes from their app. Status here is for the office.</p>
+      <p className="mt-2 text-[0.8125rem] text-ink-3">Families give sizes from their app. Status here is for the office.</p>
       <div className="mt-3 grid grid-cols-2 gap-2">
         <Input aria-label="Costume item" placeholder="Item, e.g. Red waistcoat" value={f.name} onChange={e => setF({ ...f, name: e.target.value })} />
         <Select aria-label="For routine" value={f.routine} onChange={e => setF({ ...f, routine: e.target.value })}>
@@ -102,28 +102,28 @@ function RehearsalRegister({ rehearsal, onClose }: { rehearsal: E.Rehearsal; onC
         className="flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-[var(--radius-xl)] border border-line bg-surface shadow-lg sm:rounded-[var(--radius-xl)]">
         <div className="flex items-start gap-3 border-b border-line px-5 pb-3 pt-4">
           <div className="min-w-0 flex-1">
-            <h2 id="rr-t" className="font-display text-[20px] leading-tight">{rehearsal.title}</h2>
-            <p className="mt-1 text-[13.5px] text-ink-3">{dateLong(rehearsal.starts_at)}, {time(rehearsal.starts_at)} · <span className="tnum">{marked} of {rows.data?.length ?? 0}</span> marked</p>
+            <h2 id="rr-t" className="font-display text-[1.25rem] leading-tight">{rehearsal.title}</h2>
+            <p className="mt-1 text-[0.8438rem] text-ink-3">{dateLong(rehearsal.starts_at)}, {time(rehearsal.starts_at)} · <span className="tnum">{marked} of {rows.data?.length ?? 0}</span> marked</p>
           </div>
           <Button size="sm" variant="ghost" onClick={onClose} aria-label="Close" className="-mr-2 -mt-1"><X className="size-4" aria-hidden /></Button>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-2 pb-safe">
           {write.error != null && <ErrorState error={write.error} />}
           {rows.error && <ErrorState error={rows.error} />}
-          {rows.data?.length === 0 && <p className="py-4 text-[14px] text-ink-2">No confirmed dancers yet.</p>}
+          {rows.data?.length === 0 && <p className="py-4 text-[0.875rem] text-ink-2">No confirmed dancers yet.</p>}
           <ul className="divide-y divide-line">
             {rows.data?.map(r => (
               <li key={r.student_id} className="flex items-center gap-3 py-2.5">
                 <span className="min-w-0 flex-1">
                   <span className="block font-semibold">{r.first_name} {r.last_name}</span>
-                  {r.has_medical && <span className={cn('block text-[12.5px] font-semibold', r.requires_alert ? 'text-critical' : 'text-caution')}>
+                  {r.has_medical && <span className={cn('block text-[0.7812rem] font-semibold', r.requires_alert ? 'text-critical' : 'text-caution')}>
                     <HeartPulse className="mr-1 inline size-3.5 align-[-2px]" aria-hidden />{r.requires_alert ? 'Medical alert' : 'Medical information'}</span>}
-                  {r.routines && <span className="block truncate text-[12.5px] text-ink-3">{r.routines}</span>}
+                  {r.routines && <span className="block truncate text-[0.7812rem] text-ink-3">{r.routines}</span>}
                 </span>
                 <div role="group" aria-label={`Mark ${r.first_name}`} className="flex gap-1">
                   {MARKS.map(([k, v]) => (
                     <button key={k} aria-pressed={r.status === k} onClick={() => write.mutate({ sql: E.MARK_REHEARSAL, params: [rehearsal.id, r.student_id, k] })}
-                      className={cn('h-11 min-w-[3.25rem] rounded-[var(--radius-md)] border px-2.5 text-[13px] font-semibold', r.status === k
+                      className={cn('h-11 min-w-[3.25rem] rounded-[var(--radius-md)] border px-2.5 text-[0.8125rem] font-semibold', r.status === k
                         ? k === 'absent' ? 'border-critical bg-critical text-surface' : k === 'late' ? 'border-caution bg-caution text-surface' : 'border-positive bg-positive text-surface'
                         : 'border-line-strong text-ink-2 hover:border-ink-3')}>{v}</button>
                   ))}
@@ -166,11 +166,11 @@ export function TicketSection({ eventId }: { eventId: string }) {
   return (
     <DetailSection title="Tickets">
       {write.error != null && <ErrorState error={write.error} />}
-      <ul className="divide-y divide-line text-[14px]">
+      <ul className="divide-y divide-line text-[0.875rem]">
         {rows.data?.map(t => (
           <li key={t.id} className="flex min-h-[40px] items-center gap-2 py-1.5">
             <span className="min-w-0 flex-1"><span className="font-semibold">{t.name}</span> <span className="text-ink-3 tnum">{money(t.price_minor)}</span></span>
-            <span className="tnum text-[13px] text-ink-2">{t.sold} sold{t.left != null ? ` · ${t.left} left` : ''}</span>
+            <span className="tnum text-[0.8125rem] text-ink-2">{t.sold} sold{t.left != null ? ` · ${t.left} left` : ''}</span>
           </li>
         ))}
       </ul>
@@ -183,7 +183,7 @@ export function TicketSection({ eventId }: { eventId: string }) {
         onClick={() => { write.mutate({ sql: E.ADD_TICKET_TYPE, params: [eventId, f.name, Math.round(Number(f.price) * 100), f.cap ? Number(f.cap) : null, Number(f.max) || 6] }); setF({ name: 'Child', price: '', cap: '', max: '6' }); }}>
         Add ticket type
       </Button>
-      <p className="mt-2 text-[13px] text-ink-3">Families book from their Events page; tickets go on their account until card payment is switched on.</p>
+      <p className="mt-2 text-[0.8125rem] text-ink-3">Families book from their Events page; tickets go on their account until card payment is switched on.</p>
     </DetailSection>
   );
 }
@@ -199,11 +199,11 @@ export function BuyTickets({ eventId }: { eventId: string }) {
   return (
     <div className="space-y-2 border-t border-line pt-3">
       <p className="font-semibold">Tickets for family and friends</p>
-      {have.length > 0 && <p className="text-[14px]"><span className="font-semibold text-positive">Booked:</span> {have.map(t => `${t.quantity} × ${t.name}`).join(', ')}.</p>}
+      {have.length > 0 && <p className="text-[0.875rem]"><span className="font-semibold text-positive">Booked:</span> {have.map(t => `${t.quantity} × ${t.name}`).join(', ')}.</p>}
       {rows.data.map(t => (
-        <div key={t.id} className="flex items-center gap-2 text-[14.5px]">
+        <div key={t.id} className="flex items-center gap-2 text-[0.9062rem]">
           <span className="min-w-0 flex-1">{t.name} <span className="tnum font-semibold">{money(t.price_minor)}</span>
-            {t.left != null && t.left < 20 ? <span className="block text-[13px] font-semibold text-caution">{t.left === 0 ? 'Sold out' : `${t.left} left`}</span> : null}</span>
+            {t.left != null && t.left < 20 ? <span className="block text-[0.8125rem] font-semibold text-caution">{t.left === 0 ? 'Sold out' : `${t.left} left`}</span> : null}</span>
           <Input aria-label={`How many ${t.name} tickets`} type="number" min={1} max={t.per_family_max} className="h-10 w-16"
             value={n[t.id] ?? 1} onChange={e => setN({ ...n, [t.id]: Number(e.target.value) })} />
           <Button size="sm" disabled={t.left === 0} loading={write.isPending}
@@ -211,7 +211,7 @@ export function BuyTickets({ eventId }: { eventId: string }) {
         </div>
       ))}
       {write.error != null && <ErrorState error={write.error} />}
-      <p className="text-[13px] text-ink-3">Added to your account, to pay with your next invoice.</p>
+      <p className="text-[0.8125rem] text-ink-3">Added to your account, to pay with your next invoice.</p>
     </div>
   );
 }
@@ -222,7 +222,7 @@ export function MyCostumes({ eventId }: { eventId: string }) {
   const write = useWrite();
   if (!rows.data?.length) return null;
   return (
-    <div className="space-y-2 border-t border-line pt-3 text-[14.5px]">
+    <div className="space-y-2 border-t border-line pt-3 text-[0.9062rem]">
       <p className="font-semibold">Costume sizes</p>
       {rows.data.map(c => (
         <div key={c.id + c.student_id} className="flex items-center gap-2">

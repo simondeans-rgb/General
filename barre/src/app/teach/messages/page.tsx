@@ -56,18 +56,18 @@ function Thread({ msgs }: { msgs: I.ThreadMsg[] }) {
       <div className="flex flex-wrap items-baseline gap-x-3 border-b-2 border-ink pb-2">
         <h2 id={`th-${last.id}`} className="section-title min-w-0 flex-1 truncate">{msgs[0]!.family_name}</h2>
         {waiting
-          ? <span className="text-[13px] font-semibold text-caution">Waiting for your reply</span>
-          : <span className="text-[13px] text-ink-3">Waiting for the family</span>}
+          ? <span className="text-[0.8125rem] font-semibold text-caution">Waiting for your reply</span>
+          : <span className="text-[0.8125rem] text-ink-3">Waiting for the family</span>}
       </div>
-      {msgs[0]!.subject && <p className="pt-2 text-[13.5px] text-ink-3">{msgs[0]!.subject}</p>}
+      {msgs[0]!.subject && <p className="pt-2 text-[0.8438rem] text-ink-3">{msgs[0]!.subject}</p>}
       <ul className="divide-y divide-line">
         {msgs.map(m => (
           <li key={m.id} className={cn('py-3', m.mine && 'pl-6 sm:pl-12')}>
-            <p className="text-[13px] text-ink-3">
+            <p className="text-[0.8125rem] text-ink-3">
               <span className={cn('font-semibold', m.mine ? 'text-ink-2' : 'text-ink')}>{m.mine ? 'You' : m.sender ?? 'Family'}</span>
               {' · '}{relativeDay(m.sent_at)} {time(m.sent_at)}
             </p>
-            <p className="mt-0.5 whitespace-pre-wrap break-words text-[15px] text-ink">{m.body}</p>
+            <p className="mt-0.5 whitespace-pre-wrap break-words text-[0.9375rem] text-ink">{m.body}</p>
           </li>
         ))}
       </ul>
@@ -75,7 +75,7 @@ function Thread({ msgs }: { msgs: I.ThreadMsg[] }) {
         <form className="flex items-end gap-2 border-t border-line pt-3" onSubmit={e => { e.preventDefault(); if (draft.trim()) send.mutate(); }}>
           <label htmlFor={`tr-${last.id}`} className="sr-only">Reply to the {msgs[0]!.family_name}</label>
           <textarea id={`tr-${last.id}`} rows={1} value={draft} onChange={e => setDraft(e.target.value)} placeholder="Reply…"
-            className="min-h-[44px] flex-1 resize-none rounded-[var(--radius-md)] border border-line-strong bg-surface px-3 py-2.5 text-[15px]
+            className="min-h-[44px] flex-1 resize-none rounded-[var(--radius-md)] border border-line-strong bg-surface px-3 py-2.5 text-[0.9375rem]
                        focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12"
             style={{ fieldSizing: 'content' } as React.CSSProperties} />
           <Button type="submit" className="h-11 shrink-0" loading={send.isPending} disabled={!draft.trim()}>Send reply</Button>

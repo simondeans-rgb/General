@@ -42,7 +42,7 @@ export function FamilyAccount({ familyId }: { familyId: string }) {
             {bal === 0 && 'Nothing owed.'}
             {bal < 0 && <>In credit by <span className="tnum font-medium">{money(-bal)}</span>. It comes off their next invoice.</>}
           </p>
-          <p className="mt-0.5 text-[13px] text-ink-3">
+          <p className="mt-0.5 text-[0.8125rem] text-ink-3">
             Payment reference <span className="tnum font-medium text-ink-2">{a.reference}</span>
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -66,10 +66,10 @@ export function Statement({ familyId }: { familyId: string }) {
   const rows = useRows<B.StatementLine>(['family-statement', familyId], B.FAMILY_STATEMENT, [familyId]);
   if (rows.isLoading) return <Skeleton className="mt-3 h-24" />;
   if (rows.error) return <div className="mt-3"><ErrorState error={rows.error} /></div>;
-  if (!rows.data?.length) return <p className="mt-3 text-[13.5px] text-ink-3">Nothing on this account yet.</p>;
+  if (!rows.data?.length) return <p className="mt-3 text-[0.8438rem] text-ink-3">Nothing on this account yet.</p>;
   return (
     <div className="mt-3 overflow-x-auto">
-      <table className="w-full text-[13.5px]">
+      <table className="w-full text-[0.8438rem]">
         <caption className="sr-only">Statement</caption>
         <thead className="border-b border-line text-left">
           <tr>
@@ -89,7 +89,7 @@ export function Statement({ familyId }: { familyId: string }) {
                 <td className="min-w-0 px-2 py-1.5">
                   <span className="font-medium">{KIND_WORD[l.kind]}</span>
                   {l.ref && <span className="tnum text-ink-2"> {l.ref}</span>}
-                  {detail && <span className="block text-[12.5px] text-ink-3">{detail}</span>}
+                  {detail && <span className="block text-[0.7812rem] text-ink-3">{detail}</span>}
                 </td>
                 <td className={cn('tnum whitespace-nowrap px-2 py-1.5 text-right', amt < 0 && 'text-positive')}>
                   {amt < 0 ? `−${money(-amt)}` : money(amt)}

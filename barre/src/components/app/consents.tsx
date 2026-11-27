@@ -31,9 +31,9 @@ function useSetConsent(studentId: string, onDone?: () => void) {
 function History({ studentId }: { studentId: string }) {
   const rows = useRows<C.ConsentChange>(['consent-history', studentId], C.CONSENT_HISTORY, [studentId]);
   if (rows.isLoading) return <Skeleton className="h-10" />;
-  if (!rows.data?.length) return <p className="text-[13px] text-ink-3">No changes recorded yet.</p>;
+  if (!rows.data?.length) return <p className="text-[0.8125rem] text-ink-3">No changes recorded yet.</p>;
   return (
-    <ol className="divide-y divide-line text-[13.5px]">
+    <ol className="divide-y divide-line text-[0.8438rem]">
       {rows.data.map((h, i) => (
         <li key={i} className="py-1.5">
           <span className="font-medium">{C.CONSENT_LABEL[h.kind] ?? h.kind}: {h.granted ? 'given' : 'not given'}</span>
@@ -61,13 +61,13 @@ export function FamilyConsents({ studentId, name }: { studentId: string; name: s
             <li key={c.kind}>
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                 <span className="font-medium">{C.CONSENT_LABEL[c.kind]}</span>
-                <span className={cn('text-[13.5px]', c.granted === false ? 'font-semibold' : c.granted ? '' : 'text-ink-3')}>
+                <span className={cn('text-[0.8438rem]', c.granted === false ? 'font-semibold' : c.granted ? '' : 'text-ink-3')}>
                   {c.granted === true ? 'Allowed' : c.granted === false ? 'Not allowed' : 'Not recorded'}
                 </span>
               </div>
-              <p className="text-[13px] text-ink-3">{C.CONSENT_EXPLAIN[c.kind]}</p>
+              <p className="text-[0.8125rem] text-ink-3">{C.CONSENT_EXPLAIN[c.kind]}</p>
               {c.disputed && (
-                <p className="mt-1 text-[13px] font-semibold text-caution">
+                <p className="mt-1 text-[0.8125rem] font-semibold text-caution">
                   Another parent or carer has said no, so the school treats this as not allowed until you agree.
                 </p>
               )}
@@ -86,9 +86,9 @@ export function FamilyConsents({ studentId, name }: { studentId: string; name: s
             </li>
           ))}
         </ul>
-        {saved && <p role="status" className="mt-2 text-[13px] text-positive">{saved} Teachers see the change next time they open {name}’s details.</p>}
+        {saved && <p role="status" className="mt-2 text-[0.8125rem] text-positive">{saved} Teachers see the change next time they open {name}’s details.</p>}
         {set.error != null && <ErrorState error={set.error} />}
-        <button className="mt-2 text-[13px] font-semibold text-accent-text underline" aria-expanded={history} onClick={() => setHistory(h => !h)}>
+        <button className="mt-2 text-[0.8125rem] font-semibold text-accent-text underline" aria-expanded={history} onClick={() => setHistory(h => !h)}>
           {history ? 'Hide changes' : 'See changes'}
         </button>
         {history && <div className="mt-1"><History studentId={studentId} /></div>}
@@ -105,13 +105,13 @@ export function OfficeConsents({ studentId, name }: { studentId: string; name: s
   return (
     <div className="space-y-2">
       {rows.isLoading && <Skeleton className="h-12" />}
-      <dl className="divide-y divide-line text-[14px]">
+      <dl className="divide-y divide-line text-[0.875rem]">
         {rows.data?.map(c => (
           <div key={c.kind} className="flex items-baseline justify-between gap-3 py-1.5">
             <dt className="text-ink-2">{C.CONSENT_LABEL[c.kind]}</dt>
             <dd className={cn('text-right', c.granted === false && 'font-medium text-critical', c.granted == null && 'text-ink-3')}>
               {c.granted === false ? 'Not given' : C.consentWord(c.granted)}
-              {c.disputed && <span className="block text-[12.5px] font-semibold text-caution">Guardians disagree — treated as not given</span>}
+              {c.disputed && <span className="block text-[0.7812rem] font-semibold text-caution">Guardians disagree — treated as not given</span>}
             </dd>
           </div>
         ))}
@@ -136,7 +136,7 @@ function RecordConsentSheet({ studentId, name, onClose }: { studentId: string; n
     <RecordSheet title="Record consent" subtitle={`For ${name}`} onClose={onClose} saving={set.isPending} error={set.error}
       canSave={granted !== ''} saveLabel="Record"
       onSave={() => set.mutate({ kind, granted: granted === 'yes', note, paper })}>
-      <p className="text-[13.5px] text-ink-2">Recorded by the office, this becomes the family’s settled choice and replaces earlier ones. It is kept in the history with your name.</p>
+      <p className="text-[0.8438rem] text-ink-2">Recorded by the office, this becomes the family’s settled choice and replaces earlier ones. It is kept in the history with your name.</p>
       <Field label="Consent for" htmlFor="rc-kind">
         <Select id="rc-kind" value={kind} onChange={e => setKind(e.target.value as C.ConsentKind)}>
           {C.CONSENT_KINDS.map(k => <option key={k} value={k}>{C.CONSENT_LABEL[k]}</option>)}
@@ -166,7 +166,7 @@ export function InitialConsents({ value, onChange }: {
 }) {
   return (
     <fieldset className="space-y-2">
-      <legend className="text-[14px] font-semibold">Consent</legend>
+      <legend className="text-[0.875rem] font-semibold">Consent</legend>
       <div className="grid gap-3 sm:grid-cols-3">
         {C.CONSENT_KINDS.map(k => (
           <Field key={k} label={C.CONSENT_LABEL[k]} htmlFor={`ic-${k}`}>
@@ -179,7 +179,7 @@ export function InitialConsents({ value, onChange }: {
           </Field>
         ))}
       </div>
-      <p className="text-[12.5px] text-ink-3">Not recorded is treated as no consent. Families can change these in their app.</p>
+      <p className="text-[0.7812rem] text-ink-3">Not recorded is treated as no consent. Families can change these in their app.</p>
     </fieldset>
   );
 }
@@ -194,7 +194,7 @@ export function BriefConsentLines({ studentId, photo }: { studentId?: string; ph
     </li>
   );
   return (
-    <ul aria-label="Consent" className="mt-2 space-y-0.5 text-[13.5px]">
+    <ul aria-label="Consent" className="mt-2 space-y-0.5 text-[0.8438rem]">
       {line('Photos', photo, 'No photos')}
       {studentId && extra && line('Video', extra.video_consent, 'No video')}
       {studentId && extra && line('Social media', extra.social_consent, 'Not on social media')}

@@ -173,7 +173,7 @@ export function Shell({
             <div className="flex items-center gap-2.5">
               <SchoolMark name={studio!.name} logo={logoFor(studio!)} className="size-9" />
               <span className="min-w-0 flex-1">
-                <span className="line-clamp-2 text-[14px] font-semibold leading-tight tracking-tight">{studio!.name}</span>
+                <span className="line-clamp-2 text-[0.875rem] font-semibold leading-tight tracking-tight">{studio!.name}</span>
                 <PoweredBy />
               </span>
             </div>
@@ -182,7 +182,7 @@ export function Shell({
               <SwayvoLogo className="h-6" />
               <span className="min-w-0">
                 <span className="sr-only">Swayvo</span>
-                {session.platform && !session.support && <span className="block text-[11.5px] text-ink-3">Platform</span>}
+                {session.platform && !session.support && <span className="block text-[0.7188rem] text-ink-3">Platform</span>}
               </span>
             </div>
           )}
@@ -195,7 +195,7 @@ export function Shell({
           <PersonSwitcher />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">{session.name}</p>
-            <p className="text-[12.5px] capitalize text-ink-3">{session.support ? "Swayvo support" : session.platform ? "Swayvo platform" : session.role}</p>
+            <p className="text-[0.7812rem] capitalize text-ink-3">{session.support ? "Swayvo support" : session.platform ? "Swayvo platform" : session.role}</p>
             <PersonSwitcher label="Switch person" />
           </div>
         </div>
@@ -209,7 +209,7 @@ export function Shell({
               : <SwayvoIcon className="size-8 lg:hidden" />}
             <div className="min-w-0 flex-1">
               <h1 className="page-title truncate tracking-tight">{title}</h1>
-              {subtitle && <div className="mt-0.5 truncate text-[13px] text-ink-3">{subtitle}</div>}
+              {subtitle && <div className="mt-0.5 truncate text-[0.8125rem] text-ink-3">{subtitle}</div>}
             </div>
             {help && (
               <button onClick={() => setHelpOpen(o => !o)} aria-expanded={helpOpen} aria-controls="page-help"
@@ -229,15 +229,15 @@ export function Shell({
         </header>
 
         {help && helpOpen && (
-          <div id="page-help" role="note" className="border-b border-line bg-info-soft px-4 py-3 text-[13.5px] leading-relaxed text-ink-2 lg:px-6">
+          <div id="page-help" role="note" className="border-b border-line bg-info-soft px-4 py-3 text-[0.8438rem] leading-relaxed text-ink-2 lg:px-6">
             <div className="mx-auto flex max-w-3xl gap-2"><CircleHelp className="mt-0.5 size-4 shrink-0 text-info" aria-hidden />
               <div className="min-w-0 flex-1">{help}</div>
-              <button onClick={() => setHelpOpen(false)} className="text-[12.5px] font-medium text-ink-2 underline">Close</button></div>
+              <button onClick={() => setHelpOpen(false)} className="text-[0.7812rem] font-medium text-ink-2 underline">Close</button></div>
           </div>
         )}
         {session.support && <SupportBanner view={session.support} />}
         {!session.platform && studio && (studio.status === 'suspended' || studio.status === 'cancelled') && (
-          <div role="status" className="border-b border-caution/30 bg-caution-soft px-4 py-2.5 text-[13px] lg:px-6">
+          <div role="status" className="border-b border-caution/30 bg-caution-soft px-4 py-2.5 text-[0.8125rem] lg:px-6">
             <strong className="font-semibold">
               {studio.status === 'suspended' ? 'This account is paused and read-only.' : 'This account has been closed and is read-only.'}
             </strong>{' '}
@@ -252,7 +252,7 @@ export function Shell({
           {/* On a phone the sidebar's name and credit are not visible. */}
           {branded && (
             <p className="mt-8 flex flex-col items-center gap-0.5 text-center lg:hidden">
-              <span className="text-[12.5px] font-medium text-ink-2">{studio!.name}</span>
+              <span className="text-[0.7812rem] font-medium text-ink-2">{studio!.name}</span>
               <PoweredBy className="mt-0" />
             </p>
           )}
@@ -281,7 +281,7 @@ function SubTabs({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
         const active = isActive(pathname, x.href);
         return (
           <Link key={x.href} href={x.href} aria-current={active ? 'page' : undefined}
-            className={cn('shrink-0 border-b-2 py-2.5 text-[13.5px]',
+            className={cn('shrink-0 border-b-2 py-2.5 text-[0.8438rem]',
               active ? 'border-accent-line font-semibold text-ink' : 'border-transparent font-medium text-ink-3 hover:text-ink')}>
             {x.label}
           </Link>
@@ -296,7 +296,7 @@ function RailLink({ item, pathname }: { item: NavItem; pathname: string }) {
   const Icon = item.icon;
   return (
     <Link href={item.href} aria-current={active ? 'page' : undefined}
-      className={cn('relative flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2 text-[14px]',
+      className={cn('relative flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2 text-[0.875rem]',
         active ? 'font-semibold text-ink' : 'text-ink-2 hover:bg-surface-2 hover:text-ink')}>
       {/* The active area is marked by one beat, in the school's colour. */}
       {active && <span aria-hidden className="absolute -left-3 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-[2px] bg-accent" />}
@@ -327,7 +327,7 @@ function MobileTabs({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
         {shown.map(item => <TabLink key={item.href} item={item} pathname={pathname} />)}
         {rest.length > 0 && (
           <button onClick={() => setOpen(true)} aria-haspopup="dialog" aria-label="More sections"
-            className={cn('relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 pt-2 text-[11px] font-medium',
+            className={cn('relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 pt-2 text-[0.6875rem] font-medium',
               rest.some(i => groupActive(pathname, i)) ? 'text-ink' : 'text-ink-3')}>
             {rest.some(i => groupActive(pathname, i)) && <span aria-hidden className="absolute left-1/2 top-0 h-[3px] w-6 -translate-x-1/2 rounded-b-[2px] bg-accent" />}
             <MoreHorizontal className="size-[20px]" aria-hidden />
@@ -349,7 +349,7 @@ function MobileTabs({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
                 const links = item.sub ?? [{ href: item.href, label: item.label }];
                 return (
                   <li key={item.href}>
-                    {item.sub && <p className="flex items-center gap-2 px-3 pb-1 pt-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-3">
+                    {item.sub && <p className="flex items-center gap-2 px-3 pb-1 pt-2 text-[0.75rem] font-semibold uppercase tracking-[0.06em] text-ink-3">
                       <Icon className="size-3.5" aria-hidden /> {item.label}</p>}
                     <ul>
                       {links.map(x => {
@@ -382,7 +382,7 @@ function TabLink({ item, pathname }: { item: NavItem; pathname: string }) {
   const Icon = item.icon;
   return (
     <Link href={item.href} aria-current={active ? 'page' : undefined}
-      className={cn('relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 pt-2 text-[11px]',
+      className={cn('relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 pt-2 text-[0.6875rem]',
         active ? 'text-ink' : 'text-ink-3')}>
       {active && <span aria-hidden className="absolute left-1/2 top-0 h-[3px] w-6 -translate-x-1/2 rounded-b-[2px] bg-accent" />}
       <Icon className="size-[20px]" aria-hidden strokeWidth={active ? 2.3 : 1.8} />
@@ -405,7 +405,7 @@ function SupportBanner({ view }: { view: { studioId: string; studioName: string;
     router.push('/platform');
   };
   return (
-    <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-ink/10 bg-ink px-4 py-2 text-[13px] text-surface lg:px-6">
+    <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-ink/10 bg-ink px-4 py-2 text-[0.8125rem] text-surface lg:px-6">
       <ShieldCheck className="size-4 shrink-0" aria-hidden />
       <span className="min-w-0 flex-1">
         <strong className="font-semibold">Viewing {view.studioName} as Swayvo support.</strong>{' '}

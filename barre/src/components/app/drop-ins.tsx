@@ -36,10 +36,10 @@ export function DropIns({ children }: { children: { id: string; first_name: stri
     <section aria-labelledby="dropins-h">
       <div className="mb-1 flex items-baseline gap-3 border-b-2 border-ink pb-2">
         <h2 id="dropins-h" className="section-title min-w-0 flex-1">Drop-in classes</h2>
-        <span className="text-[13px] text-ink-3">Pay as you go, or buy a pack</span>
+        <span className="text-[0.8125rem] text-ink-3">Pay as you go, or buy a pack</span>
       </div>
       <div className="space-y-4 pt-3">
-        {done && <p role="status" className="text-[14px]"><span className="font-semibold text-positive">Done.</span> {done}</p>}
+        {done && <p role="status" className="text-[0.875rem]"><span className="font-semibold text-positive">Done.</span> {done}</p>}
         {act.error != null && <ErrorState error={act.error} />}
         {children.length > 1 && (
           <Select aria-label="Who is dancing" className="h-11 sm:max-w-xs" value={kid} onChange={e => setWho(e.target.value)}>
@@ -47,16 +47,16 @@ export function DropIns({ children }: { children: { id: string; first_name: stri
           </Select>
         )}
         {!!myPacks.data?.length && (
-          <ul className="space-y-1 text-[14.5px]">{myPacks.data.map(p => (
+          <ul className="space-y-1 text-[0.9062rem]">{myPacks.data.map(p => (
             <li key={p.id}><span className="font-semibold">{p.first_name}: {p.remaining} class{p.remaining === 1 ? '' : 'es'} left</span>
               <span className="text-ink-3"> on {p.name} · until {dateShort(p.expires_on)}</span></li>))}</ul>
         )}
         {!!mine.data?.length && (
-          <ul className="divide-y divide-line border-y border-line text-[14.5px]">
+          <ul className="divide-y divide-line border-y border-line text-[0.9062rem]">
             {mine.data.map(b => (
               <li key={b.id} className="flex items-center gap-2 py-2.5">
                 <span className="min-w-0 flex-1"><span className="font-semibold">{b.first_name} · {b.class_name}</span>
-                  <span className="block text-[13px] text-ink-3">{dateLong(b.starts_at)} {time(b.starts_at)} · {b.paid_with === 'pack' ? 'from pack' : 'on account'}</span></span>
+                  <span className="block text-[0.8125rem] text-ink-3">{dateLong(b.starts_at)} {time(b.starts_at)} · {b.paid_with === 'pack' ? 'from pack' : 'on account'}</span></span>
                 <Button size="sm" variant="ghost" onClick={() => act.mutate({ sql: F.CANCEL_DROP_IN, params: [b.id],
                   ok: r => r.r === 'refunded' ? 'Cancelled, and you have not been charged.' : 'Cancelled. It was less than 24 hours away, so it is still charged.' })}>Cancel</Button>
               </li>
@@ -66,9 +66,9 @@ export function DropIns({ children }: { children: { id: string; first_name: stri
         <ul className="divide-y divide-line text-sm">
           {sessions.data?.slice(0, 8).map(s => (
             <li key={s.session_id} className="flex items-center gap-3 py-2.5">
-              <span className="min-w-0 flex-1"><span className="font-semibold">{s.class_name}</span><span className="block text-[13px] text-ink-3">{dateLong(s.starts_at)} · {time(s.starts_at)} · {s.places_left} place{s.places_left === 1 ? '' : 's'} left</span></span>
-              <span className="tnum text-[14px] font-semibold">{money(s.price_minor)}</span>
-              {!fits(dob, s) ? <span className="max-w-[9rem] text-right text-[12.5px] font-semibold text-ink-2">Not for {name}’s age</span> :
+              <span className="min-w-0 flex-1"><span className="font-semibold">{s.class_name}</span><span className="block text-[0.8125rem] text-ink-3">{dateLong(s.starts_at)} · {time(s.starts_at)} · {s.places_left} place{s.places_left === 1 ? '' : 's'} left</span></span>
+              <span className="tnum text-[0.875rem] font-semibold">{money(s.price_minor)}</span>
+              {!fits(dob, s) ? <span className="max-w-[9rem] text-right text-[0.7812rem] font-semibold text-ink-2">Not for {name}’s age</span> :
               <Button size="sm" disabled={!kid} loading={act.isPending && act.variables?.params[0] === s.session_id}
                 onClick={() => act.mutate({ sql: F.BOOK_DROP_IN, params: [s.session_id, kid],
                   ok: r => `${name} is booked in. ${r.r.paid_with === 'pack' ? `${r.r.pack_left} left on the pack.` : 'Added to your account.'}` })}>Book</Button>}
@@ -85,7 +85,7 @@ export function DropIns({ children }: { children: { id: string; first_name: stri
             ))}
           </div>
         )}
-        <p className="text-[13px] text-ink-3">Cancel more than 24 hours ahead and you are not charged.</p>
+        <p className="text-[0.8125rem] text-ink-3">Cancel more than 24 hours ahead and you are not charged.</p>
       </div>
     </section>
   );

@@ -38,9 +38,9 @@ function MyExams() {
           <li key={e.id} className="flex flex-wrap items-baseline gap-x-3 py-3">
             <span className="min-w-0 flex-1">
               <span className="block font-semibold">{e.grade} · {e.board}</span>
-              <span className="block text-[13px] text-ink-3">{e.exam_title} · {dateLong(e.exam_on)}</span>
+              <span className="block text-[0.8125rem] text-ink-3">{e.exam_title} · {dateLong(e.exam_on)}</span>
             </span>
-            <span className="text-[14px] font-semibold">
+            <span className="text-[0.875rem] font-semibold">
               {e.result ? `${RESULT[e.result] ?? e.result}${e.mark != null ? ` · ${e.mark}` : ''}` : new Date(e.exam_on) >= new Date(new Date().toDateString()) ? 'Entered' : 'Result to come'}
             </span>
           </li>

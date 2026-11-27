@@ -28,9 +28,9 @@ export function PlanLimitNotice({ error }: { error: unknown }) {
         action={undefined} />
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {asked
-          ? <p className="text-[13.5px] font-semibold text-positive">Asked. Swayvo will be in touch about a larger plan.</p>
+          ? <p className="text-[0.8438rem] font-semibold text-positive">Asked. Swayvo will be in touch about a larger plan.</p>
           : <Button size="sm" loading={ask.isPending} onClick={() => ask.mutate()}>Ask to upgrade</Button>}
-        {ask.error != null && <p className="text-[13px] text-ink-3">That request could not be sent. Try again, or contact Swayvo.</p>}
+        {ask.error != null && <p className="text-[0.8125rem] text-ink-3">That request could not be sent. Try again, or contact Swayvo.</p>}
       </div>
     </div>
   );

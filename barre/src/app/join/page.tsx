@@ -100,8 +100,8 @@ function Join() {
             <div className="flex items-center gap-3">
               <SchoolMark name={s.name} logo={logoFor(s)} className="size-12" />
               <div className="min-w-0">
-                <h1 className="font-display text-[26px] font-[800] leading-tight [font-stretch:112%] sm:text-[30px]">{s.name}</h1>
-                <p className="text-[15px] text-ink-2">Book a trial class. No account needed.</p>
+                <h1 className="font-display text-[1.625rem] font-[800] leading-tight [font-stretch:112%] sm:text-[1.875rem]">{s.name}</h1>
+                <p className="text-[0.9375rem] text-ink-2">Book a trial class. No account needed.</p>
               </div>
             </div>
           </header>
@@ -119,21 +119,21 @@ function Join() {
         ) : s?.open && (
           <section aria-labelledby="j-trials" className="space-y-4">
             <fieldset className="space-y-2">
-              <legend className="section-title pb-2 text-[17px]">Who is the class for?</legend>
+              <legend className="section-title pb-2 text-[1.0625rem]">Who is the class for?</legend>
               <div className="grid gap-2 sm:grid-cols-2">
                 {([['self', 'I’m booking for myself', 'Adult classes and drop-ins'], ['child', 'For my child', 'Children’s and teens’ classes']] as const).map(([v, label, hint]) => (
                   <button key={v} type="button" aria-pressed={who === v} onClick={() => { setWho(v); setPick(null); }}
                     className={cn('min-h-[56px] rounded-[var(--radius-md)] border px-4 py-2.5 text-left',
                       who === v ? 'border-ink bg-accent-soft' : 'border-line-strong hover:border-ink-3')}>
                     <span className="block font-semibold">{label}</span>
-                    <span className="block text-[13px] text-ink-3">{hint}</span>
+                    <span className="block text-[0.8125rem] text-ink-3">{hint}</span>
                   </button>
                 ))}
               </div>
             </fieldset>
             {who && (
             <div className="flex flex-wrap items-end gap-x-6 gap-y-3 border-b-2 border-ink pb-3">
-              <h2 id="j-trials" className="section-title flex-1 text-[17px]">{self ? 'Try a class' : 'Trial classes'}</h2>
+              <h2 id="j-trials" className="section-title flex-1 text-[1.0625rem]">{self ? 'Try a class' : 'Trial classes'}</h2>
               {!self && (
                 <Field label="Your child’s age" htmlFor="j-age">
                   <Input id="j-age" type="number" inputMode="numeric" min={2} max={17} value={age} onChange={e => setAge(e.target.value)} className="w-24" placeholder="Any" />
@@ -143,7 +143,7 @@ function Join() {
             )}
             {who && slots.isLoading && <Skeleton className="h-24" />}
             {who && slots.data && shown.length === 0 && (self
-              ? <p className="text-[14px] text-ink-2">No adult trial classes in the next three weeks{school.data?.open ? '. Drop in to a class below instead.' : '.'}</p>
+              ? <p className="text-[0.875rem] text-ink-2">No adult trial classes in the next three weeks{school.data?.open ? '. Drop in to a class below instead.' : '.'}</p>
               : <EmptyState title="No trial places in the next three weeks" body="Please contact the school — they may have a place soon." />)}
             {/* Grouped by day; the first week shows, later dates one tap away. */}
             {who && (() => {
@@ -166,19 +166,19 @@ function Join() {
                                 className={cn('grid w-full grid-cols-[4.25rem_minmax(0,1fr)_auto] items-center gap-x-3 py-3.5 text-left hover:bg-surface-2/60',
                                   on && 'bg-accent-soft hover:bg-accent-soft')}>
                                 <span className="pl-1">
-                                  <span className="block font-display text-[20px] leading-none tnum">{time(x.starts_at)}</span>
+                                  <span className="block font-display text-[1.25rem] leading-none tnum">{time(x.starts_at)}</span>
                                 </span>
                                 <span className="min-w-0">
                                   <span className="block font-semibold">{x.class_name}</span>
-                                  <span className="block text-[13px] text-ink-3">
+                                  <span className="block text-[0.8125rem] text-ink-3">
                                     {[ages(x.age_min, x.age_max), about.get(x.class_name)?.level_note ?? about.get(x.class_name)?.level, x.location].filter(Boolean).join(' · ')}
                                   </span>
                                   {about.get(x.class_name)?.description && (
-                                    <span className="mt-0.5 line-clamp-2 block text-[13px] text-ink-2">{about.get(x.class_name)!.description}</span>
+                                    <span className="mt-0.5 line-clamp-2 block text-[0.8125rem] text-ink-2">{about.get(x.class_name)!.description}</span>
                                   )}
-                                  {on && <span className="block text-[13px] font-semibold text-accent-text">Chosen — add your details below</span>}
+                                  {on && <span className="block text-[0.8125rem] font-semibold text-accent-text">Chosen — add your details below</span>}
                                 </span>
-                                <span className="shrink-0 pr-1 text-right text-[13.5px]">
+                                <span className="shrink-0 pr-1 text-right text-[0.8438rem]">
                                   <span className="block font-semibold">{x.trial_price_minor ? `Trial ${money(x.trial_price_minor)}` : 'Free trial'}</span>
                                   {ongoing(about.get(x.class_name)) && <span className="block text-ink-2">then {ongoing(about.get(x.class_name))}</span>}
                                   <span className={cn('block', x.places_left <= 2 ? 'font-semibold text-caution' : 'text-ink-3')}>{x.places_left} place{x.places_left === 1 ? '' : 's'} left</span>
@@ -200,17 +200,17 @@ function Join() {
               <div ref={formRef} className="card scroll-mt-4 space-y-4 p-4 sm:p-5">
                 <div>
                   <h2 className="section-title">{pick.class_name}</h2>
-                  <p className="text-[13px] text-ink-3">{dateLong(pick.starts_at)} at {time(pick.starts_at)}{pick.location ? ` · ${pick.location}` : ''}</p>
+                  <p className="text-[0.8125rem] text-ink-3">{dateLong(pick.starts_at)} at {time(pick.starts_at)}{pick.location ? ` · ${pick.location}` : ''}</p>
                 </div>
                 {chosen && <ClassFacts c={chosen} />}
-                <h3 className="border-b border-ink pb-1.5 text-[14px] font-semibold">{self ? 'Your details' : 'Your child'}</h3>
+                <h3 className="border-b border-ink pb-1.5 text-[0.875rem] font-semibold">{self ? 'Your details' : 'Your child'}</h3>
                 {!self && (
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Field label="Child’s name" htmlFor="j-cn" required><Input id="j-cn" value={form.child_name} onChange={set('child_name')} /></Field>
                     <Field label="Date of birth" htmlFor="j-cd" required><Input id="j-cd" type="date" value={form.child_dob} onChange={set('child_dob')} /></Field>
                   </div>
                 )}
-                {!self && <h3 className="border-b border-ink pb-1.5 text-[14px] font-semibold">You</h3>}
+                {!self && <h3 className="border-b border-ink pb-1.5 text-[0.875rem] font-semibold">You</h3>}
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field label="Your name" htmlFor="j-pn" required><Input id="j-pn" value={form.contact_name} onChange={set('contact_name')} autoComplete="name" /></Field>
                   {self && <Field label="Your date of birth" htmlFor="j-cd" required><Input id="j-cd" type="date" value={form.child_dob} onChange={set('child_dob')} autoComplete="bday" /></Field>}
@@ -267,8 +267,8 @@ function AdultDropIn({ slug, school, about, info }: { slug: string; school: Scho
   return (
     <section aria-labelledby="j-adults" className="space-y-4">
       <div className="border-b-2 border-ink pb-2">
-        <h2 id="j-adults" className="section-title text-[17px]">Drop in</h2>
-        <p className="text-[13px] text-ink-3">Book a single class for yourself. No commitment.</p>
+        <h2 id="j-adults" className="section-title text-[1.0625rem]">Drop in</h2>
+        <p className="text-[0.8125rem] text-ink-3">Book a single class for yourself. No commitment.</p>
       </div>
       <ul className="divide-y divide-line" aria-label="Drop-in classes">
         {rows.data.map(x => (
@@ -276,13 +276,13 @@ function AdultDropIn({ slug, school, about, info }: { slug: string; school: Scho
             <button onClick={() => setPick(x)} aria-pressed={pick?.session_id === x.session_id}
               className={cn('grid w-full grid-cols-[4.25rem_minmax(0,1fr)_auto] items-center gap-x-3 py-3.5 text-left hover:bg-surface-2/60', pick?.session_id === x.session_id && 'bg-accent-soft hover:bg-accent-soft')}>
               <span className="pl-1">
-                <span className="block font-display text-[20px] leading-none tnum">{time(x.starts_at)}</span>
-                <span className="mt-1 block text-[12.5px] text-ink-3">{new Date(x.starts_at).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                <span className="block font-display text-[1.25rem] leading-none tnum">{time(x.starts_at)}</span>
+                <span className="mt-1 block text-[0.7812rem] text-ink-3">{new Date(x.starts_at).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
               </span>
               <span className="min-w-0"><span className="block font-semibold">{x.class_name}</span>
-                <span className="block text-[13px] text-ink-3">{[about.get(x.class_name)?.level_note, `${x.places_left} place${x.places_left === 1 ? '' : 's'} left`].filter(Boolean).join(' · ')}</span>
-                {about.get(x.class_name)?.description && <span className="mt-0.5 line-clamp-2 block text-[13px] text-ink-2">{about.get(x.class_name)!.description}</span>}</span>
-              <span className="pr-1 text-[13.5px] font-semibold">{money(x.price_minor)}</span>
+                <span className="block text-[0.8125rem] text-ink-3">{[about.get(x.class_name)?.level_note, `${x.places_left} place${x.places_left === 1 ? '' : 's'} left`].filter(Boolean).join(' · ')}</span>
+                {about.get(x.class_name)?.description && <span className="mt-0.5 line-clamp-2 block text-[0.8125rem] text-ink-2">{about.get(x.class_name)!.description}</span>}</span>
+              <span className="pr-1 text-[0.8438rem] font-semibold">{money(x.price_minor)}</span>
             </button>
           </li>
         ))}
@@ -301,7 +301,7 @@ function AdultDropIn({ slug, school, about, info }: { slug: string; school: Scho
           </div>
           <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden className="absolute -left-[9999px] size-px opacity-0" value={f.website} onChange={set('website')} />
           {/* Adult classes book the adult, never a child on the same email (UR-06). */}
-          <label className="flex min-h-[44px] items-center gap-3 text-[14px]">
+          <label className="flex min-h-[44px] items-center gap-3 text-[0.875rem]">
             <input type="checkbox" checked={f.adult_confirm} className="size-[18px] accent-[var(--color-accent)]"
                    onChange={e => setF(x => ({ ...x, adult_confirm: e.target.checked }))} />
             I am 18 or over, and booking for myself
@@ -326,7 +326,7 @@ function Consent({ school, ack, marketing, onAck, onMarketing, who }: {
   school: School; ack: boolean; marketing: boolean; onAck: (v: boolean) => void; onMarketing: (v: boolean) => void; who: string;
 }) {
   return (
-    <div className="space-y-2 border-l-2 border-line-strong py-1 pl-3 text-[13.5px] text-ink-2">
+    <div className="space-y-2 border-l-2 border-line-strong py-1 pl-3 text-[0.8438rem] text-ink-2">
       <p>
         <strong className="text-ink">{school.name}</strong> keeps these details about {who} to arrange the class, to reach someone in an emergency,
         and to follow up afterwards. Swayvo stores them for the school. If you don’t join, they are deleted after 90 days.
@@ -354,7 +354,7 @@ function ClassFacts({ c }: { c: ClassInfo }) {
     ['Price', [c.trial_price_minor != null ? (c.trial_price_minor ? `Trial ${money(c.trial_price_minor)}` : 'Free trial') : null, ongoing(c) ? `then ${ongoing(c)}` : null].filter(Boolean).join(', ') || null],
   ] as [string, React.ReactNode][]).filter(([, v]) => v);
   return (
-    <div className="space-y-2 text-[14px]">
+    <div className="space-y-2 text-[0.875rem]">
       {c.description && <p className="text-ink-2">{c.description}</p>}
       <dl className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-x-3 gap-y-1">
         {rows.map(([k, v]) => <React.Fragment key={k}><dt className="text-ink-3">{k}</dt><dd>{v}</dd></React.Fragment>)}
@@ -379,7 +379,7 @@ function Confirmation({ when, until, cls, school, schoolName, next }: {
     ['What happens next', next],
   ] as [string, React.ReactNode][]).filter(([, v]) => v);
   return (
-    <dl className="divide-y divide-line border-y border-line text-[14.5px]">
+    <dl className="divide-y divide-line border-y border-line text-[0.9062rem]">
       {rows.map(([k, v]) => (
         <div key={k} className="grid gap-x-4 py-2.5 sm:grid-cols-[10rem_minmax(0,1fr)]">
           <dt className="font-semibold text-ink">{k}</dt><dd className="text-ink-2">{v}</dd>
@@ -406,12 +406,12 @@ function SafetyQuestions<F extends SafetyForm>({ self, form, set, setForm }: {
   const area = 'w-full rounded-[var(--radius-md)] border border-line-strong bg-surface px-3 py-2 text-sm focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12';
   return (
     <div className="space-y-4">
-      <h3 className="border-b border-ink pb-1.5 text-[14px] font-semibold">For the teacher</h3>
+      <h3 className="border-b border-ink pb-1.5 text-[0.875rem] font-semibold">For the teacher</h3>
       <fieldset>
-        <legend className="mb-1 text-[14px] font-medium">Does {who} have any allergies or medical needs? <span className="text-critical" aria-hidden>*</span></legend>
+        <legend className="mb-1 text-[0.875rem] font-medium">Does {who} have any allergies or medical needs? <span className="text-critical" aria-hidden>*</span></legend>
         <div className="flex flex-wrap gap-x-6">
           {([['no', 'No'], ['yes', 'Yes']] as const).map(([v, l]) => (
-            <label key={v} className="flex min-h-11 items-center gap-2 text-[14px]">
+            <label key={v} className="flex min-h-11 items-center gap-2 text-[0.875rem]">
               <input type="radio" name="j-med" className="size-5 accent-[var(--color-accent)]" checked={form.has_medical === v} onChange={() => choose('has_medical', v)} /> {l}
             </label>
           ))}
@@ -437,15 +437,15 @@ function SafetyQuestions<F extends SafetyForm>({ self, form, set, setForm }: {
         </Field>
       </div>
       <fieldset>
-        <legend className="mb-1 text-[14px] font-medium">May the school take photos of {who} in class for its own use? <span className="text-critical" aria-hidden>*</span></legend>
+        <legend className="mb-1 text-[0.875rem] font-medium">May the school take photos of {who} in class for its own use? <span className="text-critical" aria-hidden>*</span></legend>
         <div className="flex flex-wrap gap-x-6">
           {([['true', 'Yes'], ['false', 'No']] as const).map(([v, l]) => (
-            <label key={v} className="flex min-h-11 items-center gap-2 text-[14px]">
+            <label key={v} className="flex min-h-11 items-center gap-2 text-[0.875rem]">
               <input type="radio" name="j-photo" className="size-5 accent-[var(--color-accent)]" checked={form.photo_consent === v} onChange={() => choose('photo_consent', v)} /> {l}
             </label>
           ))}
         </div>
-        <p className="text-[13px] text-ink-3">You can change this at any time.</p>
+        <p className="text-[0.8125rem] text-ink-3">You can change this at any time.</p>
       </fieldset>
     </div>
   );

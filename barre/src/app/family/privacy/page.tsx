@@ -48,19 +48,19 @@ export default function FamilyPrivacy() {
             {V.WHO_SEES.map(r => (
               <div key={r.who} className="py-3.5">
                 <dt className="font-semibold">{r.who}</dt>
-                <dd className="mt-1 text-[14.5px] text-ink-2">{r.sees}</dd>
-                <dd className="mt-0.5 text-[13.5px] text-ink-3">Not: {r.not}</dd>
+                <dd className="mt-1 text-[0.9062rem] text-ink-2">{r.sees}</dd>
+                <dd className="mt-0.5 text-[0.8438rem] text-ink-3">Not: {r.not}</dd>
               </div>
             ))}
           </dl>
-          <p className="mt-3 text-[13.5px] text-ink-3">
+          <p className="mt-3 text-[0.8438rem] text-ink-3">
             These rules are enforced by the database itself, not just by the screens. Changes to medical details and consent are recorded with who made them and when.
           </p>
         </section>
 
         <section aria-labelledby="fix-h">
           <SectionHead id="fix-h" title="Putting something right" />
-          <ul className="mt-2 list-disc space-y-1.5 pl-5 text-[14.5px] text-ink-2">
+          <ul className="mt-2 list-disc space-y-1.5 pl-5 text-[0.9062rem] text-ink-2">
             <li>Emergency contacts and photo, video and social media consent: change them yourself on <Link href="/family/children" className="font-semibold text-accent-text underline">Your family</Link>.</li>
             <li>Medical details, or a child’s name or date of birth: <Link href="/family/enquiries" className="font-semibold text-accent-text underline">tell the studio</Link>, so there is a record of who changed what.</li>
           </ul>
@@ -68,7 +68,7 @@ export default function FamilyPrivacy() {
 
         <section aria-labelledby="dl-h">
           <SectionHead id="dl-h" title="Download your family’s data" />
-          <p className="mt-2 text-[14.5px] text-ink-2">
+          <p className="mt-2 text-[0.9062rem] text-ink-2">
             One file with your family, children, medical details, emergency contacts, consents, classes, attendance, invoices, payments, messages, requests and the feedback shared with you.
             The office’s own notes and teachers’ private notes are not included; ask the studio if you want a complete copy, which they must give you within one month.
           </p>
@@ -81,12 +81,12 @@ export default function FamilyPrivacy() {
         <section aria-labelledby="del-h">
           <SectionHead id="del-h" title="Ask the school to delete your data" />
           {asked ? (
-            <p role="status" className="mt-2 text-[14.5px]">
+            <p role="status" className="mt-2 text-[0.9062rem]">
               <span className="font-semibold text-positive">Sent.</span> The office has your request and should reply within one month. You can follow it under <Link href="/family/enquiries" className="font-semibold text-accent-text underline">Requests</Link>.
             </p>
           ) : (
             <>
-              <p className="mt-2 text-[14.5px] text-ink-2">
+              <p className="mt-2 text-[0.9062rem] text-ink-2">
                 The office will delete or anonymise what it no longer needs. Some records must be kept for a set time: invoices and payments for six years, and any safeguarding record for as long as the school’s safeguarding policy requires.
                 If your children are still in classes, the school will talk to you first.
               </p>

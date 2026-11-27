@@ -26,7 +26,7 @@ export function RecordHistory({ entity, id }: { entity: 'family' | 'student'; id
   }
   if (rows.isPending) return <Skeleton className="h-16" />;
   if (rows.error) return <ErrorState error={rows.error} />;
-  if (!rows.data?.length) return <p className="text-[14px] text-ink-3">Nothing recorded yet.</p>;
+  if (!rows.data?.length) return <p className="text-[0.875rem] text-ink-3">Nothing recorded yet.</p>;
   return <HistoryList rows={rows.data} showRecord />;
 }
 
@@ -34,17 +34,17 @@ export function HistoryList({ rows, showRecord }: { rows: H.HistoryRow[]; showRe
   return (
     <ol className="divide-y divide-line">
       {rows.map(r => (
-        <li key={r.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 py-2 text-[13.5px]">
+        <li key={r.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 py-2 text-[0.8438rem]">
           <span className="min-w-0">
             <span className="font-semibold">{r.actor}</span>{' '}
             <span className="text-ink-2">{(H.ACTION_WORD[r.action] ?? r.action).toLowerCase()}</span>{' '}
             {showRecord && <span className="text-ink-2">{r.record_label ?? H.ENTITY_WORD[r.entity] ?? r.entity}</span>}
             {r.summary && r.action !== 'view_medical' && (
-              <span className="block truncate text-[12.5px] text-ink-3">{H.readableSummary(r.summary)}</span>
+              <span className="block truncate text-[0.7812rem] text-ink-3">{H.readableSummary(r.summary)}</span>
             )}
-            {r.action === 'view_medical' && <span className="block text-[12.5px] text-ink-3">Opened the medical record</span>}
+            {r.action === 'view_medical' && <span className="block text-[0.7812rem] text-ink-3">Opened the medical record</span>}
           </span>
-          <span className="tnum text-right text-[12.5px] text-ink-3">{dateShort(r.at)}<span className="block">{time(r.at)}</span></span>
+          <span className="tnum text-right text-[0.7812rem] text-ink-3">{dateShort(r.at)}<span className="block">{time(r.at)}</span></span>
         </li>
       ))}
     </ol>

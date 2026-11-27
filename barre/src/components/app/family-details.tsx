@@ -34,7 +34,7 @@ export function YourDetails() {
     <section aria-labelledby="your-details-h">
       <div className="mb-1 flex items-baseline gap-3 border-b-2 border-ink pb-2">
         <h2 id="your-details-h" className="section-title min-w-0 flex-1">Your details</h2>
-        <span className="text-[13px] text-ink-3">The studio is told when you change them</span>
+        <span className="text-[0.8125rem] text-ink-3">The studio is told when you change them</span>
       </div>
       {g.isLoading && <Skeleton className="mt-3 h-12" />}
       <ul className="divide-y divide-line">
@@ -42,7 +42,7 @@ export function YourDetails() {
           <li key={p.id} className="flex min-h-[56px] items-center gap-3 py-3">
             <span className="min-w-0 flex-1">
               <span className="block font-semibold">{p.full_name}{p.is_me ? ' (you)' : ''}</span>
-              <span className="block truncate text-[13px] text-ink-3">
+              <span className="block truncate text-[0.8125rem] text-ink-3">
                 {[p.phone, p.email].filter(Boolean).join(' · ') || 'No phone or email yet'}</span>
             </span>
             {p.is_me ? (
@@ -58,7 +58,7 @@ export function YourDetails() {
         ))}
       </ul>
       {others && (
-        <p className="mt-1 text-[13px] text-ink-3">
+        <p className="mt-1 text-[0.8125rem] text-ink-3">
           You can change your own details. Only the office changes anyone else’s.
         </p>
       )}
@@ -80,7 +80,7 @@ function AskOfficeSheet({ g, onClose }: { g: F.Guardian; onClose: () => void }) 
   if (sent) {
     return (
       <RecordSheet title="Sent to the office" onClose={onClose} onSave={onClose} saveLabel="Done">
-        <p className="text-[14.5px] text-ink-2">
+        <p className="text-[0.9062rem] text-ink-2">
           The office has your request and will check it before changing {g.full_name}’s details.
           You can follow it in Requests.
         </p>
@@ -131,7 +131,7 @@ export function EmergencyContacts({ studentId, name }: { studentId: string; name
         {list.map(c => (
           <li key={c.id} className="flex items-center gap-2">
             <span className="min-w-0 flex-1"><span className="font-medium">{c.full_name}</span>{c.relationship ? <span className="text-ink-3"> ({c.relationship})</span> : ''}
-              <span className="block tnum text-[13.5px] text-ink-2">{c.phone}</span></span>
+              <span className="block tnum text-[0.8438rem] text-ink-2">{c.phone}</span></span>
             <Button size="sm" variant="ghost" onClick={() => setEditing(c)} aria-label={`Edit ${c.full_name}`}>
               <Pencil className="size-3.5" aria-hidden />
             </Button>

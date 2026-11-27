@@ -204,7 +204,7 @@ function Register() {
             {office && amending === 'asking' && (
               <form className="flex flex-wrap items-end gap-2" onSubmit={e => { e.preventDefault(); if (amendReason.trim().length >= 3) setAmending('yes'); }}>
                 <div className="min-w-0 flex-1 basis-60">
-                  <label htmlFor="amend-reason" className="mb-1 block text-[13px] font-semibold">Why is it being amended?</label>
+                  <label htmlFor="amend-reason" className="mb-1 block text-[0.8125rem] font-semibold">Why is it being amended?</label>
                   <Input id="amend-reason" value={amendReason} onChange={e => setAmendReason(e.target.value)} placeholder="The paper register says Nia was here" />
                 </div>
                 <Button variant="primary" type="submit" disabled={amendReason.trim().length < 3}>Start amending</Button>
@@ -222,14 +222,14 @@ function Register() {
         {m?.handover_note && (
           <section aria-labelledby="handover-h">
             <div className="border-b-2 border-ink pb-2"><h2 id="handover-h" className="section-title">Handover</h2></div>
-            <p className="whitespace-pre-line pt-3 text-[15px]">{m.handover_note}</p>
+            <p className="whitespace-pre-line pt-3 text-[0.9375rem]">{m.handover_note}</p>
           </section>
         )}
 
         {/* Progress in words and beats, and the one action that moves the register on. */}
         {list.length > 0 && <section aria-label="Progress" className="space-y-4">
           <div className="flex items-center justify-between gap-4 border-b-2 border-ink pb-3">
-            <p role="status" className="tnum text-[16px] font-semibold">
+            <p role="status" className="tnum text-[1rem] font-semibold">
               {counts}
               {!closed && <span className="font-normal text-ink-3"> · {unmarked.length} to mark</span>}
             </p>
@@ -257,7 +257,7 @@ function Register() {
           <div className="flex items-baseline gap-3 border-b border-line pb-2">
             <h2 id="roll-h" className="section-title flex-1">Register</h2>
             {flagged.length > 0 && (
-              <span className={cn('text-[13px] font-semibold', flagged.some(r => r.requires_alert) ? 'text-critical' : 'text-caution')}>
+              <span className={cn('text-[0.8125rem] font-semibold', flagged.some(r => r.requires_alert) ? 'text-critical' : 'text-caution')}>
                 {flagged.length} medical note{flagged.length === 1 ? '' : 's'} · tap a name
               </span>
             )}
@@ -286,7 +286,7 @@ function Register() {
           <div className="sticky bottom-[calc(64px+env(safe-area-inset-bottom))] z-20 -mx-4 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur lg:bottom-4 lg:mx-0 lg:rounded-[var(--radius-lg)] lg:border">
             {unmarked.length > 0 ? (
               <div className="flex items-center gap-3">
-                <p className="min-w-0 flex-1 text-[14px] text-ink-3">
+                <p className="min-w-0 flex-1 text-[0.875rem] text-ink-3">
                   <span className="font-semibold text-ink">{unmarked.length} to mark</span>
                   <span className="hidden sm:inline"> · {unmarked.slice(0, 3).map(r => `${firstName(r)}${r.is_trial ? ' (trial)' : ''}`).join(', ')}{unmarked.length > 3 ? ` and ${unmarked.length - 3} more` : ''}</span>
                 </p>
@@ -294,7 +294,7 @@ function Register() {
               </div>
             ) : (
               <div className="flex items-center gap-3">
-                <p className="min-w-0 flex-1 text-[14px] text-ink-3"><span className="font-semibold text-ink">Everyone is marked.</span> <span className="hidden sm:inline">Closing tells the office.</span></p>
+                <p className="min-w-0 flex-1 text-[0.875rem] text-ink-3"><span className="font-semibold text-ink">Everyone is marked.</span> <span className="hidden sm:inline">Closing tells the office.</span></p>
                 {!amendMode && <Button variant="primary" size="lg" onClick={close}>Close register</Button>}
               </div>
             )}
@@ -330,12 +330,12 @@ function SessionNotes({ sessionId, saved }: { sessionId: string; saved: string }
     <section aria-labelledby="notes-h">
       <div className="mb-3 flex items-baseline gap-3 border-b-2 border-ink pb-2">
         <h2 id="notes-h" className="section-title flex-1"><label htmlFor="session-notes">Notes on this class</label></h2>
-        <span className="text-[13px] text-ink-3">You and the office only</span>
+        <span className="text-[0.8125rem] text-ink-3">You and the office only</span>
       </div>
       <textarea id="session-notes" rows={3} value={text}
         onChange={e => { setText(e.target.value); setTouched(true); }}
         placeholder="Covered the first sixteen counts. Chase the missing exam forms."
-        className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-[15px]
+        className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-[0.9375rem]
                    focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
       <div className="mt-2 flex items-center justify-end gap-2">
         {dirty && <Button variant="ghost" onClick={() => { setText(saved); setTouched(false); }}>Undo</Button>}
@@ -360,7 +360,7 @@ function ClassLinks({ classId, name }: { classId: string; name: string }) {
             <Link href={l.href} className="flex min-h-14 items-center gap-3 py-3 hover:bg-surface-2/60">
               <span className="min-w-0 flex-1">
                 <span className="block font-semibold">{l.label}</span>
-                <span className="block truncate text-[13px] text-ink-3">{l.hint}</span>
+                <span className="block truncate text-[0.8125rem] text-ink-3">{l.hint}</span>
               </span>
               <ChevronRight className="size-4 shrink-0 text-ink-3" aria-hidden />
             </Link>
@@ -407,20 +407,20 @@ function RegisterLine({ entry: r, onMark, onReason, disabled }: {
           aria-label={`${name}${r.is_trial ? ', trial' : ''}${med ? `, ${med}` : ''}${preMarked ? `, reported absent by ${reporter}` : ''}. Show details`}
           className="min-h-11 min-w-0 rounded-[var(--radius-md)] py-1 text-left">
           <span className="flex items-center gap-1.5">
-            <span className="truncate text-[17px] font-semibold leading-tight">{name}</span>
+            <span className="truncate text-[1.0625rem] font-semibold leading-tight">{name}</span>
             <ChevronDown className={cn('size-4 shrink-0 text-ink-3 transition-transform', open && 'rotate-180')} aria-hidden />
           </span>
           {med && (
-            <span className={cn('mt-0.5 block text-[14px] font-semibold leading-snug',
+            <span className={cn('mt-0.5 block text-[0.875rem] font-semibold leading-snug',
               r.requires_alert ? 'text-critical' : 'text-caution')}>{med}</span>
           )}
           {(r.reported_by || r.reported_note) && (
-            <span className="mt-0.5 block text-[13.5px] leading-snug text-ink-2">
+            <span className="mt-0.5 block text-[0.8438rem] leading-snug text-ink-2">
               <span className="font-semibold">{preMarked ? `Excused · reported by ${reporter}` : `Reported absent by ${reporter}`}</span>
               {r.reported_note && <span> — {r.reported_note}</span>}
             </span>
           )}
-          <span className="mt-0.5 block text-[13px] text-ink-3">
+          <span className="mt-0.5 block text-[0.8125rem] text-ink-3">
             {r.is_trial && <span className="mr-1.5 rounded-[var(--radius-sm)] bg-peach-soft px-1.5 py-px font-semibold text-ink">Trial</span>}
             {[ageFrom(r.date_of_birth) != null && `Age ${ageFrom(r.date_of_birth)}`,
               r.attendance_pct != null && `${r.attendance_pct}% this term`,
@@ -435,13 +435,13 @@ function RegisterLine({ entry: r, onMark, onReason, disabled }: {
                disabled && 'cursor-default')}>
           <button onClick={() => { if (!here) mark('present'); }} disabled={disabled} aria-pressed={here}
             aria-label={`${r.status === 'late' ? 'Late' : 'Here'} — ${name}`}
-            className={cn('flex items-center justify-center gap-1 text-[15px] font-semibold transition-colors',
+            className={cn('flex items-center justify-center gap-1 text-[0.9375rem] font-semibold transition-colors',
               here ? 'bg-positive-soft text-positive' : 'text-ink-2 hover:bg-surface-2')}>
             {here && <Check className="size-4" strokeWidth={2.5} aria-hidden />}{r.status === 'late' ? 'Late' : 'Here'}
           </button>
           <button onClick={() => { if (!away || preMarked) mark(preMarked ? 'excused' : 'absent'); }} disabled={disabled} aria-pressed={away}
             aria-label={`${r.status === 'excused' ? 'Excused' : 'Absent'} — ${name}`}
-            className={cn('flex items-center justify-center gap-1 border-l-[1.5px] text-[15px] font-semibold transition-colors',
+            className={cn('flex items-center justify-center gap-1 border-l-[1.5px] text-[0.9375rem] font-semibold transition-colors',
               here ? 'border-positive' : away ? 'border-critical' : 'border-line-strong',
               away ? 'bg-critical-soft text-critical' : 'text-ink-2 hover:bg-surface-2')}>
             {away && <X className="size-4" strokeWidth={2.5} aria-hidden />}{r.status === 'excused' ? 'Excused' : 'Absent'}
@@ -462,7 +462,7 @@ function RegisterLine({ entry: r, onMark, onReason, disabled }: {
         </div>
       )}
       {away && disabled && r.reason && !preMarked && (
-        <p className="mt-1 text-[13.5px] text-ink-2">{r.reason}</p>
+        <p className="mt-1 text-[0.8438rem] text-ink-2">{r.reason}</p>
       )}
 
       {open && (
@@ -483,7 +483,7 @@ function RegisterLine({ entry: r, onMark, onReason, disabled }: {
           <LastFeedback studentId={r.student_id} name={firstName(r)} />
           {/* What a teacher can see is set by the database (student_safety_brief),
               not by this screen. The family doctor stays with the office. */}
-          <p className="text-[13px] text-ink-3">GP details and the full record stay with the office.</p>
+          <p className="text-[0.8125rem] text-ink-3">GP details and the full record stay with the office.</p>
         </div>
       )}
     </div>
@@ -499,10 +499,10 @@ function NextClass({ sessionId }: { sessionId: string }) {
   return (
     <Link href={`/teach/register/?session=${n.id}`}
       className="grid min-h-14 grid-cols-[4.25rem_minmax(0,1fr)_auto] items-center gap-x-3 border-y border-line py-3 hover:bg-surface-2/60">
-      <span className="font-display text-[19px] tnum">{time(n.starts_at)}</span>
-      <span className="min-w-0"><span className="block text-[13px] text-ink-3">Next class</span>
+      <span className="font-display text-[1.1875rem] tnum">{time(n.starts_at)}</span>
+      <span className="min-w-0"><span className="block text-[0.8125rem] text-ink-3">Next class</span>
         <span className="block truncate font-semibold">{n.name}</span></span>
-      <span className="flex items-center gap-1 text-[13.5px] font-semibold text-accent-text">Register<ChevronRight className="size-4" aria-hidden /></span>
+      <span className="flex items-center gap-1 text-[0.8438rem] font-semibold text-accent-text">Register<ChevronRight className="size-4" aria-hidden /></span>
     </Link>
   );
 }

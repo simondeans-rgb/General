@@ -147,7 +147,7 @@ function ClassFeedback() {
           <section aria-labelledby="fb-h">
             <div className="mb-1 flex flex-wrap items-center gap-x-3 gap-y-1 border-b-2 border-ink pb-2">
               <h2 id="fb-h" className="section-title flex-1">Tap a child, or select several</h2>
-              <span className="tnum text-[13px] text-ink-3">{drafted} of {list.length} done{shared ? ` · ${shared} shared` : ''}</span>
+              <span className="tnum text-[0.8125rem] text-ink-3">{drafted} of {list.length} done{shared ? ` · ${shared} shared` : ''}</span>
               <Beats value={drafted} max={list.length} label={`${drafted} of ${list.length} have feedback`} />
             </div>
 
@@ -158,12 +158,12 @@ function ClassFeedback() {
               {lastWeek.length > 0 && (
                 <Button size="sm" onClick={sameAsLastWeek}>Same as last week</Button>
               )}
-              {lastWeek.length > 0 && <span className="text-[13px] text-ink-3">{lastWeek.length} had phrases on {dateShort(previous.data![0]!.starts_at)}</span>}
+              {lastWeek.length > 0 && <span className="text-[0.8125rem] text-ink-3">{lastWeek.length} had phrases on {dateShort(previous.data![0]!.starts_at)}</span>}
             </div>
 
             {picked.size > 0 && (
               <div className="space-y-3 border-y border-line bg-surface-2/50 px-3 py-3" role="region" aria-label="Phrases for the selected children">
-                <p className="text-[14px] font-semibold">For {picked.size === list.length ? `all ${picked.size}` : `${picked.size} selected`}</p>
+                <p className="text-[0.875rem] font-semibold">For {picked.size === list.length ? `all ${picked.size}` : `${picked.size} selected`}</p>
                 {(['going_well', 'work_on'] as const).map(kind => (
                   <ChipRow key={kind} kind={kind} chips={chipList(kind)}
                     on={label => [...picked].every(id => draftOf(id)[kind].includes(label))}
@@ -191,12 +191,12 @@ function ClassFeedback() {
                       <button className="flex min-h-14 w-full items-center gap-3 py-3 text-left hover:bg-surface-2/60"
                               aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : k.student_id)}>
                         <span className="min-w-0 flex-1">
-                          <span className="block text-[16px] font-semibold">{k.first_name} {k.last_name}
-                            {k.visiting && <span className="ml-2 rounded-[var(--radius-sm)] bg-peach-soft px-1.5 py-px text-[12px] font-semibold text-ink">{k.visiting === 'trial' ? 'Trial' : 'Drop-in'}</span>}
+                          <span className="block text-[1rem] font-semibold">{k.first_name} {k.last_name}
+                            {k.visiting && <span className="ml-2 rounded-[var(--radius-sm)] bg-peach-soft px-1.5 py-px text-[0.75rem] font-semibold text-ink">{k.visiting === 'trial' ? 'Trial' : 'Drop-in'}</span>}
                           </span>
-                          {summary && !isOpen && <span className="block truncate text-[13px] text-ink-3">{summary}</span>}
+                          {summary && !isOpen && <span className="block truncate text-[0.8125rem] text-ink-3">{summary}</span>}
                         </span>
-                        {state && <span className={cn('text-[13px]', state[1])}>{state[0]}</span>}
+                        {state && <span className={cn('text-[0.8125rem]', state[1])}>{state[0]}</span>}
                         <ChevronDown className={cn('size-4 shrink-0 text-ink-3 transition-transform', isOpen && 'rotate-180')} aria-hidden />
                       </button>
                       {isOpen && (
@@ -213,7 +213,7 @@ function ClassFeedback() {
                           {!!resources.data?.length && (
                             <select aria-label={`Class material for ${k.first_name} to practise with`} value={d.resource ?? ''}
                               onChange={e => upd(k.student_id, x => ({ ...x, resource: e.target.value || null }))}
-                              className="h-10 w-full rounded-[var(--radius-md)] border border-line-strong bg-surface px-3 text-[14px]">
+                              className="h-10 w-full rounded-[var(--radius-md)] border border-line-strong bg-surface px-3 text-[0.875rem]">
                               <option value="">Link “to work on” to class material (optional)</option>
                               {resources.data.map(r => <option key={r.id} value={r.id}>{r.title}</option>)}
                             </select>
@@ -222,7 +222,7 @@ function ClassFeedback() {
                             <SkillPicker studentId={k.student_id} value={d.skills}
                                          onChange={sk => upd(k.student_id, x => ({ ...x, skills: sk }))} />
                           )}
-                          {k.shared && <p className="text-[13px] text-ink-3">Already shared. If you change it, the family sees it marked as edited.</p>}
+                          {k.shared && <p className="text-[0.8125rem] text-ink-3">Already shared. If you change it, the family sees it marked as edited.</p>}
                         </div>
                       )}
                     </div>
@@ -244,7 +244,7 @@ function ClassFeedback() {
                 Share with families
               </Button>
             </div>
-            <p className="text-[13px] text-ink-3">Nothing reaches a family until you share.{unshared ? ` ${unshared} saved draft${unshared === 1 ? '' : 's'} waiting.` : ''}</p>
+            <p className="text-[0.8125rem] text-ink-3">Nothing reaches a family until you share.{unshared ? ` ${unshared} saved draft${unshared === 1 ? '' : 's'} waiting.` : ''}</p>
           </div>
         )}
 
@@ -257,13 +257,13 @@ function ClassFeedback() {
 function ChipRow({ kind, chips, on, onTap }: { kind: Kind; chips: P.ClassChip[]; on: (label: string) => boolean; onTap: (label: string) => void }) {
   return (
     <div role="group" aria-label={kind === 'going_well' ? 'Going well' : 'To work on'}>
-      <p className="mb-1.5 text-[13px] font-semibold text-ink-2">{kind === 'going_well' ? 'Going well' : 'To work on'}</p>
+      <p className="mb-1.5 text-[0.8125rem] font-semibold text-ink-2">{kind === 'going_well' ? 'Going well' : 'To work on'}</p>
       <div className="flex flex-wrap gap-2">
         {chips.map(c => {
           const pressed = on(c.label);
           return (
             <button key={c.id} aria-pressed={pressed} onClick={() => onTap(c.label)}
-              className={cn('inline-flex min-h-10 items-center rounded-full border px-3.5 text-[14px] font-medium',
+              className={cn('inline-flex min-h-10 items-center rounded-full border px-3.5 text-[0.875rem] font-medium',
                 pressed ? 'border-ink bg-ink text-surface' : 'border-line-strong bg-surface text-ink hover:bg-surface-2')}>
               {pressed && <Check className="mr-1 size-3.5" aria-hidden />}
               {c.sticker && <span aria-hidden className="mr-1.5">{c.sticker}</span>}{c.label}
@@ -284,14 +284,14 @@ function SkillPicker({ studentId, value, onChange }: { studentId: string; value:
   return (
     <div className="flex flex-wrap items-center gap-2 text-sm">
       <select aria-label="Skill" value={skill} onChange={e => setSkill(e.target.value)}
-        className="h-10 rounded-[var(--radius-md)] border border-line-strong bg-surface px-3 text-[14px]">
+        className="h-10 rounded-[var(--radius-md)] border border-line-strong bg-surface px-3 text-[0.875rem]">
         <option value="">Move a skill on…</option>
         {skills.data.map(s => <option key={s.skill_id} value={s.skill_id}>{s.skill}{s.level ? ` (${P.LEVELS.find(l => l.key === s.level)?.label})` : ''}</option>)}
       </select>
       {cur && P.LEVELS.slice(1).map(l => (
         <button key={l.key} aria-pressed={value[cur.skill_id] === l.key}
           onClick={() => onChange({ ...value, [cur.skill_id]: l.key })}
-          className={cn('inline-flex min-h-10 items-center rounded-full border px-3.5 text-[14px] font-medium', value[cur.skill_id] === l.key ? 'border-ink bg-ink text-surface' : 'border-line-strong bg-surface')}>
+          className={cn('inline-flex min-h-10 items-center rounded-full border px-3.5 text-[0.875rem] font-medium', value[cur.skill_id] === l.key ? 'border-ink bg-ink text-surface' : 'border-line-strong bg-surface')}>
           {l.label}
         </button>
       ))}
@@ -320,27 +320,27 @@ function ClassSettings({ classId, chips, depthRow }: { classId: string; chips: P
       <div className="space-y-6 pb-4 pt-2">
         {write.error != null && <ErrorState error={write.error} />}
         <fieldset>
-          <legend className="mb-1 text-[14px] font-semibold">How much to track</legend>
-          <p className="mb-2 text-[13px] text-ink-3">The default for {ages} is {P.DEPTHS.find(d => d.key === depthRow?.default_depth)?.label.toLowerCase()}.</p>
+          <legend className="mb-1 text-[0.875rem] font-semibold">How much to track</legend>
+          <p className="mb-2 text-[0.8125rem] text-ink-3">The default for {ages} is {P.DEPTHS.find(d => d.key === depthRow?.default_depth)?.label.toLowerCase()}.</p>
           <div className="space-y-1">
             {P.DEPTHS.map(d => (
               <label key={d.key} className="flex min-h-11 cursor-pointer items-start gap-3 py-1">
                 <input type="radio" name="depth" className="mt-1 size-4 accent-[var(--color-accent)]" checked={depthRow?.depth === d.key}
                   onChange={() => write.mutate({ sql: P.SET_CLASS_DEPTH, params: [classId, d.key === depthRow?.default_depth ? null : d.key] })} />
-                <span><span className="block text-[15px] font-medium">{d.label}</span><span className="block text-[13px] text-ink-3">{d.hint}</span></span>
+                <span><span className="block text-[0.9375rem] font-medium">{d.label}</span><span className="block text-[0.8125rem] text-ink-3">{d.hint}</span></span>
               </label>
             ))}
           </div>
         </fieldset>
         <div>
-          <p className="text-[14px] font-semibold">Phrases</p>
-          <p className="mb-2 text-[13px] text-ink-3">{own ? 'Your own set for this class.' : 'The school’s set for this age. Change one and the class gets its own copy.'}</p>
+          <p className="text-[0.875rem] font-semibold">Phrases</p>
+          <p className="mb-2 text-[0.8125rem] text-ink-3">{own ? 'Your own set for this class.' : 'The school’s set for this age. Change one and the class gets its own copy.'}</p>
           {(['going_well', 'work_on'] as const).map(kind => (
             <div key={kind} className="mb-3">
-              <p className="mb-1.5 text-[13px] font-semibold text-ink-2">{kind === 'going_well' ? 'Going well' : 'To work on'}</p>
+              <p className="mb-1.5 text-[0.8125rem] font-semibold text-ink-2">{kind === 'going_well' ? 'Going well' : 'To work on'}</p>
               <div className="flex flex-wrap gap-1.5">
                 {chips.filter(c => c.kind === kind).map(c => (
-                  <span key={c.id} className="inline-flex items-center gap-0.5 rounded-[var(--radius-md)] border border-line-strong bg-surface py-0.5 pl-2.5 pr-0.5 text-[14px]">
+                  <span key={c.id} className="inline-flex items-center gap-0.5 rounded-[var(--radius-md)] border border-line-strong bg-surface py-0.5 pl-2.5 pr-0.5 text-[0.875rem]">
                     {c.sticker && <span aria-hidden className="mr-1">{c.sticker}</span>}{c.label}
                     <button aria-label={`Remove ${c.label}`} onClick={() => write.mutate({ sql: P.REMOVE_CLASS_CHIP, params: [classId, kind, c.label] })}
                       className="grid size-9 place-items-center rounded-[var(--radius-sm)] text-ink-3 hover:bg-surface-2 hover:text-critical"><X className="size-3.5" aria-hidden /></button>
@@ -350,7 +350,7 @@ function ClassSettings({ classId, chips, depthRow }: { classId: string; chips: P
               <form className="mt-2 flex gap-1.5" onSubmit={e => { e.preventDefault(); const v = adding[kind].trim();
                 if (v.length >= 2) { write.mutate({ sql: P.ADD_CLASS_CHIP, params: [classId, kind, v, null] }); setAdding(a => ({ ...a, [kind]: '' })); } }}>
                 <Input aria-label={`Add a ${kind === 'going_well' ? 'going well' : 'to work on'} phrase for this class`} placeholder="Add a phrase" maxLength={40}
-                       value={adding[kind]} onChange={e => setAdding(a => ({ ...a, [kind]: e.target.value }))} className="h-10 text-[14px]" />
+                       value={adding[kind]} onChange={e => setAdding(a => ({ ...a, [kind]: e.target.value }))} className="h-10 text-[0.875rem]" />
                 <Button type="submit" aria-label="Add"><Plus className="size-4" aria-hidden /></Button>
               </form>
             </div>

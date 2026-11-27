@@ -34,8 +34,8 @@ export function RegisterSettings() {
   const dirty = f.before !== String(row.register_opens_before_min) || f.days !== String(row.register_edit_days)
     || f.travel !== String(row.cover_travel_min) || f.policy !== row.makeup_policy || f.window !== String(row.makeup_window_days);
   const num = (k: string, label: string, hint: string, max: number) => (
-    <label className="grid grid-cols-[minmax(0,1fr)_6rem] items-center gap-3 py-2 text-[14.5px]">
-      <span><span className="font-semibold">{label}</span><span className="block text-[13px] text-ink-3">{hint}</span></span>
+    <label className="grid grid-cols-[minmax(0,1fr)_6rem] items-center gap-3 py-2 text-[0.9062rem]">
+      <span><span className="font-semibold">{label}</span><span className="block text-[0.8125rem] text-ink-3">{hint}</span></span>
       <Input aria-label={label} type="number" min={0} max={max} value={f[k]} disabled={!owner} onChange={e => setF({ ...f, [k]: e.target.value })} />
     </label>
   );
@@ -46,9 +46,9 @@ export function RegisterSettings() {
         {num('before', 'Registers open, minutes before the class', 'Before that, a register is read-only, so marks cannot land on the wrong day.', 720)}
         {num('days', 'Registers can be changed for, days after', 'After that, only the office can amend a register, giving a reason.', 60)}
         {num('travel', 'Travel time between sites, minutes', 'Arranging cover warns when a teacher could not get from one class to the other.', 240)}
-        <label className="grid gap-2 py-2 text-[14.5px] sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center">
+        <label className="grid gap-2 py-2 text-[0.9062rem] sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center">
           <span><span className="font-semibold">Make-up classes</span>
-            <span className="block text-[13px] text-ink-3">Families are offered a free place in a class of the same style with space.
+            <span className="block text-[0.8125rem] text-ink-3">Families are offered a free place in a class of the same style with space.
               {row.credit_cancelled_classes ? ' Cancellations are credited instead (Money tab), so make-ups are only offered for reported absences.' : ''}</span></span>
           <Select aria-label="Make-up classes" value={f.policy} disabled={!owner} onChange={e => setF({ ...f, policy: e.target.value })}>
             <option value="off">Not offered</option>
@@ -60,7 +60,7 @@ export function RegisterSettings() {
       </div>
       {save.error != null && <ErrorState error={save.error} />}
       {owner && <div className="pt-3"><Button size="sm" variant="primary" disabled={!dirty} loading={save.isPending} onClick={() => save.mutate()}>Save</Button></div>}
-      {!owner && <p className="pt-2 text-[13px] text-ink-3">Only the owner can change these.</p>}
+      {!owner && <p className="pt-2 text-[0.8125rem] text-ink-3">Only the owner can change these.</p>}
     </Card>
   );
 }
