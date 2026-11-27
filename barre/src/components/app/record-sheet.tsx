@@ -4,6 +4,7 @@ import * as React from 'react';
 import { X, Trash2 } from 'lucide-react';
 import { Button, ErrorState } from '@/components/ui';
 import { SaveErrorSummary, useFirstErrorInView } from '@/components/app/form-error';
+import { PlanLimitNotice, isPlanLimit } from '@/components/app/plan-limit';
 
 /**
  * The shell every small editor in the app shares: a sheet on a phone, a dialog
@@ -77,7 +78,7 @@ export function RecordSheet({
 
         <div ref={body} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
           <div className="space-y-4">{children}</div>
-          {error != null && <div className="mt-4"><ErrorState error={error} /></div>}
+          {error != null && <div className="mt-4">{isPlanLimit(error) ? <PlanLimitNotice error={error} /> : <ErrorState error={error} />}</div>}
           {onRemove && (
             <div className="mt-6 border-t border-line pt-4">
               {removeHint

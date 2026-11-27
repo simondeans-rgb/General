@@ -18,7 +18,7 @@ export function useFirstErrorInView(container: React.RefObject<HTMLElement | nul
     if (!trigger) return;
     // After paint, so the error the failure produced is in the DOM.
     const t = window.setTimeout(() => {
-      const el = container.current?.querySelector<HTMLElement>('[aria-invalid="true"], [role="alert"]');
+      const el = container.current?.querySelector<HTMLElement>('[aria-invalid="true"], [role="alert"], [data-form-error]');
       if (!el) return;
       el.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
       if (!el.matches('input, select, textarea, button') && !el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
@@ -30,12 +30,16 @@ export function useFirstErrorInView(container: React.RefObject<HTMLElement | nul
 
 /** One line beside the footer buttons: why the save did not happen. */
 export function SaveErrorSummary({ error, reason }: { error?: unknown; reason?: string | null }) {
-  const text = error != null ? `Not saved. ${firstSentence(errorText(error))}` : reason;
+  // A plan limit is a calm notice, not a failure (UR-39).
+  const limit = error != null && /PLAN_LIMIT/.test(String((error as Error)?.message ?? error));
+  const text = limit ? 'Your plan’s limit is reached. See above to ask for a larger plan.'
+    : error != null ? `Not saved. ${firstSentence(errorText(error))}` : reason;
   if (!text) return null;
+  const alarm = error != null && !limit;
   return (
     <p className={'flex w-full items-start gap-1.5 text-[12.5px] sm:w-auto sm:flex-1 sm:self-center ' +
-                  (error != null ? 'text-critical' : 'text-ink-3')}>
-      {error != null && <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden />}
+                  (alarm ? 'text-critical' : 'text-ink-3')}>
+      {alarm && <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden />}
       <span>{text}</span>
     </p>
   );
