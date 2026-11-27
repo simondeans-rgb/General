@@ -7,7 +7,7 @@ afterAll(async () => { await closeDb(); });
 
 const nextSession = async (svc: any, classId: string) =>
   (await svc(`select id, starts_at, ends_at from class_session where class_id = $1 and starts_at > now()
-               and status = 'scheduled' order by starts_at limit 1`, [classId]))[0];
+               and status = 'scheduled' and teacher_id is null order by starts_at limit 1`, [classId]))[0];
 
 describe('every child in the room is on the register (R-005)', () => {
   it('every booked trial has a child record and appears on its session’s register', async () => {
