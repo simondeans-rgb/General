@@ -4,6 +4,7 @@ import * as C from '../src/lib/repos/classes';
 import * as P from '../src/lib/repos/people';
 import * as H from '../src/lib/repos/office';
 import { SEARCH } from '../src/lib/repos/search';
+import { HEADLINE } from '../src/lib/repos/reports';
 import { toDateInput } from '../src/lib/format';
 
 beforeAll(async () => { await rebuild(); }, 60_000);
@@ -331,6 +332,19 @@ describe('duplicate families (UR-57)', () => {
     await asUser(USERS.admin, async q => {
       expect(await expectRejected(() => q(H.MERGE_FAMILIES, [FAMILY.a, FAMILY.a]))).toMatch(/INVALID/);
       expect(await expectRejected(() => q(H.MERGE_FAMILIES, [FAMILY.a, uid(NS.family, 190)]))).toMatch(/NOT_FOUND|FORBIDDEN/);
+    });
+  });
+});
+
+/* ── UR-54 (admins D13) funnel numbers agree ────────────────────────────── */
+describe('the funnel and Reports count trials the same way (UR-54)', () => {
+  it('Reports’ trialled equals the Enrolment funnel’s attended, and enrolled matches', async () => {
+    await asUser(USERS.owner, async q => {
+      const [f] = await q(C.FUNNEL);
+      const [h] = await q(HEADLINE);
+      expect(h.trials_attended).toBe(f.attended);
+      expect(h.converted).toBe(f.converted);
+      expect(h.enquiries).toBe(f.total);
     });
   });
 });

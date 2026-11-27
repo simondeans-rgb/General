@@ -66,10 +66,21 @@ select
   count(*) filter (where stage = 'closed_lost')::int as lost
 from enquiry where deleted_at is null`;
 
+export type EnquiryRow = { id: string; stage: string; contact_name: string; contact_email: string | null;
+  contact_phone: string | null; child_name: string | null; child_dob: string | Date | null; source: string | null;
+  next_action_on: string | null; created_at: string; class_name: string | null; colour: string | null;
+  interest_class_id: string | null; student_id: string | null; closed_reason: string | null;
+  live_trial: boolean; trial_starts_at: string | null };
+
 export const ENQUIRIES = `
 select e.id, e.stage, e.contact_name, e.contact_email, e.contact_phone,
        e.child_name, e.child_dob, e.source, e.next_action_on, e.created_at,
-       c.name as class_name, ds.colour
+       c.name as class_name, ds.colour, e.interest_class_id, e.student_id, e.closed_reason,
+       exists (select 1 from trial t where t.enquiry_id = e.id and t.deleted_at is null
+                 and t.status in ('requested','booked')) as live_trial,
+       (select cs.starts_at from trial t join class_session cs on cs.id = t.session_id
+         where t.enquiry_id = e.id and t.deleted_at is null and t.status in ('requested','booked')
+         order by cs.starts_at limit 1) as trial_starts_at
   from enquiry e
   left join class c on c.id = e.interest_class_id
   left join dance_style ds on ds.id = c.dance_style_id

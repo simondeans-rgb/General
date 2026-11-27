@@ -49,7 +49,7 @@ export default function ReportsPage() {
                  note={d && `${d.enrolled} of ${d.capacity}${d.waiting ? ` · ${d.waiting} waiting` : ''}`} href="/classes" />
             <Kpi label="Trial conversion" loading={h.isLoading}
                  value={d && (d.trials_attended ? `${pct(d.converted, d.trials_attended)}%` : '—')}
-                 note={d && `${d.converted} enrolled of ${d.trials_attended} trialled`} href="/enrolment" />
+                 note={d && `${d.converted} enrolled of ${d.trials_attended} who came to a trial`} href="/enrolment" />
           </dl>
           <dl className="mt-6 grid grid-cols-2 border-y border-line sm:grid-cols-4 sm:divide-x sm:divide-line">
             <Small label="New students, 30 days" loading={h.isLoading} value={d?.new_30d} href="/people?tab=students" />

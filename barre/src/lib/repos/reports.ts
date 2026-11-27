@@ -54,7 +54,9 @@ select
   att.attended as attended_28d, att.marked as marked_28d,
   (select count(*)::int from enquiry where deleted_at is null) as enquiries,
   (select count(*)::int from enquiry where deleted_at is null and stage = 'enrolled') as converted,
-  (select count(*)::int from enquiry where deleted_at is null and stage in ('trial_attended','follow_up','enrolled')) as trials_attended,
+  -- The same definitions as the Enrolment funnel (FUNNEL in classes.ts), so the
+  -- two screens agree: came to a trial = reached "tried a class" or enrolled.
+  (select count(*)::int from enquiry where deleted_at is null and stage in ('trial_attended','enrolled')) as trials_attended,
   coalesce((select sum(balance_minor) from family where deleted_at is null and balance_minor > 0), 0)::bigint as outstanding_minor,
   coalesce((select sum(amount_minor - refunded_minor) from payment where deleted_at is null
      and succeeded_at >= now() - interval '30 days' and method not in ('account','credit')), 0)::bigint as collected_30d_minor,

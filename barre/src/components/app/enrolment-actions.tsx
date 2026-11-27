@@ -7,10 +7,10 @@ import { RecordSheet } from '@/components/app/record-sheet';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Button, Field, Input, Notice, Select, Skeleton } from '@/components/ui';
+import { Button, Field, Input, Notice, Select, Skeleton, errorText } from '@/components/ui';
 import { Word } from './session-row';
 import * as C from '@/lib/repos/classes';
-import { ageFrom, dateShort, time } from '@/lib/format';
+import { ageFrom, dateShort, time, toDateInput } from '@/lib/format';
 
 export function usePipeline(sql: string, onDone?: (rows: any[]) => void) {
   const { session } = useSession();
@@ -222,20 +222,43 @@ export function WaitlistActions({ entry }: {
 }
 
 /* ── Trials ─────────────────────────────────────────────────────────────── */
-export function BookTrialSheet({ classId, className, onClose }: {
-  classId: string; className: string; onClose: () => void;
-}) {
-  const sessions = useRows<{ id: string; starts_at: string }>(
-    ['sessions-ahead', classId], C.CLASS_SESSIONS_AHEAD, [classId]);
-  const candidates = useRows<Candidate>(['enrollable', classId], C.ENROLLABLE_STUDENTS, [classId]);
-  const [mode, setMode] = React.useState<'new' | 'existing'>('new');
-  const [sessionId, setSessionId] = React.useState('');
-  const [studentId, setStudentId] = React.useState('');
-  const [child, setChild] = React.useState({ first_name: '', last_name: '', date_of_birth: '', contact_name: '',
-    contact_email: '', contact_phone: '', emergency_name: '', emergency_phone: '' });
-  const set = (k: keyof typeof child) => (e: React.ChangeEvent<HTMLInputElement>) => setChild(c => ({ ...c, [k]: e.target.value }));
-  const book = usePipeline(C.BOOK_TRIAL, onClose);
+/** Splits "Efua Mensah" into a first and last name, for prefilling. */
+function splitName(full: string | null | undefined): [string, string] {
+  const parts = (full ?? '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length < 2) return [parts[0] ?? '', ''];
+  return [parts.slice(0, -1).join(' '), parts[parts.length - 1]!];
+}
 
+/**
+ * Booking a trial. From a class, or from an enquiry (UR-18): then the child and
+ * contact come from the enquiry, nothing is typed twice, and the enquiry moves
+ * to "Trial booked" with the trial linked to it.
+ */
+export function BookTrialSheet({ classId: fixedClass, className, enquiry, onClose }: {
+  classId?: string; className?: string; enquiry?: C.EnquiryRow; onClose: () => void;
+}) {
+  const classes = useRows<{ id: string; name: string; enrolled: number; capacity: number }>(
+    ['class-options'], C.CLASS_OPTIONS, [], { enabled: !fixedClass });
+  const [classId, setClassId] = React.useState(fixedClass ?? enquiry?.interest_class_id ?? '');
+  React.useEffect(() => {
+    if (!classId && classes.data?.[0]) setClassId(classes.data[0].id);
+  }, [classes.data, classId]);
+  const sessions = useRows<{ id: string; starts_at: string }>(
+    ['sessions-ahead', classId], C.CLASS_SESSIONS_AHEAD, [classId], { enabled: !!classId });
+  const candidates = useRows<Candidate>(['enrollable', classId], C.ENROLLABLE_STUDENTS, [classId], { enabled: !!classId });
+  const [mode, setMode] = React.useState<'new' | 'existing'>(enquiry?.student_id ? 'existing' : 'new');
+  const [sessionId, setSessionId] = React.useState('');
+  const [studentId, setStudentId] = React.useState(enquiry?.student_id ?? '');
+  const [first, last] = splitName(enquiry?.child_name);
+  const [child, setChild] = React.useState({ first_name: first, last_name: last || splitName(enquiry?.contact_name)[1],
+    date_of_birth: toDateInput(enquiry?.child_dob), contact_name: enquiry?.contact_name ?? '',
+    contact_email: enquiry?.contact_email ?? '', contact_phone: enquiry?.contact_phone ?? '',
+    emergency_name: '', emergency_phone: '' });
+  const set = (k: keyof typeof child) => (e: React.ChangeEvent<HTMLInputElement>) => setChild(c => ({ ...c, [k]: e.target.value }));
+  const [booked, setBooked] = React.useState(false);
+  const book = usePipeline(C.BOOK_TRIAL, () => enquiry ? setBooked(true) : onClose());
+
+  React.useEffect(() => { setSessionId(''); }, [classId]);
   React.useEffect(() => {
     if (!sessionId && sessions.data?.[0]) setSessionId(sessions.data[0].id);
     if (!studentId && candidates.data?.[0]) setStudentId(candidates.data[0].id);
@@ -243,14 +266,37 @@ export function BookTrialSheet({ classId, className, onClose }: {
 
   const newValid = child.first_name.trim() && child.date_of_birth && child.contact_name.trim()
     && (child.contact_phone.trim().length >= 6 || child.emergency_phone.trim().length >= 6);
+  const link = enquiry ? { enquiry_id: enquiry.id } : {};
+  const title = className ?? classes.data?.find(c => c.id === classId)?.name;
+  const chosen = sessions.data?.find(s => s.id === sessionId);
+
+  if (booked) {
+    return (
+      <RecordSheet title="Book a trial" onClose={onClose} onSave={onClose} saveLabel="Done">
+        <Notice word="Booked" tone="positive" title={`${child.first_name || enquiry?.child_name || 'They'} ${chosen ? `on ${dateShort(chosen.starts_at)} at ${time(chosen.starts_at)}` : ''}`}
+          detail="The enquiry has moved to Trial booked. Record how it went after the class, from Trials." />
+      </RecordSheet>
+    );
+  }
 
   return (
-    <RecordSheet title="Book a trial" subtitle={className} onClose={onClose}
-      error={book.error} saving={book.isPending}
+    <RecordSheet title="Book a trial" subtitle={enquiry ? `For ${enquiry.child_name ?? enquiry.contact_name} · from their enquiry` : title}
+      onClose={onClose} error={book.error} saving={book.isPending}
       canSave={!!sessionId && (mode === 'existing' ? !!studentId : !!newValid)}
+      saveHint={!sessionId ? 'Choose a session.' : mode === 'new' && !newValid
+        ? 'Add the child’s first name, date of birth, a parent or carer and a phone number.' : null}
       saveLabel="Book them in"
-      onSave={() => book.mutate(mode === 'existing' ? [sessionId, studentId, null] : [sessionId, null, JSON.stringify(child)])}>
-      {sessions.isPending && <Skeleton className="h-16" />}
+      onSave={() => book.mutate(mode === 'existing'
+        ? [sessionId, studentId, JSON.stringify(link)]
+        : [sessionId, null, JSON.stringify({ ...child, ...link })])}>
+      {!fixedClass && (
+        <Field label="Class" htmlFor="trial-class" required>
+          <Select id="trial-class" value={classId} onChange={e => setClassId(e.target.value)}>
+            {classes.data?.map(c => <option key={c.id} value={c.id}>{c.name} — {c.enrolled}/{c.capacity}</option>)}
+          </Select>
+        </Field>
+      )}
+      {sessions.isPending && !!classId && <Skeleton className="h-16" />}
       {!sessions.isPending && sessions.data?.length === 0 && (
         <p className="text-[13px] text-ink-3">
           This class has no scheduled sessions ahead, so there is nothing to try.
@@ -281,11 +327,15 @@ export function BookTrialSheet({ classId, className, onClose }: {
         </Field>
       ) : (
         <>
+          {enquiry && <p className="text-[13px] text-ink-3">Filled in from the enquiry. Check the details, then book.</p>}
           <div className="grid grid-cols-2 gap-3">
             <Field label="Child’s first name" htmlFor="tn-f" required><Input id="tn-f" value={child.first_name} onChange={set('first_name')} /></Field>
             <Field label="Last name" htmlFor="tn-l"><Input id="tn-l" value={child.last_name} onChange={set('last_name')} /></Field>
           </div>
-          <Field label="Date of birth" htmlFor="tn-d" required><Input id="tn-d" type="date" value={child.date_of_birth} onChange={set('date_of_birth')} /></Field>
+          <Field label="Date of birth" htmlFor="tn-d" required
+                 hint={enquiry && !enquiry.child_dob ? 'The enquiry did not include it. Ask, then add it here.' : undefined}>
+            <Input id="tn-d" type="date" value={child.date_of_birth} onChange={set('date_of_birth')} />
+          </Field>
           <Field label="Parent or carer" htmlFor="tn-c" required><Input id="tn-c" value={child.contact_name} onChange={set('contact_name')} /></Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Phone" htmlFor="tn-p" required><Input id="tn-p" type="tel" value={child.contact_phone} onChange={set('contact_phone')} /></Field>
@@ -319,12 +369,22 @@ export function TrialActions({ trial }: { trial: C.TrialRow }) {
   const convert = usePipeline(C.CONVERT_TRIAL);
   const err = outcome.error ?? convert.error;
   const settled = trial.status === 'converted' || trial.status === 'cancelled';
+  // An outcome describes a class that has happened (UR-54, admins D9).
+  const ahead = !!trial.starts_at && new Date(trial.starts_at) > new Date()
+    && (trial.status === 'booked' || trial.status === 'requested');
 
   return (
     <div>
       <div className="flex flex-wrap items-center gap-1.5">
         <Word tone={TRIAL_TONE[trial.status] ?? 'muted'} className="mr-1 inline-block w-[4.75rem]">{TRIAL_WORD[trial.status] ?? trial.status}</Word>
-        {!settled && (
+        {!settled && ahead && (
+          <>
+            <span className="text-[12.5px] text-ink-3">Came or joining: after the class</span>
+            <Button size="sm" variant="ghost" loading={outcome.isPending}
+                    onClick={() => outcome.mutate([trial.id, 'cancelled', null])}>Cancel trial</Button>
+          </>
+        )}
+        {!settled && !ahead && (
           <>
             {trial.status !== 'attended' && (
               <Button size="sm" loading={outcome.isPending}
@@ -343,7 +403,9 @@ export function TrialActions({ trial }: { trial: C.TrialRow }) {
       </div>
       {err != null && (
         <p role="alert" className="mt-1 text-[12px] text-critical">
-          {/NO_CHILD_DETAILS/.test(String((err as Error).message))
+          {/TOO_EARLY/.test(String((err as Error).message))
+            ? errorText(err)
+            : /NO_CHILD_DETAILS/.test(String((err as Error).message))
             ? 'The enquiry has no child name and date of birth, so there is nothing to build a record from.'
             : /CLASS_FULL/.test(String((err as Error).message))
             ? 'That class is full — free a place first.'

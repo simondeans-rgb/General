@@ -9,14 +9,15 @@ import { Button, EmptyState, Skeleton, ErrorState } from '@/components/ui';
 import { SectionHead, ViewTabs, Word } from '@/components/app/session-row';
 import * as C from '@/lib/repos/classes';
 import { TrialActions } from '@/components/app/enrolment-actions';
+import { EnquirySheet, canBookTrial } from '@/components/app/enquiry-sheet';
 import { dateShort, ageFrom, time, relativeDay } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 
-type Enq = { id: string; stage: string; contact_name: string; contact_email: string; contact_phone: string; child_name: string;
-  child_dob: string; source: string; next_action_on: string | null; class_name: string | null };
+type Enq = C.EnquiryRow;
+type Opened = { e: Enq; closing?: boolean; booking?: boolean } | null;
 const COLUMNS: { key: string; label: string; stages: string[] }[] = [
   { key: 'enquiry', label: 'Enquiry', stages: ['enquiry'] },
   { key: 'trial_booked', label: 'Trial booked', stages: ['trial_requested', 'trial_booked'] },
@@ -27,7 +28,7 @@ const COLUMNS: { key: string; label: string; stages: string[] }[] = [
 ];
 
 /** The pipeline as a board, by stage (R-032). */
-function Board({ rows }: { rows: Enq[] }) {
+function Board({ rows, onOpen }: { rows: Enq[]; onOpen: (o: Opened) => void }) {
   const { session } = useSession();
   const qc = useQueryClient();
   const [drag, setDrag] = React.useState<Enq | null>(null);
@@ -36,6 +37,8 @@ function Board({ rows }: { rows: Enq[] }) {
     mutationFn: (v: { e: Enq; stage: string }) => runAs(session, q => q(C.SET_ENQUIRY_STAGE, [v.e.id, v.stage, v.e.next_action_on])),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['db'] }),
   });
+  // Closing asks why, so the funnel can say (UR-18).
+  const moveTo = (e: Enq, stage: string) => stage === 'closed_lost' ? onOpen({ e, closing: true }) : move.mutate({ e, stage });
   return (
     <div className="pt-4">
       {move.error != null && <div className="mb-3"><ErrorState error={move.error} /></div>}
@@ -45,7 +48,7 @@ function Board({ rows }: { rows: Enq[] }) {
           return (
             <section key={col.key} aria-label={`${col.label}, ${list.length}`}
               onDragOver={e => { if (drag) { e.preventDefault(); setOver(col.key); } }} onDragLeave={() => setOver(null)}
-              onDrop={e => { e.preventDefault(); if (drag && !col.stages.includes(drag.stage)) move.mutate({ e: drag, stage: col.key }); setDrag(null); setOver(null); }}
+              onDrop={e => { e.preventDefault(); if (drag && !col.stages.includes(drag.stage)) moveTo(drag, col.key); setDrag(null); setOver(null); }}
               className={cn('flex w-56 shrink-0 flex-col rounded-[var(--radius-md)] lg:w-auto lg:min-w-0', over === col.key && 'bg-surface-2 ring-2 ring-accent-line')}>
               <h3 className="mb-2 flex items-baseline justify-between border-b-2 border-ink pb-1.5 text-[14px] font-semibold">
                 {col.label}<span className="font-display text-[17px] tnum">{list.length}</span>
@@ -56,12 +59,14 @@ function Board({ rows }: { rows: Enq[] }) {
                   return (
                     <li key={e.id} draggable onDragStart={() => setDrag(e)} onDragEnd={() => { setDrag(null); setOver(null); }}
                       className={cn('cursor-grab rounded-[var(--radius-md)] border bg-surface p-2.5 active:cursor-grabbing', overdue ? 'border-critical/50' : 'border-line')}>
-                      <p className="font-semibold leading-tight">{e.child_name}</p>
+                      <button onClick={() => onOpen({ e })} className="block w-full text-left font-semibold leading-tight hover:underline">{e.child_name ?? e.contact_name}</button>
                       <p className="mt-0.5 truncate text-[12.5px] text-ink-3">{e.class_name ?? 'No class chosen'}</p>
                       <p className="truncate text-[12.5px] text-ink-3">{e.contact_name}</p>
                       {overdue && <p className="mt-1.5 leading-tight"><Word tone="critical">Overdue</Word> <span className="text-[12px] text-critical">{dateShort(e.next_action_on!)}</span></p>}
+                      {e.trial_starts_at && <p className="mt-1 text-[12px] text-ink-3">Trial {dateShort(e.trial_starts_at)} {time(e.trial_starts_at)}</p>}
+                      {canBookTrial(e) && <Button size="sm" className="mt-2 w-full" onClick={() => onOpen({ e, booking: true })}>Book a trial</Button>}
                       <label className="mt-2 flex items-center gap-1.5 text-[12.5px] text-ink-3">Move to
-                        <select value={col.key} onChange={x => move.mutate({ e, stage: x.target.value })}
+                        <select value={col.key} onChange={x => moveTo(e, x.target.value)}
                           className="h-11 min-w-0 flex-1 rounded-[var(--radius-sm)] border border-line-strong bg-surface px-2 text-[13.5px] text-ink lg:h-9">
                           {COLUMNS.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
                         </select>
@@ -96,10 +101,18 @@ export default function EnrolmentPage() {
   React.useEffect(() => { if (window.innerWidth < 768) setView('list'); }, []);
   const funnel = useRow<{ total: number; booked: number; attended: number; converted: number; lost: number }>(
     ['funnel'], C.FUNNEL);
-  const enquiries = useRows<{ id: string; stage: string; contact_name: string; contact_email: string;
-                              contact_phone: string; child_name: string; child_dob: string;
-                              source: string; next_action_on: string | null; class_name: string | null }>(
-    ['enquiries'], C.ENQUIRIES);
+  const enquiries = useRows<Enq>(['enquiries'], C.ENQUIRIES);
+  const [opened, setOpened] = React.useState<Opened>(null);
+  // A search result or link can open one enquiry: /enrolment?enquiry=<id>.
+  const [asked, setAsked] = React.useState<{ id: string; booking?: boolean } | null>(null);
+  React.useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get('enquiry');
+    if (id) setAsked({ id });
+  }, []);
+  React.useEffect(() => {
+    const e = asked && enquiries.data?.find(x => x.id === asked.id);
+    if (e) { setOpened({ e, booking: asked.booking }); setAsked(null); }
+  }, [asked, enquiries.data]);
 
   const f = funnel.data;
   const rate = f && f.total > 0 ? Math.round((f.converted / f.total) * 1000) / 10 : null;
@@ -109,19 +122,26 @@ export default function EnrolmentPage() {
       actions={<Button size="sm" variant="primary" onClick={() => setNewEnquiry(true)}>
         <Plus className="size-4" aria-hidden /> New enquiry
       </Button>}>
-      {newEnquiry && <NewEnquirySheet onClose={() => setNewEnquiry(false)} />}
+      {newEnquiry && <NewEnquirySheet onClose={() => setNewEnquiry(false)}
+        onBook={id => { setNewEnquiry(false); setAsked({ id, booking: true }); }} />}
+      {opened && <EnquirySheet key={opened.e.id} enquiry={opened.e} startClosing={opened.closing} startBooking={opened.booking}
+        onClose={() => setOpened(null)} />}
       <div className="mx-auto max-w-[1240px] space-y-12">
         <div className="grid gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
           <div className="min-w-0"><Trials /></div>
           <div className="min-w-0 space-y-10">
             <section>
-              <SectionHead title="Funnel" meta={rate != null ? `${rate}% enrol` : undefined} />
+              <SectionHead title="Funnel" meta={rate != null ? `${rate}% of enquiries enrol` : undefined} />
               <div className="pt-3">
                 {funnel.isLoading && <Skeleton className="h-24" />}
                 {f && <Funnel steps={[
                   ['Enquiries', f.total], ['Trials booked', f.booked],
                   ['Attended', f.attended], ['Enrolled', f.converted],
                 ]} />}
+                {f && <p className="mt-3 text-[12.5px] text-ink-3">
+                  Each line counts enquiries that reached that step, so every number is out of {f.total} enquiries.
+                  {f.attended > 0 && ` Of the ${f.attended} who came to a trial, ${f.converted} enrolled (${Math.round((f.converted / f.attended) * 100)}%): the trial conversion shown in Reports.`}
+                </p>}
               </div>
             </section>
             <PublicPageLink />
@@ -132,7 +152,7 @@ export default function EnrolmentPage() {
           <SectionHead title="Pipeline"
             meta={view === 'board' ? 'Drag a card to move it on, or use its menu' : 'What needs doing next comes first'}
             action={<ViewTabs label="Pipeline view" value={view} onChange={setView} options={[['board', 'Board'], ['list', 'List']]} />} />
-          {view === 'board' && enquiries.data && <Board rows={enquiries.data} />}
+          {view === 'board' && enquiries.data && <Board rows={enquiries.data} onOpen={setOpened} />}
           {enquiries.isLoading && <div className="space-y-3 pt-3">{[0,1,2].map(i => <Skeleton key={i} className="h-16" />)}</div>}
           {enquiries.error && <div className="pt-3"><ErrorState error={enquiries.error} /></div>}
           {enquiries.data?.length === 0 && <EmptyState
@@ -146,9 +166,10 @@ export default function EnrolmentPage() {
                 <li key={e.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 px-1 py-3 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_8rem_7rem]">
                   <div className="min-w-0">
                     <p className="flex flex-wrap items-baseline gap-x-2">
-                      <span className="font-semibold">{e.child_name}</span>
+                      <button onClick={() => setOpened({ e })} className="text-left font-semibold hover:underline">{e.child_name ?? e.contact_name}</button>
                       {e.child_dob && <span className="text-[13px] text-ink-3">{ageFrom(e.child_dob)}</span>}
                     </p>
+                    {canBookTrial(e) && <Button size="sm" className="mt-1.5" onClick={() => setOpened({ e, booking: true })}>Book a trial</Button>}
                     <p className="mt-0.5 text-[13px] text-ink-3">{e.class_name ?? 'No class chosen yet'} · via {e.source}</p>
                   </div>
                   <p className="order-last col-span-2 mt-1 flex min-w-0 flex-wrap gap-x-3 text-[13px] text-ink-2 md:order-none md:col-span-1 md:mt-0 md:block">
