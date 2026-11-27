@@ -123,14 +123,20 @@ describe('the public trial page (R-014)', () => {
       expect(list.every((r: any) => r.places_left > 0)).toBe(true);
       const form = { contact_name: 'Sam Patel', contact_email: 'sam@example.com', contact_phone: '07700 900800',
                      child_name: 'Asha Patel', child_dob: '2018-03-03', privacy_ack: true };
-      await q(`select app.public_book_trial($1, $2, $3::jsonb)`, [slug, list[0].session_id, JSON.stringify(form)]);
-      await q(`select app.public_book_trial($1, $2, $3::jsonb)`, [slug, list[0].session_id, JSON.stringify(form)]);   // double click
+      // A class whose age range suits the child (classes are age-limited, so "the first one" depends on the date).
+      const [fit] = await svc(`select cs.id from class_session cs join class c on c.id = cs.class_id
+                                where cs.id = any($1) and coalesce(c.age_min, 0) <= extract(year from age(date '2018-03-03'))
+                                  and coalesce(c.age_max, 99) >= extract(year from age(date '2018-03-03'))
+                                order by cs.starts_at limit 1`, [list.map((r: any) => r.session_id)]);
+      expect(fit).toBeTruthy();
+      await q(`select app.public_book_trial($1, $2, $3::jsonb)`, [slug, fit.id, JSON.stringify(form)]);
+      await q(`select app.public_book_trial($1, $2, $3::jsonb)`, [slug, fit.id, JSON.stringify(form)]);   // double click
       const trials = await svc(`select t.student_id, e.source from trial t join enquiry e on e.id = t.enquiry_id where e.contact_email = 'sam@example.com'`);
       expect(trials).toHaveLength(1);
       expect(trials[0].source).toBe('website');
       expect(trials[0].student_id).toBeTruthy();
       // A bot fills the honeypot: nothing is created.
-      await q(`select app.public_book_trial($1, $2, $3::jsonb)`, [slug, list[0].session_id, JSON.stringify({ ...form, contact_email: 'bot@x.io', website: 'http://spam' })]);
+      await q(`select app.public_book_trial($1, $2, $3::jsonb)`, [slug, fit.id, JSON.stringify({ ...form, contact_email: 'bot@x.io', website: 'http://spam' })]);
       expect(await svc(`select 1 from enquiry where contact_email = 'bot@x.io'`)).toHaveLength(0);
     });
   });
