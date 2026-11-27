@@ -1,11 +1,13 @@
 'use client';
 
 import * as React from 'react';
+import { Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Download, ArrowDownRight, ArrowUpRight, Minus, Info } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { useRows, useRow } from '@/lib/query';
-import { Beats, Button, ErrorState, Skeleton, SectionHead } from '@/components/ui';
+import { Beats, Button, ErrorState, Select, Skeleton, SectionHead, ViewTabs } from '@/components/ui';
 import * as R from '@/lib/repos/reports';
 import { pulseComponents, pulseScore, MIN_HISTORY_DAYS } from '@/lib/pulse/score';
 import { money, dateShort } from '@/lib/format';
@@ -23,16 +25,45 @@ const pct = (n: number, d: number) => (d > 0 ? Math.round((n / d) * 100) : null)
  * number: attendance over weeks, money over months.
  */
 export default function ReportsPage() {
-  const h = useRow<R.Headline>(['report-headline'], R.HEADLINE);
-  const weeks = useRows<R.WeekRow>(['report-weeks'], R.WEEKLY_ATTENDANCE);
-  const classes = useRows<R.ClassStat>(['report-classes'], R.CLASS_STATS);
+  return <Suspense fallback={<div className="min-h-dvh" />}><Reports /></Suspense>;
+}
+
+function Reports() {
+  // The location lives in the URL, so a filtered report can be shared (UR-33).
+  const params = useSearchParams();
+  const router = useRouter();
+  const locations = useRows<R.Location>(['report-locations'], R.LOCATIONS);
+  const multi = (locations.data?.length ?? 0) > 1;
+  const loc = multi ? params.get('loc') || null : null;
+  const locName = locations.data?.find(l => l.id === loc)?.name;
+  const setLoc = (v: string) => {
+    const q = new URLSearchParams(params.toString());
+    if (v) q.set('loc', v); else q.delete('loc');
+    router.replace(`/reports${q.size ? `?${q}` : ''}`, { scroll: false });
+  };
+
+  const h = useRow<R.Headline>(['report-headline', loc], R.HEADLINE_AT, [loc]);
+  const weeks = useRows<R.WeekRow>(['report-weeks', loc], R.WEEKLY_ATTENDANCE_AT, [loc]);
+  const classes = useRows<R.ClassStatAt>(['report-classes', loc], R.CLASS_STATS_AT, [loc]);
   const months = useRows<R.MonthRow>(['report-months'], R.MONTHS);
   const d = h.data;
+  const [under, setUnder] = React.useState<number | null>(null);
+  const shownClasses = (classes.data ?? []).filter(c => under == null || R.underFilled(c, under))
+    .sort((a, b) => under == null ? 0 : a.enrolled / a.capacity - b.enrolled / b.capacity);
 
   return (
-    <Shell title="Reports" allow={['owner', 'admin']} subtitle="Live from registers, enrolments and the ledger"
+    <Shell title="Reports" allow={['owner', 'admin']} subtitle={locName ? `${locName} · live from registers and enrolments` : 'Live from registers, enrolments and the ledger'}
       actions={<ReportExports />}>
       <div className="mx-auto max-w-[1240px] space-y-10">
+        {multi && (
+          <div className="flex flex-wrap items-center gap-3">
+            <label htmlFor="r-loc" className="text-[14px] font-semibold">Location</label>
+            <Select id="r-loc" value={loc ?? ''} onChange={e => setLoc(e.target.value)} className="w-auto min-w-48">
+              <option value="">All locations</option>
+              {locations.data!.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+            </Select>
+          </div>
+        )}
         {h.error && <ErrorState error={h.error} onRetry={() => h.refetch()} />}
 
         {/* Four numbers the school steers by; four more beneath, quieter. */}
@@ -40,7 +71,7 @@ export default function ReportsPage() {
           <dl className="grid grid-cols-2 gap-x-6 gap-y-6 lg:grid-cols-4 lg:gap-x-0 lg:divide-x lg:divide-line">
             <Kpi label="Active students" loading={h.isLoading} value={d?.active_students}
                  change={d && d.active_30d_ago ? d.active_students - d.active_30d_ago : null}
-                 note="vs 30 days ago" href="/people?tab=students" />
+                 note="in a class now · vs 30 days ago" href="/people?tab=students" />
             <Kpi label="Attendance, 4 weeks" loading={h.isLoading}
                  value={d && (pct(d.attended_28d, d.marked_28d) ?? '—') + (d.marked_28d ? '%' : '')}
                  note={d && `${d.attended_28d} of ${d.marked_28d} marks`} />
@@ -49,15 +80,18 @@ export default function ReportsPage() {
                  note={d && `${d.enrolled} of ${d.capacity}${d.waiting ? ` · ${d.waiting} waiting` : ''}`} href="/classes" />
             <Kpi label="Trial conversion" loading={h.isLoading}
                  value={d && (d.trials_attended ? `${pct(d.converted, d.trials_attended)}%` : '—')}
-                 note={d && `${d.converted} enrolled of ${d.trials_attended} who came to a trial`} href="/enrolment" />
+                 note={d && `${d.converted} enrolled of ${d.trials_attended} who came to a trial${loc ? ' · whole school' : ''}`} href="/enrolment" />
           </dl>
           <dl className="mt-6 grid grid-cols-2 border-y border-line sm:grid-cols-4 sm:divide-x sm:divide-line">
             <Small label="New students, 30 days" loading={h.isLoading} value={d?.new_30d} href="/people?tab=students" />
             <Small label="Leavers, 30 days" loading={h.isLoading} value={d?.leavers_30d} />
-            <Small label="Outstanding" loading={h.isLoading} value={d && money(d.outstanding_minor)} href="/billing" />
-            <Small label="Collected, 30 days" loading={h.isLoading} value={d && money(d.collected_30d_minor)} href="/billing" />
+            <Small label={loc ? 'Outstanding, whole school' : 'Outstanding'} loading={h.isLoading} value={d && money(d.outstanding_minor)} href="/billing" />
+            <Small label={loc ? 'Collected, 30 days, whole school' : 'Collected, 30 days'} loading={h.isLoading} value={d && money(d.collected_30d_minor)} href="/billing" />
           </dl>
+          <p className="mt-2 text-[13px] text-ink-3">Active students are children in at least one class today, each counted once. Your plan’s student count on Account also includes trial children and those who have left.</p>
         </section>
+
+        {multi && !loc && <LocationCompare />}
 
         <div className="grid gap-x-12 gap-y-10 lg:grid-cols-2">
           <section aria-labelledby="r-weeks">
@@ -70,7 +104,7 @@ export default function ReportsPage() {
           </section>
 
           <section aria-labelledby="r-months">
-            <SectionHead id="r-months" title="Six months" meta="Collected, joined and left" />
+            <SectionHead id="r-months" title="Six months" meta={loc ? 'Whole school · collected, joined and left' : 'Collected, joined and left'} />
             <div className="pt-2">
               {months.isLoading && <Skeleton className="h-36" />}
               {months.data && <MonthTable rows={months.data} />}
@@ -79,30 +113,45 @@ export default function ReportsPage() {
         </div>
 
         <section aria-labelledby="r-classes">
-          <SectionHead id="r-classes" title="Classes" meta="Fullest first · attendance over four weeks" />
+          <SectionHead id="r-classes" title="Classes"
+            meta={under == null ? 'Fullest first · attendance over four weeks' : `Under ${under}% full, emptiest first · places now and four weeks ago`}
+            action={
+              <Select aria-label="Show classes" value={under == null ? '' : String(under)} onChange={e => setUnder(e.target.value ? Number(e.target.value) : null)} className="w-auto">
+                <option value="">All classes</option>
+                {[50, 60, 75].map(n => <option key={n} value={n}>Under {n}% full</option>)}
+              </Select>
+            } />
           {classes.isLoading && <div className="space-y-3 pt-3">{[0,1,2].map(i => <Skeleton key={i} className="h-10" />)}</div>}
-          {!!classes.data?.length && (
+          {classes.data && shownClasses.length === 0 && <p className="py-4 text-[14px] text-ink-3">No class is under {under}% full.</p>}
+          {!!shownClasses.length && (
             <div className="hidden grid-cols-[minmax(0,1fr)_220px_110px] gap-x-6 border-b border-line py-2 sm:grid" aria-hidden>
               <span className="label">Class</span><span className="label">Places</span><span className="label text-right">Attendance</span>
             </div>
           )}
           <ul className="divide-y divide-line">
-            {classes.data?.map(c => {
+            {shownClasses.map(c => {
               const att = pct(c.attended, c.marked);
               const full = c.enrolled >= c.capacity;
+              const dropIn = c.pricing === 'drop_in';
+              const trend = c.enrolled - c.enrolled_4w_ago;
               return (
                 <li key={c.id}>
                   <Link href={`/classes?id=${c.id}`} className="grid min-h-12 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-6 gap-y-1 py-2.5 hover:bg-surface-2/60 sm:grid-cols-[minmax(0,1fr)_220px_110px]">
                     <span className="col-start-1 row-start-1 min-w-0 sm:col-start-auto sm:row-start-auto">
                       <span className="block truncate font-semibold">{c.name}</span>
-                      <span className="flex items-center gap-1.5 text-[13px] text-ink-3">
+                      <span className="flex flex-wrap items-center gap-x-1.5 text-[13px] text-ink-3">
                         {c.style && <><span aria-hidden className={cn('size-2 shrink-0 rounded-[2px]', STYLE_BG[c.colour ?? ''] ?? 'bg-ink-3')} />{c.style}</>}
-                        {c.waiting > 0 && <span className="font-semibold text-caution">{c.style ? '· ' : ''}{c.waiting} waiting</span>}
+                        {multi && !loc && c.location && <span>· {c.location}</span>}
+                        {c.waiting > 0 && <span className="font-semibold text-caution">· {c.waiting} waiting</span>}
+                        {under != null && !dropIn && <span>· {trend > 0 ? `up ${trend}` : trend < 0 ? `down ${-trend}` : 'no change'} in 4 weeks</span>}
+                        {under != null && c.price_minor > 0 && <span>· {money((c.capacity - c.enrolled) * c.price_minor)} in empty places</span>}
                       </span>
                     </span>
                     <span className="col-span-2 row-start-2 flex items-center gap-2.5 sm:col-span-1 sm:row-start-auto">
-                      <Beats value={c.enrolled} max={c.capacity} tone={full ? 'caution' : 'accent'} label={`${c.enrolled} of ${c.capacity} places`} />
-                      <span className="tnum text-[13.5px] text-ink-2">{c.enrolled} of {c.capacity}{full && <span className="font-semibold text-caution"> · full</span>}</span>
+                      {dropIn ? <span className="text-[13.5px] text-ink-2">Drop-in: booked by the class</span> : <>
+                        <Beats value={c.enrolled} max={c.capacity} tone={full ? 'caution' : 'accent'} label={`${c.enrolled} of ${c.capacity} places`} />
+                        <span className="tnum text-[13.5px] text-ink-2">{c.enrolled} of {c.capacity}{full && <span className="font-semibold text-caution"> · full</span>}</span>
+                      </>}
                     </span>
                     <span className="tnum col-start-2 row-start-1 text-right text-[14px] sm:col-start-auto sm:row-start-auto">
                       {att == null ? <span className="text-[13px] text-ink-3">No registers</span>
@@ -115,9 +164,122 @@ export default function ReportsPage() {
           </ul>
         </section>
 
-        {d && <Pulse d={d} />}
+        <Retention />
+
+        {d && !loc && <Pulse d={d} />}
       </div>
     </Shell>
+  );
+}
+
+/** One row per location: the same figures side by side (UR-33). */
+function LocationCompare() {
+  const rows = useRows<R.LocationRow>(['report-by-location'], R.BY_LOCATION);
+  return (
+    <section aria-labelledby="r-locs">
+      <SectionHead id="r-locs" title="By location" meta="Students counted once per location · term fees from current enrolments" />
+      {rows.isLoading && <Skeleton className="mt-3 h-24" />}
+      {rows.data && (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[560px] text-sm">
+            <thead className="border-b border-line text-left">
+              <tr>{['Location', 'Classes', 'Students', 'Places filled', 'Attendance, 4 weeks', 'Billed, 30 days', 'Term fees, enrolled'].map((t, i) =>
+                <th key={t} scope="col" className={cn('label py-2 font-semibold', i > 0 && 'text-right')}>{t}</th>)}</tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {rows.data.map(l => (
+                <tr key={l.id}>
+                  <th scope="row" className="py-2 text-left font-semibold"><Link href={`/reports?loc=${l.id}`} className="hover:underline">{l.name}</Link></th>
+                  <td className="tnum py-2 text-right">{l.classes}</td>
+                  <td className="tnum py-2 text-right">{l.students}</td>
+                  <td className="tnum py-2 text-right">{pct(l.enrolled, l.capacity) ?? 0}% <span className="text-ink-3">({l.enrolled} of {l.capacity})</span></td>
+                  <td className="tnum py-2 text-right">{pct(l.attended, l.marked) == null ? <span className="text-ink-3">No registers</span> : `${pct(l.attended, l.marked)}%`}</td>
+                  <td className="tnum py-2 text-right">{money(l.billed_30d_minor)}</td>
+                  <td className="tnum py-2 text-right">{money(l.fees_term_minor)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/** Term on term: who carried on, who is new, who did not come back (UR-34). */
+function Retention() {
+  const terms = useRows<{ id: string; name: string; starts_on: string }>(['report-terms'], R.TERMS_LIST);
+  const today = isoDate(new Date());
+  const [termId, setTermId] = React.useState<string>('');
+  const current = termId || terms.data?.find(t => String(t.starts_on).slice(0, 10) <= today)?.id || terms.data?.[0]?.id || '';
+  const [by, setBy] = React.useState<'class' | 'style' | 'age'>('class');
+  const sum = useRow<R.RetentionSummary>(['retention', current], R.RETENTION_SUMMARY, [current]);
+  const rows = useRows<R.RetentionRow>(['retention-by', current, by], R.RETENTION_BY, [current, by], { enabled: !!current });
+  const lapsed = useRows<R.LapsedRow>(['lapsed', current], R.LAPSED, [current], { enabled: !!current });
+  const s = sum.data;
+  if (!current) return null;
+  return (
+    <section aria-labelledby="r-ret">
+      <SectionHead id="r-ret" title="Retention" meta={s?.previous_term ? `${s.previous_term} to ${s.current_term}` : undefined}
+        action={terms.data && terms.data.length > 1 ? (
+          <Select aria-label="Term" value={current} onChange={e => setTermId(e.target.value)} className="w-auto">
+            {terms.data.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </Select>) : undefined} />
+      {sum.isLoading && <Skeleton className="mt-3 h-20" />}
+      {s && !s.previous_term && <p className="py-4 text-[14px] text-ink-3">This is the first term in Swayvo, so there is nothing to compare with yet. Retention appears once a second term starts.</p>}
+      {s?.previous_term && (
+        <>
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-4 pt-4 sm:grid-cols-4">
+            <div><dt className="label">Carried on</dt><dd className="stat-number mt-1 text-[30px] leading-none">{pct(s.continuing, s.previous) ?? 0}%</dd>
+              <dd className="mt-1 text-[13px] text-ink-3">{s.continuing} of {s.previous} from {s.previous_term}</dd></div>
+            <div><dt className="label">Did not come back</dt><dd className="stat-number mt-1 text-[30px] leading-none">{s.lapsed}</dd></div>
+            <div><dt className="label">New this term</dt><dd className="stat-number mt-1 text-[30px] leading-none">{s.new}</dd></div>
+            <div><dt className="label">In {s.current_term}</dt><dd className="stat-number mt-1 text-[30px] leading-none">{s.current}</dd></div>
+          </dl>
+          <p className="mt-2 text-[13px] text-ink-3">A student counts in a term if they were in any of its classes. Moving class is not leaving.</p>
+          <ViewTabs className="mt-5" label="Retention by" value={by} onChange={setBy} options={[['class', 'By class'], ['style', 'By style'], ['age', 'By age']]} />
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[480px] text-sm">
+              <thead className="border-b border-line text-left">
+                <tr>{[by === 'class' ? 'Class last term' : by === 'style' ? 'Style' : 'Age band', 'Last term', 'Carried on', 'Did not come back', 'New'].map((t, i) =>
+                  <th key={t} scope="col" className={cn('label py-2 font-semibold', i > 0 && 'text-right')}>{t}</th>)}</tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {rows.data?.map(r => (
+                  <tr key={r.label}>
+                    <th scope="row" className="py-2 text-left font-medium">{r.label}</th>
+                    <td className="tnum py-2 text-right">{r.previous}</td>
+                    <td className="tnum py-2 text-right">{r.previous ? `${r.continuing} (${pct(r.continuing, r.previous)}%)` : '—'}</td>
+                    <td className={cn('tnum py-2 text-right', r.lapsed && 'font-semibold text-caution')}>{r.lapsed}</td>
+                    <td className="tnum py-2 text-right">{r.new}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {!!lapsed.data?.length && (
+            <div className="mt-6">
+              <div className="flex flex-wrap items-baseline gap-3 border-b border-ink pb-1.5">
+                <h3 className="flex-1 text-[14px] font-semibold">To contact: {lapsed.data.length} who did not come back</h3>
+                <Button size="sm" variant="ghost" onClick={() => downloadCsv(`lapsed-${isoDate(new Date())}.csv`, lapsed.data!.map(l => ({
+                  student: l.student, family: l.family, last_class: l.last_class, contact: l.contact ?? '', phone: l.phone ?? '', email: l.email ?? '' })))}>
+                  <Download className="size-4" aria-hidden /> CSV
+                </Button>
+              </div>
+              <ul className="divide-y divide-line text-[14px]">
+                {lapsed.data.map(l => (
+                  <li key={l.student_id} className="flex flex-wrap items-baseline gap-x-3 py-2">
+                    <Link href={`/people?id=${l.family_id}`} className="min-w-0 flex-1 font-semibold hover:underline">{l.student}</Link>
+                    <span className="text-ink-3">Last: {l.last_class}</span>
+                    <span className="text-ink-2">{[l.contact, l.phone].filter(Boolean).join(' · ')}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
+      )}
+    </section>
   );
 }
 
@@ -181,7 +343,7 @@ function WeekBars({ rows }: { rows: R.WeekRow[] }) {
       <table className="sr-only">
         <caption>Attendance by week</caption>
         <thead><tr><th>Week of</th><th>Attendance</th><th>Marks</th></tr></thead>
-        <tbody>{rows.map(w => <tr key={w.week}><td>{dateShort(w.week)}</td><td>{pct(w.attended, w.marked) ?? 'no registers'}%</td><td>{w.marked}</td></tr>)}</tbody>
+        <tbody>{rows.map(w => <tr key={w.week}><td>{dateShort(w.week)}</td><td>{pct(w.attended, w.marked) == null ? 'No registers' : `${pct(w.attended, w.marked)}%`}</td><td>{w.marked}</td></tr>)}</tbody>
       </table>
     </figure>
   );

@@ -93,6 +93,7 @@ function PlanCard({ acct }: { acct?: A.AccountRow }) {
             );
           })}
         </dl>
+        <p className="text-[13px] text-ink-3">Students on the plan are every child record the school holds, including trial children and those who have left; Reports counts only those in a class now.</p>
         <p className="text-[13px] text-ink-3">To change plan, contact Swayvo. Nothing is ever deleted for being over a limit — you just cannot add more.</p>
       </div>
     </Card>

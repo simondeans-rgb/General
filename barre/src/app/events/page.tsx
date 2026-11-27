@@ -153,6 +153,9 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
   const routines = useRows<E.Routine>(['routines', e.id], E.ROUTINES, [e.id]);
   const rehearsals = useRows<E.Rehearsal>(['rehearsals', e.id], E.REHEARSALS, [e.id]);
   const chaps = useRows<E.Chaperone>(['chaperones', e.id], E.CHAPERONES, [e.id]);
+  const helpers = useRows<E.HelperSlot>(['helper-slots', e.id], E.HELPER_SLOTS, [e.id]);
+  const [hs, setHs] = React.useState({ role: '', starts: '', needed: '2' });
+  const [nt, setNt] = React.useState({ subject: '', body: '' });
   const [done, setDone] = React.useState<string | null>(null);
   const write = useWrite();
   const [pick, setPick] = React.useState<string[]>([]);
@@ -242,6 +245,36 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
       </DetailSection>
 
       {(e.kind === 'show' || e.kind === 'competition') && <TicketSection eventId={e.id} />}
+
+      <DetailSection title="Tell the families">
+        <div className="grid gap-1.5">
+          <Input aria-label="Notice subject" placeholder="Subject" value={nt.subject} onChange={x => setNt({ ...nt, subject: x.target.value })} />
+          <textarea aria-label="Notice" rows={3} placeholder="Timings, what to bring, where to meet…" value={nt.body} onChange={x => setNt({ ...nt, body: x.target.value })}
+            className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
+          <Button size="sm" disabled={!nt.body.trim()} onClick={() => { go(E.SEND_EVENT_NOTICE, [e.id, nt.subject, nt.body],
+            r => r.n ? `Notice sent to ${r.n} famil${r.n === 1 ? 'y' : 'ies'}. It shows under this event in their app.` : 'No families are invited or going yet.'); setNt({ subject: '', body: '' }); }}>Send to families invited or going</Button>
+        </div>
+      </DetailSection>
+
+      <DetailSection title="Helpers">
+        <ul className="divide-y divide-line text-[14px]">
+          {helpers.data?.map(h => (
+            <li key={h.id} className="flex min-h-[44px] items-center gap-2 py-1">
+              <span className="min-w-0 flex-1"><b>{h.role}</b>{h.starts_at ? ` · ${time(h.starts_at)}` : ''}
+                <span className="block text-[12.5px] text-ink-2">{h.helpers ?? 'Nobody yet'}</span></span>
+              <Word tone={h.filled >= h.needed ? 'positive' : 'caution'}>{h.filled} of {h.needed}</Word>
+              <button aria-label={`Remove ${h.role}`} onClick={() => go(E.REMOVE_HELPER_SLOT, [h.id])} className="grid size-9 place-items-center rounded-[var(--radius-sm)] text-ink-3 hover:bg-surface-2 hover:text-critical"><Trash2 className="size-4" aria-hidden /></button>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-2 grid grid-cols-[minmax(0,1fr)_5rem] gap-1.5">
+          <Input aria-label="Helper role" placeholder="Front of house, backstage…" value={hs.role} onChange={x => setHs({ ...hs, role: x.target.value })} />
+          <Input aria-label="Helpers needed" type="number" min={1} max={50} value={hs.needed} onChange={x => setHs({ ...hs, needed: x.target.value })} />
+          <Input aria-label="Helper slot starts" type="datetime-local" className="col-span-2" value={hs.starts} onChange={x => setHs({ ...hs, starts: x.target.value })} />
+        </div>
+        <Button size="sm" className="mt-1.5" disabled={hs.role.trim().length < 2} onClick={() => { go(E.ADD_HELPER_SLOT, [e.id, hs.role, hs.starts ? new Date(hs.starts).toISOString() : null, Math.max(1, Number(hs.needed) || 1)],
+          () => 'Slot added. Families see it on their Events page and can sign up.'); setHs({ role: '', starts: '', needed: '2' }); }}>Add helper slot</Button>
+      </DetailSection>
 
       <DetailSection title="Chaperones">
         <ul className="divide-y divide-line text-[14px]">

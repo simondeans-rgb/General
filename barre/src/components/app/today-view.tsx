@@ -27,8 +27,8 @@ export function TodayView() {
 
   return (
     <Shell title="Today" allow={['owner', 'admin']}
-      subtitle={<span className="flex items-center gap-2">{dateLong(new Date())}{t && <>
-        <span aria-hidden>·</span><span>{t.name}, week {t.week} of {t.weeks}</span>
+      subtitle={<span className="flex flex-wrap items-center gap-x-2">{dateLong(new Date())}{t && <>
+        <span aria-hidden className="hidden sm:inline">·</span><span>{t.name}, week {t.week} of {t.weeks}</span>
         <Beats value={t.week} max={t.weeks} size="sm" label={`Week ${t.week} of ${t.weeks}`} className="hidden sm:inline-flex" /></>}</span>}>
       {/* Phone order: next class, what needs you, money, then the day's list. */}
       <div className="mx-auto grid max-w-[1240px] gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">

@@ -308,3 +308,11 @@ select s.id, btrim($1), nullif(btrim($2), ''), nullif(lower(btrim($3)), ''), nul
        $6::uuid, $7, coalesce($8::date, current_date + 2), auth.uid()
   from studio s where s.deleted_at is null and app.is_admin(s.id) limit 1
 returning id`;
+
+/* ── What the public page says about a class (UR-20) ───────────────────── */
+// Kept apart from CREATE/UPDATE_CLASS so those statements stay as they are.
+export type ClassPublicExtra = { level_note: string | null; what_to_bring: string | null };
+export const CLASS_PUBLIC_EXTRA = `select level_note, what_to_bring from class where id = $1`;
+export const SET_CLASS_PUBLIC_EXTRA = `
+update class set level_note = nullif(btrim($2), ''), what_to_bring = nullif(btrim($3), ''), updated_at = now()
+ where id = $1 returning id`;

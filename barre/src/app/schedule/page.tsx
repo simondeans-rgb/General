@@ -7,6 +7,7 @@ import { SessionRow, SectionHead, ViewTabs } from '@/components/app/session-row'
 import { SessionSheet } from '@/components/app/session-sheet';
 import { ClassForm } from '@/components/app/class-form';
 import { WeekGrid } from '@/components/app/week-grid';
+import { useLocationFilter } from '@/components/app/location-filter';
 import { useRows } from '@/lib/query';
 import { Button, EmptyState, Skeleton, ErrorState } from '@/components/ui';
 import * as Q from '@/lib/repos/dashboard';
@@ -22,7 +23,9 @@ export default function SchedulePage() {
   // The grid needs width; a phone starts on the list.
   React.useEffect(() => { if (window.innerWidth < 768) setView('week'); }, []);
   const [from, to] = React.useMemo(() => weekRange(anchor), [anchor]);
-  const sessions = useRows<Q.SessionRow>(['week', from], Q.SESSIONS_BETWEEN, [from, to]);
+  const all = useRows<Q.SessionRow>(['week', from], Q.SESSIONS_BETWEEN, [from, to]);
+  const place = useLocationFilter();
+  const sessions = { ...all, data: all.data?.filter(s => place.keep(s.location)) };
 
   const shift = (weeks: number) => {
     const next = new Date(anchor); next.setDate(next.getDate() + weeks * 7); setAnchor(next);
@@ -54,8 +57,11 @@ export default function SchedulePage() {
       }
     >
       <div className="mx-auto max-w-[1240px] space-y-6">
-        <ViewTabs label="Schedule view" value={view} onChange={setView}
-          options={[['grid', 'Week grid'], ['week', 'List'], ['day', 'Day'], ['teacher', 'Teacher'], ['room', 'Room']]} />
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+          <ViewTabs label="Schedule view" value={view} onChange={setView}
+            options={[['grid', 'Week grid'], ['week', 'List'], ['day', 'Day'], ['teacher', 'Teacher'], ['room', 'Room']]} />
+          {place.control}
+        </div>
 
         {sessions.isLoading && <div className="space-y-3">{[0,1,2,3].map(i => <Skeleton key={i} className="h-14" />)}</div>}
         {sessions.error && <ErrorState error={sessions.error} onRetry={() => sessions.refetch()} />}
