@@ -16,7 +16,7 @@ import { relativeDay } from '@/lib/format';
 
 const KIND_LABEL: Record<string, string> = {
   question: 'Question', private_lesson: 'Private lesson', medical_update: 'Medical update',
-  event_interest: 'Event', absence: 'Absence', other: 'Other',
+  event_interest: 'Event', absence: 'Absence', data_request: 'Data request', other: 'Other',
 };
 const STATUS_TEXT: Record<string, string> = { caution: 'text-caution', info: 'text-info', positive: 'text-positive', neutral: 'text-ink-2' };
 const STATUS: Record<string, { label: string; tone: Tone }> = {
