@@ -6,6 +6,7 @@ import { Search, CameraOff, Plus, Pencil, HeartPulse, UserPlus, Upload, ShieldAl
 import { Shell } from '@/components/app/shell';
 import { ImportWizard } from '@/components/app/import-wizard';
 import { DetailPanel, DetailSection, KeyValue } from '@/components/app/detail-panel';
+import { ImportedInvoices, EarlierAttendance } from '@/components/app/imported-history';
 import { FamilyAccount } from '@/components/app/family-account';
 import { invoiceState } from '@/lib/payments/invoice-status';
 import { useRows, useRow } from '@/lib/query';
@@ -265,6 +266,7 @@ function FamilyDetail({ id, onClose }: { id: string; onClose: () => void }) {
               ))}
             </ul>
           </DetailSection>
+          <ImportedInvoices familyId={f.id} />
 
           <DetailSection title="Messages">
             {messages.data?.length === 0 && <p className="text-[0.875rem] text-ink-3">No messages with this family.</p>}
@@ -409,6 +411,8 @@ function StudentDetail({ id, onClose }: { id: string; onClose: () => void }) {
               ))}
             </ul>
           </DetailSection>
+
+          <EarlierAttendance studentId={id} />
 
           <DetailSection title="Consent">
             <OfficeConsents studentId={id} name={s.preferred_name ?? s.first_name} />
