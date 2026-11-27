@@ -11,7 +11,7 @@ import { Button, Field, Input, Notice, Select, Skeleton, errorText } from '@/com
 import { Word } from './session-row';
 import * as C from '@/lib/repos/classes';
 import { SEND_DIRECT } from '@/lib/repos/inbox';
-import { ageFrom, dateShort, money, time, toDateInput } from '@/lib/format';
+import { ageFrom, dateLong, dateShort, money, time, toDateInput } from '@/lib/format';
 
 export function usePipeline(sql: string, onDone?: (rows: any[]) => void) {
   const { session } = useSession();
@@ -173,7 +173,7 @@ export function WithdrawSheet({ enrolmentId, name, onClose }: {
       error={withdraw.error ?? transfer.error} saving={withdraw.isPending || transfer.isPending}
       canSave={mode === 'leave' || !!toClass}
       saveLabel={mode === 'move' ? 'Move' : 'Withdraw'}
-      onSave={() => mode === 'move' ? transfer.mutate([enrolmentId, toClass, reason || null]) : withdraw.mutate([enrolmentId, reason])}>
+      onSave={() => mode === 'move' ? transfer.mutate([enrolmentId, toClass, reason || null, null]) : withdraw.mutate([enrolmentId, reason])}>
       <div role="radiogroup" aria-label="What is happening" className="grid grid-cols-2 gap-1 rounded-[var(--radius-md)] bg-surface-2 p-1">
         {([['leave', 'Leaving this class'], ['move', 'Moving to another']] as const).map(([k, l]) => (
           <button key={k} role="radio" aria-checked={mode === k} onClick={() => setMode(k)}
@@ -208,7 +208,9 @@ const PER: Record<string, string> = { term: 'a term', monthly: 'a month', one_of
  * Moving a student to another class, as its own action (UR-52): the picker
  * leaves out the class they are in, shows ages, price and free places, warns
  * when the age range does not suit, can tell the family in the app, and says
- * what the move means for the bill.
+ * what the move means for the bill. The move has a date: today, a day to come
+ * (it is planned, and registers keep the child in the old class until then),
+ * or a day earlier this term to record a move that already happened.
  */
 export function MoveSheet({ enrolmentId, studentName, age, familyId, from, onClose }: {
   enrolmentId: string; studentName: string; age: number | null; familyId?: string | null;
@@ -221,19 +223,29 @@ export function MoveSheet({ enrolmentId, studentName, age, familyId, from, onClo
   const [note, setNote] = React.useState('');
   const [tell, setTell] = React.useState(!!familyId);
   const [done, setDone] = React.useState<string | null>(null);
+  const today = toDateInput(new Date());
+  const [on, setOn] = React.useState(today);
   const target = options.data?.find(o => o.id === to);
+  const preview = useRows<C.MovePreview>(['move-preview', enrolmentId, to, on], C.MOVE_PREVIEW,
+    [enrolmentId, to || null, on || today]);
+  const p = preview.data?.[0];
+  const earliest = p ? toDateInput(p.earliest) : undefined;
+  const when = on > today ? 'future' : on < today ? 'past' : 'today';
+  const onWords = dateLong(on + 'T12:00:00');
   const outOfRange = !!target && age != null &&
     ((target.age_min != null && age < target.age_min) || (target.age_max != null && age > target.age_max));
   const ages = (o: C.MoveOption) => o.age_min != null ? (o.age_max != null ? `ages ${o.age_min}–${o.age_max}` : `${o.age_min}+`) : 'any age';
 
   const move = useMutation({
     mutationFn: () => runAs(session, async q => {
-      await q(C.TRANSFER, [enrolmentId, to, note || null]);
+      await q(C.TRANSFER, [enrolmentId, to, note || null, on || null]);
       if (tell && familyId && target) {
+        const slot = `${target.name} (${DAYS[target.day_of_week]} ${String(target.start_time).slice(0, 5)})`;
         await q(SEND_DIRECT,
           [familyId, `${studentName} is moving class`,
-           `${studentName} has moved from ${from.name} to ${target.name} (${DAYS[target.day_of_week]} ${String(target.start_time).slice(0, 5)}). `
-           + `Their next class is the next ${DAYS[target.day_of_week]} session. Reply here if anything doesn’t suit.`]);
+           when === 'future'
+             ? `${studentName} is moving from ${from.name} to ${slot} from ${onWords}. Until then, nothing changes. Reply here if anything doesn’t suit.`
+             : `${studentName} has moved from ${from.name} to ${slot}. Their next class is the next ${DAYS[target.day_of_week]} session. Reply here if anything doesn’t suit.`]);
       }
     }),
     onSuccess: () => { setDone(target?.name ?? 'the new class'); qc.invalidateQueries({ queryKey: ['db'] }); },
@@ -245,8 +257,14 @@ export function MoveSheet({ enrolmentId, studentName, age, familyId, from, onClo
   if (done) {
     return (
       <RecordSheet title="Move to another class" subtitle={studentName} onClose={onClose} onSave={onClose} saveLabel="Done">
-        <Notice word="Moved" tone="positive" title={`${studentName} is now in ${done}`}
-          detail={`Their history comes with them. The place in ${from.name} goes to its waiting list, if anyone is waiting.${tell ? ' The family has a message in the app.' : ''}`} />
+        {when === 'future' ? (
+          <Notice word="Planned" tone="positive" title={`${studentName} moves to ${done} on ${onWords}`}
+            detail={`Until then they stay on the ${from.name} register. On the day, their place in ${from.name} goes to its waiting list, if anyone is waiting. You can call the move off from their record.${tell ? ' The family has a message in the app.' : ''}`} />
+        ) : (
+          <Notice word="Moved" tone="positive" title={`${studentName} is now in ${done}`}
+            detail={`${when === 'past' ? `From ${onWords}. ` : ''}Their history comes with them. The place in ${from.name} goes to its waiting list, if anyone is waiting.${tell ? ' The family has a message in the app.' : ''}`} />
+        )}
+        {p?.note && <p className="text-[0.8438rem] text-ink-2">{p.note}</p>}
         {diff !== 0 && sameBasis && (
           <p className="text-[0.8438rem] text-ink-2">
             {done} costs {money(Math.abs(diff))} {diff > 0 ? 'more' : 'less'} {PER[target!.pricing] ?? ''}. Invoices already raised are not changed: adjust the
@@ -259,9 +277,10 @@ export function MoveSheet({ enrolmentId, studentName, age, familyId, from, onClo
 
   return (
     <RecordSheet title="Move to another class" subtitle={`${studentName} · from ${from.name}`} onClose={onClose}
-      error={move.error} saving={move.isPending} canSave={!!to && !!target && target.free > 0}
-      saveHint={!to ? 'Choose the class they are moving to.' : target && target.free <= 0 ? 'That class has no free place.' : null}
-      saveLabel="Move" onSave={() => move.mutate()}>
+      error={move.error} saving={move.isPending} canSave={!!to && !!target && target.free > 0 && !!on && (!earliest || on >= earliest)}
+      saveHint={!to ? 'Choose the class they are moving to.' : target && target.free <= 0 ? 'That class has no free place.'
+        : earliest && on < earliest ? 'A move can be dated back only to the start of this term.' : null}
+      saveLabel={when === 'future' ? 'Plan the move' : 'Move'} onSave={() => move.mutate()}>
       <Field label="New class" htmlFor="mv-to" required hint="Full classes cannot be chosen. Free places count offers already out.">
         <Select id="mv-to" value={to} onChange={e => setTo(e.target.value)}>
           <option value="">Choose a class…</option>
@@ -272,9 +291,18 @@ export function MoveSheet({ enrolmentId, studentName, age, familyId, from, onClo
           ))}
         </Select>
       </Field>
+      <Field label="From" htmlFor="mv-on" required
+        hint={when === 'future' ? 'A planned move. They stay in the current class until this day.'
+          : when === 'past' ? 'Back-dated. Registers from this day move with them; marks already made stay.'
+          : 'Their first day in the new class. Choose a later day to plan the move.'}>
+        <Input id="mv-on" type="date" value={on} min={earliest} onChange={e => setOn(e.target.value)} />
+      </Field>
       {outOfRange && (
         <Notice word="Age" tone="caution" title={`${target!.name} is for ${ages(target!)}`}
           detail={`${studentName} is ${age}. You can still move them if the teacher agrees.`} />
+      )}
+      {target && p?.note && (
+        <Notice word="Billing" title="What the move means for the bill" detail={p.note} />
       )}
       {target && diff !== 0 && (
         <p className="text-[0.8438rem] text-ink-2">

@@ -138,7 +138,8 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
   const full = !!c && c.enrolled >= c.capacity;
   const roster = useRows<{ id: string; enrolment_id: string; first_name: string; last_name: string;
                            date_of_birth: string; family_name: string; family_id: string; has_alert: boolean;
-                           attendance_pct: number | null }>(
+                           attendance_pct: number | null; leaving_on: string | null; leaving_to: string | null;
+                           joining_on: string | null }>(
     ['roster', id], C.CLASS_ROSTER, [id]);
   const waitlist = useRows<{ id: string; position: number; status: string; first_name: string;
                              last_name: string; family_name: string; date_of_birth: string;
@@ -188,7 +189,9 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
                       <span className="truncate text-[0.875rem] font-medium">{s.first_name} {s.last_name}</span>
                       {s.has_alert && <span className="shrink-0 text-[0.75rem] font-semibold text-critical">Medical</span>}
                     </span>
-                    <span className="block truncate text-[0.7812rem] text-ink-3">{ageFrom(s.date_of_birth)} · {s.family_name}</span>
+                    <span className="block truncate text-[0.7812rem] text-ink-3">{ageFrom(s.date_of_birth)} · {s.family_name}
+                      {s.leaving_on && ` · moves to ${s.leaving_to ?? 'another class'} ${dateShort(s.leaving_on)}`}
+                      {s.joining_on && ` · joins ${dateShort(s.joining_on)}`}</span>
                   </span>
                   {s.attendance_pct != null && (
                     <span className={cn('tnum shrink-0 text-[0.7812rem]',
