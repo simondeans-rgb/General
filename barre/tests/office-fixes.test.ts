@@ -349,6 +349,23 @@ describe('the funnel and Reports count trials the same way (UR-54)', () => {
   });
 });
 
+/* ── UR-46 message a filtered list ──────────────────────────────────────── */
+describe('message every family in a filtered list (UR-46)', () => {
+  it('filters families by class and sends one logged copy each', async () => {
+    const { SEND_DIRECT } = await import('../src/lib/repos/inbox');
+    await asUser(USERS.admin, async q => {
+      const facts = await q(H.FAMILY_FACTS);
+      const inTap = facts.filter((f: any) => f.class_ids.includes(CLASS.juniorTap));
+      expect(inTap.length).toBeGreaterThan(1);
+      for (const f of inTap) await q(SEND_DIRECT, [f.id, 'Tap shoes UR-46', 'Hello {{family}} — tap shoes on Tuesday.']);
+      const sent = await q(`select family_id from communication where subject = 'Tap shoes UR-46'`);
+      expect(new Set(sent.map((r: any) => r.family_id))).toEqual(new Set(inTap.map((f: any) => f.id)));
+      const [one] = await q(P.FAMILY_MESSAGES, [inTap[0].id]);
+      expect(one.subject).toBe('Tap shoes UR-46');
+    });
+  });
+});
+
 /* ── UR-53 / UR-11 a new school's first timetable ───────────────────────── */
 describe('a brand-new school builds its first timetable from onboarding (UR-53, UR-01, UR-11)', () => {
   it('creates its place, term, style and five classes with sessions, and has no sample data', async () => {

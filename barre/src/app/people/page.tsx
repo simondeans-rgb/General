@@ -11,7 +11,7 @@ import { useSelection } from '@/lib/use-selection';
 import { MedicalBrief, MedicalMarker } from '@/components/app/medical-brief';
 import type { Brief } from '@/lib/repos/teaching';
 import { useSearchParams } from 'next/navigation';
-import { Input, EmptyState, Skeleton, ErrorState, Button } from '@/components/ui';
+import { Input, EmptyState, Skeleton, ErrorState, Button, Select } from '@/components/ui';
 import { ViewTabs, Word } from '@/components/app/session-row';
 import * as P from '@/lib/repos/people';
 import {
@@ -21,7 +21,9 @@ import { money, dateShort, ageFrom } from '@/lib/format';
 import { RecordHistory } from '@/components/app/record-history';
 import { MoveSheet } from '@/components/app/enrolment-actions';
 import * as C from '@/lib/repos/classes';
-import { ArrowRightLeft } from 'lucide-react';
+import { ArrowRightLeft, MessageSquare } from 'lucide-react';
+import { BulkMessageSheet, DuplicatesSheet } from '@/components/app/family-tools';
+import * as H from '@/lib/repos/office';
 import { cn } from '@/lib/cn';
 
 type Tab = 'families' | 'students' | 'staff';
@@ -85,20 +87,66 @@ function People() {
 }
 
 /* ── Families ────────────────────────────────────────────────────────────── */
+type FamilyFilter = { cls: string; who: '' | 'owes' | 'app' | 'no_app' | 'prospect' };
+const WHO_LABEL: Record<FamilyFilter['who'], string> = {
+  '': 'All families', owes: 'Owe money', app: 'Use the app', no_app: 'Not using the app yet', prospect: 'Prospects (trial only)' };
+
 function FamilyList({ q, selected, onSelect }: { q: string; selected: string | null; onSelect: (id: string) => void }) {
   const rows = useRows<P.FamilyRow>(['families'], P.FAMILIES);
-  const filtered = React.useMemo(() => (rows.data ?? []).filter(f =>
-    !q || `${f.name} ${f.primary_guardian ?? ''} ${f.child_names ?? ''}`.toLowerCase().includes(q.toLowerCase())),
-    [rows.data, q]);
+  const facts = useRows<H.FamilyFacts>(['family-facts'], H.FAMILY_FACTS);
+  const classes = useRows<{ id: string; name: string }>(['class-options'], C.CLASS_OPTIONS);
+  const dups = useRows<H.Duplicate>(['family-duplicates'], H.FAMILY_DUPLICATES);
+  const [filter, setFilter] = React.useState<FamilyFilter>({ cls: '', who: '' });
+  const [messaging, setMessaging] = React.useState(false);
+  const [reviewing, setReviewing] = React.useState(false);
+  const factBy = React.useMemo(() => new Map((facts.data ?? []).map(f => [f.id, f])), [facts.data]);
+  const filtered = React.useMemo(() => (rows.data ?? []).filter(f => {
+    if (q && !`${f.name} ${f.primary_guardian ?? ''} ${f.child_names ?? ''}`.toLowerCase().includes(q.toLowerCase())) return false;
+    const x = factBy.get(f.id);
+    if (filter.cls && !x?.class_ids.includes(filter.cls)) return false;
+    if (filter.who === 'owes' && !(Number(f.balance_minor) > 0)) return false;
+    if (filter.who === 'app' && !x?.has_login) return false;
+    if (filter.who === 'no_app' && x?.has_login) return false;
+    if (filter.who === 'prospect' && !x?.is_prospect) return false;
+    return true;
+  }), [rows.data, q, filter, factBy]);
+  const filtering = !!(q || filter.cls || filter.who);
+  const filterLabel = [filter.cls ? `in ${classes.data?.find(c => c.id === filter.cls)?.name ?? 'a class'}` : null,
+    filter.who ? WHO_LABEL[filter.who].toLowerCase() : null, q ? `matching “${q}”` : null].filter(Boolean).join(', ') || 'every family';
 
   if (rows.isLoading) return <ListSkeleton />;
   if (rows.error) return <ErrorState error={rows.error} onRetry={() => rows.refetch()} />;
-  if (filtered.length === 0) return <EmptyState
-    title={q ? 'No families match that search' : 'No families yet'}
-    body={q ? 'Try a child’s first name or a surname.' : 'Families appear here once you add or import them.'} />;
 
   return (
     <div>
+      {!!dups.data?.length && (
+        <p className="mb-3 border-l-2 border-caution py-1 pl-3 text-[14px]">
+          <span className="font-semibold">{dups.data.length} possible duplicate famil{dups.data.length === 1 ? 'y' : 'ies'}.</span>{' '}
+          <button className="font-semibold text-accent-text hover:underline" onClick={() => setReviewing(true)}>Review</button>
+        </p>
+      )}
+      {reviewing && <DuplicatesSheet onClose={() => setReviewing(false)} />}
+      {/* Filter, then act on everyone the filter shows (UR-46). */}
+      <div className="mb-3 flex flex-wrap items-end gap-2">
+        <Select aria-label="Filter by class" value={filter.cls} className="h-10 w-auto min-w-0 max-w-[14rem] text-[14px]"
+                onChange={e => setFilter(f => ({ ...f, cls: e.target.value }))}>
+          <option value="">Any class</option>
+          {classes.data?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </Select>
+        <Select aria-label="Filter families" value={filter.who} className="h-10 w-auto min-w-0 text-[14px]"
+                onChange={e => setFilter(f => ({ ...f, who: e.target.value as FamilyFilter['who'] }))}>
+          {Object.entries(WHO_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+        </Select>
+        <Button size="sm" className="sm:ml-auto" disabled={filtered.length === 0} onClick={() => setMessaging(true)}>
+          <MessageSquare className="size-4" aria-hidden /> Message {filtering ? `these ${filtered.length}` : `all ${filtered.length}`}
+        </Button>
+      </div>
+      {messaging && <BulkMessageSheet families={filtered.map(f => ({ id: f.id, name: f.name }))} filterLabel={filterLabel}
+                                      onClose={() => setMessaging(false)} />}
+      {filtered.length === 0 && <EmptyState
+        title={filtering ? 'No families match' : 'No families yet'}
+        body={filtering ? 'Try a child’s first name, a surname, or fewer filters.' : 'Families appear here once you add or import them.'} />}
+      {filtered.length > 0 && <>
       <div aria-hidden className="hidden grid-cols-[minmax(0,1.1fr)_minmax(0,1.4fr)_8rem] gap-x-4 border-b-2 border-ink px-1 pb-2 md:grid">
         <span className="label">Family</span><span className="label">Children</span><span className="label text-right">Balance</span>
       </div>
@@ -126,6 +174,7 @@ function FamilyList({ q, selected, onSelect }: { q: string; selected: string | n
           );
         })}
       </ul>
+      </>}
     </div>
   );
 }

@@ -49,3 +49,14 @@ export const ENTITY_WORD: Record<string, string> = {
 
 /** "changed date_of_birth, first_name" → "changed date of birth, first name". */
 export const readableSummary = (s: string | null) => (s ?? '').replace(/_/g, ' ');
+
+/** What the /people family filters need (UR-46): classes, logins, prospects. */
+export type FamilyFacts = { id: string; class_ids: string[]; has_login: boolean; is_prospect: boolean; has_contact: boolean };
+export const FAMILY_FACTS = `
+select f.id, f.is_prospect,
+       coalesce((select array_agg(distinct e.class_id) from enrolment e join student s on s.id = e.student_id
+                  where s.family_id = f.id and e.status = 'active' and e.deleted_at is null and s.deleted_at is null), '{}') as class_ids,
+       exists (select 1 from guardian g where g.family_id = f.id and g.deleted_at is null and g.user_id is not null) as has_login,
+       exists (select 1 from guardian g where g.family_id = f.id and g.deleted_at is null
+                 and (g.email is not null or g.phone is not null)) as has_contact
+  from family f where f.deleted_at is null`;
