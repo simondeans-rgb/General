@@ -285,6 +285,10 @@ describe('migration toolkit (UR-32)', () => {
                                     and not exists (select 1 from invoice i where i.family_id = g.family_id and i.term_id = $2)
                                   order by g.family_id limit 2`, [STUDIO_ID, t]));
       expect(emails).toHaveLength(2);
+      // The seed's hand-made "Termly tuition" invoices are dated this term, which the
+      // billing-run guard (0045) rightly treats as billed; date them last term here.
+      await svc(`update invoice set issued_on = issued_on - 120, due_on = due_on - 120
+                  where family_id = any($1) and term_id is null`, [emails.map((e: any) => e.family_id)]);
       const rows = [{ parent_email: emails[0].email, balance: '45.50' }, { parent_email: emails[1].email, balance: '-20' }, { family: 'Nobody', balance: '1' }];
       const [{ r }] = await q(`select app.import_opening_balances($1::jsonb, current_date - 1, false, $2) r`, [JSON.stringify(rows), t]);
       expect(r.ok).toBe(false);

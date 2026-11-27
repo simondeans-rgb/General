@@ -149,8 +149,8 @@ begin
     end if;
     if v_photo in ('true', 'false') then
       insert into consent_record (studio_id, student_id, kind, granted, note)
-      values (st.id, kid, 'photography', v_photo = 'true', 'Given on the trial booking form')
-      on conflict (student_id, kind) do update set granted = excluded.granted, granted_at = now(), note = excluded.note, updated_at = now();
+      -- Consent is a history (0047): each choice is a new row; the latest wins.
+      values (st.id, kid, 'photography', v_photo = 'true', 'Given on the trial booking form');
     end if;
   end if;
   return 'ok';
