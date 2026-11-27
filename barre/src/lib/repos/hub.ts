@@ -71,6 +71,8 @@ export type EventRow = {
   requests_open: boolean; teacher: string | null; student_id: string | null;
   going: number; my_status: string | null; my_student: string | null;
   my_invite?: string | null; rehearsals?: { title: string; starts_at: string }[];
+  mine?: { id: string; student_id: string; first_name: string; status: string }[];
+  notices?: { subject: string | null; body: string; sent_at: string }[];
   routines?: { title: string; costume: string | null; position: number }[];
 };
 export const ANSWER_INVITE = `select app.answer_invitation($1, $2) as r`;
@@ -79,14 +81,22 @@ export const EVENTS = `
 select ev.id, ev.kind, ev.title, ev.description, ev.starts_at, ev.ends_at, ev.venue,
        ev.cost_minor, ev.capacity, ev.entries_close_on, ev.requests_open,
        sm.display_name as teacher, ev.student_id,
-       (select count(*)::int from event_participant p
-         where p.event_id = ev.id and p.status = 'confirmed' and p.deleted_at is null) as going,
+       app.event_places(ev.id) as going,
+       -- Each of my children on this event, with their own status (UR-50).
+       -- RLS keeps event_participant to my own children.
+       coalesce((select jsonb_agg(jsonb_build_object('id', p.id, 'student_id', s.id, 'first_name', s.first_name, 'status', p.status::text)
+                                  order by s.date_of_birth)
+                   from event_participant p join student s on s.id = p.student_id
+                  where p.event_id = ev.id and p.deleted_at is null), '[]') as mine,
        (select p.status::text from event_participant p
-         where p.event_id = ev.id and p.deleted_at is null limit 1) as my_status,
-       (select s.first_name from event_participant p join student s on s.id = p.student_id
-         where p.event_id = ev.id and p.deleted_at is null limit 1) as my_student,
+         where p.event_id = ev.id and p.deleted_at is null
+         order by array_position(array['confirmed','invited','requested','waitlisted','declined','withdrawn'], p.status::text) limit 1) as my_status,
+       (select string_agg(s.first_name, ' & ' order by s.date_of_birth) from event_participant p join student s on s.id = p.student_id
+         where p.event_id = ev.id and p.deleted_at is null and p.status not in ('declined', 'withdrawn')) as my_student,
        (select p.id from event_participant p where p.event_id = ev.id and p.deleted_at is null
            and p.status = 'invited' limit 1) as my_invite,
+       coalesce((select jsonb_agg(jsonb_build_object('subject', cm.subject, 'body', cm.body, 'sent_at', cm.sent_at) order by cm.sent_at desc)
+                   from communication cm where cm.event_id = ev.id and cm.deleted_at is null), '[]') as notices,
        coalesce((select jsonb_agg(jsonb_build_object('title', r.title, 'starts_at', r.starts_at) order by r.starts_at)
                    from studio_event r where r.parent_event_id = ev.id and r.deleted_at is null and r.status = 'published'), '[]') as rehearsals,
        coalesce((select jsonb_agg(jsonb_build_object('title', rt.title, 'costume', rt.costume, 'position', rt.position) order by rt.position)

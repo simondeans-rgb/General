@@ -121,12 +121,33 @@ export function buildSeedSql({ today = new Date() }: SeedOptions = {}): string {
     + `\nupdate class_session cs set register_closed_at = cs.ends_at
          where cs.ends_at < now() - interval '2 hours' and cs.register_closed_at is null
            and exists (select 1 from attendance_record a where a.session_id = cs.id);`
+    + `\n${CLASS_INFO_SQL}`
     + `\nselect app.award_event_milestones(id) from studio;`
     + `\nselect set_config('app.quiet', 'off', false);\n`
     // Fresh tables have no planner statistics; without them some permission-
     // heavy reports pick very slow plans until autovacuum catches up.
     + `analyze;\n`;
 }
+
+/** What families read about each class on the public page (UR-20). */
+const CLASS_INFO: [string, string, string, string][] = [
+  ['Pre-School Ballet', 'Music, movement and imagination for little ones, with simple ballet steps and plenty of stories.', 'No experience needed', 'Leotard or comfortable clothes, ballet shoes or bare feet. A parent stays nearby.'],
+  ['Primary Ballet', 'The first steps of classical ballet: posture, pointed feet and lots of jumps, ready for Grade 1.', 'No experience needed', 'Leotard and pink ballet shoes; hair tied back. Trainers are fine for a first visit.'],
+  ['Grade 2 Ballet', 'Building strength and line through the Grade 2 syllabus, with the option to take the exam.', 'Some ballet: Grade 1 or a year of classes', 'Leotard, pink tights and ballet shoes; hair in a bun.'],
+  ['Grade 3 Ballet', 'Grade 3 syllabus work, character dance and a free movement section, working towards the exam.', 'Grade 2 passed, or the teacher’s invitation', 'Leotard, pink tights, ballet shoes and character shoes; hair in a bun.'],
+  ['Junior Tap', 'Rhythm, timing and lots of noise: shuffles, flaps and simple routines to music children know.', 'No experience needed', 'Comfortable clothes and tap shoes. Trainers are fine for a first visit.'],
+  ['Senior Tap', 'Faster rhythms, time steps and longer routines for older dancers.', 'A year or more of tap', 'Comfortable clothes and tap shoes.'],
+  ['Modern Juniors', 'Energetic modern dance: travelling steps, turns, jumps and short routines.', 'No experience needed', 'Shorts or leggings and a T-shirt; bare feet or jazz shoes.'],
+  ['Contemporary Seniors', 'Floor work, release technique and improvisation, creating pieces together.', 'Some dance experience helps', 'Leggings or joggers and a fitted top; bare feet.'],
+  ['Street Juniors', 'Hip hop grooves, freezes and fun routines to clean, current music.', 'No experience needed', 'Comfortable clothes and clean trainers. Bring a water bottle.'],
+  ['Street Seniors', 'Choreography and freestyle across hip hop, house and commercial styles.', 'Some street dance helps, beginners welcome', 'Comfortable clothes and clean trainers. Bring a water bottle.'],
+  ['Jazz Intermediate', 'Kicks, leaps, turns and sharp jazz routines for confident dancers.', 'A year or more of dance', 'Leggings or shorts, a fitted top and jazz shoes.'],
+  ['Saturday Ballet Grade 1', 'The Grade 1 syllabus on a Saturday morning: posture, footwork and expressive dance.', 'Primary Ballet or a term of classes', 'Leotard, pink ballet shoes; hair tied back.'],
+  ['Adult Contemporary (drop-in)', 'For adults, all levels. Come when you can: pay per class or buy a pack.', 'All levels, including complete beginners', 'Comfortable clothes you can move in; bare feet or socks. Bring water.'],
+];
+const CLASS_INFO_SQL = `update class c set description = coalesce(c.description, v.d), level_note = v.l, what_to_bring = v.b
+  from (values ${CLASS_INFO.map(r => row([r[0], r[1], r[2], r[3]])).join(', ')}) v(n, d, l, b)
+ where c.name = v.n and c.studio_id = '${STUDIO_ID}';`;
 
 type Ctx = {
   termId: string; base: Date;
