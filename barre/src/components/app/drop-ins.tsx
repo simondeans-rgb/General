@@ -14,7 +14,7 @@ import { dateLong, money, time, dateShort } from '@/lib/format';
  * Pay-as-you-go classes for a family (R-034): book a date, buy a pack, cancel
  * in good time. Shows nothing if the school runs no drop-in classes.
  */
-export function DropIns({ children }: { children: { id: string; first_name: string }[] }) {
+export function DropIns({ children }: { children: { id: string; first_name: string; date_of_birth?: string; is_me?: boolean }[] }) {
   const { session } = useSession();
   const qc = useQueryClient();
   const sessions = useRows<F.DropInSession>(['drop-in-sessions'], F.DROP_IN_SESSIONS);
@@ -22,7 +22,9 @@ export function DropIns({ children }: { children: { id: string; first_name: stri
   const packs = useRows<F.Pack>(['packs'], F.PACKS);
   const myPacks = useRows<F.MyPack>(['my-packs'], F.MY_PACKS);
   const [who, setWho] = React.useState('');
-  const kid = who || children[0]?.id || '';
+  // An adult booking for themselves starts on their own name (UR-21).
+  const kid = who || children.find(c => c.is_me)?.id || children[0]?.id || '';
+  const dob = children.find(c => c.id === kid)?.date_of_birth;
   const [done, setDone] = React.useState<string | null>(null);
   const act = useMutation({
     mutationFn: async (v: { sql: string; params: unknown[]; ok: (r: any) => string }) => v.ok((await runAs(session, q => q(v.sql, v.params)))[0]),
@@ -66,9 +68,10 @@ export function DropIns({ children }: { children: { id: string; first_name: stri
             <li key={s.session_id} className="flex items-center gap-3 py-2.5">
               <span className="min-w-0 flex-1"><span className="font-semibold">{s.class_name}</span><span className="block text-[13px] text-ink-3">{dateLong(s.starts_at)} · {time(s.starts_at)} · {s.places_left} place{s.places_left === 1 ? '' : 's'} left</span></span>
               <span className="tnum text-[14px] font-semibold">{money(s.price_minor)}</span>
+              {!fits(dob, s) ? <span className="max-w-[9rem] text-right text-[12.5px] font-semibold text-ink-2">Not for {name}’s age</span> :
               <Button size="sm" disabled={!kid} loading={act.isPending && act.variables?.params[0] === s.session_id}
                 onClick={() => act.mutate({ sql: F.BOOK_DROP_IN, params: [s.session_id, kid],
-                  ok: r => `${name} is booked in. ${r.r.paid_with === 'pack' ? `${r.r.pack_left} left on the pack.` : 'Added to your account.'}` })}>Book</Button>
+                  ok: r => `${name} is booked in. ${r.r.paid_with === 'pack' ? `${r.r.pack_left} left on the pack.` : 'Added to your account.'}` })}>Book</Button>}
             </li>
           ))}
         </ul>
@@ -86,4 +89,14 @@ export function DropIns({ children }: { children: { id: string; first_name: stri
       </div>
     </section>
   );
+}
+
+/** Whether a dancer of this date of birth is within a session's age range on
+ *  its day. The database refuses the booking either way (UR-06). */
+function fits(dob: string | undefined, s: { starts_at: string; age_min: number | null; age_max: number | null }) {
+  if (!dob || (s.age_min == null && s.age_max == null)) return true;
+  const on = new Date(s.starts_at), b = new Date(dob);
+  let age = on.getFullYear() - b.getFullYear();
+  if (on.getMonth() < b.getMonth() || (on.getMonth() === b.getMonth() && on.getDate() < b.getDate())) age--;
+  return (s.age_min == null || age >= s.age_min) && (s.age_max == null || age <= s.age_max);
 }

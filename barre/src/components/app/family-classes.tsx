@@ -71,6 +71,10 @@ export function ChildClassesSheet({ child, onClose }: { child: { id: string; fir
                   : o.enrolled ? <span className="text-[13.5px] font-semibold text-positive">{child.first_name} is in this class</span>
                   : o.waiting ? <span className="text-[13.5px] font-semibold text-info">On the waiting list</span>
                   : o.asked ? <span className="text-[13.5px] font-semibold text-caution">Asked. The office will be in touch.</span>
+                  // Shown for information only: the school refuses out-of-age requests (UR-54).
+                  : !o.age_fits ? <span className="text-[13.5px] font-semibold text-ink-2">
+                      Not for {child.first_name}’s age{o.age_min != null || o.age_max != null ? ` (${o.age_min ?? 0}${o.age_max != null ? `–${o.age_max}` : '+'})` : ''}. Ask the office if you think it should be.
+                    </span>
                   : (
                     <>
                       {!o.full && (
@@ -99,7 +103,7 @@ export function ChildClassesSheet({ child, onClose }: { child: { id: string; fir
         </ul>
         {hidden > 0 && !all && (
           <Button variant="ghost" size="sm" className="mt-2" onClick={() => setAll(true)}>
-            Show {hidden} more for other ages
+            Show {hidden} more for other ages (to look at only)
           </Button>
         )}
       </div>
