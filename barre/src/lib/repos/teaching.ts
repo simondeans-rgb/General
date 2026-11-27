@@ -90,8 +90,11 @@ with roll as (
   select s.id, s.first_name, s.last_name, s.preferred_name, s.date_of_birth, false as is_trial
     from enrolment e
     join student s on s.id = e.student_id
-   where e.class_id = (select class_id from class_session where id = $1)
-     and e.status = 'active' and e.deleted_at is null
+    join class_session cs on cs.id = $1 and cs.class_id = e.class_id
+   -- A child moving class (UR-52) is on the old class's registers before the
+   -- move day and on the new one's from it.
+   where e.deleted_at is null
+     and app.enrolment_on(e.status, e.started_on, e.ended_on, e.moved_from, e.moved_to, cs.starts_at::date)
   union all
   select s.id, s.first_name, s.last_name, s.preferred_name, s.date_of_birth, true
     from trial t
