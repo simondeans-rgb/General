@@ -175,6 +175,90 @@ constrained in the database to raster data URLs or https links. Tested with
 an SVG carrying both an `onload` handler and a `<script>` element: neither
 ran, and what was stored was a PNG.
 
+## Media of children
+
+Videos and photos of pupils are the most sensitive thing a dance school
+shares, so who may see them is decided in the database (migration 0057), not
+in the screens.
+
+**Teachers see their own classes' material.** A teacher reads library
+material pinned to a class they teach, assist or cover (from the day before a
+covered session to a fortnight ahead), to a level they teach, or to one of
+their pupils; plus anything they added themselves and the studio-wide pages
+the office marks *for all staff*. Owners and administrators read everything,
+as before. Files and assignments follow the resource they belong to. Only the
+office can mark something for all staff.
+
+**Media that shows children needs every named child's consent.** A resource
+can say it shows children (`resource.shows_children`, asked on every video or
+photo upload) and name them (`resource_child`, picked from the class, with
+each child's current consent shown). Families and students can read it only
+while every named child currently has the matching consent: video consent for
+video and audio, photography consent for photos and documents. "Not recorded"
+counts as no. It is worked out on every read, through the same
+`app.consent_effective` the rest of the app uses (most restrictive guardian
+wins), so withdrawing consent hides it on the next read and granting it shows
+it again, with nothing to re-run. Staff still see it, with "Hidden from
+families: consent not given for N children".
+
+- Marked as showing children with nobody named, it stays staff-only until the
+  children are named or the office confirms no child can be identified
+  (`no_identifiable_children`, recorded with who and when).
+- Media of children never reaches families as "studio-wide": it must be
+  pinned to a class, level or child, and a family sees it only through a
+  child of theirs in that class (and with the consents above).
+- Once something is marked as showing children, only the office can take
+  that back. A teacher names only children they teach, on their own material.
+- Families never read `resource_child`; staff status comes from
+  `app.resource_child_status`, which returns nothing to a family.
+
+The rule lives in `app.resource_ids_for_student` and the guardian and student
+policies on `resource`; `resource_file` and the bucket check below inherit it.
+Tests: `tests/video-access.test.ts`.
+
+**No permanent URLs.** The demo stores files in the in-browser database and
+plays them from a `blob:` URL that is minted only after the read passed row
+level security and is revoked when the row closes. The hosted adapter
+(`src/lib/storage-hosted.ts`, wired up in `src/lib/storage.ts`) uses a
+**private** Supabase Storage bucket and signs a URL per Play that expires in
+60 seconds (never more than 5 minutes). It signs only after
+`app.can_read_media(object_key)` says yes, and refuses anything that comes
+back as an `/object/public/` URL. A link that has been handed out expires on
+its own soon after consent is withdrawn; a new one cannot be minted. The
+bucket's own policies call the same function, so the storage API itself
+refuses a direct read:
+
+```sql
+-- Supabase: run once per project. The bucket must be private.
+insert into storage.buckets (id, name, public) values ('media', 'media', false);
+create policy media_read on storage.objects for select to authenticated
+  using (bucket_id = 'media' and app.can_read_media(name));
+create policy media_write on storage.objects for insert to authenticated
+  with check (bucket_id = 'media' and app.is_staff(((storage.foldername(name))[1])::uuid));
+create policy media_delete on storage.objects for delete to authenticated
+  using (bucket_id = 'media' and app.is_admin(((storage.foldername(name))[1])::uuid));
+```
+
+`app.can_read_media` is `security invoker` on purpose: it reads
+`resource_file` under the caller's own policies. Objects whose row never
+committed (an upload that failed half way) are unreachable and should be
+removed by a nightly sweep. The hosted path has not been run against a real
+project from this build; its URL handling is unit-tested with a stubbed fetch.
+
+**View, not download.** For families and students, media showing children
+has no download link: video plays with `controlslist="nodownload"`, no
+picture-in-picture and no right-click menu, and a photo is shown inline
+rather than offered as a file. This is a courtesy, not a control. Nothing in
+a browser can stop a screenshot, a screen recording or a phone pointed at the
+screen; that is why the consent rule above is enforced before the file is
+ever sent.
+
+**Links.** A resource that is a link to another site (YouTube, Vimeo) is only
+as private as that site's settings, and its URL is permanent. The upload form
+says so when a video link is marked as showing children: upload the file
+instead. Skill demonstration links (`framework_skill.demo_url`) are for staff
+or professional demonstrations, not footage of pupils.
+
 ## What is NOT protected in this build
 
 Being plain about it:
@@ -185,6 +269,7 @@ Being plain about it:
   and nothing else changes.
 - **The browser demo's data is local.** It lives in IndexedDB on the viewer's
   own machine, holds seeded fictional people, and is never transmitted.
+- **Media cannot be protected from screen capture.** See "Media of children".
 
 ## UK GDPR
 

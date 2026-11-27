@@ -1,6 +1,7 @@
 'use client';
 
 import { runAs, type Query, type Session } from '@/lib/db/client';
+import { createHostedMedia, objectKeyFor, objectKeyFromPath, OBJECT_PREFIX, type HostedStorageConfig } from '@/lib/storage-hosted';
 
 /**
  * File storage.
@@ -12,8 +13,13 @@ import { runAs, type Query, type Session } from '@/lib/db/client';
  *
  *   demo      bytes in Postgres (compiled to WASM, so "the server" is the tab)
  *   hosted    Supabase Storage, path into a private bucket, signed on read
+ *             (src/lib/storage-hosted.ts; URLs live MEDIA_URL_TTL_SECONDS)
  *
- * Nothing above this file knows which one is in use.
+ * Nothing above this file knows which one is in use. Neither adapter ever
+ * hands out a permanent or public URL: the demo mints a blob: URL that dies
+ * with the tab, the hosted one a signed URL that expires in a minute, and both
+ * only after the database has said yes under the viewer's own row level
+ * security. See docs/SECURITY.md, "Media of children".
  */
 
 export type StoredFile = { path: string; size: number; mime: string; name: string };
@@ -95,6 +101,57 @@ function toBytes(value: unknown): Uint8Array<ArrayBuffer> {
     return out;
   }
   throw new Error('Unrecognised binary value from the database');
+}
+
+/* -------------------------------------------------------------------------
+   Hosted adapter: a private Supabase Storage bucket.
+   The bytes never touch Postgres; resource_file keeps the metadata and the
+   object key, so the same RLS decides who may have it. Reads are signed URLs
+   minted per Play and expiring in MEDIA_URL_TTL_SECONDS.
+   Switch it on by setting `storage` below to hostedStorageAdapter(config)
+   once the session comes from Supabase Auth (docs/ARCHITECTURE.md).
+   ------------------------------------------------------------------------- */
+const HOSTED_MAX = 500 * 1024 * 1024;
+
+export function hostedStorageAdapter(config: Omit<HostedStorageConfig, 'canRead'>): StorageAdapter {
+  const media = createHostedMedia({
+    ...config,
+    canRead: async (key, viewer) => {
+      const rows = await runAs(viewer as Session, q => q<{ ok: boolean }>(`select app.can_read_media($1) as ok`, [key]));
+      return !!rows[0]?.ok;
+    },
+  });
+  return {
+    label: 'the studio’s private file store',
+    maxBytes: config.maxBytes ?? HOSTED_MAX,
+
+    async upload(file, { q, resourceId, studioId }) {
+      if (file.size > (config.maxBytes ?? HOSTED_MAX)) throw new Error(`That file is ${formatBytes(file.size)}, over the limit.`);
+      const mime = file.type || guessMime(file.name);
+      const key = objectKeyFor(studioId, resourceId, file.name, crypto.randomUUID());
+      // Row first, inside the caller's transaction: if the upload fails the
+      // transaction rolls the row back. An object whose row never committed is
+      // unreachable (can_read_media finds no row) and the nightly sweep removes it.
+      await q(`insert into resource_file (studio_id, resource_id, file_name, mime_type, size_bytes, object_key, uploaded_by)
+               values ($1, $2, $3, $4, $5, $6, auth.uid())
+               on conflict (resource_id) do update
+                 set file_name = excluded.file_name, mime_type = excluded.mime_type, size_bytes = excluded.size_bytes,
+                     object_key = excluded.object_key, bytes = null, updated_at = now()`,
+              [studioId, resourceId, file.name, mime, file.size, key]);
+      await media.put(key, file, mime);
+      const path = OBJECT_PREFIX + key;
+      await q(`update resource set storage_path = $2, url = null where id = $1`, [resourceId, path]);
+      return { path, size: file.size, mime, name: file.name };
+    },
+
+    async resolve(path, session) {
+      const key = objectKeyFromPath(path);
+      if (!key) return null;
+      return media.sign(key, session);
+    },
+
+    release() { /* signed URLs expire on their own */ },
+  };
 }
 
 export const storage: StorageAdapter = localStorageAdapter;
