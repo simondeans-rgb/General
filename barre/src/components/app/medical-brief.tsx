@@ -4,6 +4,13 @@ import * as React from 'react';
 import { AlertTriangle, HeartPulse, Phone } from 'lucide-react';
 import type { Brief } from '@/lib/repos/teaching';
 import { cn } from '@/lib/cn';
+import { BriefConsentLines } from './consents';
+
+/** The child a brief is about: register rows carry student_id, student lists id. */
+function briefStudentId(b: Brief): string | undefined {
+  const r = b as Brief & { student_id?: string; id?: string };
+  return r.student_id ?? r.id;
+}
 
 /**
  * The marker beside a child's name. Two levels, each with its own shape and
@@ -100,11 +107,8 @@ export function MedicalBrief({ brief, layout = 'side' }: { brief: Brief; layout?
             </li>
           ))}
         </ul>
-        {brief.photo_consent !== null && brief.photo_consent !== undefined && (
-          <p className={cn('mt-2 text-[13.5px]', brief.photo_consent ? 'text-ink-3' : 'font-semibold text-caution')}>
-            {brief.photo_consent ? 'Photos allowed' : 'No photos'}
-          </p>
-        )}
+        {/* Consent is always stated; "not recorded" is never hidden (UR-08). */}
+        <BriefConsentLines studentId={briefStudentId(brief)} photo={brief.photo_consent} />
       </section>
     </div>
   );
