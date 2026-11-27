@@ -5,10 +5,18 @@ beforeAll(async () => { await rebuild(); }, 60_000);
 afterAll(async () => { await closeDb(); });
 
 const myKid = async (q: any) => (await q(`select id, first_name from student order by date_of_birth desc limit 1`))[0];
-const notIn = async (svc: any, kid: string, full: boolean) => (await svc(
+// Every seeded Wright child is already in each class their age allows. These
+// tests are about the request flow, not age limits (UR-06 has its own tests),
+// so the chosen class is opened to all ages inside the rolled-back transaction.
+const anyAge = (svc: any, cls: string) => svc(`update class set age_min = null, age_max = null where id = $1`, [cls]);
+const notIn = async (svc: any, kid: string, full: boolean) => {
+  const id = (await svc(
   `select c.id from class c where c.deleted_at is null and c.visibility <> 'private'
      and ${full ? '' : 'not'} (app.class_enrolled_count(c.id) >= c.capacity)
      and not exists (select 1 from enrolment e where e.class_id = c.id and e.student_id = $1 and e.status = 'active') limit 1`, [kid]))[0]?.id;
+  if (id) await anyAge(svc, id);
+  return id;
+};
 
 describe('a parent asks for a class place (R-014)', () => {
   it('the office approves in one step: a place if there is one', async () => {
@@ -30,6 +38,7 @@ describe('a parent asks for a class place (R-014)', () => {
   it('a full class puts the child on the waiting list instead', async () => {
     await asUser(USERS.guardianA, async (q, svc) => {
       const kid = await myKid(q);
+      await anyAge(svc, CLASS.grade3Ballet);
       const [{ id }] = await q(`select app.request_class_place($1, $2, null) id`, [kid.id, CLASS.grade3Ballet]);
       await svc(`select set_config('request.jwt.claims', $1, true)`, [JSON.stringify({ sub: USERS.admin, role: 'authenticated' })]);
       expect((await q(`select app.approve_class_request($1) o`, [id]))[0].o).toBe('waitlisted');
@@ -96,6 +105,7 @@ describe('a parent books a trial or joins a waiting list (R-014)', () => {
   it('joins the waiting list of a full class, but not one with space', async () => {
     await asUser(USERS.guardianA, async (q, svc) => {
       const kid = await myKid(q);
+      await anyAge(svc, CLASS.grade3Ballet);
       const pos = (await q(`select app.parent_join_waitlist($1, $2) p`, [CLASS.grade3Ballet, kid.id]))[0].p;
       expect(pos).toBeGreaterThan(8);
       const open = await notIn(svc, kid.id, false);

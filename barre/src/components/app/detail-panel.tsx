@@ -43,8 +43,8 @@ export function DetailPanel({
       >
         <div className="sticky top-0 z-10 flex items-start gap-3 border-b border-line bg-surface px-5 pb-3 pt-4">
           <div className="min-w-0 flex-1">
-            <h2 className="truncate font-display text-[20px] leading-tight">{title}</h2>
-            {subtitle && <div className="mt-1 truncate text-[13.5px] text-ink-3">{subtitle}</div>}
+            <h2 className="truncate font-display text-[1.25rem] leading-tight">{title}</h2>
+            {subtitle && <div className="mt-1 truncate text-[0.8438rem] text-ink-3">{subtitle}</div>}
           </div>
           {actions}
           <button onClick={onClose} aria-label="Close details"
@@ -64,7 +64,7 @@ export function DetailSection({ title, children, action }: {
   return (
     <section className="mb-7 last:mb-0">
       <div className="mb-2 flex min-h-[28px] items-center gap-2 border-b border-ink pb-1.5">
-        <h3 className="section-title text-[14px]">{title}</h3>
+        <h3 className="section-title text-[0.875rem]">{title}</h3>
         {action && <div className="ml-auto">{action}</div>}
       </div>
       {children}
@@ -76,7 +76,7 @@ export function KeyValue({ rows }: { rows: [string, React.ReactNode][] }) {
   return (
     <dl className="divide-y divide-line">
       {rows.map(([k, v]) => (
-        <div key={k} className="flex gap-3 py-2 text-[14px]">
+        <div key={k} className="flex gap-3 py-2 text-[0.875rem]">
           <dt className="w-28 shrink-0 text-ink-3">{k}</dt>
           <dd className="min-w-0 flex-1 break-words">{v ?? <span className="text-ink-3">—</span>}</dd>
         </div>

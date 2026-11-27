@@ -1,7 +1,14 @@
 import { beforeAll, afterAll, describe, expect, it } from 'vitest';
-import { asUser, closeDb, expectRejected, rebuild, USERS, STUDIO_ID, FAMILY } from './helpers';
+import { asUser, closeDb, commitService, expectRejected, rebuild, USERS, STUDIO_ID, FAMILY } from './helpers';
 
-beforeAll(async () => { await rebuild(); }, 60_000);
+beforeAll(async () => {
+  await rebuild();
+  // The seeded "Termly tuition" invoices name no class, so a run now treats
+  // their families as already billed for the term (UR-10). These tests bill
+  // a term nobody has been invoiced for yet: date the seeded ones last term.
+  await commitService(`update invoice set issued_on = issued_on - 120, due_on = due_on - 120
+                        where number between 'INV-1041' and 'INV-1070'`);
+}, 60_000);
 afterAll(async () => { await closeDb(); });
 
 const term = async (svc: any) => (await svc(`select id from term where studio_id = $1 limit 1`, [STUDIO_ID]))[0].id;

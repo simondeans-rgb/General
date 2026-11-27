@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MessageSquarePlus } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Shell } from '@/components/app/shell';
+import { useFamilyVoice } from '@/components/app/adult-self';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
@@ -16,7 +17,7 @@ import { relativeDay } from '@/lib/format';
 
 const KIND_LABEL: Record<string, string> = {
   question: 'Question', private_lesson: 'Private lesson', medical_update: 'Medical update',
-  event_interest: 'Event', absence: 'Absence', other: 'Other',
+  event_interest: 'Event', absence: 'Absence', data_request: 'Data request', other: 'Other',
 };
 const STATUS_TEXT: Record<string, string> = { caution: 'text-caution', info: 'text-info', positive: 'text-positive', neutral: 'text-ink-2' };
 const STATUS: Record<string, { label: string; tone: Tone }> = {
@@ -50,20 +51,20 @@ export default function ParentEnquiries() {
               const s = STATUS[r.status] ?? STATUS.open!;
               return (
                 <li key={r.id} className="py-4">
-                  <p className="text-[13px] text-ink-3">
+                  <p className="text-[0.8125rem] text-ink-3">
                     <span className="font-semibold text-ink-2">{KIND_LABEL[r.kind] ?? r.kind}</span>
                     {' · '}<span className={cn('font-semibold', STATUS_TEXT[s.tone])}>{s.label}</span>
                     {r.student_name && <> · about {r.student_name}</>}
                   </p>
                   <div className="mt-0.5 flex items-baseline gap-3">
                     <h2 className="min-w-0 flex-1 font-semibold leading-snug">{r.subject}</h2>
-                    <span className="shrink-0 text-[13px] text-ink-3">{relativeDay(r.created_at)}</span>
+                    <span className="shrink-0 text-[0.8125rem] text-ink-3">{relativeDay(r.created_at)}</span>
                   </div>
-                  <p className="mt-1 text-[14.5px] leading-relaxed text-ink-2">{r.body}</p>
+                  <p className="mt-1 text-[0.9062rem] leading-relaxed text-ink-2">{r.body}</p>
                   {r.answer && (
                     <div className="mt-3 border-l-2 border-positive pl-3">
-                      <p className="text-[13px] font-semibold text-positive">The studio replied</p>
-                      <p className="mt-0.5 text-[15px]">{r.answer}</p>
+                      <p className="text-[0.8125rem] font-semibold text-positive">The studio replied</p>
+                      <p className="mt-0.5 text-[0.9375rem]">{r.answer}</p>
                     </div>
                   )}
                 </li>
@@ -79,6 +80,7 @@ export default function ParentEnquiries() {
 }
 
 function AskDialog({ onClose }: { onClose: () => void }) {
+  const voice = useFamilyVoice();
   const { session } = useSession();
   const qc = useQueryClient();
   const children = useRows<{ id: string; first_name: string; last_name: string }>(
@@ -107,19 +109,19 @@ function AskDialog({ onClose }: { onClose: () => void }) {
                    border border-line bg-surface p-4 pb-safe shadow-lg sm:rounded-[var(--radius-xl)]">
         {done ? (
           <div className="py-2">
-            <p className="font-display text-[22px] uppercase leading-none tracking-[-0.01em] [font-stretch:80%]">Sent</p>
+            <p className="font-display text-[1.375rem] uppercase leading-none tracking-[-0.01em] [font-stretch:80%]">Sent</p>
             <p id="ask-t" className="mt-1.5 font-semibold">Sent to the studio</p>
             <p className="mt-1 text-sm text-ink-2">You will see the reply here.</p>
             <Button className="mt-4 w-full" variant="primary" onClick={onClose}>Done</Button>
           </div>
         ) : (
           <>
-            <h2 id="ask-t" className="text-[17px] font-semibold tracking-tight">Ask the studio</h2>
+            <h2 id="ask-t" className="text-[1.0625rem] font-semibold tracking-tight">Ask the studio</h2>
             <div className="mt-4 space-y-3">
               {(children.data?.length ?? 0) > 1 && (
-                <Field label="About which child" htmlFor="ask-child">
+                <Field label={voice.self ? 'Who is it about' : 'About which child'} htmlFor="ask-child">
                   <Select id="ask-child" value={studentId} onChange={e => setStudentId(e.target.value)}>
-                    {children.data?.map(c => <option key={c.id} value={c.id}>{c.first_name} {c.last_name}</option>)}
+                    {children.data?.map(c => <option key={c.id} value={c.id}>{c.id === voice.self?.id ? 'Me' : `${c.first_name} ${c.last_name}`}</option>)}
                   </Select>
                 </Field>
               )}
@@ -133,7 +135,7 @@ function AskDialog({ onClose }: { onClose: () => void }) {
                 </Select>
               </Field>
               {kind === 'medical_update' && (
-                <p className="border-l-2 border-caution pl-3 text-[13.5px] text-ink-2">
+                <p className="border-l-2 border-caution pl-3 text-[0.8438rem] text-ink-2">
                   Studio staff update the medical record themselves, so there is a record of who
                   changed what. Tell them here and they’ll make the change.
                 </p>

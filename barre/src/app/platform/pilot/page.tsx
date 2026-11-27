@@ -9,7 +9,7 @@ import { Beats, EmptyState, ErrorState, Field, Input, Skeleton } from '@/compone
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { dateShort } from '@/lib/format';
+import { dateShort, toDateInput } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 type Row = { id: string; name: string; status: string; pilot_cohort: string | null; pilot_started_on: string | null; days_in: number;
@@ -38,7 +38,7 @@ export default function PilotPage() {
   return (
     <Shell title="Pilot" subtitle="How far each school has got with what keeps schools on Swayvo" allow={['platform']}>
       <div className="mx-auto max-w-[1240px] space-y-8">
-        <label className="flex min-h-11 items-center gap-2.5 text-[14.5px]"><input type="checkbox" className="size-5 accent-[var(--color-accent)]" checked={all} onChange={e => setAll(e.target.checked)} /> Show every school, not only pilot schools</label>
+        <label className="flex min-h-11 items-center gap-2.5 text-[0.9062rem]"><input type="checkbox" className="size-5 accent-[var(--color-accent)]" checked={all} onChange={e => setAll(e.target.checked)} /> Show every school, not only pilot schools</label>
         {rows.isLoading && <Skeleton className="h-40" />}
         {rows.error && <ErrorState error={rows.error} />}
         {rows.data && list.length === 0 && <EmptyState title="No pilot schools yet" body="Tick “Show every school”, then add one to a cohort." />}
@@ -49,25 +49,25 @@ export default function PilotPage() {
               <div className="flex flex-wrap items-end gap-x-4 gap-y-1 border-b-2 border-ink pb-2">
                 <div className="min-w-0 flex-1">
                   <h2 id={`pl-${r.id}`} className="section-title">{r.name}</h2>
-                  <p className="text-[13px] text-ink-3">{r.pilot_cohort ? `${r.pilot_cohort} · day ${r.days_in}${r.pilot_started_on ? ` (from ${dateShort(r.pilot_started_on)})` : ''}` : 'Not in a pilot'}</p>
+                  <p className="text-[0.8125rem] text-ink-3">{r.pilot_cohort ? `${r.pilot_cohort} · day ${r.days_in}${r.pilot_started_on ? ` (from ${dateShort(r.pilot_started_on)})` : ''}` : 'Not in a pilot'}</p>
                 </div>
                 <span className="flex items-center gap-2">
                   <Beats value={done} max={STEPS.length} tone={tone(r.score)} label={`${done} of ${STEPS.length} steps`} />
-                  <span className={cn('stat-number text-[20px] leading-none', TONE_TEXT[tone(r.score)])}>{r.score}%</span>
-                  <span className="text-[13px] text-ink-3">active</span>
+                  <span className={cn('stat-number text-[1.25rem] leading-none', TONE_TEXT[tone(r.score)])}>{r.score}%</span>
+                  <span className="text-[0.8125rem] text-ink-3">active</span>
                 </span>
-                <button className="min-h-9 text-[13.5px] font-semibold text-accent-text hover:underline" onClick={() => setEditing(r)}>{r.pilot_cohort ? 'Edit' : 'Add to pilot'}</button>
+                <button className="min-h-9 text-[0.8438rem] font-semibold text-accent-text hover:underline" onClick={() => setEditing(r)}>{r.pilot_cohort ? 'Edit' : 'Add to pilot'}</button>
               </div>
               <ul className="grid divide-y divide-line sm:grid-cols-3 sm:divide-y-0 lg:grid-cols-6">
                 {STEPS.map(([k, label, note]) => (
                   <li key={k} className="py-2.5 text-sm sm:pr-4">
                     <span className={cn('flex items-center gap-1.5 font-semibold', !r[k] && 'text-ink-3')}>{r[k] ? <Check className="size-4 text-positive" strokeWidth={2.4} aria-hidden /> : <Minus className="size-4" aria-hidden />}{label}
                       <span className="sr-only">{r[k] ? ' (done)' : ' (not yet)'}</span></span>
-                    <span className="block text-[13px] text-ink-3">{note(r)}</span>
+                    <span className="block text-[0.8125rem] text-ink-3">{note(r)}</span>
                   </li>
                 ))}
               </ul>
-              {r.stuck_on && <p className="border-t border-line pt-2.5 text-[14px] text-ink-2">Next step to help with: <b className="font-semibold text-ink">{r.stuck_on}</b></p>}
+              {r.stuck_on && <p className="border-t border-line pt-2.5 text-[0.875rem] text-ink-2">Next step to help with: <b className="font-semibold text-ink">{r.stuck_on}</b></p>}
             </section>
           );
         })}
@@ -81,7 +81,7 @@ function PilotSheet({ r, onClose }: { r: Row; onClose: () => void }) {
   const { session } = useSession();
   const qc = useQueryClient();
   const [cohort, setCohort] = React.useState(r.pilot_cohort ?? '');
-  const [started, setStarted] = React.useState(r.pilot_started_on ?? '');
+  const [started, setStarted] = React.useState(toDateInput(r.pilot_started_on));
   const [notes, setNotes] = React.useState('');
   const save = useMutation({
     mutationFn: () => runAs(session, q => q(`select app.platform_set_pilot($1, $2, $3::date, $4)`, [r.id, cohort, started || null, notes])),

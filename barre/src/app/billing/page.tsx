@@ -4,7 +4,7 @@ import * as React from 'react';
 import { Suspense } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus, AlertTriangle, ArrowRight, Search, Send, Banknote, Ban, Undo2, Trash2, Wallet, CalendarRange, Download,
+  Plus, AlertTriangle, ArrowRight, Search, Send, Banknote, Ban, Undo2, Trash2, Wallet, CalendarRange, Download, FileMinus, Mail,
 } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection } from '@/components/app/detail-panel';
@@ -13,6 +13,11 @@ import { useRows, useRow } from '@/lib/query';
 import { runAs, readAs } from '@/lib/db/client';
 import { downloadCsv } from '@/lib/csv';
 import { BillingRunPanel } from '@/components/app/billing-run';
+import { FamilyAccount } from '@/components/app/family-account';
+import { AbsenceCredits } from '@/components/app/absence-credit';
+import { PaymentRemindersSheet } from '@/components/app/payment-reminders';
+import { useLocationFilter } from '@/components/app/location-filter';
+import { cardPaymentsEnabled, invoiceState } from '@/lib/payments/invoice-status';
 import { useSession } from '@/lib/auth/session';
 import { useSelection } from '@/lib/use-selection';
 import {
@@ -67,9 +72,14 @@ function Billing() {
   const [query, setQuery] = React.useState('');
   const [creating, setCreating] = React.useState(false);
   const [running, setRunning] = React.useState(false);
+  const [reminding, setReminding] = React.useState(false);
+  // Schools with more than one location can narrow every list to one (UR-33).
+  const loc = useLocationFilter();
+  const atLoc = React.useMemo(() => (invoices.data ?? []).filter(i => !loc.current || (i.locations ?? []).includes(loc.current)),
+    [invoices.data, loc.current]);
 
   const counts = React.useMemo(() => {
-    const d = invoices.data ?? [];
+    const d = atLoc;
     return {
       attention: d.filter(i => i.failed || i.overdue || i.status === 'draft').length,
       open: d.filter(i => isOpen(i.status)).length,
@@ -77,7 +87,7 @@ function Billing() {
       paid: d.filter(i => i.status === 'paid').length,
       all: d.length,
     } satisfies Record<Filter, number>;
-  }, [invoices.data]);
+  }, [atLoc]);
 
   // Land somewhere useful: if nothing needs action, show what is open.
   const landed = React.useRef(false);
@@ -89,7 +99,7 @@ function Billing() {
 
   const shown = React.useMemo(() => {
     const q = query.trim().toLowerCase();
-    return (invoices.data ?? []).filter(i => {
+    return atLoc.filter(i => {
       if (filter === 'attention' && !(i.failed || i.overdue || i.status === 'draft')) return false;
       if (filter === 'open' && !isOpen(i.status)) return false;
       if (filter === 'draft' && i.status !== 'draft') return false;
@@ -97,7 +107,7 @@ function Billing() {
       if (q && !`${i.number} ${i.family_name} ${i.lines ?? ''}`.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [invoices.data, filter, query]);
+  }, [atLoc, filter, query]);
 
   const s = summary.data;
 
@@ -105,7 +115,7 @@ function Billing() {
     <Shell title="Billing" help={<>Invoices for every family. Use <b>Billing runs</b> to raise a whole term’s (or month’s) invoices at once: check the drafts, then send them together. Discounts — sibling, multi-class and per-family bursaries — are applied automatically. <b>Export</b> gives your accountant spreadsheets, aged debt and a Xero import file.</>} allow={['owner', 'admin']}
       subtitle={s ? `${money(s.outstanding_minor)} outstanding across ${s.owing_families} famil${s.owing_families === 1 ? 'y' : 'ies'}` : undefined}
       actions={<div className="flex gap-2">
-        <ExportButton />
+        <ExportButton location={loc.current || null} />
         <Button size="sm" aria-label="Billing runs" onClick={() => setRunning(true)}>
           <CalendarRange className="size-4" aria-hidden /> <span className="hidden sm:inline">Billing runs</span>
         </Button>
@@ -128,7 +138,8 @@ function Billing() {
             <Stat label="Failed payments" loading={summary.isLoading} tone={s && s.failed_payments > 0 ? 'critical' : undefined}
               value={s && String(s.failed_payments)}
               note={s && (s.failed_payments ? `${money(s.failed_minor)} declined` : 'None outstanding')}
-              action={s && s.failed_payments > 0 ? 'Retry' : undefined}
+              // Cards cannot be retried until a provider is connected (UR-11).
+              action={s && s.failed_payments > 0 ? (cardPaymentsEnabled() ? 'Retry' : 'Show failed') : undefined}
               onClick={() => setFilter('attention')} />
             <Stat label="Collected, 30 days" loading={summary.isLoading}
               value={s && money(s.collected_30d_minor)}
@@ -140,6 +151,12 @@ function Billing() {
           <section aria-labelledby="inv-h" className="min-w-0">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b-2 border-ink pb-2">
               <h2 id="inv-h" className="section-title flex-1">Invoices</h2>
+              {loc.control}
+              {s && s.overdue_invoices > 0 && (
+                <Button size="sm" onClick={() => setReminding(true)}>
+                  <Mail className="size-4" aria-hidden /> Remind overdue
+                </Button>
+              )}
               <label className="relative w-full sm:w-64">
                 <span className="sr-only">Search invoices</span>
                 <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-3" aria-hidden />
@@ -151,10 +168,10 @@ function Billing() {
               {FILTERS.map(f => (
                 <button key={f.key} role="tab" aria-selected={filter === f.key}
                   onClick={() => setFilter(f.key)}
-                  className={cn('flex h-10 shrink-0 items-center gap-1.5 rounded-[var(--radius-md)] px-3 text-[14px]',
+                  className={cn('flex h-10 shrink-0 items-center gap-1.5 rounded-[var(--radius-md)] px-3 text-[0.875rem]',
                     filter === f.key ? 'bg-ink font-semibold text-ink-invert' : 'text-ink-2 hover:bg-surface-2 hover:text-ink')}>
                   {f.label}
-                  {invoices.data && <span className={cn('tnum text-[12px]',
+                  {invoices.data && <span className={cn('tnum text-[0.75rem]',
                     filter === f.key ? 'opacity-75' : 'text-ink-3')}>{counts[f.key]}</span>}
                 </button>
               ))}
@@ -174,7 +191,7 @@ function Billing() {
 
             {/* Desktop: an aligned ledger, because the office compares rows. */}
             {shown.length > 0 && (
-              <table className="hidden w-full text-[14.5px] md:table">
+              <table className="hidden w-full text-[0.9062rem] md:table">
                 <thead className="border-b border-line text-left">
                   <tr>
                     <th scope="col" className="label py-2.5 pr-3 font-semibold">Invoice</th>
@@ -195,9 +212,10 @@ function Billing() {
                           aria-current={selected === i.id || undefined}>
                           {i.number}
                         </button>
-                        <span className="block max-w-[240px] truncate text-[13px] text-ink-3">{i.lines}</span>
+                        <span className="block max-w-[240px] truncate text-[0.8125rem] text-ink-3">{i.lines}</span>
                       </td>
-                      <td className="px-3 py-2.5 align-top">{i.family_name}</td>
+                      <td className="px-3 py-2.5 align-top">{i.family_name}
+                        {i.billed_to && <span className="block text-[0.8125rem] text-ink-3">To {i.billed_to}</span>}</td>
                       <td className="tnum whitespace-nowrap px-3 py-2.5 align-top text-ink-2">{dateShort(i.due_on)}</td>
                       <td className="px-3 py-2.5 align-top"><InvoiceStatus i={i} /></td>
                       <td className="tnum py-2.5 pl-3 text-right align-top font-semibold">
@@ -216,8 +234,8 @@ function Billing() {
                   <button onClick={() => select(i.id)} aria-current={selected === i.id || undefined}
                     className={cn('grid min-h-14 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 py-3 text-left', selected === i.id && 'bg-accent-soft/60')}>
                     <span className="min-w-0">
-                      <span className="block truncate font-semibold">{i.family_name}</span>
-                      <span className="mt-0.5 block truncate text-[13px] text-ink-3">
+                      <span className="block truncate font-semibold">{i.family_name}{i.billed_to && <span className="font-normal text-ink-3"> · to {i.billed_to}</span>}</span>
+                      <span className="mt-0.5 block truncate text-[0.8125rem] text-ink-3">
                         <span className="tnum">{i.number}</span> · due {dateShort(i.due_on)}
                       </span>
                     </span>
@@ -225,7 +243,7 @@ function Billing() {
                       <span className={cn('tnum block font-semibold', !isOpen(i.status) && 'font-normal text-ink-3')}>
                         {money(isOpen(i.status) ? outstanding(i) : i.total_minor)}
                       </span>
-                      <span className="block text-[13px]"><InvoiceStatus i={i} /></span>
+                      <span className="block text-[0.8125rem]"><InvoiceStatus i={i} /></span>
                     </span>
                   </button>
                 </li>
@@ -235,9 +253,12 @@ function Billing() {
 
           {selected && <InvoicePanel id={selected} onClose={() => select(null)} />}
         </div>
+
+        <AbsenceCredits />
       </div>
 
       {running && <BillingRunPanel onClose={() => setRunning(false)} />}
+      {reminding && <PaymentRemindersSheet onClose={() => setReminding(false)} />}
       {creating && <NewInvoiceSheet onClose={() => setCreating(false)}
                                     onCreated={id => { setCreating(false); select(id); }} />}
     </Shell>
@@ -245,13 +266,13 @@ function Billing() {
 }
 
 /** Invoices and payments as spreadsheets, for the accountant (R-012). */
-function ExportButton() {
+function ExportButton({ location }: { location: string | null }) {
   const { session } = useSession();
   const [open, setOpen] = React.useState(false);
   const go = async (what: 'invoices' | 'payments' | 'xero' | 'aged-debt') => {
     setOpen(false);
     const sql = { invoices: B.INVOICES_EXPORT, payments: B.PAYMENTS_EXPORT, xero: B.XERO_EXPORT, 'aged-debt': B.AGED_DEBT_EXPORT }[what];
-    const rows = await readAs<Record<string, string>>(session, sql);
+    const rows = await readAs<Record<string, string>>(session, sql, what === 'aged-debt' ? [location] : []);
     downloadCsv(`${what === 'xero' ? 'xero-sales-invoices' : what}-${isoDate(new Date())}.csv`, rows);
   };
   return (
@@ -263,10 +284,12 @@ function ExportButton() {
         <div role="menu" className="absolute right-0 z-30 mt-1 w-48 overflow-hidden rounded-[var(--radius-md)] border border-line bg-surface shadow-lg">
           <button role="menuitem" className="block w-full px-3 py-2.5 text-left text-sm hover:bg-surface-2" onClick={() => go('invoices')}>Invoices (CSV)</button>
           <button role="menuitem" className="block w-full px-3 py-2.5 text-left text-sm hover:bg-surface-2" onClick={() => go('payments')}>Payments (CSV)</button>
-          <button role="menuitem" className="block w-full px-3 py-2.5 text-left text-sm hover:bg-surface-2" onClick={() => go('aged-debt')}>Aged debt (CSV)</button>
+          <button role="menuitem" className="block w-full px-3 py-2.5 text-left text-sm hover:bg-surface-2" onClick={() => go('aged-debt')}>
+            Aged debt (CSV){location && <span className="block text-[0.75rem] text-ink-3">{location} only</span>}
+          </button>
           <button role="menuitem" className="block w-full border-t border-line px-3 py-2.5 text-left text-sm hover:bg-surface-2" onClick={() => go('xero')}>
             Xero sales invoices
-            <span className="block text-[12px] text-ink-3">Import in Xero: Sales › Import</span>
+            <span className="block text-[0.75rem] text-ink-3">Import in Xero: Sales › Import</span>
           </button>
         </div>
       )}
@@ -282,13 +305,13 @@ function Stat({ label, value, note, tone, loading, onClick, action }: {
     <div className="min-w-0 lg:px-6 lg:first:pl-0 lg:last:pr-0">
       <dt className="label">{label}</dt>
       {loading ? <dd><Skeleton className="mt-2 h-8 w-28" /></dd> : (
-        <dd className={cn('stat-number mt-1.5 text-[28px] leading-none lg:text-[32px]',
+        <dd className={cn('stat-number mt-1.5 text-[1.75rem] leading-none lg:text-[2rem]',
           tone === 'caution' && 'text-caution', tone === 'critical' && 'text-critical')}>{value}</dd>
       )}
-      {note && <dd className="mt-1.5 text-[13px] text-ink-3">{note}</dd>}
+      {note && <dd className="mt-1.5 text-[0.8125rem] text-ink-3">{note}</dd>}
       {onClick && action && (
         <dd><button type="button" onClick={onClick} aria-label={`${action}: show the invoices that need action`}
-          className="-ml-1 mt-0.5 inline-flex min-h-8 items-center gap-1 rounded-[var(--radius-sm)] px-1 text-[13px] font-semibold text-accent-text hover:underline [@media(pointer:coarse)]:min-h-11">
+          className="-ml-1 mt-0.5 inline-flex min-h-8 items-center gap-1 rounded-[var(--radius-sm)] px-1 text-[0.8125rem] font-semibold text-accent-text hover:underline [@media(pointer:coarse)]:min-h-11">
           {action}<ArrowRight className="size-3.5" aria-hidden /></button></dd>
       )}
     </div>
@@ -297,9 +320,9 @@ function Stat({ label, value, note, tone, loading, onClick, action }: {
 
 /** Status as a word. Colour backs it up; it never carries it alone. */
 function InvoiceStatus({ i }: { i: B.InvoiceRow }) {
-  const s = STATUS[i.status] ?? STATUS.draft!;
-  if (i.failed) return <span className="inline-flex items-center gap-1 font-semibold text-critical"><AlertTriangle className="size-3.5" aria-hidden />Card declined</span>;
-  if (i.overdue) return <span className="font-semibold text-caution">Overdue</span>;
+  const s = invoiceState(i);
+  if (i.failed) return <span className="inline-flex items-center gap-1 font-semibold text-critical"><AlertTriangle className="size-3.5" aria-hidden />{s.label}</span>;
+  if (i.overdue) return <span className="font-semibold text-caution">{s.label}</span>;
   return <span className={cn(s.tone === 'positive' ? 'text-positive' : s.tone === 'caution' ? 'text-ink' : 'text-ink-3', 'font-medium')}>{s.label}</span>;
 }
 
@@ -308,9 +331,10 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
   const inv = useRow<B.InvoiceDetail>(['invoice', id], B.INVOICE, [id]);
   const items = useRows<B.ItemRow>(['invoice-items', id], B.INVOICE_ITEMS, [id]);
   const payments = useRows<B.PaymentRow>(['invoice-payments', id], B.INVOICE_PAYMENTS, [id]);
+  const credits = useRows<B.CreditNoteRow>(['invoice-credit-notes', id], B.INVOICE_CREDIT_NOTES, [id]);
   const { session } = useSession();
   const qc = useQueryClient();
-  const [sheet, setSheet] = React.useState<null | 'pay' | 'void' | 'remind' | { refund: B.PaymentRow }>(null);
+  const [sheet, setSheet] = React.useState<null | 'pay' | 'void' | 'remind' | 'credit' | { refund: B.PaymentRow }>(null);
 
   const issue = useMutation({
     mutationFn: () => runAs(session, q => q(B.ISSUE_INVOICE, [id])),
@@ -324,7 +348,7 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
   return (
     <DetailPanel open onClose={onClose}
       title={i ? `${i.number}` : 'Invoice'}
-      subtitle={i ? i.family_name : undefined}>
+      subtitle={i ? (i.billed_to ? `${i.family_name} · to ${i.billed_to}` : i.family_name) : undefined}>
       {inv.isLoading && <Skeleton className="h-40" />}
       {inv.error && <ErrorState error={inv.error} />}
       {inv.data === undefined && !inv.isLoading && !inv.error && (
@@ -333,7 +357,7 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
       {i && (
         <>
           <div className="mb-5">
-            <p className="text-[13px] text-ink-3">
+            <p className="text-[0.8125rem] text-ink-3">
               <span className={cn('font-semibold', i.overdue ? 'text-caution' : (STATUS[i.status] ?? STATUS.draft!).tone === 'positive' ? 'text-positive' : 'text-ink')}>
                 {i.overdue ? 'Overdue' : (STATUS[i.status] ?? STATUS.draft!).label}
               </span>
@@ -341,13 +365,13 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
               {' · '}{i.issued_on ? `Issued ${dateShort(i.issued_on)}, ` : ''}due {dateShort(i.due_on)}
             </p>
             <p className="label mt-4">{isOpen(i.status) ? 'Still to pay' : 'Total'}</p>
-            <p className="stat-number mt-1 text-[36px] leading-none">
+            <p className="stat-number mt-1 text-[2.25rem] leading-none">
               {money(isOpen(i.status) ? owed : i.total_minor)}
             </p>
             {isOpen(i.status) && Number(i.paid_minor) > 0 && (
-              <p className="tnum mt-1.5 text-[13px] text-ink-2">{money(i.paid_minor)} of {money(i.total_minor)} paid</p>
+              <p className="tnum mt-1.5 text-[0.8125rem] text-ink-2">{money(i.paid_minor)} of {money(i.total_minor)} paid</p>
             )}
-            {i.status === 'void' && i.void_reason && <p className="mt-1.5 text-[13px] text-ink-2">Voided: {i.void_reason}</p>}
+            {i.status === 'void' && i.void_reason && <p className="mt-1.5 text-[0.8125rem] text-ink-2">Voided: {i.void_reason}</p>}
           </div>
 
           {/* The next sensible action first, the rest beside it. */}
@@ -367,6 +391,11 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
                 <Send className="size-4" aria-hidden /> {failed ? 'Ask for a new card' : 'Send reminder'}
               </Button>
             )}
+            {i.status !== 'void' && i.status !== 'draft' && (
+              <Button variant="ghost" onClick={() => setSheet('credit')}>
+                <FileMinus className="size-4" aria-hidden /> Credit note
+              </Button>
+            )}
             {i.status !== 'void' && Number(i.paid_minor) === 0 && (
               <Button variant="ghost" onClick={() => setSheet('void')}>
                 <Ban className="size-4" aria-hidden /> Void
@@ -382,7 +411,7 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
                 <li key={it.id} className="flex items-start gap-3 py-2.5 text-sm">
                   <span className="min-w-0 flex-1">
                     <span className="block">{it.description}</span>
-                    <span className="block text-[12px] text-ink-3">
+                    <span className="block text-[0.75rem] text-ink-3">
                       {KIND_LABEL[it.kind] ?? it.kind}
                       {it.student_name ? ` · ${it.student_name}` : ''}
                       {Number(it.quantity) !== 1 ? ` · ${Number(it.quantity)} × ${money(it.unit_minor)}` : ''}
@@ -402,13 +431,14 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
                 <span className="flex-1">Total</span><span className="tnum">{money(i.total_minor)}</span>
               </li>
             </ul>
-            {i.note && <p className="mt-2 text-[13px] text-ink-2">{i.note}</p>}
+            {i.note && <p className="mt-2 text-[0.8125rem] text-ink-2">{i.note}</p>}
           </DetailSection>
 
           <DetailSection title="Payments">
             {payments.data?.length === 0 && <p className="text-sm text-ink-3">Nothing received yet.</p>}
             <ul className="divide-y divide-line border-y border-line">
-              {payments.data?.map(p => {
+              {/* A credit note's own credit is shown as the credit note below. */}
+              {payments.data?.filter(p => !p.credit_note_id).map(p => {
                 const ok = !!p.succeeded_at;
                 const refunded = Number(p.refunded_minor);
                 const canRefund = ok && ['bank_transfer', 'cash'].includes(p.method)
@@ -418,10 +448,10 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-1.5">
                         {METHOD_LABEL[p.method] ?? p.method}
-                        {!ok && p.failure_code && <span className="text-[13px] font-semibold text-critical">Failed · {p.failure_code.replace(/_/g, ' ')}</span>}
-                        {refunded > 0 && <span className="text-[13px] font-medium text-info">{money(refunded)} refunded</span>}
+                        {!ok && p.failure_code && <span className="text-[0.8125rem] font-semibold text-critical">Failed · {p.failure_code.replace(/_/g, ' ')}</span>}
+                        {refunded > 0 && <span className="text-[0.8125rem] font-medium text-info">{money(refunded)} refunded</span>}
                       </span>
-                      <span className="block text-[12px] text-ink-3">
+                      <span className="block text-[0.75rem] text-ink-3">
                         {dateShort(p.succeeded_at ?? p.created_at)}{p.note ? ` · ${p.note}` : ''}
                       </span>
                     </span>
@@ -436,19 +466,30 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
                 );
               })}
             </ul>
+            {!!credits.data?.length && (
+              <ul className="mt-3 divide-y divide-line border-y border-line" aria-label="Credit notes">
+                {credits.data.map(c => (
+                  <li key={c.id} className="flex items-start gap-3 py-2.5 text-sm">
+                    <span className="min-w-0 flex-1">
+                      <span className="block">Credit note <span className="tnum">{c.number}</span></span>
+                      <span className="block text-[0.75rem] text-ink-3">
+                        {dateShort(c.created_at)} · {c.reason} · {creditNoteWhere(c)}
+                      </span>
+                    </span>
+                    <span className="tnum shrink-0 text-positive">−{money(c.amount_minor)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
             {payments.data?.some(p => p.method === 'card' && p.succeeded_at) && (
-              <p className="mt-2 text-[12.5px] text-ink-3">
+              <p className="mt-2 text-[0.7812rem] text-ink-3">
                 Card payments are refunded from the payment provider; the refund appears here once it confirms.
               </p>
             )}
           </DetailSection>
 
           <DetailSection title="Family account">
-            <p className="text-sm">
-              {Number(i.family_balance_minor) > 0 && <>Owes <span className="tnum font-medium">{money(i.family_balance_minor)}</span> in total.</>}
-              {Number(i.family_balance_minor) === 0 && 'Nothing else owed.'}
-              {Number(i.family_balance_minor) < 0 && <>In credit by <span className="tnum font-medium">{money(-Number(i.family_balance_minor))}</span>.</>}
-            </p>
+            <FamilyAccount familyId={i.family_id} />
           </DetailSection>
         </>
       )}
@@ -456,7 +497,11 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
       {i && sheet === 'pay' && <RecordPaymentSheet invoice={i} onClose={() => setSheet(null)} />}
       {i && sheet === 'void' && <VoidSheet invoice={i} onClose={() => setSheet(null)} />}
       {i && sheet === 'remind' && <ReminderSheet invoice={i} failed={!!failed} onClose={() => setSheet(null)} />}
-      {i && sheet && typeof sheet === 'object' && <RefundSheet payment={sheet.refund} onClose={() => setSheet(null)} />}
+      {i && sheet === 'credit' && <CreditNoteSheet invoice={i} credited={(credits.data ?? []).reduce((n, c) => n + Number(c.amount_minor), 0)}
+                                                     cashPaid={(payments.data ?? []).filter(p => p.succeeded_at && ['bank_transfer', 'cash'].includes(p.method))
+                                                       .reduce((n, p) => n + Number(p.amount_minor) - Number(p.refunded_minor), 0)}
+                                                     onClose={() => setSheet(null)} />}
+      {i && sheet && typeof sheet === 'object' && <RefundSheet payment={sheet.refund} invoice={i} onClose={() => setSheet(null)} />}
     </DetailPanel>
   );
 }
@@ -518,24 +563,102 @@ function VoidSheet({ invoice, onClose }: { invoice: B.InvoiceDetail; onClose: ()
   );
 }
 
-function RefundSheet({ payment, onClose }: { payment: B.PaymentRow; onClose: () => void }) {
+/** How a credit note was settled, in words. */
+function creditNoteWhere(c: B.CreditNoteRow) {
+  const parts = [
+    Number(c.applied_minor) > 0 && `${money(c.applied_minor)} off what was owed`,
+    Number(c.refunded_minor) > 0 && `${money(c.refunded_minor)} refunded`,
+    Number(c.account_minor) > 0 && `${money(c.account_minor)} held as credit`,
+  ].filter(Boolean);
+  return parts.join(', ');
+}
+
+/**
+ * Handing money back. Usually the family was charged less (a lesson cancelled):
+ * that is a credit note, and the invoice stays settled (UR-10, admins D6).
+ * Reversing a payment recorded by mistake reopens the invoice instead.
+ */
+function RefundSheet({ payment, invoice, onClose }: { payment: B.PaymentRow; invoice: B.InvoiceDetail; onClose: () => void }) {
   const left = Number(payment.amount_minor) - Number(payment.refunded_minor);
   const [amount, setAmount] = React.useState((left / 100).toFixed(2));
   const [reason, setReason] = React.useState('');
+  const [mode, setMode] = React.useState<'credit_note' | 'mistake'>('credit_note');
   const minor = toMinor(amount);
-  const save = useLedgerMutation(() => (q: any) => q(B.REFUND_PAYMENT, [payment.id, minor, reason]), onClose);
+  const save = useLedgerMutation(() => (q: any) => q(B.REFUND_PAYMENT, [payment.id, minor, reason, mode]), onClose);
   return (
-    <RecordSheet title="Refund payment"
-      subtitle={`${METHOD_LABEL[payment.method]} of ${money(payment.amount_minor)}. Hand the money back first — this records that you have.`}
+    <RecordSheet title="Refund"
+      subtitle={`${METHOD_LABEL[payment.method]} of ${money(payment.amount_minor)} on ${invoice.number}. Hand the money back first — this records that you have.`}
       onClose={onClose} onSave={() => save.mutate(undefined)} saving={save.isPending} error={save.error}
       canSave={minor != null && minor > 0 && minor <= left && reason.trim().length >= 3} saveLabel="Record refund">
+      <fieldset className="space-y-2">
+        <legend className="mb-1 text-[0.8125rem] font-medium text-ink-2">What is this refund for?</legend>
+        <label className="flex items-start gap-2.5 text-sm">
+          <input type="radio" name="ref-mode" className="mt-0.5 size-5 accent-[var(--color-accent)]"
+                 checked={mode === 'credit_note'} onChange={() => setMode('credit_note')} />
+          <span><span className="block font-medium">They were charged too much</span>
+            <span className="block text-[0.8125rem] text-ink-3">A class cancelled, a fee waived. Issues a credit note; {invoice.number} stays settled.</span></span>
+        </label>
+        <label className="flex items-start gap-2.5 text-sm">
+          <input type="radio" name="ref-mode" className="mt-0.5 size-5 accent-[var(--color-accent)]"
+                 checked={mode === 'mistake'} onChange={() => setMode('mistake')} />
+          <span><span className="block font-medium">The payment was recorded by mistake</span>
+            <span className="block text-[0.8125rem] text-ink-3">The payment is reversed and {invoice.number} is owed again.</span></span>
+        </label>
+      </fieldset>
       <Field label="Amount" htmlFor="ref-a" required
              error={minor != null && minor > left ? `At most ${money(left)}` : undefined}>
         <Input id="ref-a" inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} className="tnum" />
       </Field>
       <Field label="Why" htmlFor="ref-r" required>
-        <Input id="ref-r" value={reason} onChange={e => setReason(e.target.value)} maxLength={200} />
+        <Input id="ref-r" value={reason} onChange={e => setReason(e.target.value)} maxLength={200}
+               placeholder="Class cancelled 1 Dec – teacher unwell" />
       </Field>
+    </RecordSheet>
+  );
+}
+
+/** A credit note: lowers what an invoice charges, with a reason. */
+function CreditNoteSheet({ invoice, credited, cashPaid, onClose }: {
+  invoice: B.InvoiceDetail; credited: number; cashPaid: number; onClose: () => void;
+}) {
+  const max = Number(invoice.total_minor) - credited;
+  const owed = Math.max(Number(invoice.total_minor) - Number(invoice.paid_minor), 0);
+  const [amount, setAmount] = React.useState('');
+  const [reason, setReason] = React.useState('');
+  const [settle, setSettle] = React.useState<'account' | 'refund'>('account');
+  const minor = toMinor(amount);
+  const save = useLedgerMutation(() => (q: any) => q(B.ISSUE_CREDIT_NOTE, [invoice.id, minor, reason.trim(), settle]), onClose);
+  const tooMuch = minor != null && minor > max;
+  const noCash = settle === 'refund' && minor != null && minor > cashPaid;
+  return (
+    <RecordSheet title="Credit note" subtitle={`${invoice.number} · ${invoice.family_name}. Up to ${money(max)} can be credited.`}
+      onClose={onClose} onSave={() => save.mutate(undefined)} saving={save.isPending} error={save.error}
+      canSave={minor != null && minor > 0 && !tooMuch && !noCash && reason.trim().length >= 3} saveLabel="Issue credit note">
+      <Field label="Amount" htmlFor="cn-a" required
+             error={tooMuch ? `At most ${money(max)}` : noCash ? `Only ${money(cashPaid)} was paid by transfer or cash. Card refunds are made with the payment provider.` : undefined}>
+        <Input id="cn-a" inputMode="decimal" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} className="tnum" />
+      </Field>
+      <Field label="Why" htmlFor="cn-r" required>
+        <Input id="cn-r" value={reason} onChange={e => setReason(e.target.value)} maxLength={200} placeholder="Class cancelled 1 Dec" />
+      </Field>
+      <fieldset className="space-y-2">
+        <legend className="mb-1 text-[0.8125rem] font-medium text-ink-2">Where the money goes</legend>
+        <label className="flex items-start gap-2.5 text-sm">
+          <input type="radio" name="cn-s" className="mt-0.5 size-5 accent-[var(--color-accent)]"
+                 checked={settle === 'account'} onChange={() => setSettle('account')} />
+          <span><span className="block font-medium">Keep it as credit</span>
+            <span className="block text-[0.8125rem] text-ink-3">
+              {owed > 0 ? `Comes off the ${money(owed)} still owed on this invoice; anything over goes off their next invoice.`
+                        : 'Held on their account and taken off their next invoice.'}
+            </span></span>
+        </label>
+        <label className="flex items-start gap-2.5 text-sm">
+          <input type="radio" name="cn-s" className="mt-0.5 size-5 accent-[var(--color-accent)]"
+                 checked={settle === 'refund'} onChange={() => setSettle('refund')} />
+          <span><span className="block font-medium">Give the money back</span>
+            <span className="block text-[0.8125rem] text-ink-3">Hand it back first, by transfer or cash. It is recorded as a refund.</span></span>
+        </label>
+      </fieldset>
     </RecordSheet>
   );
 }
@@ -661,8 +784,8 @@ function NewInvoiceSheet({ onClose, onCreated, familyId }: {
         className="flex max-h-[92dvh] w-full max-w-xl flex-col overflow-hidden rounded-t-[var(--radius-xl)]
                    border border-line bg-surface shadow-lg sm:rounded-[var(--radius-xl)]">
         <div className="border-b border-line p-4">
-          <h2 id="ni-t" className="font-display text-[20px] font-[800] leading-tight [font-stretch:112%]">New invoice</h2>
-          <p className="text-[13px] text-ink-2">Lines are itemised for the family exactly as you write them.</p>
+          <h2 id="ni-t" className="font-display text-[1.25rem] font-[800] leading-tight [font-stretch:112%]">New invoice</h2>
+          <p className="text-[0.8125rem] text-ink-2">Lines are itemised for the family exactly as you write them.</p>
         </div>
         <div className="flex-1 space-y-4 overflow-y-auto overscroll-contain p-4">
           <Field label="Family" htmlFor="ni-f" required>
@@ -685,7 +808,7 @@ function NewInvoiceSheet({ onClose, onCreated, familyId }: {
           )}
 
           <fieldset>
-            <legend className="mb-1.5 text-[13px] font-medium text-ink-2">Lines</legend>
+            <legend className="mb-1.5 text-[0.8125rem] font-medium text-ink-2">Lines</legend>
             {lines.map((l, n) => {
               const minor = toMinor(l.amount);
               return (
@@ -707,7 +830,7 @@ function NewInvoiceSheet({ onClose, onCreated, familyId }: {
                       <Trash2 className="size-4" aria-hidden />
                     </Button>
                   </div>
-                  {!!l.amount && minor == null && <p role="alert" className="mt-1 text-[12.5px] text-critical">Enter an amount like 45.00</p>}
+                  {!!l.amount && minor == null && <p role="alert" className="mt-1 text-[0.7812rem] text-critical">Enter an amount like 45.00</p>}
                 </div>
               );
             })}
@@ -737,7 +860,7 @@ function NewInvoiceSheet({ onClose, onCreated, familyId }: {
         <div className="border-t border-line p-4 pb-safe">
           <div className="mb-3 flex items-baseline justify-between text-sm">
             <span className="text-ink-2">{fam ? fam.name : 'Total'}</span>
-            <span className="stat-number text-[24px]">{money(total)}</span>
+            <span className="stat-number text-[1.5rem]">{money(total)}</span>
           </div>
           <div className="flex gap-2">
             <Button className="flex-1" onClick={onClose}>Cancel</Button>

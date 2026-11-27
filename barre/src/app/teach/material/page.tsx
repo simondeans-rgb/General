@@ -25,7 +25,7 @@ export default function TeachMaterial() {
         <section aria-labelledby="mat-h">
           <div className="mb-1 flex items-baseline gap-3 border-b-2 border-ink pb-2">
             <h2 id="mat-h" className="section-title flex-1">Your classes</h2>
-            {!!rows.data?.length && <span className="text-[13px] text-ink-3">{rows.data.length}</span>}
+            {!!rows.data?.length && <span className="text-[0.8125rem] text-ink-3">{rows.data.length}</span>}
           </div>
           {rows.isLoading && <div className="space-y-3 pt-3">{[0,1,2].map(i => <Skeleton key={i} className="h-12" />)}</div>}
           {rows.data?.length === 0 && (
@@ -40,12 +40,12 @@ export default function TeachMaterial() {
                   <span className="min-w-0">
                     <span className="block truncate font-semibold">{c.name}</span>
                     {c.style && (
-                      <span className="flex items-center gap-1.5 text-[13px] text-ink-3">
+                      <span className="flex items-center gap-1.5 text-[0.8125rem] text-ink-3">
                         <span aria-hidden className={cn('size-2 rounded-[2px]', HUE[c.colour ?? ''] ?? 'bg-surface-3')} />{c.style}
                       </span>
                     )}
                   </span>
-                  <span className={cn('tnum text-right text-[13.5px]', c.resources ? 'text-ink-2' : 'text-ink-3')}>
+                  <span className={cn('tnum text-right text-[0.8438rem]', c.resources ? 'text-ink-2' : 'text-ink-3')}>
                     {c.resources === 0 ? 'Nothing shared' : `${c.resources} item${c.resources === 1 ? '' : 's'}`}
                   </span>
                   <ChevronRight className="size-4 shrink-0 text-ink-3" aria-hidden />

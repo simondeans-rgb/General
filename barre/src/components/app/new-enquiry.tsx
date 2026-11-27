@@ -10,19 +10,21 @@ import { useSession } from '@/lib/auth/session';
 import * as C from '@/lib/repos/classes';
 
 /** The office writes down a phone call or a walk-in (R-014). */
-export function NewEnquirySheet({ onClose }: { onClose: () => void }) {
+export function NewEnquirySheet({ onClose, onBook }: { onClose: () => void; onBook?: (id: string) => void }) {
   const { session } = useSession();
   const qc = useQueryClient();
   const classes = useRows<{ id: string; name: string }>(['class-options'], C.CLASS_OPTIONS);
   const [f, setF] = React.useState({ name: '', phone: '', email: '', child: '', dob: '', cls: '', source: 'phone', next: '' });
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF(x => ({ ...x, [k]: e.target.value }));
-  const [saved, setSaved] = React.useState(false);
+  const [saved, setSaved] = React.useState<string | null>(null);
   const save = useMutation({
     mutationFn: () => runAs(session, q => q(C.CREATE_ENQUIRY, [f.name, f.phone, f.email, f.child, f.dob || null, f.cls || null, f.source, f.next || null])),
-    onSuccess: () => { setSaved(true); qc.invalidateQueries({ queryKey: ['db'] }); },
+    onSuccess: rows => { setSaved((rows as { id: string }[])[0]?.id ?? ''); qc.invalidateQueries({ queryKey: ['db'] }); },
   });
-  if (saved) return <RecordSheet title="New enquiry" onClose={onClose} onSave={onClose} saveLabel="Done">
-    <Notice word="Saved" tone="positive" title={`${f.name} is in the pipeline`} detail="Book their trial from the class when you’re ready." /></RecordSheet>;
+  if (saved != null) return <RecordSheet title="New enquiry" onClose={onClose}
+      onSave={saved && onBook ? () => onBook(saved) : onClose} saveLabel={saved && onBook ? 'Book a trial now' : 'Done'}>
+    <Notice word="Saved" tone="positive" title={`${f.name} is in the pipeline`}
+      detail={onBook ? 'Book their trial now and the details come with it, or later from the enquiry card.' : 'Book their trial from the enquiry card when you’re ready.'} /></RecordSheet>;
   return (
     <RecordSheet title="New enquiry" subtitle="A phone call, an email or someone at the door" onClose={onClose}
       saving={save.isPending} error={save.error} canSave={f.name.trim().length > 1 && (f.phone.trim() !== '' || f.email.includes('@'))}

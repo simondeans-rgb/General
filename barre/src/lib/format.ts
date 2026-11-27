@@ -16,6 +16,30 @@ export const isoDate = (v: Stamp): string => {
   return `${get('year')}-${get('month')}-${get('day')}`;
 };
 
+/**
+ * A database `date` as the `YYYY-MM-DD` an <input type="date"> wants (UR-02).
+ *
+ * The same column arrives in three shapes: a string through JSON, a Date at
+ * UTC midnight from PGlite, and a Date at local midnight from node-postgres.
+ * Calling `.slice()` on the Date shapes crashed the student editor. A Date at
+ * exactly UTC midnight is read in UTC; any other Date by its local calendar
+ * day, so neither driver lands a day early or late near midnight in summer time.
+ */
+export function toDateInput(v: string | Date | null | undefined): string {
+  if (v == null || v === '') return '';
+  if (v instanceof Date) {
+    if (Number.isNaN(v.getTime())) return '';
+    const utcMidnight = v.getUTCHours() === 0 && v.getUTCMinutes() === 0
+      && v.getUTCSeconds() === 0 && v.getUTCMilliseconds() === 0;
+    const y = utcMidnight ? v.getUTCFullYear() : v.getFullYear();
+    const m = (utcMidnight ? v.getUTCMonth() : v.getMonth()) + 1;
+    const d = utcMidnight ? v.getUTCDate() : v.getDate();
+    return `${String(y).padStart(4, '0')}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  }
+  const s = String(v);
+  return /^\d{4}-\d{2}-\d{2}/.test(s) ? s.slice(0, 10) : '';
+}
+
 export const money = (minor: number | string | null | undefined) =>
   new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' })
     .format(Number(minor ?? 0) / 100);

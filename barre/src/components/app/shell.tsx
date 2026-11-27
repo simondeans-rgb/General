@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   CalendarDays, LayoutGrid, Users, GraduationCap, Route, ClipboardCheck,
-  Home, Baby, MessageSquare, CreditCard, PlayCircle, Trophy, Inbox, Settings2, Rocket,
+  Home, Baby, User, MessageSquare, CreditCard, PlayCircle, Trophy, Inbox, Settings2, Rocket,
   MoreHorizontal, FolderOpen, Receipt, BarChart3, Building2, Layers, KeyRound, ShieldCheck, LogOut, FileText, ShieldAlert, CircleHelp,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -15,6 +15,7 @@ import { SwayvoLogo, SwayvoIcon } from './swayvo';
 import { SchoolMark, PoweredBy, useSchoolTheme, logoFor } from './brand';
 import { EmptyState, Button } from '@/components/ui';
 import { useRows } from '@/lib/query';
+import { MY_CHILDREN } from '@/lib/repos/family';
 import { runAs } from '@/lib/db/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { dateShort, time } from '@/lib/format';
@@ -22,6 +23,7 @@ import { PersonSwitcher } from './person-switcher';
 import { SchoolSwitcher } from './school-switcher';
 import { useBrandedManifest } from './pwa';
 import { NotificationBell } from './notifications';
+import { ScopeNotice } from './role-scope';
 import dynamic from 'next/dynamic';
 // Office-only, so families and teachers never download it (R-062).
 const AssistantLauncher = dynamic(() => import('./assistant').then(m => m.AssistantLauncher), { ssr: false });
@@ -115,6 +117,14 @@ export function Shell({
   useBrandedManifest(branded ? studio!.name : null, branded ? studio!.brand_colour : null);
   const router = useRouter();
   const pathname = usePathname();
+  // A student's access ends the moment a parent switches their login off, or
+  // until one approves it (UR-16): the database already returns nothing.
+  const self = useRows<{ id: string | null }>(['student-self-check'], `select app.student_self_id() as id`, [],
+    { enabled: session?.role === 'student' });
+  const loginOff = session?.role === 'student' && self.isSuccess && !self.data?.[0]?.id;
+  // An adult student with no children: their tab is about them, not a family (UR-21).
+  const people = useRows<{ is_me: boolean }>(['my-children'], MY_CHILDREN, [], { enabled: session?.role === 'guardian' });
+  const adultAlone = !!people.data?.length && people.data.every(p => p.is_me);
 
   React.useEffect(() => {
     if (loaded && !session) router.replace('/');
@@ -124,6 +134,16 @@ export function Shell({
 
   // A route the signed-in role may not use is a redirect, not a 403 page: the
   // person is not an intruder, they are simply in the wrong place.
+  if (loginOff) {
+    return (
+      <div className="grid min-h-dvh place-items-center p-6">
+        <EmptyState title="Your login is off"
+          body="A parent or carer needs to approve your login, or has switched it off. Ask them, or the school, if you think this is wrong."
+          action={<Button variant="primary" onClick={() => { signOut(); router.replace('/'); }}>Sign out</Button>} />
+      </div>
+    );
+  }
+
   if (!allow.includes(session.role)) {
     return (
       <div className="grid min-h-dvh place-items-center p-6">
@@ -146,7 +166,9 @@ export function Shell({
     );
   }
 
-  const nav = NAV[session.role];
+  const nav = adultAlone
+    ? NAV[session.role].map(n => n.href === '/family/children' ? { ...n, label: 'You', icon: User } : n)
+    : NAV[session.role];
 
   return (
     <div className="min-h-dvh lg:flex">
@@ -158,7 +180,7 @@ export function Shell({
             <div className="flex items-center gap-2.5">
               <SchoolMark name={studio!.name} logo={logoFor(studio!)} className="size-9" />
               <span className="min-w-0 flex-1">
-                <span className="line-clamp-2 text-[14px] font-semibold leading-tight tracking-tight">{studio!.name}</span>
+                <span className="line-clamp-2 text-[0.875rem] font-semibold leading-tight tracking-tight">{studio!.name}</span>
                 <PoweredBy />
               </span>
             </div>
@@ -167,7 +189,7 @@ export function Shell({
               <SwayvoLogo className="h-6" />
               <span className="min-w-0">
                 <span className="sr-only">Swayvo</span>
-                {session.platform && !session.support && <span className="block text-[11.5px] text-ink-3">Platform</span>}
+                {session.platform && !session.support && <span className="block text-[0.7188rem] text-ink-3">Platform</span>}
               </span>
             </div>
           )}
@@ -180,7 +202,7 @@ export function Shell({
           <PersonSwitcher />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">{session.name}</p>
-            <p className="text-[12.5px] capitalize text-ink-3">{session.support ? "Swayvo support" : session.platform ? "Swayvo platform" : session.role}</p>
+            <p className="text-[0.7812rem] capitalize text-ink-3">{session.support ? "Swayvo support" : session.platform ? "Swayvo platform" : session.role}</p>
             <PersonSwitcher label="Switch person" />
           </div>
         </div>
@@ -192,9 +214,10 @@ export function Shell({
             {branded
               ? <SchoolMark name={studio!.name} logo={logoFor(studio!)} className="size-8 lg:hidden" />
               : <SwayvoIcon className="size-8 lg:hidden" />}
-            <div className="min-w-0 flex-1">
-              <h1 className="page-title truncate tracking-tight">{title}</h1>
-              {subtitle && <div className="mt-0.5 truncate text-[13px] text-ink-3">{subtitle}</div>}
+            {/* At least 9rem for the title: with large text the buttons wrap to a second row instead. */}
+            <div className="min-w-[min(100%,9rem)] flex-1">
+              <h1 className="page-title line-clamp-2 break-words tracking-tight">{title}</h1>
+              {subtitle && <div className="mt-0.5 line-clamp-2 text-[0.8125rem] text-ink-3">{subtitle}</div>}
             </div>
             {help && (
               <button onClick={() => setHelpOpen(o => !o)} aria-expanded={helpOpen} aria-controls="page-help"
@@ -205,7 +228,8 @@ export function Shell({
             {/* On a phone the page's own buttons take a row of their own, under the title. */}
             {actions && <div className={cn('flex justify-end', actionsInline ? '' : 'order-last w-full lg:order-none lg:w-auto')}>{actions}</div>}
             {(session.role === 'owner' || session.role === 'admin') && <AssistantLauncher />}
-            {session.role !== 'student' && <NotificationBell />}
+            {/* Students get a bell too, for cancellations and cover (UR-49). */}
+            <NotificationBell />
             <PersonSwitcher className="lg:hidden" />
           </div>
           <SchoolSwitcher className="border-t border-line lg:hidden" />
@@ -213,15 +237,15 @@ export function Shell({
         </header>
 
         {help && helpOpen && (
-          <div id="page-help" role="note" className="border-b border-line bg-info-soft px-4 py-3 text-[13.5px] leading-relaxed text-ink-2 lg:px-6">
+          <div id="page-help" role="note" className="border-b border-line bg-info-soft px-4 py-3 text-[0.8438rem] leading-relaxed text-ink-2 lg:px-6">
             <div className="mx-auto flex max-w-3xl gap-2"><CircleHelp className="mt-0.5 size-4 shrink-0 text-info" aria-hidden />
               <div className="min-w-0 flex-1">{help}</div>
-              <button onClick={() => setHelpOpen(false)} className="text-[12.5px] font-medium text-ink-2 underline">Close</button></div>
+              <button onClick={() => setHelpOpen(false)} className="text-[0.7812rem] font-medium text-ink-2 underline">Close</button></div>
           </div>
         )}
         {session.support && <SupportBanner view={session.support} />}
         {!session.platform && studio && (studio.status === 'suspended' || studio.status === 'cancelled') && (
-          <div role="status" className="border-b border-caution/30 bg-caution-soft px-4 py-2.5 text-[13px] lg:px-6">
+          <div role="status" className="border-b border-caution/30 bg-caution-soft px-4 py-2.5 text-[0.8125rem] lg:px-6">
             <strong className="font-semibold">
               {studio.status === 'suspended' ? 'This account is paused and read-only.' : 'This account has been closed and is read-only.'}
             </strong>{' '}
@@ -232,11 +256,12 @@ export function Shell({
           </div>
         )}
         <main id="main" className="flex-1 px-4 pb-24 pt-5 lg:px-8 lg:pb-12 lg:pt-7">
+          <ScopeNotice />
           {children}
           {/* On a phone the sidebar's name and credit are not visible. */}
           {branded && (
             <p className="mt-8 flex flex-col items-center gap-0.5 text-center lg:hidden">
-              <span className="text-[12.5px] font-medium text-ink-2">{studio!.name}</span>
+              <span className="text-[0.7812rem] font-medium text-ink-2">{studio!.name}</span>
               <PoweredBy className="mt-0" />
             </p>
           )}
@@ -265,7 +290,7 @@ function SubTabs({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
         const active = isActive(pathname, x.href);
         return (
           <Link key={x.href} href={x.href} aria-current={active ? 'page' : undefined}
-            className={cn('shrink-0 border-b-2 py-2.5 text-[13.5px]',
+            className={cn('shrink-0 border-b-2 py-2.5 text-[0.8438rem]',
               active ? 'border-accent-line font-semibold text-ink' : 'border-transparent font-medium text-ink-3 hover:text-ink')}>
             {x.label}
           </Link>
@@ -280,7 +305,7 @@ function RailLink({ item, pathname }: { item: NavItem; pathname: string }) {
   const Icon = item.icon;
   return (
     <Link href={item.href} aria-current={active ? 'page' : undefined}
-      className={cn('relative flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2 text-[14px]',
+      className={cn('relative flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2 text-[0.875rem]',
         active ? 'font-semibold text-ink' : 'text-ink-2 hover:bg-surface-2 hover:text-ink')}>
       {/* The active area is marked by one beat, in the school's colour. */}
       {active && <span aria-hidden className="absolute -left-3 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-[2px] bg-accent" />}
@@ -311,11 +336,11 @@ function MobileTabs({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
         {shown.map(item => <TabLink key={item.href} item={item} pathname={pathname} />)}
         {rest.length > 0 && (
           <button onClick={() => setOpen(true)} aria-haspopup="dialog" aria-label="More sections"
-            className={cn('relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 pt-2 text-[11px] font-medium',
+            className={cn('relative flex min-h-[56px] min-w-0 flex-1 flex-col items-center justify-center gap-1 px-0.5 pt-2 text-[0.6875rem] font-medium',
               rest.some(i => groupActive(pathname, i)) ? 'text-ink' : 'text-ink-3')}>
             {rest.some(i => groupActive(pathname, i)) && <span aria-hidden className="absolute left-1/2 top-0 h-[3px] w-6 -translate-x-1/2 rounded-b-[2px] bg-accent" />}
             <MoreHorizontal className="size-[20px]" aria-hidden />
-            <span>More</span>
+            <span className="max-w-full truncate">More</span>
           </button>
         )}
       </nav>
@@ -333,7 +358,7 @@ function MobileTabs({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
                 const links = item.sub ?? [{ href: item.href, label: item.label }];
                 return (
                   <li key={item.href}>
-                    {item.sub && <p className="flex items-center gap-2 px-3 pb-1 pt-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-3">
+                    {item.sub && <p className="flex items-center gap-2 px-3 pb-1 pt-2 text-[0.75rem] font-semibold uppercase tracking-[0.06em] text-ink-3">
                       <Icon className="size-3.5" aria-hidden /> {item.label}</p>}
                     <ul>
                       {links.map(x => {
@@ -366,11 +391,11 @@ function TabLink({ item, pathname }: { item: NavItem; pathname: string }) {
   const Icon = item.icon;
   return (
     <Link href={item.href} aria-current={active ? 'page' : undefined}
-      className={cn('relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 pt-2 text-[11px]',
+      className={cn('relative flex min-h-[56px] min-w-0 flex-1 flex-col items-center justify-center gap-1 px-0.5 pt-2 text-[0.6875rem]',
         active ? 'text-ink' : 'text-ink-3')}>
       {active && <span aria-hidden className="absolute left-1/2 top-0 h-[3px] w-6 -translate-x-1/2 rounded-b-[2px] bg-accent" />}
       <Icon className="size-[20px]" aria-hidden strokeWidth={active ? 2.3 : 1.8} />
-      <span className={active ? 'font-semibold' : 'font-medium'}>{item.label}</span>
+      <span className={cn('max-w-full truncate', active ? 'font-semibold' : 'font-medium')}>{item.label}</span>
     </Link>
   );
 }
@@ -389,7 +414,7 @@ function SupportBanner({ view }: { view: { studioId: string; studioName: string;
     router.push('/platform');
   };
   return (
-    <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-ink/10 bg-ink px-4 py-2 text-[13px] text-surface lg:px-6">
+    <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-ink/10 bg-ink px-4 py-2 text-[0.8125rem] text-surface lg:px-6">
       <ShieldCheck className="size-4 shrink-0" aria-hidden />
       <span className="min-w-0 flex-1">
         <strong className="font-semibold">Viewing {view.studioName} as Swayvo support.</strong>{' '}

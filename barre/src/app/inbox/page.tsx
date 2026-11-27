@@ -53,9 +53,9 @@ function Inbox() {
         {!!requests.data?.length && (
           <Link href="/requests"
             className="group mb-6 grid grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-x-3 border-y border-line py-3">
-            <span className="font-display text-[28px] leading-none tnum">{requests.data.length}</span>
+            <span className="font-display text-[1.75rem] leading-none tnum">{requests.data.length}</span>
             <span className="font-semibold">Request{requests.data.length === 1 ? '' : 's'} from families waiting for an answer</span>
-            <span className="flex items-center gap-1 text-[13px] font-semibold text-accent-text group-hover:underline">Open requests<ArrowRight className="size-3.5" aria-hidden /></span>
+            <span className="flex items-center gap-1 text-[0.8125rem] font-semibold text-accent-text group-hover:underline">Open requests<ArrowRight className="size-3.5" aria-hidden /></span>
           </Link>
         )}
 
@@ -109,9 +109,9 @@ function ThreadList({ threads, selected, onSelect }: {
                 {/* Status in words as well as weight: "unread" is not colour-only. */}
                 {t.unread > 0 && <Word>{t.unread} new</Word>}
                 {t.last_inbound && t.unread === 0 && <Word tone="caution">Awaiting reply</Word>}
-                <span className="ml-auto shrink-0 text-[12.5px] text-ink-3">{relativeDay(t.last_at)}</span>
+                <span className="ml-auto shrink-0 text-[0.7812rem] text-ink-3">{relativeDay(t.last_at)}</span>
               </span>
-              <span className={cn('mt-0.5 line-clamp-2 text-[13.5px]', t.unread ? 'text-ink' : 'text-ink-3')}>
+              <span className={cn('mt-0.5 line-clamp-2 text-[0.8438rem]', t.unread ? 'text-ink' : 'text-ink-3')}>
                 {!t.last_inbound && <span className="text-ink-3">You: </span>}
                 {t.last_subject ? `${t.last_subject} — ` : ''}{t.last_body}
               </span>
@@ -143,9 +143,16 @@ function Conversation({ familyId, onBack }: { familyId: string; onBack: () => vo
 
   React.useEffect(() => { end.current?.scrollIntoView({ block: 'end' }); }, [messages.data?.length]);
 
+  // A guardian's own messages are between them and the office (UR-17), so a
+  // reply to one goes to that guardian only, unless the office chooses the
+  // whole family.
+  const lastPrivate = [...(messages.data ?? [])].reverse().find(m => m.inbound && m.private);
+  const [toFamily, setToFamily] = React.useState(false);
   const send = useMutation({
-    mutationFn: () => runAs(session, q => q(I.SEND_DIRECT, [familyId, '', draft])),
-    onSuccess: () => { setDraft(''); qc.invalidateQueries({ queryKey: ['db'] }); },
+    mutationFn: () => runAs(session, q => lastPrivate && !toFamily
+      ? q(I.SEND_REPLY, [familyId, draft, lastPrivate.id])
+      : q(I.SEND_DIRECT, [familyId, '', draft])),
+    onSuccess: () => { setDraft(''); setToFamily(false); qc.invalidateQueries({ queryKey: ['db'] }); },
   });
 
   const useTemplate = (id: string) => {
@@ -163,10 +170,10 @@ function Conversation({ familyId, onBack }: { familyId: string; onBack: () => vo
           <ArrowLeft className="size-4" aria-hidden />
         </Button>
         <div className="min-w-0 flex-1">
-          <h2 className="truncate font-display text-[19px] leading-tight">{thread?.family_name ?? 'Conversation'}</h2>
-          {thread?.guardian && <p className="truncate text-[13px] text-ink-3">{thread.guardian}</p>}
+          <h2 className="truncate font-display text-[1.1875rem] leading-tight">{thread?.family_name ?? 'Conversation'}</h2>
+          {thread?.guardian && <p className="truncate text-[0.8125rem] text-ink-3">{thread.guardian}</p>}
         </div>
-        <Link href={`/people?id=${familyId}`} className="rounded-[var(--radius-md)] px-2.5 py-2 text-[13px] font-semibold text-accent-text hover:underline">
+        <Link href={`/people?id=${familyId}`} className="rounded-[var(--radius-md)] px-2.5 py-2 text-[0.8125rem] font-semibold text-accent-text hover:underline">
           Family record
         </Link>
       </div>
@@ -179,20 +186,21 @@ function Conversation({ familyId, onBack }: { familyId: string; onBack: () => vo
           const newDay = !prev || relativeDay(prev.sent_at) !== relativeDay(m.sent_at);
           return (
             <React.Fragment key={m.id}>
-              {newDay && <p className="pt-2 text-center text-[12.5px] font-semibold text-ink-3">{relativeDay(m.sent_at)}</p>}
+              {newDay && <p className="pt-2 text-center text-[0.7812rem] font-semibold text-ink-3">{relativeDay(m.sent_at)}</p>}
               <div className={cn('flex', m.inbound ? 'justify-start' : 'justify-end')}>
-                <div className={cn('max-w-[85%] rounded-[var(--radius-lg)] px-3.5 py-2.5 text-[14.5px]',
+                <div className={cn('max-w-[85%] rounded-[var(--radius-lg)] px-3.5 py-2.5 text-[0.9062rem]',
                   m.inbound ? 'rounded-bl-sm border border-line bg-surface' : 'rounded-br-sm bg-ink text-ink-invert')}>
                   {m.is_request && (
-                    <Link href="/requests" className={cn('mb-1 inline-flex items-center gap-1 text-[12px] font-semibold underline-offset-2 hover:underline',
+                    <Link href="/requests" className={cn('mb-1 inline-flex items-center gap-1 text-[0.75rem] font-semibold underline-offset-2 hover:underline',
                       m.inbound ? 'text-accent-text' : 'text-ink-invert')}>
                       Request{m.inbound ? ' · handle in Requests' : ''}
                     </Link>
                   )}
                   {m.subject && <p className="mb-1 font-semibold">{m.subject}</p>}
                   <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                  <p className={cn('mt-1.5 text-[12px]', m.inbound ? 'text-ink-3' : 'text-ink-invert opacity-75')}>
+                  <p className={cn('mt-1.5 text-[0.75rem]', m.inbound ? 'text-ink-3' : 'text-ink-invert opacity-75')}>
                     {m.sender ?? (m.inbound ? thread?.family_name : 'Studio')} · {time(m.sent_at)}
+                    {m.private && ` · only ${m.private_name ?? 'one guardian'} and the office`}
                   </p>
                 </div>
               </div>
@@ -204,7 +212,14 @@ function Conversation({ familyId, onBack }: { familyId: string; onBack: () => vo
 
       <form className="border-t border-line p-3" onSubmit={e => { e.preventDefault(); if (draft.trim() && !unfilled) send.mutate(); }}>
         {send.error && <div className="mb-2"><ErrorState error={send.error} /></div>}
-        {unfilled && <p role="alert" className="mb-2 text-[12.5px] text-caution">Fill in the {'{{…}}'} gaps before sending.</p>}
+        {unfilled && <p role="alert" className="mb-2 text-[0.7812rem] text-caution">Fill in the {'{{…}}'} gaps before sending.</p>}
+        {lastPrivate && (
+          <Select aria-label="Who the reply goes to" value={toFamily ? 'family' : 'one'} onChange={e => setToFamily(e.target.value === 'family')}
+                  className="mb-2 h-9 max-w-full text-[0.8125rem] sm:max-w-[320px]">
+            <option value="one">Reply to {lastPrivate.private_name ?? lastPrivate.sender ?? 'them'} only</option>
+            <option value="family">Send to everyone in the family</option>
+          </Select>
+        )}
         <label htmlFor="reply" className="sr-only">Reply to {thread?.family_name}</label>
         <textarea id="reply" value={draft} onChange={e => setDraft(e.target.value)} rows={3}
           placeholder="Write a reply…"
@@ -212,11 +227,11 @@ function Conversation({ familyId, onBack }: { familyId: string; onBack: () => vo
           className="w-full resize-none rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
                      focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
         <div className="mt-2 flex items-center gap-2">
-          <Select aria-label="Start from a template" value="" onChange={e => useTemplate(e.target.value)} className="h-9 max-w-[200px] text-[13px]">
+          <Select aria-label="Start from a template" value="" onChange={e => useTemplate(e.target.value)} className="h-9 max-w-[200px] text-[0.8125rem]">
             <option value="">Use a template…</option>
             {templates.data?.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
           </Select>
-          <span className="ml-auto hidden text-[12px] text-ink-3 sm:inline">In the app · ⌘↵ to send</span>
+          <span className="ml-auto hidden text-[0.75rem] text-ink-3 sm:inline">In the app · ⌘↵ to send</span>
           <Button type="submit" variant="primary" size="sm" loading={send.isPending}
                   disabled={!draft.trim() || unfilled}>
             <Send className="size-4" aria-hidden /> Send
@@ -240,13 +255,13 @@ function BroadcastList() {
           <li key={b.id}>
            <button className="block w-full px-1 py-3 text-left hover:bg-surface-2/60" onClick={() => setOpen(b)}>
             <div className="flex flex-wrap items-baseline gap-x-2">
-              <span className="text-[13px] font-semibold text-ink-2">{b.kind === 'studio_announcement' ? 'Whole studio' : b.class_name}</span>
-              {b.scheduled && <><Word tone="caution">Scheduled</Word><span className="text-[13px] text-caution">{relativeDay(b.sent_at)} {time(b.sent_at)}</span></>}
-              <span className="ml-auto text-[12.5px] text-ink-3">{relativeDay(b.sent_at)}</span>
+              <span className="text-[0.8125rem] font-semibold text-ink-2">{b.kind === 'studio_announcement' ? 'Whole studio' : b.class_name}</span>
+              {b.scheduled && <><Word tone="caution">Scheduled</Word><span className="text-[0.8125rem] text-caution">{relativeDay(b.sent_at)} {time(b.sent_at)}</span></>}
+              <span className="ml-auto text-[0.7812rem] text-ink-3">{relativeDay(b.sent_at)}</span>
             </div>
             {b.subject && <p className="mt-1 font-semibold">{b.subject}</p>}
-            <p className="mt-0.5 line-clamp-2 text-[14px] text-ink-2">{b.body}</p>
-            {b.sender && <p className="mt-1 text-[12.5px] text-ink-3">From {b.sender}</p>}
+            <p className="mt-0.5 line-clamp-2 text-[0.875rem] text-ink-2">{b.body}</p>
+            {b.sender && <p className="mt-1 text-[0.7812rem] text-ink-3">From {b.sender}</p>}
            </button>
           </li>
         ))}
@@ -277,13 +292,13 @@ export function ReachSheet({ message, onClose }: { message: { id: string; subjec
       canSave={!message.scheduled && waiting > 0 && !done} saveLabel={waiting ? `Remind the ${waiting} who haven’t` : 'Everyone has seen it'}>
       {done && <div role="status"><Notice word="Reminded" tone="positive" title={done} /></div>}
       {reach.isLoading && <Skeleton className="h-24" />}
-      {noLogin > 0 && <p className="text-[13px] text-ink-3">{noLogin} famil{noLogin === 1 ? 'y has' : 'ies have'} not signed up to the app, so cannot see messages yet.</p>}
+      {noLogin > 0 && <p className="text-[0.8125rem] text-ink-3">{noLogin} famil{noLogin === 1 ? 'y has' : 'ies have'} not signed up to the app, so cannot see messages yet.</p>}
       <ul className="max-h-72 divide-y divide-line overflow-y-auto border-y border-line">
         {rows.map(r => (
-          <li key={r.family_id} className="flex min-h-[40px] items-center justify-between gap-3 py-2 text-[14px]">
+          <li key={r.family_id} className="flex min-h-[40px] items-center justify-between gap-3 py-2 text-[0.875rem]">
             <span>{r.family_name}</span>
-            {r.seen ? <span className="text-[13px] text-positive">Seen {r.seen_at ? relativeDay(r.seen_at) : ''}</span>
-              : r.has_login ? <span className="text-[13px] font-semibold text-caution">Not yet</span> : <span className="text-[13px] text-ink-3">No app login</span>}
+            {r.seen ? <span className="text-[0.8125rem] text-positive">Seen {r.seen_at ? relativeDay(r.seen_at) : ''}</span>
+              : r.has_login ? <span className="text-[0.8125rem] font-semibold text-caution">Not yet</span> : <span className="text-[0.8125rem] text-ink-3">No app login</span>}
           </li>
         ))}
       </ul>
@@ -306,7 +321,7 @@ function TemplateList() {
           <li key={t.id}>
             <button onClick={() => setEditing(t)} className="w-full px-1 py-3 text-left hover:bg-surface-2/60">
               <span className="block font-semibold">{t.name}</span>
-              <span className="mt-0.5 line-clamp-2 block text-[13.5px] text-ink-3">{t.body}</span>
+              <span className="mt-0.5 line-clamp-2 block text-[0.8438rem] text-ink-3">{t.body}</span>
             </button>
           </li>
         ))}
@@ -422,7 +437,7 @@ function Composer({ onClose, onSentDirect }: { onClose: () => void; onSentDirect
       <div role="radiogroup" aria-label="Who to" className="grid grid-cols-3 gap-1 rounded-[var(--radius-md)] bg-surface-2 p-1">
         {([['family', 'A family'], ['class', 'A class'], ['studio', 'Everyone']] as const).map(([k, l]) => (
           <button key={k} role="radio" aria-checked={audience === k} onClick={() => setAudience(k)}
-            className={cn('min-h-[40px] rounded-[calc(var(--radius-md)-2px)] text-[14px]',
+            className={cn('min-h-[40px] rounded-[calc(var(--radius-md)-2px)] text-[0.875rem]',
               audience === k ? 'border border-line-strong bg-surface font-semibold text-ink' : 'text-ink-2 hover:text-ink')}>{l}</button>
         ))}
       </div>
@@ -466,7 +481,7 @@ function Composer({ onClose, onSentDirect }: { onClose: () => void; onSentDirect
         <Input id="cm-at" type="datetime-local" value={later} onChange={e => setLater(e.target.value)}
                min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)} />
       </Field>
-      <p className="text-[13px] text-ink-3">
+      <p className="text-[0.8125rem] text-ink-3">
         Delivered in the app. Email and text delivery aren’t connected yet.
       </p>
     </RecordSheet>

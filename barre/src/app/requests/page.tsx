@@ -22,7 +22,7 @@ import { relativeDay, time, dateLong } from '@/lib/format';
 
 const KIND_LABEL: Record<string, string> = {
   question: 'Question', private_lesson: 'Private lesson', medical_update: 'Medical update',
-  event_interest: 'Event', absence: 'Absence', other: 'Other',
+  event_interest: 'Event', absence: 'Absence', data_request: 'Data request', other: 'Other',
 };
 
 /**
@@ -105,13 +105,13 @@ export default function RequestsPage() {
                 <li key={r.id} className={cn('px-1 py-4', medical && 'border-l-2 border-critical pl-3')}>
                   <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                     <Word tone={medical ? 'critical' : 'ink'}>{KIND_LABEL[r.kind] ?? r.kind}</Word>
-                    <span className="text-[13px] text-ink-3">
+                    <span className="text-[0.8125rem] text-ink-3">
                       {r.guardian_name ?? r.family_name}{r.student_name ? ` · about ${r.student_name}` : ''}
                     </span>
-                    <span className="ml-auto text-[12.5px] text-ink-3">{relativeDay(r.created_at)}</span>
+                    <span className="ml-auto text-[0.7812rem] text-ink-3">{relativeDay(r.created_at)}</span>
                   </div>
                   <p className="mt-1.5 font-semibold">{r.subject}</p>
-                  <p className="mt-0.5 text-[14.5px] text-ink-2">{r.body}</p>
+                  <p className="mt-0.5 text-[0.9062rem] text-ink-2">{r.body}</p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {medical ? (
                       <>
@@ -160,18 +160,18 @@ export default function RequestsPage() {
         </section>
         <section className="min-w-0">
           <SectionHead title="Event and competition entries" meta={entries.data?.length ? `${entries.data.length}` : undefined} />
-          <p className="py-2 text-[13px] text-ink-3">Nothing is in the diary until you confirm it.</p>
+          <p className="py-2 text-[0.8125rem] text-ink-3">Nothing is in the diary until you confirm it.</p>
           {entries.isLoading && <div className="space-y-2">{[0,1].map(i => <Skeleton key={i} className="h-14" />)}</div>}
           {entries.error && <ErrorState error={entries.error} />}
           {entries.data?.length === 0 && !entries.isLoading && (
-            <p className="border-t border-line py-3 text-[14px] text-ink-3">No entries waiting.</p>
+            <p className="border-t border-line py-3 text-[0.875rem] text-ink-3">No entries waiting.</p>
           )}
           <ul className="divide-y divide-line border-t border-line">
             {entries.data?.map(e => (
               <li key={e.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-1 py-3">
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-semibold">{e.student_name}</span>
-                  <span className="block text-[13px] text-ink-3">
+                  <span className="block text-[0.8125rem] text-ink-3">
                     {e.event_title} · {dateLong(e.starts_at)}, {time(e.starts_at)}
                   </span>
                 </span>
@@ -228,12 +228,12 @@ function AnswerDialog({ request, onClose }: { request: any; onClose: () => void 
         ) : (
           <>
             <div className="border-b border-line px-5 pb-3 pt-4">
-              <h2 id="ans-t" className="font-display text-[20px] leading-tight">Reply</h2>
-              <p className="mt-1 text-[13.5px] text-ink-3">{request.subject}</p>
+              <h2 id="ans-t" className="font-display text-[1.25rem] leading-tight">Reply</h2>
+              <p className="mt-1 text-[0.8438rem] text-ink-3">{request.subject}</p>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
-              <blockquote className="border-l-2 border-line-strong pl-3 text-[14.5px] text-ink-2">{request.body}</blockquote>
-              <label htmlFor="ans-body" className="mt-4 block text-[13px] font-medium text-ink-2">Your reply</label>
+              <blockquote className="border-l-2 border-line-strong pl-3 text-[0.9062rem] text-ink-2">{request.body}</blockquote>
+              <label htmlFor="ans-body" className="mt-4 block text-[0.8125rem] font-medium text-ink-2">Your reply</label>
               <textarea id="ans-body" value={answer} onChange={e => setAnswer(e.target.value)} rows={4}
                 placeholder="Write your reply…"
                 className="mt-1.5 w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
@@ -311,8 +311,8 @@ function RecordUpdateSheet({ request: r, onClose, onDone }: {
       onClose={onClose} onSave={() => save.mutate()} saving={save.isPending} error={save.error}
       canSave={changed && message.trim().length > 3} saveLabel="Update record and tell the parent">
       <figure className="border-l-2 border-critical pl-3">
-        <figcaption className="text-[13px] text-ink-3">{r.guardian_name ?? 'The parent'} wrote · {r.subject}</figcaption>
-        <blockquote className="mt-1 text-[15px] font-medium">{r.body}</blockquote>
+        <figcaption className="text-[0.8125rem] text-ink-3">{r.guardian_name ?? 'The parent'} wrote · {r.subject}</figcaption>
+        <blockquote className="mt-1 text-[0.9375rem] font-medium">{r.body}</blockquote>
       </figure>
 
       {!r.student_id && r.children.length > 1 && (
@@ -334,16 +334,16 @@ function RecordUpdateSheet({ request: r, onClose, onDone }: {
                 className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
                            focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
               <button type="button" onClick={() => take(k)}
-                className="mt-1 inline-flex min-h-[36px] items-center gap-1 text-[13px] font-semibold text-accent-text hover:underline">
+                className="mt-1 inline-flex min-h-[36px] items-center gap-1 text-[0.8125rem] font-semibold text-accent-text hover:underline">
                 <CornerDownLeft className="size-3.5" aria-hidden /> Add the parent’s words here
               </button>
             </Field>
           ))}
-          <label className="flex min-h-[44px] items-start gap-3 text-[14px]">
+          <label className="flex min-h-[44px] items-start gap-3 text-[0.875rem]">
             <input type="checkbox" checked={urgent} onChange={e => setUrgent(e.target.checked)} className="mt-0.5 size-[18px] accent-[var(--color-accent)]" />
             <span>
               <span className="font-semibold">Urgent — show a red alert</span>
-              <span className="mt-0.5 block text-[13px] text-ink-3">Teachers see every detail above either way.</span>
+              <span className="mt-0.5 block text-[0.8125rem] text-ink-3">Teachers see every detail above either way.</span>
             </span>
           </label>
           <Field label="Message to the parent" htmlFor="ru-msg" required>
@@ -351,7 +351,7 @@ function RecordUpdateSheet({ request: r, onClose, onDone }: {
               className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
                          focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
           </Field>
-          {!changed && <p className="text-[12.5px] text-ink-3">Change the record above to save — or use Acknowledge if nothing needs changing.</p>}
+          {!changed && <p className="text-[0.7812rem] text-ink-3">Change the record above to save — or use Acknowledge if nothing needs changing.</p>}
         </>
       )}
     </RecordSheet>

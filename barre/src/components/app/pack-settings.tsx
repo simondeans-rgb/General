@@ -39,18 +39,18 @@ export function PackSettings() {
       <CardHeader title="Pay as you go" subtitle="Class packs for drop-in classes, and credit for classes you cancel" />
       <div className="space-y-4 pt-1">
         {write.error != null && <ErrorState error={write.error} />}
-        <ul className="divide-y divide-line text-[14.5px]">
+        <ul className="divide-y divide-line text-[0.9062rem]">
           {packs.data?.map(p => (
             <li key={p.id} className="flex min-h-12 items-center gap-3 py-2">
               <span className="min-w-0 flex-1"><span className="font-semibold">{p.name}</span>
-                <span className="block text-[13px] text-ink-3">{p.classes} classes · valid {p.valid_days} days</span></span>
+                <span className="block text-[0.8125rem] text-ink-3">{p.classes} classes · valid {p.valid_days} days</span></span>
               <span className="tnum font-semibold">{money(p.price_minor)}</span>
-              <label className="flex min-h-10 items-center gap-1.5 text-[13px]"><input type="checkbox" className="size-5 accent-[var(--color-accent)]" checked={p.active}
+              <label className="flex min-h-10 items-center gap-1.5 text-[0.8125rem]"><input type="checkbox" className="size-5 accent-[var(--color-accent)]" checked={p.active}
                 onChange={e => write.mutate({ sql: TOGGLE, params: [p.id, e.target.checked] })} /> On sale</label>
             </li>
           ))}
         </ul>
-        <p className="pt-2 text-[13px] font-semibold text-ink-2">New pack</p>
+        <p className="pt-2 text-[0.8125rem] font-semibold text-ink-2">New pack</p>
         <div className="-mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
           <Input aria-label="Pack name" placeholder="Name" value={f.name} onChange={e => setF({ ...f, name: e.target.value })} />
           <Input aria-label="Classes in the pack" type="number" min={1} value={f.classes} onChange={e => setF({ ...f, classes: e.target.value })} />
@@ -59,23 +59,23 @@ export function PackSettings() {
         </div>
         <Button size="sm" disabled={!f.name.trim() || !f.price} onClick={() => { write.mutate({ sql: ADD, params: [f.name, Number(f.classes), Math.round(Number(f.price) * 100), Number(f.days)] }); setF({ name: '', classes: '5', price: '', days: '90' }); }}>Add pack</Button>
         {credit && owner && (
-          <label className="flex items-start gap-2.5 border-t border-line pt-4 text-[14.5px]">
+          <label className="flex items-start gap-2.5 border-t border-line pt-4 text-[0.9062rem]">
             <input type="checkbox" className="mt-0.5 size-5 shrink-0 accent-[var(--color-accent)]" checked={credit.credit_cancelled_classes}
               onChange={e => write.mutate({ sql: SET_CREDIT, params: [credit.id, e.target.checked] })} />
             <span className="font-semibold">Credit families when we cancel a class
-              <span className="block text-[13px] font-normal text-ink-3">Each child enrolled gets that class’s per-session value back on their account, once. Off: you decide case by case.</span></span>
+              <span className="block text-[0.8125rem] font-normal text-ink-3">Each child enrolled gets that class’s per-session value back on their account, once. Off: you decide case by case.</span></span>
           </label>
         )}
         {credit && owner && (
-          <div className="space-y-2 border-t border-line pt-4 text-[14.5px]">
+          <div className="space-y-2 border-t border-line pt-4 text-[0.9062rem]">
             <label className="flex items-start gap-2.5">
               <input type="checkbox" className="mt-0.5 size-5 shrink-0 accent-[var(--color-accent)]" checked={credit.pay_before_use}
                 onChange={e => write.mutate({ sql: SET_PAY_FIRST, params: [credit.id, e.target.checked, credit.account_limit_minor] })} />
               <span className="font-semibold">Pay before use
-                <span className="block text-[13px] font-normal text-ink-3">Packs work once paid, and drop-ins need paying first — unless the family owes less than the limit below. Bookings from the public page are held for 30 minutes until paid.</span></span>
+                <span className="block text-[0.8125rem] font-normal text-ink-3">Packs work once paid, and drop-ins need paying first — unless the family owes less than the limit below. Bookings from the public page are held for 30 minutes until paid.</span></span>
             </label>
             {credit.pay_before_use && (
-              <label className="ml-7 flex flex-wrap items-center gap-2 text-[13px]">On-account limit £
+              <label className="ml-7 flex flex-wrap items-center gap-2 text-[0.8125rem]">On-account limit £
                 <Input aria-label="On-account limit in pounds" className="w-24" type="number" min={0} step={1}
                   value={limit ?? String(credit.account_limit_minor / 100)} onChange={e => setLimit(e.target.value)}
                   onBlur={() => { if (limit != null) { write.mutate({ sql: SET_PAY_FIRST, params: [credit.id, true, Math.max(0, Math.round(Number(limit) * 100))] }); setLimit(null); } }} />

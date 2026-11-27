@@ -45,7 +45,7 @@ export function ChildClassesSheet({ child, onClose }: { child: { id: string; fir
           </button>
         </div>
         {done && (
-          <p role="status" className="mb-3 border-l-2 border-positive pl-3 text-[14px]">
+          <p role="status" className="mb-3 border-l-2 border-positive pl-3 text-[0.875rem]">
             <span className="font-semibold text-positive">Done. </span>{done}
           </p>
         )}
@@ -58,19 +58,23 @@ export function ChildClassesSheet({ child, onClose }: { child: { id: string; fir
             <li key={o.class_id} className="py-3">
               <div className="flex items-baseline justify-between gap-3">
                 <span className="font-semibold">{o.name}</span>
-                <span className="tnum shrink-0 text-[13px] text-ink-2">{money(o.price_minor)} {PER[o.pricing]}</span>
+                <span className="tnum shrink-0 text-[0.8125rem] text-ink-2">{money(o.price_minor)} {PER[o.pricing]}</span>
               </div>
-              <p className="text-[13px] text-ink-2">
+              <p className="text-[0.8125rem] text-ink-2">
                 {DAYS[o.day_of_week]} at {o.start_time.slice(0, 5)}
                 {o.age_min != null && ` · ages ${o.age_min}${o.age_max != null ? `–${o.age_max}` : '+'}`}
                 {o.trials_enabled && ` · trial ${o.trial_price_minor ? money(o.trial_price_minor) : 'free'}`}
               </p>
-              {o.prerequisites && <p className="text-[12.5px] text-ink-3">Before joining: {o.prerequisites}</p>}
+              {o.prerequisites && <p className="text-[0.7812rem] text-ink-3">Before joining: {o.prerequisites}</p>}
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                {o.pricing === 'drop_in' ? <span className="text-[13.5px] font-semibold text-ink-2">Pay as you go. Book a date under Drop-in classes.</span>
-                  : o.enrolled ? <span className="text-[13.5px] font-semibold text-positive">{child.first_name} is in this class</span>
-                  : o.waiting ? <span className="text-[13.5px] font-semibold text-info">On the waiting list</span>
-                  : o.asked ? <span className="text-[13.5px] font-semibold text-caution">Asked. The office will be in touch.</span>
+                {o.pricing === 'drop_in' ? <span className="text-[0.8438rem] font-semibold text-ink-2">Pay as you go. Book a date under Drop-in classes.</span>
+                  : o.enrolled ? <span className="text-[0.8438rem] font-semibold text-positive">{child.first_name} is in this class</span>
+                  : o.waiting ? <span className="text-[0.8438rem] font-semibold text-info">On the waiting list</span>
+                  : o.asked ? <span className="text-[0.8438rem] font-semibold text-caution">Asked. The office will be in touch.</span>
+                  // Shown for information only: the school refuses out-of-age requests (UR-54).
+                  : !o.age_fits ? <span className="text-[0.8438rem] font-semibold text-ink-2">
+                      Not for {child.first_name}’s age{o.age_min != null || o.age_max != null ? ` (${o.age_min ?? 0}${o.age_max != null ? `–${o.age_max}` : '+'})` : ''}. Ask the office if you think it should be.
+                    </span>
                   : (
                     <>
                       {!o.full && (
@@ -86,11 +90,11 @@ export function ChildClassesSheet({ child, onClose }: { child: { id: string; fir
                           Join the waiting list
                         </Button>
                       )}
-                      {o.full && !o.waitlist_enabled && <span className="text-[13.5px] font-semibold text-ink-2">Full</span>}
+                      {o.full && !o.waitlist_enabled && <span className="text-[0.8438rem] font-semibold text-ink-2">Full</span>}
                       {o.trials_enabled && !o.trial_booked && o.trial_sessions.length > 0 && (
                         <Button size="sm" variant="ghost" onClick={() => setTrialFor(o)}>Book a trial</Button>
                       )}
-                      {o.trial_booked && <span className="text-[13.5px] font-semibold text-info">Trial booked</span>}
+                      {o.trial_booked && <span className="text-[0.8438rem] font-semibold text-info">Trial booked</span>}
                     </>
                   )}
               </div>
@@ -99,7 +103,7 @@ export function ChildClassesSheet({ child, onClose }: { child: { id: string; fir
         </ul>
         {hidden > 0 && !all && (
           <Button variant="ghost" size="sm" className="mt-2" onClick={() => setAll(true)}>
-            Show {hidden} more for other ages
+            Show {hidden} more for other ages (to look at only)
           </Button>
         )}
       </div>
@@ -124,7 +128,7 @@ function TrialSheet({ o, name, onClose, onBook, pending, error }: {
           {o.trial_sessions.map(s => <option key={s.id} value={s.id}>{dateLong(s.starts_at)} at {time(s.starts_at)}</option>)}
         </Select>
       </Field>
-      <p className="text-[13px] text-ink-2">{o.trial_price_minor ? `The trial is ${money(o.trial_price_minor)}, added to your next invoice.` : 'The trial is free.'}</p>
+      <p className="text-[0.8125rem] text-ink-2">{o.trial_price_minor ? `The trial is ${money(o.trial_price_minor)}, added to your next invoice.` : 'The trial is free.'}</p>
     </RecordSheet>
   );
 }

@@ -8,6 +8,7 @@ import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import { Button, EmptyState, ErrorState, Field, Input, Notice, Select, Skeleton } from '@/components/ui';
 import * as B from '@/lib/repos/billing';
+import { useLocationFilter } from '@/components/app/location-filter';
 import { money, dateShort, isoDate } from '@/lib/format';
 
 const RULE_TEXT = {
@@ -31,15 +32,27 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
   // '' is the whole term (term- and course-priced classes); a month bills monthly classes.
   const [period, setPeriod] = React.useState('');
   const month = months.includes(period) ? period : '';
-  const lines = useRows<B.BillingLine>(['billing-lines', term, month], B.BILLING_LINES, [term, month || null], { enabled: !!term });
+  // Families already billed for the period by an invoice that does not name
+  // the class are skipped; the office may include one, with a reason (UR-10).
+  const skipped = useRows<B.SkippedFamily>(['billing-skipped', term, month], B.BILLING_SKIPPED, [term, month || null], { enabled: !!term });
+  const [include, setInclude] = React.useState<string[]>([]);
+  const [reason, setReason] = React.useState('');
+  React.useEffect(() => { setInclude([]); setReason(''); }, [term, month]);
+  const lines = useRows<B.BillingLine>(['billing-lines', term, month, include], B.BILLING_LINES,
+    [term, month || null, include.length ? include : null], { enabled: !!term });
   const runs = useRows<B.BillingRun>(['billing-runs'], B.BILLING_RUNS);
   const rules = useRows<B.DiscountRule>(['discount-rules'], B.DISCOUNT_RULES);
   const [due, setDue] = React.useState(() => isoDate(new Date(Date.now() + 14 * 86400_000)));
   const [done, setDone] = React.useState<string | null>(null);
 
+  // The preview can be narrowed to one location (UR-33); the run still covers every location.
+  const loc = useLocationFilter();
+  const classLoc = useRows<{ id: string; location: string }>(['class-locations'], B.CLASS_LOCATIONS, [], { enabled: !!loc.control });
   const families = React.useMemo(() => {
+    const where = new Map((classLoc.data ?? []).map(c => [c.id, c.location]));
     const m = new Map<string, { name: string; lines: B.BillingLine[]; gross: number; discount: number }>();
     for (const l of lines.data ?? []) {
+      if (loc.current && where.get(l.class_id) !== loc.current) continue;
       const f = m.get(l.family_id) ?? { name: l.family_name, lines: [], gross: 0, discount: 0 };
       f.lines.push(l);
       f.gross += Math.round(Number(l.quantity) * l.unit_minor);
@@ -47,7 +60,8 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
       m.set(l.family_id, f);
     }
     return [...m.values()];
-  }, [lines.data]);
+  }, [lines.data, loc.current, classLoc.data]);
+  const runCount = React.useMemo(() => new Set((lines.data ?? []).map(l => l.family_id)).size, [lines.data]);
   const total = families.reduce((n, f) => n + f.gross - f.discount, 0);
   const discounts = families.reduce((n, f) => n + f.discount, 0);
   const draft = runs.data?.find(r => r.status === 'draft');
@@ -69,14 +83,14 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
         className="max-h-[92dvh] w-full max-w-2xl overflow-y-auto overscroll-contain rounded-t-[var(--radius-xl)]
                    border border-line bg-surface px-5 pb-safe pt-4 shadow-lg sm:rounded-[var(--radius-xl)] sm:px-6">
         <div className="sticky top-0 z-10 -mx-5 mb-2 flex items-center justify-between bg-surface px-5 py-2 sm:-mx-6 sm:px-6">
-          <h2 id="run-t" className="font-display text-[22px] font-[800] leading-tight [font-stretch:112%]">Billing runs</h2>
+          <h2 id="run-t" className="font-display text-[1.375rem] font-[800] leading-tight [font-stretch:112%]">Billing runs</h2>
           <button onClick={onClose} aria-label="Close" className="grid size-10 place-items-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-ink">
             <X className="size-4" aria-hidden />
           </button>
         </div>
 
         {done && (
-          <p role="status" className="mb-4 flex items-center gap-2 border-l-2 border-positive py-1 pl-3 text-[14px] text-ink">
+          <p role="status" className="mb-4 flex items-center gap-2 border-l-2 border-positive py-1 pl-3 text-[0.875rem] text-ink">
             <CheckCircle2 className="size-4 shrink-0 text-positive" aria-hidden /> {done}
           </p>
         )}
@@ -105,7 +119,7 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
 
           <section aria-labelledby="run-prev">
             <Head id="run-prev" title="New run" meta={month ? 'Monthly classes' : 'Term and course fees'} />
-            <p className="mt-2 text-[13px] text-ink-3">{month
+            <p className="mt-2 text-[0.8125rem] text-ink-3">{month
               ? 'Monthly classes for this month only. Children already invoiced for the month are left out.'
               : 'Monthly classes are billed month by month instead.'}</p>
             <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -124,19 +138,63 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
                 <Input id="run-due" type="date" value={due} onChange={e => setDue(e.target.value)} />
               </Field>
             </div>
+            {loc.control && (
+              <div className="mt-3 space-y-1">
+                {loc.control}
+                {loc.current && <p className="text-[0.8125rem] text-ink-3">Showing {loc.current} only. The run itself raises invoices for every location.</p>}
+              </div>
+            )}
             {lines.isLoading && <div className="pt-4"><Skeleton className="h-24" /></div>}
             {lines.error && <div className="pt-4"><ErrorState error={lines.error} /></div>}
             {lines.data?.length === 0 && (
               <EmptyState title="Everyone is invoiced" body={`Every child has an invoice for ${periodName}, or no class is billed this way.`} />
             )}
-            {families.length > 0 && (
+            {!!skipped.data?.length && (
+              <div className="mt-5">
+                <p className="label">Already billed for this period — skipped ({skipped.data.length})</p>
+                <p className="mt-1 text-[0.8125rem] text-ink-3">
+                  These families already have a tuition invoice for {periodName} that does not name its classes, so the run leaves them out.
+                  Include one only if that invoice was for something else.
+                </p>
+                <ul className="mt-2 max-h-56 divide-y divide-line overflow-y-auto border-y border-line">
+                  {skipped.data.map(f => (
+                    <li key={f.family_id} className="flex items-center gap-3 py-2 text-[0.875rem]">
+                      <input type="checkbox" id={`skip-${f.family_id}`} className="size-5 accent-[var(--color-accent)]"
+                        checked={include.includes(f.family_id)}
+                        onChange={e => setInclude(x => e.target.checked ? [...x, f.family_id] : x.filter(y => y !== f.family_id))} />
+                      <label htmlFor={`skip-${f.family_id}`} className="min-w-0 flex-1">
+                        <span className="block font-medium">{f.family_name}</span>
+                        <span className="block truncate text-[0.7812rem] text-ink-3">
+                          Billed on {f.invoices} · <span className="tnum">{money(f.billed_minor)}</span>
+                        </span>
+                      </label>
+                      <span className="shrink-0 text-right text-[0.7812rem] text-ink-3">
+                        {include.includes(f.family_id) ? 'Included' : 'Include anyway'}<br />
+                        <span className="tnum text-ink-2">{money(f.would_raise_minor)}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                {include.length > 0 && (
+                  <div className="mt-3">
+                    <Field label={`Why bill ${include.length === 1 ? 'this family' : 'these families'} again?`} htmlFor="run-why" required
+                           hint="Kept in the audit trail against each family.">
+                      <Input id="run-why" value={reason} onChange={e => setReason(e.target.value)} maxLength={200}
+                             placeholder="Their earlier invoice was for last term" />
+                    </Field>
+                  </div>
+                )}
+              </div>
+            )}
+            {runCount > 0 && (
               <>
+                {families.length === 0 && <p className="mt-5 text-[0.875rem] text-ink-2">No family at {loc.current} is in this run.</p>}
                 <div className="mt-5 flex items-end justify-between gap-4 border-b border-line pb-3">
                   <div>
-                    <p className="label">To invoice</p>
-                    <p className="stat-number mt-1 text-[28px] leading-none">{money(total)}</p>
+                    <p className="label">To invoice{loc.current ? ` at ${loc.current}` : ''}</p>
+                    <p className="stat-number mt-1 text-[1.75rem] leading-none">{money(total)}</p>
                   </div>
-                  <p className="text-right text-[13px] text-ink-3">
+                  <p className="text-right text-[0.8125rem] text-ink-3">
                     {families.length} families
                     {discounts > 0 && <><br /><span className="tnum">{money(discounts)}</span> of discounts</>}
                   </p>
@@ -148,7 +206,7 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
                         <span className="font-semibold">{f.name}</span>
                         <span className="tnum font-semibold">{money(f.gross - f.discount)}</span>
                       </div>
-                      <ul className="mt-0.5 space-y-0.5 text-[13px] text-ink-2">
+                      <ul className="mt-0.5 space-y-0.5 text-[0.8125rem] text-ink-2">
                         {f.lines.map(l => (
                           <li key={l.student_id + l.class_id} className="flex justify-between gap-3">
                             <span className="min-w-0 truncate">{l.student_name.split(' ')[0]} · {l.description}
@@ -163,13 +221,17 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
                   ))}
                 </ul>
                 <div className="border-t border-line pt-4">
-                  <Button variant={draft ? 'secondary' : 'primary'} className="w-full" disabled={!!draft} loading={act.isPending}
-                    onClick={() => act.mutate({ sql: B.CREATE_BILLING_RUN, params: [term, due, month || null],
-                      msg: `${families.length} draft invoices raised for ${periodName}. Nothing has been sent yet.` })}>
-                    Raise {families.length} draft invoices
+                  <Button variant={draft ? 'secondary' : 'primary'} className="w-full"
+                    disabled={!!draft || (include.length > 0 && reason.trim().length < 3)} loading={act.isPending}
+                    onClick={() => act.mutate({ sql: B.CREATE_BILLING_RUN,
+                      params: [term, due, month || null, include.length ? include : null, include.length ? reason.trim() : null],
+                      msg: `${runCount} draft invoices raised for ${periodName}. Nothing has been sent yet.` })}>
+                    Raise {runCount} draft invoices{loc.current ? ' (every location)' : ''}
                   </Button>
-                  <p className="mt-2 text-center text-[13px] text-ink-3">
-                    {draft ? 'Send or discard the drafts above first.' : 'Drafts first. Nothing reaches families until you send.'}
+                  <p className="mt-2 text-center text-[0.8125rem] text-ink-3">
+                    {draft ? 'Send or discard the drafts above first.'
+                      : include.length > 0 && reason.trim().length < 3 ? 'Say why the included families are billed again.'
+                      : 'Drafts first. Nothing reaches families until you send.'}
                   </p>
                 </div>
               </>
@@ -178,7 +240,7 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
 
           <section aria-labelledby="run-disc">
             <Head id="run-disc" title="Discounts" meta="Applied automatically" />
-            <p className="mt-2 text-[13px] text-ink-3">Where both apply, the larger one is used.</p>
+            <p className="mt-2 text-[0.8125rem] text-ink-3">Where both apply, the larger one is used.</p>
             <ul className="divide-y divide-line">
               {rules.data?.map(r => <RuleRow key={r.id} r={r} onChange={x => setRule.mutate(x)} />)}
             </ul>
@@ -190,7 +252,7 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
           {runs.data && runs.data.some(r => r.status === 'issued') && (
             <section aria-labelledby="run-old">
               <Head id="run-old" title="Earlier runs" />
-              <ul className="divide-y divide-line text-[14px]">
+              <ul className="divide-y divide-line text-[0.875rem]">
                 {runs.data.filter(r => r.status === 'issued').map(r => (
                   <li key={r.id} className="flex justify-between gap-3 py-2.5">
                     <span>{r.period_month ? monthName(r.period_month) : r.term_name} <span className="text-ink-3">· sent {dateShort(r.issued_at!)}</span></span>
@@ -210,7 +272,7 @@ function Head({ id, title, meta, action }: { id?: string; title: string; meta?: 
   return (
     <div className="flex items-center gap-3 border-b-2 border-ink pb-2">
       <h3 id={id} className="section-title flex-1">{title}</h3>
-      {meta && <span className="text-[13px] text-ink-3">{meta}</span>}
+      {meta && <span className="text-[0.8125rem] text-ink-3">{meta}</span>}
       {action}
     </div>
   );
@@ -233,7 +295,7 @@ function RuleRow({ r, onChange }: { r: B.DiscountRule; onChange: (r: B.DiscountR
                onChange={e => onChange({ ...r, enabled: e.target.checked })} />
         <span>
           <span className="block font-medium">{label}</span>
-          <span className="block text-[13px] text-ink-3">{RULE_TEXT[r.kind](r.from_nth)}</span>
+          <span className="block text-[0.8125rem] text-ink-3">{RULE_TEXT[r.kind](r.from_nth)}</span>
         </span>
       </label>
       <span className="flex items-center gap-1.5 text-sm">
@@ -282,30 +344,35 @@ function FamilyDiscounts() {
     mutationFn: (id: string) => runAs(session, q => q(B.END_FAMILY_DISCOUNT, [id])),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['db'] }),
   });
+  const [ended, setEnded] = React.useState<string | null>(null);
   const ok = f.family && Number(f.amount) > 0 && (f.kind !== 'percent' || Number(f.amount) <= 100);
   return (
     <section aria-labelledby="run-fam">
       <Head id="run-fam" title="Family discounts"
         action={!adding && <Button size="sm" variant="ghost" onClick={() => setAdding(true)}><Plus className="size-4" aria-hidden /> Add</Button>} />
-      <p className="mt-2 text-[13px] text-ink-3">Bursaries, staff rates and other agreements. Families only see the word “Discount”.</p>
-      {rows.data?.length === 0 && !adding && <p className="py-3 text-[14px] text-ink-3">None yet.</p>}
+      <p className="mt-2 text-[0.8125rem] text-ink-3">Bursaries, staff rates and other agreements. Families only see the word “Discount”.</p>
+      {rows.data?.length === 0 && !adding && <p className="py-3 text-[0.875rem] text-ink-3">None yet.</p>}
       {!!rows.data?.length && (
         <ul className="divide-y divide-line">
           {rows.data.map(d => (
             <li key={d.id} className="flex items-center gap-3 py-2.5 text-sm">
               <span className="min-w-0 flex-1">
                 <span className="block font-medium">{d.family_name}</span>
-                <span className="block text-[12.5px] text-ink-2">
+                <span className="block text-[0.7812rem] text-ink-2">
                   {REASONS[d.reason]}{d.note ? ` · ${d.note}` : ''}{d.ends_on ? ` · until ${dateShort(d.ends_on)}` : ''}
                 </span>
               </span>
               <span className="tnum font-medium">{d.kind === 'percent' ? `${d.amount}%` : `${money(d.amount)} off`}</span>
               <button className="grid size-10 place-items-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-critical" aria-label={`End discount for ${d.family_name}`}
-                onClick={() => end.mutate(d.id)}><Trash2 className="size-4" aria-hidden /></button>
+                disabled={end.isPending}
+                onClick={() => end.mutate(d.id, { onSuccess: () => setEnded(`${d.family_name}’s discount has ended. The next run charges the full price.`) })}>
+                <Trash2 className="size-4" aria-hidden /></button>
             </li>
           ))}
         </ul>
       )}
+      {ended && !end.error && <p role="status" className="mt-2 text-[0.8125rem] text-ink-2">{ended}</p>}
+      {end.error != null && <div className="mt-2"><ErrorState error={end.error} /></div>}
       {adding && (
         <div className="mt-2 grid gap-3 border-t border-line pt-4 sm:grid-cols-2">
           <Field label="Family" htmlFor="fd-f" required>

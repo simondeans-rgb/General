@@ -5,6 +5,10 @@ import { REGISTER } from '../src/lib/repos/teaching';
 beforeAll(async () => { await rebuild(); }, 60_000);
 afterAll(async () => { await closeDb(); });
 const as = (svc: any, user: string) => svc(`select set_config('request.jwt.claims', $1, true)`, [JSON.stringify({ sub: user, role: 'authenticated' })]);
+// The seeded drop-in class is for adults. Tests of packs and bookings by a
+// family open it to all ages in their rolled-back transaction (age limits have
+// their own tests in family-fixes.test.ts).
+const anyAgeDropIns = (svc: any) => svc(`update class set age_min = null, age_max = null where pricing = 'drop_in'`);
 const nextDropIn = async (svc: any, n = 0) => (await svc(`select d.session_id from app.drop_in_sessions($1) d order by d.starts_at offset $2 limit 1`, [STUDIO_ID, n]))[0].session_id;
 
 describe('drop-in and packs (R-034)', () => {
@@ -12,7 +16,7 @@ describe('drop-in and packs (R-034)', () => {
     await asUser(null as any, async (q, svc) => {
       const s = await nextDropIn(svc);
       await q(`select app.public_adult_drop_in('northstar', $1, $2::jsonb)`, [s, JSON.stringify({
-        name: 'Maya Fernandes', email: 'maya@example.com', phone: '07700 900321', emergency_name: 'Leo', emergency_phone: '07700 900322', privacy_ack: true })]);
+        name: 'Maya Fernandes', email: 'maya@example.com', phone: '07700 900321', emergency_name: 'Leo', emergency_phone: '07700 900322', privacy_ack: true, adult_confirm: true })]);
       const [b] = await svc(`select d.student_id, d.invoice_id, d.price_minor, f.name from drop_in_booking d join student st on st.id = d.student_id
                               join family f on f.id = st.family_id where d.session_id = $1`, [s]);
       expect(b).toMatchObject({ price_minor: 1200, name: 'Fernandes (adult)' });
@@ -24,6 +28,7 @@ describe('drop-in and packs (R-034)', () => {
 
   it('a pack pays for classes until it runs out; cancelling in time gives the class back', async () => {
     await asUser(USERS.guardianA, async (q, svc) => {
+      await anyAgeDropIns(svc);
       const [kid] = await q(`select id from student order by date_of_birth limit 1`);
       const [pack] = await q(`select id from class_pack where classes = 5`);
       await q(`select app.buy_pack($1, $2)`, [pack.id, kid.id]);
@@ -74,6 +79,7 @@ describe('a family sees its drop-ins', () => {
   it('on its schedule and in its bookings', async () => {
     const F = await import('../src/lib/repos/family');
     await asUser(USERS.guardianA, async (q, svc) => {
+      await anyAgeDropIns(svc);
       const [kid] = await q(`select id from student order by date_of_birth limit 1`);
       const [s] = await q(F.DROP_IN_SESSIONS);
       await q(F.BOOK_DROP_IN, [s.session_id, kid.id]);

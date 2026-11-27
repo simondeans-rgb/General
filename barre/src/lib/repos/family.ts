@@ -50,7 +50,9 @@ select cs.id, cs.class_id, c.name, cs.starts_at, cs.ends_at, cs.status,
  order by 4`;
 
 export const MY_CHILDREN = `
-select s.id, s.first_name, s.last_name, s.date_of_birth,
+select s.id, s.first_name, s.last_name, s.date_of_birth, s.is_adult,
+       s.preferred_name, s.pronouns, s.school,
+       s.self_guardian_id in (select g.id from guardian g where g.user_id = auth.uid()) as is_me,
        (select string_agg(c.name, ', ' order by c.name) from enrolment e
           join class c on c.id = e.class_id
          where e.student_id = s.id and e.status = 'active' and e.deleted_at is null) as class_names,
@@ -61,14 +63,19 @@ select s.id, s.first_name, s.last_name, s.date_of_birth,
                   where m.student_id = s.id and m.deleted_at is null), false) as has_alert,
        (select m.allergies from medical_record m
          where m.student_id = s.id and m.deleted_at is null) as allergies,
-       (select cr.granted from consent_record cr
-         where cr.student_id = s.id and cr.kind = 'photography' and cr.deleted_at is null) as photo_consent
+       app.consent_now(s.id, 'photography') as photo_consent   -- latest settled choice, one row (UR-08)
   from student s
  where s.deleted_at is null
  order by s.date_of_birth`;
 
 export const MY_BALANCE = `
-select f.id, f.name, f.balance_minor,
+-- Worked out from the invoices this guardian can see, so a guardian who pays
+-- part of a split family's fees sees their own balance (UR-17). For any other
+-- family it is the same as family.balance_minor.
+select f.id, f.name,
+       (coalesce((select sum(i.total_minor - i.paid_minor) from invoice i
+                   where i.family_id = f.id and i.deleted_at is null and i.status in ('issued','part_paid','refunded')), 0)
+        - app.family_available_credit(f.id))::bigint as balance_minor,
        (select count(*)::int from invoice i
          where i.family_id = f.id and i.deleted_at is null and i.status in ('issued','part_paid')) as unpaid,
        (select count(*)::int from payment p
@@ -78,7 +85,7 @@ select f.id, f.name, f.balance_minor,
 
 export const MY_INVOICES = `
 select i.id, i.number, i.status, i.issued_on, i.due_on, i.total_minor, i.paid_minor
-  from invoice i where i.deleted_at is null
+  from invoice i where i.deleted_at is null and i.status <> 'draft'   -- drafts are the office's until sent
  order by i.issued_on desc nulls last limit 8`;
 
 export const MY_MESSAGES = `
@@ -107,6 +114,30 @@ select g.id, g.full_name, g.email, g.phone, g.relationship, g.user_id = auth.uid
  order by (g.user_id = auth.uid()) desc nulls last, g.is_primary desc, g.full_name`;
 export const UPDATE_GUARDIAN = `
 update guardian set full_name = $2, email = nullif($3, ''), phone = nullif($4, ''), updated_at = now() where id = $1`;
+
+/** Office-set limits on what this guardian's account shows (UR-17). */
+export type MyAccess = { see_schedule: boolean; see_payments: boolean; see_feedback: boolean; see_medical: boolean };
+export const MY_ACCESS = `select * from app.my_access()`;
+/** "Ask the office to change" another guardian's details (UR-05). */
+export const ASK_TO_CHANGE_GUARDIAN = `select app.ask_to_change_guardian($1, $2) as id`;
+
+/* ── Who may collect each child (UR-17). Parents keep the "may collect" list;
+   a "may not collect" entry is the office's and is not shown here. ────── */
+export type Collector = { id: string; student_id: string; full_name: string; relationship: string | null; phone: string | null };
+export const MY_COLLECTORS = `
+select c.id, c.student_id, c.full_name, c.relationship, c.phone from collection_permission c
+ where c.deleted_at is null and c.allowed order by c.created_at`;
+export const ADD_COLLECTOR = `
+insert into collection_permission (student_id, full_name, relationship, phone, allowed)
+values ($1, btrim($2), nullif(btrim($3), ''), nullif(btrim($4), ''), true) returning id`;
+export const REMOVE_COLLECTOR = `select app.remove_collection_person($1)`;
+
+/* ── A teenager's own login (UR-16) ─────────────────────────────────────── */
+export type ChildLogin = { student_id: string; first_name: string; age: number; min_age: number;
+  state: 'too_young' | 'none' | 'invited' | 'pending' | 'on' | 'off'; email: string | null };
+export const MY_CHILDREN_LOGINS = `select * from app.my_children_logins()`;
+export const SET_STUDENT_LOGIN = `select app.set_student_login($1, $2) as r`;
+export const INVITE_STUDENT = `select app.guardian_invite_student($1, $2) as token`;
 
 export type Contact = { id: string; student_id: string; full_name: string; relationship: string | null; phone: string };
 export const MY_CONTACTS = `
@@ -142,6 +173,15 @@ export type DropInSession = { session_id: string; class_name: string; style: str
 export const DROP_IN_SESSIONS = `select d.* from studio s, app.drop_in_sessions(s.id) d where s.id in (select app.studio_ids()) order by d.starts_at`;
 export const BOOK_DROP_IN = `select app.book_drop_in($1, $2) as r`;
 export const CANCEL_DROP_IN = `select app.cancel_drop_in($1) as r`;
+/** "Book for myself" (UR-21): the signed-in parent's own adult record, made
+ *  once and reused. $1 date of birth or null, $2 "I am 18 or over",
+ *  $3/$4 someone to ring in an emergency (a booking needs one). */
+export const BOOK_FOR_MYSELF = `select app.book_for_myself($1::date, coalesce($2::boolean, false), $3, $4) as id`;
+/** Whether the signed-in parent has their own adult record, and an emergency contact on it. */
+export const MY_SELF_RECORD = `
+select s.id, exists (select 1 from emergency_contact ec where ec.student_id = s.id and ec.deleted_at is null) as has_contact
+  from student s join guardian g on g.id = s.self_guardian_id
+ where g.user_id = auth.uid() and s.deleted_at is null limit 1`;
 export type MyDropIn = { id: string; student_id: string; first_name: string; class_name: string; starts_at: string; paid_with: string };
 export const MY_DROP_INS = `
 select d.id, d.student_id, s.first_name, c.name as class_name, cs.starts_at,
@@ -155,3 +195,6 @@ export type MyPack = { id: string; first_name: string; name: string; remaining: 
 export const MY_PACKS = `select p.id, s.first_name, k.name, p.remaining, p.expires_on from pack_purchase p
   join student s on s.id = p.student_id join class_pack k on k.id = p.pack_id
  where p.remaining > 0 and p.expires_on >= current_date order by p.expires_on`;
+
+/** Everyday details a parent changes directly; the office is told (0056). */
+export const UPDATE_CHILD_DETAILS = `select app.guardian_update_child($1, $2, $3, $4)`;

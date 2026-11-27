@@ -76,8 +76,8 @@ function Invite() {
         {p && p.state === 'valid' && (
           <>
             <p className="label text-accent-text">Invitation</p>
-            <h1 className="mt-1 font-display text-[30px] font-[800] leading-[1.05] [font-stretch:112%]">Join {p.studio_name}</h1>
-            <p className="mt-2 text-[15px] text-ink-2">
+            <h1 className="mt-1 font-display text-[1.875rem] font-[800] leading-[1.05] [font-stretch:112%]">Join {p.studio_name}</h1>
+            <p className="mt-2 text-[0.9375rem] text-ink-2">
               You have been invited as {AS[p.role] ?? p.role}
               {p.family_name ? ` in the ${p.family_name}` : ''}{p.student_name ? ` — a login for ${p.student_name}` : ''}.
             </p>
@@ -89,7 +89,7 @@ function Invite() {
                 <Input id="iv-name" value={name} onChange={e => setName(e.target.value)} autoComplete="name" />
               </Field>
               {p.role === 'student' && (
-                <p className="border-l-2 border-line-strong py-1 pl-3 text-[14px] text-ink-2">
+                <p className="border-l-2 border-line-strong py-1 pl-3 text-[0.875rem] text-ink-2">
                   Your login works once a parent has approved it.
                 </p>
               )}
@@ -98,7 +98,7 @@ function Invite() {
                       disabled={name.trim().length < 2} onClick={() => accept.mutate()}>
                 Accept and join
               </Button>
-              <p className="text-center text-[13px] text-ink-3">
+              <p className="text-center text-[0.8125rem] text-ink-3">
                 Demo: no password is needed here. In the live service you create your login first.
               </p>
             </div>

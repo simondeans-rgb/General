@@ -39,8 +39,13 @@ export type AttentionRow = {
 /** Card 1 — money that has not arrived. */
 export const ATTENTION_PAYMENTS = `
 select
-  (select count(*)::int from payment
-    where deleted_at is null and failure_code is not null and succeeded_at is null) as failed,
+  (select count(*)::int from payment p
+    where p.deleted_at is null and p.failure_code is not null and p.succeeded_at is null
+      and exists (select 1 from invoice i where i.id = p.invoice_id and i.status in ('issued','part_paid'))) as failed,
+  -- What the declined cards were for, as Billing shows it (UR-54, admins D11).
+  (select coalesce(sum(p.amount_minor), 0)::bigint from payment p
+    where p.deleted_at is null and p.failure_code is not null and p.succeeded_at is null
+      and exists (select 1 from invoice i where i.id = p.invoice_id and i.status in ('issued','part_paid'))) as failed_minor,
   (select coalesce(sum(total_minor - paid_minor), 0)::bigint from invoice
     where deleted_at is null and status in ('issued','part_paid')) as outstanding_minor,
   (select count(*)::int from invoice
@@ -200,7 +205,11 @@ select
 /* ── One session at a time (migration 0023) ─────────────────────────────── */
 export const CANCEL_SESSION = `select app.cancel_session($1, $2, $3, $4)`;
 export const MOVE_SESSION = `select app.move_session($1, $2::timestamptz, $3, $4, $5)`;
-export const COVER_SESSION = `select app.cover_session($1, $2, $3, $4)`;
+/** $5 handover note for the cover teacher, $6 assign despite a clash (UR-27). */
+export const COVER_SESSION = `select app.cover_session($1, $2, $3, $4, $5, $6)`;
+/** What the teacher is already doing around this session, with travel time between sites. */
+export const COVER_CLASHES = `select session_id, class_name, starts_at, ends_at, location, needs_travel from app.cover_clashes($1, $2)`;
+export const SESSION_HANDOVER = `select handover_note from class_session where id = $1`;
 export const STAFF_OPTIONS = `select id, display_name from staff_member where status = 'active' and deleted_at is null order by display_name`;
 export const ROOM_OPTIONS = `select r.id, l.name || ' · ' || r.name as name from room r join location l on l.id = r.location_id
   where r.deleted_at is null order by l.name, r.name`;

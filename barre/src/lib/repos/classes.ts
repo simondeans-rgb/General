@@ -6,7 +6,7 @@ export type ClassRow = {
   day_of_week: number; start_time: string; duration_min: number;
   capacity: number; enrolled: number; waiting: number; pct: number | null;
   age_min: number | null; age_max: number | null; price_minor: number;
-  trials_enabled: boolean; sessions_left: number; term_id: string;
+  trials_enabled: boolean; sessions_left: number; term_id: string; pricing: string;
 };
 
 export const CLASSES = `
@@ -16,7 +16,7 @@ select c.id, c.name, ds.name as style, ds.colour, lv.name as level,
        app.class_enrolled_count(c.id) as enrolled,
        app.class_waitlist_count(c.id) as waiting,
        round(100.0 * app.class_enrolled_count(c.id) / nullif(c.capacity,0))::int as pct,
-       c.age_min, c.age_max, c.price_minor, c.trials_enabled, c.term_id,
+       c.age_min, c.age_max, c.price_minor, c.trials_enabled, c.term_id, c.pricing::text as pricing,
        (select count(*)::int from class_session cs
          where cs.class_id = c.id and cs.deleted_at is null
            and cs.starts_at > now() and cs.status = 'scheduled') as sessions_left
@@ -31,7 +31,11 @@ select c.id, c.name, ds.name as style, ds.colour, lv.name as level,
 
 export const CLASS_ROSTER = `
 select s.id, e.id as enrolment_id, s.first_name, s.last_name, s.date_of_birth, e.started_on,
-       f.name as family_name,
+       -- A planned move (UR-52): leaving on ended_on, or joining on started_on.
+       case when e.moved_to is not null then e.ended_on end as leaving_on,
+       (select c2.name from enrolment e2 join class c2 on c2.id = e2.class_id where e2.id = e.moved_to) as leaving_to,
+       case when e.moved_from is not null and e.started_on > current_date then e.started_on end as joining_on,
+       f.name as family_name, f.id as family_id,
        coalesce((select m.requires_alert from medical_record m
                   where m.student_id = s.id and m.deleted_at is null), false) as has_alert,
        (select round(100.0 * count(*) filter (where ar.status in ('present','late'))
@@ -46,7 +50,8 @@ select s.id, e.id as enrolment_id, s.first_name, s.last_name, s.date_of_birth, e
  order by s.last_name, s.first_name`;
 
 export const CLASS_WAITLIST = `
-select w.id, w.position, w.status, s.first_name, s.last_name, f.name as family_name
+select w.id, (row_number() over (order by w.position))::int as position, w.status, w.offer_expires_at,
+       s.first_name, s.last_name, s.date_of_birth, f.name as family_name
   from waitlist_entry w
   join student s on s.id = w.student_id
   join family f on f.id = s.family_id
@@ -65,10 +70,21 @@ select
   count(*) filter (where stage = 'closed_lost')::int as lost
 from enquiry where deleted_at is null`;
 
+export type EnquiryRow = { id: string; stage: string; contact_name: string; contact_email: string | null;
+  contact_phone: string | null; child_name: string | null; child_dob: string | Date | null; source: string | null;
+  next_action_on: string | null; created_at: string; class_name: string | null; colour: string | null;
+  interest_class_id: string | null; student_id: string | null; closed_reason: string | null;
+  live_trial: boolean; trial_starts_at: string | null };
+
 export const ENQUIRIES = `
 select e.id, e.stage, e.contact_name, e.contact_email, e.contact_phone,
        e.child_name, e.child_dob, e.source, e.next_action_on, e.created_at,
-       c.name as class_name, ds.colour
+       c.name as class_name, ds.colour, e.interest_class_id, e.student_id, e.closed_reason,
+       exists (select 1 from trial t where t.enquiry_id = e.id and t.deleted_at is null
+                 and t.status in ('requested','booked')) as live_trial,
+       (select cs.starts_at from trial t join class_session cs on cs.id = t.session_id
+         where t.enquiry_id = e.id and t.deleted_at is null and t.status in ('requested','booked')
+         order by cs.starts_at limit 1) as trial_starts_at
   from enquiry e
   left join class c on c.id = e.interest_class_id
   left join dance_style ds on ds.id = c.dance_style_id
@@ -120,7 +136,7 @@ export const CREATE_CLASS = `
 insert into class (studio_id, term_id, dance_style_id, level_id, location_id, room_id,
                    teacher_id, name, day_of_week, start_time, duration_min, capacity,
                    age_min, age_max, price_minor, pricing, trials_enabled, waitlist_enabled,
-                   visibility, pricing, trial_price_minor, assistant_id, prerequisites,
+                   visibility, trial_price_minor, assistant_id, prerequisites,
                    description, trial_needs_approval)
 select t.studio_id, t.id, $2, $3, $4, $5, $6, $7, $8, $9::time, $10, $11,
        $12, $13, $14, $18::pricing_model, $15, $16, $17::class_visibility,
@@ -191,10 +207,38 @@ export const DECLINE_PLACE = `select app.decline_waitlist_place($1, $2) as ok`;
 /** Every trial has a child record with an emergency contact (0023), so the
  *  child is on the register. Either an existing child, or a new one. */
 export const BOOK_TRIAL = `select app.book_trial($1, $2, $3::jsonb) as id`;
-export const TRANSFER = `select app.transfer_enrolment($1, $2, $3) as id`;
+/** p_on: the first day in the new class; today when null. A future day plans
+ *  the move; a past one (office only, this term) records it (UR-52). */
+export const TRANSFER = `select app.transfer_enrolment($1, $2, $3, $4::date) as id`;
+export const CANCEL_MOVE = `select app.cancel_class_move($1)`;
+export type MovePreview = { on_day: string; earliest: string; from_left: number; from_total: number;
+  from_invoiced_minor: string; from_unused_minor: string; to_left: number; to_total: number;
+  to_charge_minor: string; note: string };
+export const MOVE_PREVIEW = `select * from app.move_preview($1, $2, $3::date)`;
 export const CLASS_OPTIONS = `
 select c.id, c.name, app.class_enrolled_count(c.id) as enrolled, c.capacity
   from class c where c.deleted_at is null order by c.day_of_week, c.start_time`;
+
+/** Classes a student could move to (UR-52): ages, price and free places. */
+export type MoveOption = { id: string; name: string; day_of_week: number; start_time: string;
+  age_min: number | null; age_max: number | null; price_minor: number; pricing: string;
+  capacity: number; free: number };
+export const MOVE_OPTIONS = `
+select c.id, c.name, c.day_of_week, c.start_time, c.age_min, c.age_max, c.price_minor, c.pricing::text as pricing,
+       c.capacity, app.class_free_places(c.id) as free
+  from class c
+ where c.deleted_at is null and c.id <> $1
+   and c.term_id in (select t.id from term t where t.deleted_at is null and t.status <> 'archived')
+ order by c.day_of_week, c.start_time`;
+
+/** A student's places, for moving one from their record. */
+export const STUDENT_PLACES = `
+select e.id as enrolment_id, c.id as class_id, c.name, c.day_of_week, c.start_time, c.price_minor, c.pricing::text as pricing,
+       case when e.moved_to is not null then e.ended_on end as leaving_on,
+       case when e.moved_from is not null and e.started_on > current_date then e.started_on end as joining_on
+  from enrolment e join class c on c.id = e.class_id
+ where e.student_id = $1 and e.status = 'active' and e.deleted_at is null
+ order by c.day_of_week, c.start_time`;
 
 export const TRIAL_OUTCOME = `select app.record_trial_outcome($1, $2, $3) as ok`;
 export const CONVERT_TRIAL = `select app.convert_trial($1, $2) as enrolment_id`;
@@ -237,6 +281,20 @@ select s.id, s.first_name, s.last_name, s.date_of_birth, f.name as family_name
                       and e.status = 'active' and e.deleted_at is null)
  order by s.last_name, s.first_name`;
 
+/** Who can be enrolled or wait for a class: not in it, not already waiting,
+ *  with their age and whether the class's age range suits them (UR-19). */
+export type Candidate = { id: string; first_name: string; last_name: string; date_of_birth: string | Date;
+  family_name: string; age: number; in_range: boolean; enrolled: boolean; waiting: boolean };
+export const CLASS_CANDIDATES = `select * from app.class_candidates($1) where not enrolled and not waiting`;
+
+/** Free places: capacity less active places and offers still waiting for an answer. */
+export const CLASS_FREE = `
+select app.class_free_places($1) as free, app.class_live_offers($1) as offers,
+       (select waitlist_offer_days from studio s join class c on c.studio_id = s.id where c.id = $1) as offer_days`;
+
+/** Closing an enquiry as lost, with the reason (UR-18). */
+export const CLOSE_ENQUIRY = `select app.close_enquiry($1, $2) as ok`;
+
 export const SET_ENQUIRY_STAGE = `
 update enquiry set stage = $2::enquiry_stage, updated_at = now(),
        next_action_on = $3::date
@@ -263,3 +321,11 @@ select s.id, btrim($1), nullif(btrim($2), ''), nullif(lower(btrim($3)), ''), nul
        $6::uuid, $7, coalesce($8::date, current_date + 2), auth.uid()
   from studio s where s.deleted_at is null and app.is_admin(s.id) limit 1
 returning id`;
+
+/* ── What the public page says about a class (UR-20) ───────────────────── */
+// Kept apart from CREATE/UPDATE_CLASS so those statements stay as they are.
+export type ClassPublicExtra = { level_note: string | null; what_to_bring: string | null };
+export const CLASS_PUBLIC_EXTRA = `select level_note, what_to_bring from class where id = $1`;
+export const SET_CLASS_PUBLIC_EXTRA = `
+update class set level_note = nullif(btrim($2), ''), what_to_bring = nullif(btrim($3), ''), updated_at = now()
+ where id = $1 returning id`;

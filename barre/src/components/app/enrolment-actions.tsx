@@ -7,10 +7,11 @@ import { RecordSheet } from '@/components/app/record-sheet';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Button, Field, Input, Notice, Select, Skeleton } from '@/components/ui';
+import { Button, Field, Input, Notice, Select, Skeleton, errorText } from '@/components/ui';
 import { Word } from './session-row';
 import * as C from '@/lib/repos/classes';
-import { ageFrom, dateShort, time } from '@/lib/format';
+import { SEND_DIRECT } from '@/lib/repos/inbox';
+import { ageFrom, dateLong, dateShort, money, time, toDateInput } from '@/lib/format';
 
 export function usePipeline(sql: string, onDone?: (rows: any[]) => void) {
   const { session } = useSession();
@@ -37,15 +38,23 @@ type Candidate = {
 export function EnrolSheet({ classId, className, full, onClose }: {
   classId: string; className: string; full: boolean; onClose: () => void;
 }) {
-  const candidates = useRows<Candidate>(
-    ['enrollable', classId], C.ENROLLABLE_STUDENTS, [classId]);
+  // Only children who can join: not in the class, not already waiting, and
+  // by default only those the class's age range suits (UR-19, admins D10).
+  const candidates = useRows<C.Candidate>(
+    ['class-candidates', classId], C.CLASS_CANDIDATES, [classId]);
   const [studentId, setStudentId] = React.useState('');
   const [q, setQ] = React.useState('');
   const [note, setNote] = React.useState('');
+  const [anyAge, setAnyAge] = React.useState(false);
   const [mode, setMode] = React.useState<'enrol' | 'wait'>(full ? 'wait' : 'enrol');
 
-  const list = (candidates.data ?? []).filter(c =>
-    !q || `${c.first_name} ${c.last_name} ${c.family_name}`.toLowerCase().includes(q.toLowerCase()));
+  const outside = (candidates.data ?? []).filter(c => !c.in_range).length;
+  const list = (candidates.data ?? []).filter(c => (anyAge || c.in_range) &&
+    (!q || `${c.first_name} ${c.last_name} ${c.family_name}`.toLowerCase().includes(q.toLowerCase())));
+
+  React.useEffect(() => {
+    if (studentId && !list.some(c => c.id === studentId)) setStudentId('');
+  }, [list, studentId]);
 
   React.useEffect(() => {
     if (!studentId && list[0]) setStudentId(list[0].id);
@@ -77,8 +86,8 @@ export function EnrolSheet({ classId, className, full, onClose }: {
         {([['enrol', 'Give a place'], ['wait', 'Waiting list']] as const).map(([m, label]) => (
           <button key={m} role="tab" aria-selected={mode === m} onClick={() => setMode(m)}
             className={mode === m
-              ? 'min-h-[40px] rounded-[calc(var(--radius-md)-2px)] border border-line-strong bg-surface px-3 text-[14px] font-semibold text-ink'
-              : 'min-h-[40px] rounded-[calc(var(--radius-md)-2px)] px-3 text-[14px] text-ink-2 hover:text-ink'}>
+              ? 'min-h-[40px] rounded-[calc(var(--radius-md)-2px)] border border-line-strong bg-surface px-3 text-[0.875rem] font-semibold text-ink'
+              : 'min-h-[40px] rounded-[calc(var(--radius-md)-2px)] px-3 text-[0.875rem] text-ink-2 hover:text-ink'}>
             {label}
           </button>
         ))}
@@ -91,22 +100,31 @@ export function EnrolSheet({ classId, className, full, onClose }: {
 
       {candidates.isPending && <Skeleton className="h-24" />}
       {!candidates.isPending && list.length === 0 && (
-        <p className="text-[13px] text-ink-3">
-          {q ? 'Nobody matches that.' : 'Every child on your books is already in this class.'}
+        <p className="text-[0.8125rem] text-ink-3">
+          {q ? 'Nobody matches that.' : outside && !anyAge
+            ? 'Nobody else of the right age. Include other ages below if you mean to.'
+            : 'Every child on your books is already in this class or waiting for it.'}
         </p>
       )}
       {list.length > 0 && (
         <Field label="Child" htmlFor="enrol-student" required
-               hint={chosen ? `${ageFrom(chosen.date_of_birth)} years old · ${chosen.family_name}` : undefined}>
+               hint={chosen ? `${chosen.age} years old · ${chosen.family_name}${chosen.in_range ? '' : ' · outside this class’s age range'}` : undefined}>
           <Select id="enrol-student" value={studentId} onChange={e => setStudentId(e.target.value)}
                   size={Math.min(6, Math.max(3, list.length))}>
             {list.slice(0, 200).map(c => (
               <option key={c.id} value={c.id}>
-                {c.first_name} {c.last_name} — {c.family_name}
+                {c.first_name} {c.last_name}, {c.age} — {c.family_name}{c.in_range ? '' : ' (other age)'}
               </option>
             ))}
           </Select>
         </Field>
+      )}
+      {outside > 0 && (
+        <label className="flex min-h-[44px] items-center gap-3 text-[0.875rem]">
+          <input type="checkbox" checked={anyAge} className="size-[18px] accent-[var(--color-accent)]"
+                 onChange={e => setAnyAge(e.target.checked)} />
+          Include {outside} child{outside === 1 ? '' : 'ren'} outside the age range
+        </label>
       )}
 
       <Field label="Note" htmlFor="enrol-note" hint="Optional. Why, or anything to remember.">
@@ -155,11 +173,11 @@ export function WithdrawSheet({ enrolmentId, name, onClose }: {
       error={withdraw.error ?? transfer.error} saving={withdraw.isPending || transfer.isPending}
       canSave={mode === 'leave' || !!toClass}
       saveLabel={mode === 'move' ? 'Move' : 'Withdraw'}
-      onSave={() => mode === 'move' ? transfer.mutate([enrolmentId, toClass, reason || null]) : withdraw.mutate([enrolmentId, reason])}>
+      onSave={() => mode === 'move' ? transfer.mutate([enrolmentId, toClass, reason || null, null]) : withdraw.mutate([enrolmentId, reason])}>
       <div role="radiogroup" aria-label="What is happening" className="grid grid-cols-2 gap-1 rounded-[var(--radius-md)] bg-surface-2 p-1">
         {([['leave', 'Leaving this class'], ['move', 'Moving to another']] as const).map(([k, l]) => (
           <button key={k} role="radio" aria-checked={mode === k} onClick={() => setMode(k)}
-            className={`min-h-[40px] rounded-[calc(var(--radius-md)-2px)] text-[14px] ${mode === k ? 'border border-line-strong bg-surface font-semibold text-ink' : 'text-ink-2 hover:text-ink'}`}>{l}</button>
+            className={`min-h-[40px] rounded-[calc(var(--radius-md)-2px)] text-[0.875rem] ${mode === k ? 'border border-line-strong bg-surface font-semibold text-ink' : 'text-ink-2 hover:text-ink'}`}>{l}</button>
         ))}
       </div>
       {mode === 'move' && (
@@ -171,7 +189,7 @@ export function WithdrawSheet({ enrolmentId, name, onClose }: {
           </Select>
         </Field>
       )}
-      <p className="text-[13px] text-ink-2">
+      <p className="text-[0.8125rem] text-ink-2">
         Their attendance and feedback history stays with them. The place they leave is offered straight away to
         whoever has waited longest for this class.
       </p>
@@ -183,25 +201,162 @@ export function WithdrawSheet({ enrolmentId, name, onClose }: {
   );
 }
 
-/** The three things you can do to a waiting-list entry. */
-export function WaitlistActions({ entry }: {
-  entry: { id: string; status?: string; first_name: string; last_name: string };
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const PER: Record<string, string> = { term: 'a term', monthly: 'a month', one_off: 'for the course', drop_in: 'a class' };
+
+/**
+ * Moving a student to another class, as its own action (UR-52): the picker
+ * leaves out the class they are in, shows ages, price and free places, warns
+ * when the age range does not suit, can tell the family in the app, and says
+ * what the move means for the bill. The move has a date: today, a day to come
+ * (it is planned, and registers keep the child in the old class until then),
+ * or a day earlier this term to record a move that already happened.
+ */
+export function MoveSheet({ enrolmentId, studentName, age, familyId, from, onClose }: {
+  enrolmentId: string; studentName: string; age: number | null; familyId?: string | null;
+  from: { id: string; name: string; price_minor: number; pricing: string }; onClose: () => void;
+}) {
+  const { session } = useSession();
+  const qc = useQueryClient();
+  const options = useRows<C.MoveOption>(['move-options', from.id], C.MOVE_OPTIONS, [from.id]);
+  const [to, setTo] = React.useState('');
+  const [note, setNote] = React.useState('');
+  const [tell, setTell] = React.useState(!!familyId);
+  const [done, setDone] = React.useState<string | null>(null);
+  const today = toDateInput(new Date());
+  const [on, setOn] = React.useState(today);
+  const target = options.data?.find(o => o.id === to);
+  const preview = useRows<C.MovePreview>(['move-preview', enrolmentId, to, on], C.MOVE_PREVIEW,
+    [enrolmentId, to || null, on || today]);
+  const p = preview.data?.[0];
+  const earliest = p ? toDateInput(p.earliest) : undefined;
+  const when = on > today ? 'future' : on < today ? 'past' : 'today';
+  const onWords = dateLong(on + 'T12:00:00');
+  const outOfRange = !!target && age != null &&
+    ((target.age_min != null && age < target.age_min) || (target.age_max != null && age > target.age_max));
+  const ages = (o: C.MoveOption) => o.age_min != null ? (o.age_max != null ? `ages ${o.age_min}–${o.age_max}` : `${o.age_min}+`) : 'any age';
+
+  const move = useMutation({
+    mutationFn: () => runAs(session, async q => {
+      await q(C.TRANSFER, [enrolmentId, to, note || null, on || null]);
+      if (tell && familyId && target) {
+        const slot = `${target.name} (${DAYS[target.day_of_week]} ${String(target.start_time).slice(0, 5)})`;
+        await q(SEND_DIRECT,
+          [familyId, `${studentName} is moving class`,
+           when === 'future'
+             ? `${studentName} is moving from ${from.name} to ${slot} from ${onWords}. Until then, nothing changes. Reply here if anything doesn’t suit.`
+             : `${studentName} has moved from ${from.name} to ${slot}. Their next class is the next ${DAYS[target.day_of_week]} session. Reply here if anything doesn’t suit.`]);
+      }
+    }),
+    onSuccess: () => { setDone(target?.name ?? 'the new class'); qc.invalidateQueries({ queryKey: ['db'] }); },
+  });
+
+  const diff = target ? target.price_minor - from.price_minor : 0;
+  const sameBasis = target?.pricing === from.pricing;
+
+  if (done) {
+    return (
+      <RecordSheet title="Move to another class" subtitle={studentName} onClose={onClose} onSave={onClose} saveLabel="Done">
+        {when === 'future' ? (
+          <Notice word="Planned" tone="positive" title={`${studentName} moves to ${done} on ${onWords}`}
+            detail={`Until then they stay on the ${from.name} register. On the day, their place in ${from.name} goes to its waiting list, if anyone is waiting. You can call the move off from their record.${tell ? ' The family has a message in the app.' : ''}`} />
+        ) : (
+          <Notice word="Moved" tone="positive" title={`${studentName} is now in ${done}`}
+            detail={`${when === 'past' ? `From ${onWords}. ` : ''}Their history comes with them. The place in ${from.name} goes to its waiting list, if anyone is waiting.${tell ? ' The family has a message in the app.' : ''}`} />
+        )}
+        {p?.note && <p className="text-[0.8438rem] text-ink-2">{p.note}</p>}
+        {diff !== 0 && sameBasis && (
+          <p className="text-[0.8438rem] text-ink-2">
+            {done} costs {money(Math.abs(diff))} {diff > 0 ? 'more' : 'less'} {PER[target!.pricing] ?? ''}. Invoices already raised are not changed: adjust the
+            next one in <a href="/billing" className="font-semibold text-accent-text hover:underline">Billing</a>.
+          </p>
+        )}
+      </RecordSheet>
+    );
+  }
+
+  return (
+    <RecordSheet title="Move to another class" subtitle={`${studentName} · from ${from.name}`} onClose={onClose}
+      error={move.error} saving={move.isPending} canSave={!!to && !!target && target.free > 0 && !!on && (!earliest || on >= earliest)}
+      saveHint={!to ? 'Choose the class they are moving to.' : target && target.free <= 0 ? 'That class has no free place.'
+        : earliest && on < earliest ? 'A move can be dated back only to the start of this term.' : null}
+      saveLabel={when === 'future' ? 'Plan the move' : 'Move'} onSave={() => move.mutate()}>
+      <Field label="New class" htmlFor="mv-to" required hint="Full classes cannot be chosen. Free places count offers already out.">
+        <Select id="mv-to" value={to} onChange={e => setTo(e.target.value)}>
+          <option value="">Choose a class…</option>
+          {options.data?.map(o => (
+            <option key={o.id} value={o.id} disabled={o.free <= 0}>
+              {o.name} — {DAYS[o.day_of_week]} {String(o.start_time).slice(0, 5)}, {ages(o)}, {money(o.price_minor)}, {o.free > 0 ? `${o.free} free` : 'full'}
+            </option>
+          ))}
+        </Select>
+      </Field>
+      <Field label="From" htmlFor="mv-on" required
+        hint={when === 'future' ? 'A planned move. They stay in the current class until this day.'
+          : when === 'past' ? 'Back-dated. Registers from this day move with them; marks already made stay.'
+          : 'Their first day in the new class. Choose a later day to plan the move.'}>
+        <Input id="mv-on" type="date" value={on} min={earliest} onChange={e => setOn(e.target.value)} />
+      </Field>
+      {outOfRange && (
+        <Notice word="Age" tone="caution" title={`${target!.name} is for ${ages(target!)}`}
+          detail={`${studentName} is ${age}. You can still move them if the teacher agrees.`} />
+      )}
+      {target && p?.note && (
+        <Notice word="Billing" title="What the move means for the bill" detail={p.note} />
+      )}
+      {target && diff !== 0 && (
+        <p className="text-[0.8438rem] text-ink-2">
+          {sameBasis
+            ? <>Price: {money(target.price_minor)} {PER[target.pricing] ?? ''}, {money(Math.abs(diff))} {diff > 0 ? 'more' : 'less'} than {from.name}. Existing invoices are not changed.</>
+            : <>{target.name} is charged {PER[target.pricing] ?? target.pricing}, {from.name} {PER[from.pricing] ?? from.pricing}. Check their next invoice.</>}
+        </p>
+      )}
+      {familyId && (
+        <label className="flex min-h-[44px] items-center gap-3 text-[0.875rem]">
+          <input type="checkbox" checked={tell} className="size-[18px] accent-[var(--color-accent)]"
+                 onChange={e => setTell(e.target.checked)} />
+          Tell the family in the app
+        </label>
+      )}
+      <Field label="Note" htmlFor="mv-note" hint="Optional. Kept on the record.">
+        <Input id="mv-note" value={note} onChange={e => setNote(e.target.value)} placeholder="Moving up a grade" />
+      </Field>
+    </RecordSheet>
+  );
+}
+
+/** The three things you can do to a waiting-list entry. Offer and "Took it"
+ *  without an offer need a free place: capacity, less active places, less
+ *  offers already out (UR-19). The database refuses otherwise; this says why first. */
+export function WaitlistActions({ entry, free }: {
+  entry: { id: string; status?: string; first_name: string; last_name: string; offer_expires_at?: string | Date | null };
+  free?: { free: number; offers: number } | null;
 }) {
   const offer = usePipeline(C.OFFER_PLACE);
   const accept = usePipeline(C.ACCEPT_PLACE);
   const decline = usePipeline(C.DECLINE_PLACE);
   const who = `${entry.first_name} ${entry.last_name}`;
   const err = offer.error ?? accept.error ?? decline.error;
+  const offered = entry.status === 'offered'
+    && (!entry.offer_expires_at || new Date(entry.offer_expires_at) > new Date());
+  const noPlace = !!free && free.free <= 0;
+  const why = noPlace
+    ? (free!.offers > 0 ? `No free place — ${free!.offers} offer${free!.offers === 1 ? '' : 's'} already out` : 'No free place — the class is full')
+    : null;
 
   return (
     <div className="mt-1.5">
-      <div className="flex flex-wrap gap-1.5">
-        {entry.status !== 'offered' && (
-          <Button size="sm" loading={offer.isPending} onClick={() => offer.mutate([entry.id, 3])}>
+      {offered && entry.offer_expires_at && (
+        <p className="mb-1.5 text-[0.7812rem] text-ink-3">Offer open until {dateShort(entry.offer_expires_at)}, then it passes to the next family.</p>
+      )}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {!offered && (
+          <Button size="sm" loading={offer.isPending} disabled={noPlace}
+                  onClick={() => offer.mutate([entry.id, null])}>
             <Clock className="size-3.5" aria-hidden /> Offer
           </Button>
         )}
-        <Button size="sm" loading={accept.isPending}
+        <Button size="sm" loading={accept.isPending} disabled={!offered && noPlace}
                 onClick={() => accept.mutate([entry.id])}>
           <Check className="size-3.5" aria-hidden /> Took it
         </Button>
@@ -209,12 +364,13 @@ export function WaitlistActions({ entry }: {
                 aria-label={`${who} declined`} onClick={() => decline.mutate([entry.id, null])}>
           <X className="size-3.5" aria-hidden /> Declined
         </Button>
+        {!offered && why && <span className="text-[0.75rem] text-ink-3">{why}</span>}
       </div>
       {err != null && (
-        <p role="alert" className="mt-1 text-[12px] text-critical">
+        <p role="alert" className="mt-1 text-[0.75rem] text-critical">
           {/CLASS_FULL/.test(String((err as Error).message))
             ? 'The class is full again — withdraw someone first.'
-            : (err as Error).message}
+            : errorText(err)}
         </p>
       )}
     </div>
@@ -222,20 +378,43 @@ export function WaitlistActions({ entry }: {
 }
 
 /* ── Trials ─────────────────────────────────────────────────────────────── */
-export function BookTrialSheet({ classId, className, onClose }: {
-  classId: string; className: string; onClose: () => void;
-}) {
-  const sessions = useRows<{ id: string; starts_at: string }>(
-    ['sessions-ahead', classId], C.CLASS_SESSIONS_AHEAD, [classId]);
-  const candidates = useRows<Candidate>(['enrollable', classId], C.ENROLLABLE_STUDENTS, [classId]);
-  const [mode, setMode] = React.useState<'new' | 'existing'>('new');
-  const [sessionId, setSessionId] = React.useState('');
-  const [studentId, setStudentId] = React.useState('');
-  const [child, setChild] = React.useState({ first_name: '', last_name: '', date_of_birth: '', contact_name: '',
-    contact_email: '', contact_phone: '', emergency_name: '', emergency_phone: '' });
-  const set = (k: keyof typeof child) => (e: React.ChangeEvent<HTMLInputElement>) => setChild(c => ({ ...c, [k]: e.target.value }));
-  const book = usePipeline(C.BOOK_TRIAL, onClose);
+/** Splits "Efua Mensah" into a first and last name, for prefilling. */
+function splitName(full: string | null | undefined): [string, string] {
+  const parts = (full ?? '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length < 2) return [parts[0] ?? '', ''];
+  return [parts.slice(0, -1).join(' '), parts[parts.length - 1]!];
+}
 
+/**
+ * Booking a trial. From a class, or from an enquiry (UR-18): then the child and
+ * contact come from the enquiry, nothing is typed twice, and the enquiry moves
+ * to "Trial booked" with the trial linked to it.
+ */
+export function BookTrialSheet({ classId: fixedClass, className, enquiry, onClose }: {
+  classId?: string; className?: string; enquiry?: C.EnquiryRow; onClose: () => void;
+}) {
+  const classes = useRows<{ id: string; name: string; enrolled: number; capacity: number }>(
+    ['class-options'], C.CLASS_OPTIONS, [], { enabled: !fixedClass });
+  const [classId, setClassId] = React.useState(fixedClass ?? enquiry?.interest_class_id ?? '');
+  React.useEffect(() => {
+    if (!classId && classes.data?.[0]) setClassId(classes.data[0].id);
+  }, [classes.data, classId]);
+  const sessions = useRows<{ id: string; starts_at: string }>(
+    ['sessions-ahead', classId], C.CLASS_SESSIONS_AHEAD, [classId], { enabled: !!classId });
+  const candidates = useRows<Candidate>(['enrollable', classId], C.ENROLLABLE_STUDENTS, [classId], { enabled: !!classId });
+  const [mode, setMode] = React.useState<'new' | 'existing'>(enquiry?.student_id ? 'existing' : 'new');
+  const [sessionId, setSessionId] = React.useState('');
+  const [studentId, setStudentId] = React.useState(enquiry?.student_id ?? '');
+  const [first, last] = splitName(enquiry?.child_name);
+  const [child, setChild] = React.useState({ first_name: first, last_name: last || splitName(enquiry?.contact_name)[1],
+    date_of_birth: toDateInput(enquiry?.child_dob), contact_name: enquiry?.contact_name ?? '',
+    contact_email: enquiry?.contact_email ?? '', contact_phone: enquiry?.contact_phone ?? '',
+    emergency_name: '', emergency_phone: '' });
+  const set = (k: keyof typeof child) => (e: React.ChangeEvent<HTMLInputElement>) => setChild(c => ({ ...c, [k]: e.target.value }));
+  const [booked, setBooked] = React.useState(false);
+  const book = usePipeline(C.BOOK_TRIAL, () => enquiry ? setBooked(true) : onClose());
+
+  React.useEffect(() => { setSessionId(''); }, [classId]);
   React.useEffect(() => {
     if (!sessionId && sessions.data?.[0]) setSessionId(sessions.data[0].id);
     if (!studentId && candidates.data?.[0]) setStudentId(candidates.data[0].id);
@@ -243,16 +422,39 @@ export function BookTrialSheet({ classId, className, onClose }: {
 
   const newValid = child.first_name.trim() && child.date_of_birth && child.contact_name.trim()
     && (child.contact_phone.trim().length >= 6 || child.emergency_phone.trim().length >= 6);
+  const link = enquiry ? { enquiry_id: enquiry.id } : {};
+  const title = className ?? classes.data?.find(c => c.id === classId)?.name;
+  const chosen = sessions.data?.find(s => s.id === sessionId);
+
+  if (booked) {
+    return (
+      <RecordSheet title="Book a trial" onClose={onClose} onSave={onClose} saveLabel="Done">
+        <Notice word="Booked" tone="positive" title={`${child.first_name || enquiry?.child_name || 'They'} ${chosen ? `on ${dateShort(chosen.starts_at)} at ${time(chosen.starts_at)}` : ''}`}
+          detail="The enquiry has moved to Trial booked. Record how it went after the class, from Trials." />
+      </RecordSheet>
+    );
+  }
 
   return (
-    <RecordSheet title="Book a trial" subtitle={className} onClose={onClose}
-      error={book.error} saving={book.isPending}
+    <RecordSheet title="Book a trial" subtitle={enquiry ? `For ${enquiry.child_name ?? enquiry.contact_name} · from their enquiry` : title}
+      onClose={onClose} error={book.error} saving={book.isPending}
       canSave={!!sessionId && (mode === 'existing' ? !!studentId : !!newValid)}
+      saveHint={!sessionId ? 'Choose a session.' : mode === 'new' && !newValid
+        ? 'Add the child’s first name, date of birth, a parent or carer and a phone number.' : null}
       saveLabel="Book them in"
-      onSave={() => book.mutate(mode === 'existing' ? [sessionId, studentId, null] : [sessionId, null, JSON.stringify(child)])}>
-      {sessions.isPending && <Skeleton className="h-16" />}
+      onSave={() => book.mutate(mode === 'existing'
+        ? [sessionId, studentId, JSON.stringify(link)]
+        : [sessionId, null, JSON.stringify({ ...child, ...link })])}>
+      {!fixedClass && (
+        <Field label="Class" htmlFor="trial-class" required>
+          <Select id="trial-class" value={classId} onChange={e => setClassId(e.target.value)}>
+            {classes.data?.map(c => <option key={c.id} value={c.id}>{c.name} — {c.enrolled}/{c.capacity}</option>)}
+          </Select>
+        </Field>
+      )}
+      {sessions.isPending && !!classId && <Skeleton className="h-16" />}
       {!sessions.isPending && sessions.data?.length === 0 && (
-        <p className="text-[13px] text-ink-3">
+        <p className="text-[0.8125rem] text-ink-3">
           This class has no scheduled sessions ahead, so there is nothing to try.
         </p>
       )}
@@ -268,7 +470,7 @@ export function BookTrialSheet({ classId, className, onClose }: {
       <div role="radiogroup" aria-label="Which child" className="grid grid-cols-2 gap-1 rounded-[var(--radius-md)] bg-surface-2 p-1">
         {([['new', 'A new child'], ['existing', 'Already at the school']] as const).map(([k, l]) => (
           <button key={k} role="radio" aria-checked={mode === k} onClick={() => setMode(k)}
-            className={`min-h-[40px] rounded-[calc(var(--radius-md)-2px)] text-[14px] ${mode === k ? 'border border-line-strong bg-surface font-semibold text-ink' : 'text-ink-2 hover:text-ink'}`}>{l}</button>
+            className={`min-h-[40px] rounded-[calc(var(--radius-md)-2px)] text-[0.875rem] ${mode === k ? 'border border-line-strong bg-surface font-semibold text-ink' : 'text-ink-2 hover:text-ink'}`}>{l}</button>
         ))}
       </div>
       {mode === 'existing' ? (
@@ -281,17 +483,21 @@ export function BookTrialSheet({ classId, className, onClose }: {
         </Field>
       ) : (
         <>
+          {enquiry && <p className="text-[0.8125rem] text-ink-3">Filled in from the enquiry. Check the details, then book.</p>}
           <div className="grid grid-cols-2 gap-3">
             <Field label="Child’s first name" htmlFor="tn-f" required><Input id="tn-f" value={child.first_name} onChange={set('first_name')} /></Field>
             <Field label="Last name" htmlFor="tn-l"><Input id="tn-l" value={child.last_name} onChange={set('last_name')} /></Field>
           </div>
-          <Field label="Date of birth" htmlFor="tn-d" required><Input id="tn-d" type="date" value={child.date_of_birth} onChange={set('date_of_birth')} /></Field>
+          <Field label="Date of birth" htmlFor="tn-d" required
+                 hint={enquiry && !enquiry.child_dob ? 'The enquiry did not include it. Ask, then add it here.' : undefined}>
+            <Input id="tn-d" type="date" value={child.date_of_birth} onChange={set('date_of_birth')} />
+          </Field>
           <Field label="Parent or carer" htmlFor="tn-c" required><Input id="tn-c" value={child.contact_name} onChange={set('contact_name')} /></Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Phone" htmlFor="tn-p" required><Input id="tn-p" type="tel" value={child.contact_phone} onChange={set('contact_phone')} /></Field>
             <Field label="Email" htmlFor="tn-e"><Input id="tn-e" type="email" value={child.contact_email} onChange={set('contact_email')} /></Field>
           </div>
-          <p className="text-[13px] text-ink-3">
+          <p className="text-[0.8125rem] text-ink-3">
             The phone number is used as the emergency contact unless you add a different one below. The child appears on the
             teacher’s register, with this contact, from the moment they are booked.
           </p>
@@ -319,12 +525,22 @@ export function TrialActions({ trial }: { trial: C.TrialRow }) {
   const convert = usePipeline(C.CONVERT_TRIAL);
   const err = outcome.error ?? convert.error;
   const settled = trial.status === 'converted' || trial.status === 'cancelled';
+  // An outcome describes a class that has happened (UR-54, admins D9).
+  const ahead = !!trial.starts_at && new Date(trial.starts_at) > new Date()
+    && (trial.status === 'booked' || trial.status === 'requested');
 
   return (
     <div>
       <div className="flex flex-wrap items-center gap-1.5">
         <Word tone={TRIAL_TONE[trial.status] ?? 'muted'} className="mr-1 inline-block w-[4.75rem]">{TRIAL_WORD[trial.status] ?? trial.status}</Word>
-        {!settled && (
+        {!settled && ahead && (
+          <>
+            <span className="text-[0.7812rem] text-ink-3">Came or joining: after the class</span>
+            <Button size="sm" variant="ghost" loading={outcome.isPending}
+                    onClick={() => outcome.mutate([trial.id, 'cancelled', null])}>Cancel trial</Button>
+          </>
+        )}
+        {!settled && !ahead && (
           <>
             {trial.status !== 'attended' && (
               <Button size="sm" loading={outcome.isPending}
@@ -342,8 +558,10 @@ export function TrialActions({ trial }: { trial: C.TrialRow }) {
         )}
       </div>
       {err != null && (
-        <p role="alert" className="mt-1 text-[12px] text-critical">
-          {/NO_CHILD_DETAILS/.test(String((err as Error).message))
+        <p role="alert" className="mt-1 text-[0.75rem] text-critical">
+          {/TOO_EARLY/.test(String((err as Error).message))
+            ? errorText(err)
+            : /NO_CHILD_DETAILS/.test(String((err as Error).message))
             ? 'The enquiry has no child name and date of birth, so there is nothing to build a record from.'
             : /CLASS_FULL/.test(String((err as Error).message))
             ? 'That class is full — free a place first.'

@@ -43,8 +43,7 @@ select s.id, s.first_name, s.last_name, s.preferred_name, s.date_of_birth,
        coalesce((select m.requires_alert from medical_record m
                   where m.student_id = s.id and m.deleted_at is null), false) as has_alert,
        coalesce((select b.has_medical_need from student_safety_brief b where b.student_id = s.id), false) as has_need,
-       (select cr.granted from consent_record cr
-         where cr.student_id = s.id and cr.kind = 'photography' and cr.deleted_at is null) as photo_consent
+       app.consent_now(s.id, 'photography') as photo_consent   -- latest settled choice, one row (UR-08)
   from student s
   join family f on f.id = s.family_id
  where s.deleted_at is null
@@ -143,8 +142,8 @@ export const REMOVE_GUARDIAN = `select app.soft_delete('guardian', $1) as ok`;
 
 export type StudentDetail = {
   id: string; first_name: string; last_name: string; preferred_name: string | null;
-  date_of_birth: string; pronouns: string | null; school: string | null;
-  joined_on: string; left_on: string | null; notes: string | null;
+  date_of_birth: string | Date; pronouns: string | null; school: string | null;
+  joined_on: string | Date; left_on: string | Date | null; notes: string | null;
   family_id: string; family_name: string;
 };
 

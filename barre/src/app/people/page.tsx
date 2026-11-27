@@ -2,22 +2,34 @@
 
 import * as React from 'react';
 import { Suspense } from 'react';
-import { Search, CameraOff, Plus, Pencil, HeartPulse, UserPlus, Upload } from 'lucide-react';
+import { Search, CameraOff, Plus, Pencil, HeartPulse, UserPlus, Upload, ShieldAlert } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { ImportWizard } from '@/components/app/import-wizard';
 import { DetailPanel, DetailSection, KeyValue } from '@/components/app/detail-panel';
+import { ImportedInvoices, EarlierAttendance } from '@/components/app/imported-history';
+import { FamilyAccount } from '@/components/app/family-account';
+import { BillingSplit } from '@/components/app/billing-split';
+import { invoiceState } from '@/lib/payments/invoice-status';
 import { useRows, useRow } from '@/lib/query';
 import { useSelection } from '@/lib/use-selection';
 import { MedicalBrief, MedicalMarker } from '@/components/app/medical-brief';
+import { OfficeConsents } from '@/components/app/consents';
+import { RaiseConcernSheet } from '@/components/app/safeguarding';
 import type { Brief } from '@/lib/repos/teaching';
 import { useSearchParams } from 'next/navigation';
-import { Input, EmptyState, Skeleton, ErrorState, Button } from '@/components/ui';
+import { Input, EmptyState, Skeleton, ErrorState, Button, Select } from '@/components/ui';
 import { ViewTabs, Word } from '@/components/app/session-row';
 import * as P from '@/lib/repos/people';
 import {
   FamilySheet, GuardianSheet, StudentSheet, MedicalSheet, StaffSheet,
 } from '@/components/app/people-sheets';
 import { money, dateShort, ageFrom } from '@/lib/format';
+import { RecordHistory } from '@/components/app/record-history';
+import { MoveSheet, usePipeline } from '@/components/app/enrolment-actions';
+import * as C from '@/lib/repos/classes';
+import { ArrowRightLeft, MessageSquare } from 'lucide-react';
+import { BulkMessageSheet, DuplicatesSheet } from '@/components/app/family-tools';
+import * as H from '@/lib/repos/office';
 import { cn } from '@/lib/cn';
 
 type Tab = 'families' | 'students' | 'staff';
@@ -41,7 +53,7 @@ function People() {
     families: 'New family', students: 'Add a child', staff: 'Add a teacher' };
 
   return (
-    <Shell title="People" help={<>Families, students and staff. Import a spreadsheet to get started, then invite families to the app. Medical details are shown to teachers only as allergies and the emergency plan.</>} allow={['owner', 'admin']}
+    <Shell title="People" help={<>Families, students and staff. Import a spreadsheet to get started, then invite families to the app. For the children they teach, teachers see allergies, conditions, medication, the emergency plan, emergency contacts and photo consent — never the family doctor or the rest of the record.</>} allow={['owner', 'admin']}
       actions={<div className="flex gap-2">
         {tab !== 'staff' && <Button size="sm" aria-label="Import" onClick={() => setImporting(true)}>
           <Upload className="size-4" aria-hidden /> <span className="hidden sm:inline">Import</span>
@@ -81,24 +93,70 @@ function People() {
 }
 
 /* ── Families ────────────────────────────────────────────────────────────── */
+type FamilyFilter = { cls: string; who: '' | 'owes' | 'app' | 'no_app' | 'prospect' };
+const WHO_LABEL: Record<FamilyFilter['who'], string> = {
+  '': 'All families', owes: 'Owe money', app: 'Use the app', no_app: 'Not using the app yet', prospect: 'Prospects (trial only)' };
+
 function FamilyList({ q, selected, onSelect }: { q: string; selected: string | null; onSelect: (id: string) => void }) {
   const rows = useRows<P.FamilyRow>(['families'], P.FAMILIES);
-  const filtered = React.useMemo(() => (rows.data ?? []).filter(f =>
-    !q || `${f.name} ${f.primary_guardian ?? ''} ${f.child_names ?? ''}`.toLowerCase().includes(q.toLowerCase())),
-    [rows.data, q]);
+  const facts = useRows<H.FamilyFacts>(['family-facts'], H.FAMILY_FACTS);
+  const classes = useRows<{ id: string; name: string }>(['class-options'], C.CLASS_OPTIONS);
+  const dups = useRows<H.Duplicate>(['family-duplicates'], H.FAMILY_DUPLICATES);
+  const [filter, setFilter] = React.useState<FamilyFilter>({ cls: '', who: '' });
+  const [messaging, setMessaging] = React.useState(false);
+  const [reviewing, setReviewing] = React.useState(false);
+  const factBy = React.useMemo(() => new Map((facts.data ?? []).map(f => [f.id, f])), [facts.data]);
+  const filtered = React.useMemo(() => (rows.data ?? []).filter(f => {
+    if (q && !`${f.name} ${f.primary_guardian ?? ''} ${f.child_names ?? ''}`.toLowerCase().includes(q.toLowerCase())) return false;
+    const x = factBy.get(f.id);
+    if (filter.cls && !x?.class_ids.includes(filter.cls)) return false;
+    if (filter.who === 'owes' && !(Number(f.balance_minor) > 0)) return false;
+    if (filter.who === 'app' && !x?.has_login) return false;
+    if (filter.who === 'no_app' && x?.has_login) return false;
+    if (filter.who === 'prospect' && !x?.is_prospect) return false;
+    return true;
+  }), [rows.data, q, filter, factBy]);
+  const filtering = !!(q || filter.cls || filter.who);
+  const filterLabel = [filter.cls ? `in ${classes.data?.find(c => c.id === filter.cls)?.name ?? 'a class'}` : null,
+    filter.who ? WHO_LABEL[filter.who].toLowerCase() : null, q ? `matching “${q}”` : null].filter(Boolean).join(', ') || 'every family';
 
   if (rows.isLoading) return <ListSkeleton />;
   if (rows.error) return <ErrorState error={rows.error} onRetry={() => rows.refetch()} />;
-  if (filtered.length === 0) return <EmptyState
-    title={q ? 'No families match that search' : 'No families yet'}
-    body={q ? 'Try a child’s first name or a surname.' : 'Families appear here once you add or import them.'} />;
 
   return (
     <div>
+      {!!dups.data?.length && (
+        <p className="mb-3 border-l-2 border-caution py-1 pl-3 text-[0.875rem]">
+          <span className="font-semibold">{dups.data.length} possible duplicate famil{dups.data.length === 1 ? 'y' : 'ies'}.</span>{' '}
+          <button className="font-semibold text-accent-text hover:underline" onClick={() => setReviewing(true)}>Review</button>
+        </p>
+      )}
+      {reviewing && <DuplicatesSheet onClose={() => setReviewing(false)} />}
+      {/* Filter, then act on everyone the filter shows (UR-46). */}
+      <div className="mb-3 flex flex-wrap items-end gap-2">
+        <Select aria-label="Filter by class" value={filter.cls} className="h-10 w-auto min-w-0 max-w-[14rem] text-[0.875rem]"
+                onChange={e => setFilter(f => ({ ...f, cls: e.target.value }))}>
+          <option value="">Any class</option>
+          {classes.data?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </Select>
+        <Select aria-label="Filter families" value={filter.who} className="h-10 w-auto min-w-0 text-[0.875rem]"
+                onChange={e => setFilter(f => ({ ...f, who: e.target.value as FamilyFilter['who'] }))}>
+          {Object.entries(WHO_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+        </Select>
+        <Button size="sm" className="sm:ml-auto" disabled={filtered.length === 0} onClick={() => setMessaging(true)}>
+          <MessageSquare className="size-4" aria-hidden /> Message {filtering ? `these ${filtered.length}` : `all ${filtered.length}`}
+        </Button>
+      </div>
+      {messaging && <BulkMessageSheet families={filtered.map(f => ({ id: f.id, name: f.name }))} filterLabel={filterLabel}
+                                      onClose={() => setMessaging(false)} />}
+      {filtered.length === 0 && <EmptyState
+        title={filtering ? 'No families match' : 'No families yet'}
+        body={filtering ? 'Try a child’s first name, a surname, or fewer filters.' : 'Families appear here once you add or import them.'} />}
+      {filtered.length > 0 && <>
       <div aria-hidden className="hidden grid-cols-[minmax(0,1.1fr)_minmax(0,1.4fr)_8rem] gap-x-4 border-b-2 border-ink px-1 pb-2 md:grid">
         <span className="label">Family</span><span className="label">Children</span><span className="label text-right">Balance</span>
       </div>
-      <p className="px-1 pt-2 text-[13px] text-ink-3 md:hidden">{filtered.length} famil{filtered.length === 1 ? 'y' : 'ies'}</p>
+      <p className="px-1 pt-2 text-[0.8125rem] text-ink-3 md:hidden">{filtered.length} famil{filtered.length === 1 ? 'y' : 'ies'}</p>
       <ul className="divide-y divide-line border-b border-line">
         {filtered.map(f => {
           const owes = Number(f.balance_minor) > 0;
@@ -109,12 +167,12 @@ function FamilyList({ q, selected, onSelect }: { q: string; selected: string | n
                   selected === f.id && 'bg-surface-2 shadow-[inset_3px_0_0_var(--color-accent)]')}>
                 <span className="min-w-0">
                   <span className="block truncate font-semibold">{f.name}</span>
-                  <span className="block truncate text-[13px] text-ink-3">{f.primary_guardian}<span className="md:hidden">{f.child_names ? ` · ${f.child_names}` : ''}</span></span>
+                  <span className="block truncate text-[0.8125rem] text-ink-3">{f.primary_guardian}<span className="md:hidden">{f.child_names ? ` · ${f.child_names}` : ''}</span></span>
                 </span>
-                <span className="hidden truncate text-[14px] text-ink-2 md:block">{f.child_names ?? <span className="text-ink-3">No children yet</span>}</span>
-                <span className="text-right text-[14px] tnum">
+                <span className="hidden truncate text-[0.875rem] text-ink-2 md:block">{f.child_names ?? <span className="text-ink-3">No children yet</span>}</span>
+                <span className="text-right text-[0.875rem] tnum">
                   {f.failed_payments > 0 ? <span className="font-semibold text-critical">Payment failed</span>
-                    : owes ? <span className="font-semibold text-caution">{money(f.balance_minor)}<span className="block text-[12px] font-normal">due</span></span>
+                    : owes ? <span className="font-semibold text-caution">{money(f.balance_minor)}<span className="block text-[0.75rem] font-normal">due</span></span>
                     : <span className="text-ink-3" aria-label="Paid up">—</span>}
                 </span>
               </button>
@@ -122,6 +180,7 @@ function FamilyList({ q, selected, onSelect }: { q: string; selected: string | n
           );
         })}
       </ul>
+      </>}
     </div>
   );
 }
@@ -150,12 +209,9 @@ function FamilyDetail({ id, onClose }: { id: string; onClose: () => void }) {
       {f && (
         <>
           <DetailSection title="Account">
-            <KeyValue rows={[
-              ['Balance', Number(f.balance_minor) > 0
-                ? <span className="font-medium text-caution">{money(f.balance_minor)} outstanding</span>
-                : <span className="text-positive">Up to date</span>],
-            ]} />
-            {f.notes && <p className="mt-2 border-l-2 border-line-strong pl-3 text-[14px] text-ink-2">{f.notes}</p>}
+            <FamilyAccount familyId={f.id} />
+            <BillingSplit familyId={f.id} />
+            {f.notes && <p className="mt-2 border-l-2 border-line-strong pl-3 text-[0.875rem] text-ink-2">{f.notes}</p>}
             <Button size="sm" variant="ghost" className="-ml-2 mt-2" onClick={() => setEditing(true)}>
               <Pencil className="size-4" aria-hidden /> Edit family
             </Button>
@@ -168,9 +224,9 @@ function FamilyDetail({ id, onClose }: { id: string; onClose: () => void }) {
                 <li key={g.id} className="flex items-start gap-2 py-2.5">
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold">{g.full_name}</p>
-                    {(g.is_primary || g.has_login) && <p className="text-[13px] text-ink-3">{[g.is_primary && 'Primary contact', g.has_login && 'Uses the app'].filter(Boolean).join(' · ')}</p>}
-                    {g.email && <a href={`mailto:${g.email}`} className="block truncate text-[13.5px] text-accent-text hover:underline">{g.email}</a>}
-                    {g.phone && <a href={`tel:${g.phone}`} className="block text-[13.5px] text-ink-2 tnum hover:text-ink">{g.phone}</a>}
+                    {(g.is_primary || g.has_login) && <p className="text-[0.8125rem] text-ink-3">{[g.is_primary && 'Primary contact', g.has_login && 'Uses the app'].filter(Boolean).join(' · ')}</p>}
+                    {g.email && <a href={`mailto:${g.email}`} className="block truncate text-[0.8438rem] text-accent-text hover:underline">{g.email}</a>}
+                    {g.phone && <a href={`tel:${g.phone}`} className="block text-[0.8438rem] text-ink-2 tnum hover:text-ink">{g.phone}</a>}
                   </div>
                   <Button size="sm" variant="ghost" aria-label={`Edit ${g.full_name}`} onClick={() => setGuardian(g)}>
                     <Pencil className="size-4" aria-hidden /> Edit
@@ -187,38 +243,41 @@ function FamilyDetail({ id, onClose }: { id: string; onClose: () => void }) {
                 <li key={s.id} className="py-2.5">
                   <p className="flex flex-wrap items-baseline gap-x-2">
                     <span className="font-semibold">{s.first_name} {s.last_name}</span>
-                    <span className="text-[13px] text-ink-3">{ageFrom(s.date_of_birth)}</span>
+                    <span className="text-[0.8125rem] text-ink-3">{ageFrom(s.date_of_birth)}</span>
                     {s.has_alert && <Word tone="critical">Medical alert</Word>}
                   </p>
-                  <p className="mt-0.5 text-[13.5px] text-ink-2">{s.class_names ?? 'Not in any class'}</p>
+                  <p className="mt-0.5 text-[0.8438rem] text-ink-2">{s.class_names ?? 'Not in any class'}</p>
                 </li>
               ))}
             </ul>
           </DetailSection>
 
           <DetailSection title="Invoices">
-            {invoices.data?.length === 0 && <p className="text-[14px] text-ink-3">No invoices yet.</p>}
+            {invoices.data?.length === 0 && <p className="text-[0.875rem] text-ink-3">No invoices yet.</p>}
             <ul className="divide-y divide-line">
               {invoices.data?.map(i => (
-                <li key={i.id} className="grid grid-cols-[minmax(0,1fr)_auto_5.5rem] items-baseline gap-3 py-2 text-[14px]">
+                <li key={i.id} className="grid grid-cols-[minmax(0,1fr)_auto_5.5rem] items-baseline gap-3 py-2 text-[0.875rem]">
                   <span className="tnum text-ink-2">{i.number}</span>
                   <span className="tnum font-semibold">{money(i.total_minor)}</span>
-                  <span className={cn('text-right text-[13px] font-semibold', i.status === 'paid' ? 'text-positive' : i.status === 'part_paid' ? 'text-caution' : 'text-critical')}>
-                    {i.status === 'part_paid' ? 'Part paid' : i.status === 'paid' ? 'Paid' : i.status.charAt(0).toUpperCase() + i.status.slice(1)}
-                  </span>
+                  {/* The same words as Billing (UR-54, admins D14). */}
+                  {(() => { const st = invoiceState(i); return (
+                    <span className={cn('text-right text-[0.8125rem] font-semibold', st.tone === 'positive' ? 'text-positive' : st.tone === 'caution' ? 'text-caution' : st.tone === 'critical' ? 'text-critical' : 'text-ink-3')}>
+                      {st.label}
+                    </span>); })()}
                 </li>
               ))}
             </ul>
           </DetailSection>
+          <ImportedInvoices familyId={f.id} />
 
           <DetailSection title="Messages">
-            {messages.data?.length === 0 && <p className="text-[14px] text-ink-3">No messages with this family.</p>}
+            {messages.data?.length === 0 && <p className="text-[0.875rem] text-ink-3">No messages with this family.</p>}
             <ul className="divide-y divide-line">
               {messages.data?.map(m => (
                 <li key={m.id} className="py-2.5">
-                  <p className="flex items-baseline justify-between gap-3"><span className="min-w-0 truncate text-[14px] font-semibold">{m.subject}</span>
-                    <span className="shrink-0 text-[12.5px] text-ink-3">{dateShort(m.sent_at)}</span></p>
-                  <p className="mt-0.5 line-clamp-2 text-[13.5px] text-ink-2">{m.body}</p>
+                  <p className="flex items-baseline justify-between gap-3"><span className="min-w-0 truncate text-[0.875rem] font-semibold">{m.subject}</span>
+                    <span className="shrink-0 text-[0.7812rem] text-ink-3">{dateShort(m.sent_at)}</span></p>
+                  <p className="mt-0.5 line-clamp-2 text-[0.8438rem] text-ink-2">{m.body}</p>
                 </li>
               ))}
             </ul>
@@ -226,6 +285,11 @@ function FamilyDetail({ id, onClose }: { id: string; onClose: () => void }) {
         </>
       )}
 
+      {f && (
+        <DetailSection title="History">
+          <RecordHistory entity="family" id={f.id} />
+        </DetailSection>
+      )}
       {editing && f && <FamilySheet row={f as any} onClose={() => setEditing(false)} />}
       {guardian && f && (
         <GuardianSheet familyId={f.id} row={guardian === 'new' ? null : guardian}
@@ -257,7 +321,7 @@ function StudentList({ q, selected, onSelect }: { q: string; selected: string | 
         <span className="label">Student</span><span className="label">Age</span><span className="label">Family</span>
         <span className="label text-right">Classes</span><span className="label text-right">Attends</span>
       </div>
-      <p className="px-1 pt-2 text-[13px] text-ink-3 md:hidden">{filtered.length} student{filtered.length === 1 ? '' : 's'}</p>
+      <p className="px-1 pt-2 text-[0.8125rem] text-ink-3 md:hidden">{filtered.length} student{filtered.length === 1 ? '' : 's'}</p>
       <ul className="divide-y divide-line border-b border-line">
         {filtered.map(s => (
           <li key={s.id}>
@@ -270,17 +334,17 @@ function StudentList({ q, selected, onSelect }: { q: string; selected: string | 
                   <MedicalMarker brief={{ requires_alert: s.has_alert, has_medical_need: s.has_need }} className="size-3.5" />
                   {s.photo_consent === false && <CameraOff className="size-3.5 shrink-0 text-ink-3" aria-label="No photo consent" />}
                 </span>
-                <span className="block truncate text-[13px] text-ink-3 md:hidden">
+                <span className="block truncate text-[0.8125rem] text-ink-3 md:hidden">
                   {ageFrom(s.date_of_birth)} · {s.classes} class{s.classes === 1 ? '' : 'es'} · {s.family_name}
                 </span>
               </span>
-              <span className="hidden text-[14px] text-ink-2 tnum md:block">{ageFrom(s.date_of_birth)}</span>
-              <span className="hidden truncate text-[14px] text-ink-2 md:block">{s.family_name}</span>
-              <span className="hidden text-right text-[14px] text-ink-2 tnum md:block">{s.classes}</span>
-              <span className={cn('text-right text-[14px] tnum', s.attendance_pct == null ? 'text-ink-3'
+              <span className="hidden text-[0.875rem] text-ink-2 tnum md:block">{ageFrom(s.date_of_birth)}</span>
+              <span className="hidden truncate text-[0.875rem] text-ink-2 md:block">{s.family_name}</span>
+              <span className="hidden text-right text-[0.875rem] text-ink-2 tnum md:block">{s.classes}</span>
+              <span className={cn('text-right text-[0.875rem] tnum', s.attendance_pct == null ? 'text-ink-3'
                 : s.attendance_pct >= 85 ? 'text-ink-2' : s.attendance_pct >= 70 ? 'font-semibold text-caution' : 'font-semibold text-critical')}>
                 {s.attendance_pct != null ? `${s.attendance_pct}%` : '—'}
-                {s.attendance_pct != null && s.attendance_pct < 70 && <span className="block text-[12px] font-normal">Low</span>}
+                {s.attendance_pct != null && s.attendance_pct < 70 && <span className="block text-[0.75rem] font-normal">Low</span>}
               </span>
             </button>
           </li>
@@ -295,8 +359,14 @@ function StudentDetail({ id, onClose }: { id: string; onClose: () => void }) {
   const detail = useRow<P.StudentDetail>(['student-detail', id], P.STUDENT_DETAIL, [id]);
   const [editing, setEditing] = React.useState(false);
   const [medical, setMedical] = React.useState(false);
+  const [concern, setConcern] = React.useState(false);
   const s = rows.data?.find(r => r.id === id);
   const safety = useRow<Brief>(['safety', id], P.STUDENT_SAFETY, [id]);
+  const places = useRows<{ enrolment_id: string; class_id: string; name: string; day_of_week: number;
+                           start_time: string; price_minor: number; pricing: string;
+                           leaving_on: string | null; joining_on: string | null }>(['student-places', id], C.STUDENT_PLACES, [id]);
+  const cancelMove = usePipeline(C.CANCEL_MOVE);
+  const [moving, setMoving] = React.useState<{ enrolment_id: string; class_id: string; name: string; price_minor: number; pricing: string } | null>(null);
 
   return (
     <DetailPanel open onClose={onClose}
@@ -324,9 +394,48 @@ function StudentDetail({ id, onClose }: { id: string; onClose: () => void }) {
                 <Pencil className="size-4" aria-hidden /> Edit details
               </Button>
             </div>
-            <p className="mt-2 text-[13px] text-ink-3">
+            <p className="mt-2 text-[0.8125rem] text-ink-3">
               Health data is held separately and every change is recorded against your name.
             </p>
+          </DetailSection>
+
+          <DetailSection title={`Classes (${places.data?.length ?? 0})`}>
+            {places.data?.length === 0 && <p className="text-[0.875rem] text-ink-3">Not in any class.</p>}
+            <ul className="divide-y divide-line">
+              {places.data?.map(p => (
+                <li key={p.enrolment_id} className="flex items-center gap-2 py-1.5">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[0.875rem] font-medium">{p.name}</span>
+                    <span className="block text-[0.7812rem] text-ink-3">{['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][p.day_of_week]} {String(p.start_time).slice(0, 5)}
+                      {p.leaving_on && ` · leaves ${dateShort(p.leaving_on)} (planned move)`}
+                      {p.joining_on && ` · joins ${dateShort(p.joining_on)}`}</span>
+                  </span>
+                  {p.leaving_on ? (
+                    <Button size="sm" variant="ghost" loading={cancelMove.isPending} onClick={() => cancelMove.mutate([p.enrolment_id])}>
+                      Call off the move
+                    </Button>
+                  ) : !p.joining_on && (
+                    <Button size="sm" variant="ghost" onClick={() => setMoving(p)}>
+                      <ArrowRightLeft className="size-4" aria-hidden /> Move to another class
+                    </Button>
+                  )}
+                </li>
+              ))}
+            </ul>
+            {cancelMove.error != null && <ErrorState error={cancelMove.error} />}
+          </DetailSection>
+
+          <EarlierAttendance studentId={id} />
+
+          <DetailSection title="Consent">
+            <OfficeConsents studentId={id} name={s.preferred_name ?? s.first_name} />
+          </DetailSection>
+
+          <DetailSection title="Safeguarding">
+            <Button onClick={() => setConcern(true)}>
+              <ShieldAlert className="size-4" aria-hidden /> Raise a safeguarding concern
+            </Button>
+            <p className="mt-2 text-[0.8125rem] text-ink-3">For something you saw, or a parent or child told you. It goes only to the safeguarding lead and the owner.</p>
           </DetailSection>
 
           {safety.data && (
@@ -337,10 +446,22 @@ function StudentDetail({ id, onClose }: { id: string; onClose: () => void }) {
         </>
       )}
 
+      {s && (
+        <DetailSection title="History">
+          <RecordHistory entity="student" id={id} />
+        </DetailSection>
+      )}
+      {moving && s && (
+        <MoveSheet enrolmentId={moving.enrolment_id} studentName={`${s.preferred_name ?? s.first_name} ${s.last_name}`}
+          age={ageFrom(s.date_of_birth)} familyId={s.family_id}
+          from={{ id: moving.class_id, name: moving.name, price_minor: moving.price_minor, pricing: moving.pricing }}
+          onClose={() => setMoving(null)} />
+      )}
       {editing && detail.data && (
         <StudentSheet row={detail.data} familyName={detail.data.family_name}
                       onClose={() => setEditing(false)} />
       )}
+      {concern && s && <RaiseConcernSheet student={{ id, first_name: s.preferred_name ?? s.first_name }} onClose={() => setConcern(false)} />}
       {medical && s && (
         <MedicalSheet studentId={id} studentName={`${s.preferred_name ?? s.first_name} ${s.last_name}`}
                       onClose={() => setMedical(false)} />
@@ -377,12 +498,12 @@ function StaffList({ q }: { q: string }) {
                 {s.status !== 'active' && <Word tone="muted">Inactive</Word>}
                 <Pencil className="size-3.5 shrink-0 text-ink-3 opacity-0 group-hover:opacity-100" aria-hidden />
               </span>
-              {s.bio && <span className="block truncate text-[13px] text-ink-3">{s.bio}</span>}
+              {s.bio && <span className="block truncate text-[0.8125rem] text-ink-3">{s.bio}</span>}
             </button>
             <span className="hidden min-w-0 md:block">{s.email && <a href={`mailto:${s.email}`}
-              className="block truncate text-[14px] text-accent-text hover:underline">{s.email}</a>}</span>
-            <span className="text-right text-[14px] tnum text-ink-2">{s.classes}<span className="md:hidden"> class{s.classes === 1 ? '' : 'es'}</span></span>
-            <span className={cn('hidden text-right text-[13px] md:block', s.user_id ? 'text-ink-2' : 'text-ink-3')}>{s.user_id ? 'Signed up' : 'No login'}</span>
+              className="block truncate text-[0.875rem] text-accent-text hover:underline">{s.email}</a>}</span>
+            <span className="text-right text-[0.875rem] tnum text-ink-2">{s.classes}<span className="md:hidden"> class{s.classes === 1 ? '' : 'es'}</span></span>
+            <span className={cn('hidden text-right text-[0.8125rem] md:block', s.user_id ? 'text-ink-2' : 'text-ink-3')}>{s.user_id ? 'Signed up' : 'No login'}</span>
           </li>
         ))}
       </ul>

@@ -31,9 +31,9 @@ export function Button({
         'inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] font-semibold tracking-[-0.005em]',
         'transition-[background-color,border-color,color,transform] duration-100',
         'active:translate-y-px disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap',
-        size === 'sm' && 'h-9 px-3 text-[13px] [@media(pointer:coarse)]:h-10',
+        size === 'sm' && 'h-9 px-3 text-[0.8125rem] [@media(pointer:coarse)]:h-10',
         size === 'md' && 'h-10 px-4 text-sm [@media(pointer:coarse)]:h-11',
-        size === 'lg' && 'h-12 px-5 text-[15px]',
+        size === 'lg' && 'h-12 px-5 text-[0.9375rem]',
         variant === 'primary' && 'bg-accent text-on-accent hover:bg-accent-hover',
         variant === 'secondary' && 'bg-surface text-ink border border-line-strong hover:border-ink-3 hover:bg-surface-2',
         variant === 'ghost' && 'text-ink-2 hover:bg-surface-2 hover:text-ink',
@@ -69,7 +69,7 @@ export function CardHeader({
     <div className={cn('flex items-start gap-3 px-4 pb-2.5 pt-3.5 border-b border-line', className)}>
       <div className="min-w-0 flex-1">
         <h2 className="section-title">{title}</h2>
-        {subtitle && <p className="mt-0.5 text-[13.5px] text-ink-3">{subtitle}</p>}
+        {subtitle && <p className="mt-0.5 text-[0.8438rem] text-ink-3">{subtitle}</p>}
       </div>
       {action}
     </div>
@@ -98,7 +98,7 @@ export function Badge({
 }: { tone?: Tone; children: React.ReactNode; className?: string; icon?: React.ReactNode }) {
   return (
     <span className={cn(
-      'inline-flex min-w-0 max-w-full items-center gap-1 rounded-[var(--radius-sm)] border px-1.5 py-px text-[12px] font-semibold leading-5 whitespace-nowrap',
+      'inline-flex min-w-0 max-w-full items-center gap-1 rounded-[var(--radius-sm)] border px-1.5 py-px text-[0.75rem] font-semibold leading-5 whitespace-nowrap',
       TONES[tone] ?? TONES.neutral, className)}>
       {icon}<span className="min-w-0 truncate">{children}</span>
     </span>
@@ -146,14 +146,14 @@ export function Field({
      children: React.ReactNode; htmlFor?: string }) {
   return (
     <div className="space-y-1.5">
-      <label htmlFor={htmlFor} className="block text-[13px] font-medium text-ink-2">
+      <label htmlFor={htmlFor} className="block text-[0.8125rem] font-medium text-ink-2">
         {label}{required && <span className="text-critical ml-0.5" aria-hidden>*</span>}
       </label>
       {children}
       {/* Errors are announced, not merely coloured. */}
       {error
-        ? <p role="alert" className="text-[12.5px] text-critical">{error}</p>
-        : hint && <p className="text-[12.5px] text-ink-3">{hint}</p>}
+        ? <p role="alert" className="text-[0.7812rem] text-critical">{error}</p>
+        : hint && <p className="text-[0.7812rem] text-ink-3">{hint}</p>}
     </div>
   );
 }
@@ -165,8 +165,8 @@ export function EmptyState({
   return (
     <div className="flex flex-col items-start justify-center px-5 py-10">
       {icon && <div aria-hidden className="mb-3 text-ink-3 [&_svg]:size-5">{icon}</div>}
-      <p className="font-display text-[19px] leading-tight text-ink">{title}</p>
-      {body && <p className="mt-1.5 max-w-md text-[14.5px] text-ink-2">{body}</p>}
+      <p className="font-display text-[1.1875rem] leading-tight text-ink">{title}</p>
+      {body && <p className="mt-1.5 max-w-md text-[0.9062rem] text-ink-2">{body}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>
   );
@@ -176,7 +176,8 @@ export function Skeleton({ className }: { className?: string }) {
   return <div className={cn('skeleton h-4 w-full', className)} aria-hidden />;
 }
 
-export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
+/** The sentence a person should read for an error thrown by the database. */
+export function errorText(error: unknown): string {
   // Database rules raise "CODE: sentence". The sentence is written for people;
   // the code is for tests and logs.
   let message = (error instanceof Error ? error.message : String(error))
@@ -185,6 +186,11 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
   if (/row-level security|read-only transaction|permission denied/i.test(message)) {
     message = 'You don’t have permission to change this. If the account is read-only, nothing here can be changed.';
   }
+  return message;
+}
+
+export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
+  const message = errorText(error);
   return (
     <div role="alert" className="rounded-[var(--radius-lg)] border border-critical/25 bg-critical-soft p-4">
       <p className="font-medium text-critical">Something went wrong</p>
@@ -236,9 +242,9 @@ export function Notice({ word, tone = 'ink', title, detail, action, className }:
   return (
     <div className={cn('flex items-start gap-3', className)}>
       <div className="min-w-0 flex-1">
-        <p className={cn('font-display text-[22px] uppercase leading-none tracking-[-0.01em] [font-stretch:80%]', colour)}>{word}</p>
-        <p className="mt-1.5 text-[15px] font-semibold leading-snug text-ink">{title}</p>
-        {detail && <p className="mt-0.5 text-[13.5px] text-ink-3">{detail}</p>}
+        <p className={cn('font-display text-[1.375rem] uppercase leading-none tracking-[-0.01em] [font-stretch:80%]', colour)}>{word}</p>
+        <p className="mt-1.5 text-[0.9375rem] font-semibold leading-snug text-ink">{title}</p>
+        {detail && <p className="mt-0.5 text-[0.8438rem] text-ink-3">{detail}</p>}
       </div>
       {action}
     </div>
@@ -254,8 +260,8 @@ export function SectionHead({ title, meta, action, href, link, as: H = 'h2', id,
   return (
     <div className={cn('mb-1 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b-2 border-ink pb-2', className)}>
       <H id={id} className="section-title min-w-0 flex-1">{title}</H>
-      {meta && <span className="text-[13px] text-ink-3">{meta}</span>}
-      {href && link && <Link href={href} className="text-[13px] font-semibold text-accent-text hover:underline">{link}</Link>}
+      {meta && <span className="text-[0.8125rem] text-ink-3">{meta}</span>}
+      {href && link && <Link href={href} className="text-[0.8125rem] font-semibold text-accent-text hover:underline">{link}</Link>}
       {action && <span className="-my-2 flex items-center">{action}</span>}
     </div>
   );
@@ -290,7 +296,7 @@ export function Word({ children, tone = 'ink', size = 'sm', className }: {
   children: React.ReactNode; tone?: 'ink' | 'critical' | 'caution' | 'positive' | 'muted'; size?: 'sm' | 'md'; className?: string;
 }) {
   const c = { ink: 'text-ink', critical: 'text-critical', caution: 'text-caution', positive: 'text-positive', muted: 'text-ink-3' }[tone];
-  return <span className={cn('font-display uppercase leading-none', size === 'md' ? 'text-[15px] tracking-[-0.01em] [font-stretch:80%]' : 'text-[12px] tracking-[0.02em] [font-stretch:85%]', c, className)}>{children}</span>;
+  return <span className={cn('font-display uppercase leading-none', size === 'md' ? 'text-[0.9375rem] tracking-[-0.01em] [font-stretch:80%]' : 'text-[0.75rem] tracking-[0.02em] [font-stretch:85%]', c, className)}>{children}</span>;
 }
 
 /** Quiet text tabs with an ink rule under the current one. */
@@ -301,7 +307,7 @@ export function ViewTabs<T extends string>({ value, onChange, options, label, cl
     <div role="tablist" aria-label={label} className={cn('-mx-1 flex max-w-full gap-1 overflow-x-auto', className)}>
       {options.map(([v, text]) => (
         <button key={v} role="tab" aria-selected={value === v} onClick={() => onChange(v)}
-          className={cn('min-h-[40px] shrink-0 border-b-2 px-2 text-[14px] transition-colors',
+          className={cn('min-h-[40px] shrink-0 border-b-2 px-2 text-[0.875rem] transition-colors',
             value === v ? 'border-ink font-semibold text-ink' : 'border-transparent text-ink-3 hover:text-ink')}>
           {text}
         </button>

@@ -66,10 +66,10 @@ export function SessionRow({ time: t, name, meta, href, cancelled, reason, moved
 }) {
   const body = (
     <>
-      <span className={cn('font-display text-[19px] leading-tight tnum', cancelled && 'text-ink-3 line-through')}>{t}</span>
+      <span className={cn('font-display text-[1.1875rem] leading-tight tnum', cancelled && 'text-ink-3 line-through')}>{t}</span>
       <span className="min-w-0">
         <span className={cn('block font-semibold leading-snug', cancelled && 'text-ink-3')}>{name}</span>
-        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[13px] text-ink-3">
+        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[0.8125rem] text-ink-3">
           {cancelled && <ChangeWord word="Cancelled" tone="critical" />}
           {!cancelled && moved && <ChangeWord word="Moved" />}
           {cancelled && reason ? <span>{reason}</span>

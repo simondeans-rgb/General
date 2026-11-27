@@ -3,6 +3,8 @@
 import * as React from 'react';
 import { X, Trash2 } from 'lucide-react';
 import { Button, ErrorState } from '@/components/ui';
+import { SaveErrorSummary, useFirstErrorInView } from '@/components/app/form-error';
+import { PlanLimitNotice, isPlanLimit } from '@/components/app/plan-limit';
 
 /**
  * The shell every small editor in the app shares: a sheet on a phone, a dialog
@@ -14,7 +16,7 @@ import { Button, ErrorState } from '@/components/ui';
  */
 export function RecordSheet({
   title, subtitle, onClose, onSave, saving, error, canSave = true,
-  saveLabel = 'Save', onRemove, removing, removeLabel = 'Remove', removeHint, children,
+  saveLabel = 'Save', onRemove, removing, removeLabel = 'Remove', removeHint, saveHint, children,
 }: {
   title: string;
   subtitle?: React.ReactNode;
@@ -29,6 +31,8 @@ export function RecordSheet({
   removeLabel?: string;
   /** Why removal is unavailable. Shown instead of the button. */
   removeHint?: string | null;
+  /** Why Save is unavailable, shown beside it while canSave is false. */
+  saveHint?: string | null;
   children: React.ReactNode;
 }) {
   const titleId = React.useId();
@@ -50,6 +54,10 @@ export function RecordSheet({
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
+  // A failed save scrolls its error into view and says so beside the button (UR-40).
+  const body = React.useRef<HTMLDivElement>(null);
+  useFirstErrorInView(body, error);
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 sm:items-center sm:p-6"
          onClick={onClose}>
@@ -60,21 +68,21 @@ export function RecordSheet({
                    sm:rounded-[var(--radius-xl)]">
         <div className="flex items-start gap-3 border-b border-line px-5 pb-3 pt-4">
           <div className="min-w-0 flex-1">
-            <h2 id={titleId} className="font-display text-[20px] leading-tight">{title}</h2>
-            {subtitle && <p className="mt-1 text-[13.5px] text-ink-3">{subtitle}</p>}
+            <h2 id={titleId} className="font-display text-[1.25rem] leading-tight">{title}</h2>
+            {subtitle && <p className="mt-1 text-[0.8438rem] text-ink-3">{subtitle}</p>}
           </div>
           <Button size="sm" variant="ghost" aria-label="Close" onClick={onClose} className="-mr-2 -mt-1">
             <X className="size-4" aria-hidden />
           </Button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
+        <div ref={body} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
           <div className="space-y-4">{children}</div>
-          {error != null && <div className="mt-4"><ErrorState error={error} /></div>}
+          {error != null && <div className="mt-4">{isPlanLimit(error) ? <PlanLimitNotice error={error} /> : <ErrorState error={error} />}</div>}
           {onRemove && (
             <div className="mt-6 border-t border-line pt-4">
               {removeHint
-                ? <p className="text-[13px] text-ink-3">{removeHint}</p>
+                ? <p className="text-[0.8125rem] text-ink-3">{removeHint}</p>
                 : <Button variant="danger" size="sm" loading={removing} onClick={onRemove}>
                     <Trash2 className="size-4" aria-hidden /> {removeLabel}
                   </Button>}
@@ -83,7 +91,8 @@ export function RecordSheet({
         </div>
 
         {/* One footer everywhere: cancel, then the one primary action on the right. */}
-        <div className="flex gap-2 border-t border-line bg-surface px-5 py-3 pb-safe sm:justify-end">
+        <div className="flex flex-wrap gap-2 border-t border-line bg-surface px-5 py-3 pb-safe sm:flex-nowrap sm:justify-end">
+          <SaveErrorSummary error={error ?? undefined} reason={!canSave ? saveHint : null} />
           {/* A sheet that only reports something has nothing to cancel. */}
           {onSave !== onClose && <Button className="flex-1 sm:flex-none" variant="ghost" onClick={onClose}>Cancel</Button>}
           <Button className="flex-[2] sm:flex-none" variant="primary" disabled={!canSave}

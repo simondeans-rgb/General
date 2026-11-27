@@ -7,7 +7,7 @@ afterAll(async () => { await closeDb(); });
 
 const nextSession = async (svc: any, classId: string) =>
   (await svc(`select id, starts_at, ends_at from class_session where class_id = $1 and starts_at > now()
-               and status = 'scheduled' order by starts_at limit 1`, [classId]))[0];
+               and status = 'scheduled' and teacher_id is null order by starts_at limit 1`, [classId]))[0];
 
 describe('every child in the room is on the register (R-005)', () => {
   it('every booked trial has a child record and appears on its session’s register', async () => {
@@ -97,28 +97,33 @@ describe('one session at a time (R-004)', () => {
       const s = await nextSession(svc, CLASS.juniorTap);
       await q(`select app.request_cover($1, 'x')`, [s.id]).catch(() => null);   // admin is not the teacher: refused
       const [priya] = await svc(`select id from staff_member where user_id = $1`, [USERS.teacherModern]);
-      await q(`select app.cover_session($1, $2, null)`, [s.id, priya.id]);
+      // Priya teaches at Blackheath at that time: the office assigns her knowingly (UR-27).
+      await q(`select app.cover_session($1, $2, null, false, null, true)`, [s.id, priya.id]);
       // Arrange the request inside this transaction for the settle check.
     });
     await asUser(USERS.teacherModern, async (q, svc) => {
       const s = await nextSession(svc, CLASS.juniorTap);
       const [priya] = await svc(`select id from staff_member where user_id = $1`, [USERS.teacherModern]);
-      await svc(`update class_session set teacher_id = $2 where id = $1`, [s.id, priya.id]);
+      // Cover opens the children's details on the session's day (UR-27).
+      await svc(`update class_session set teacher_id = $2, ends_at = now() + interval '50 minutes', starts_at = now() + interval '5 minutes' where id = $1`, [s.id, priya.id]);
       expect((await q(REGISTER, [s.id])).length).toBeGreaterThan(0);          // she can take the register
       // (Priya also covers a seeded session today, so the time bound is
       // checked with a teacher who has no other link to this class.)
     });
   });
 
-  it('a cover booked weeks ahead grants nothing yet', async () => {
+  it('a cover booked ahead grants nothing until its day (UR-27)', async () => {
     await asUser(USERS.teacherStreet, async (q, svc) => {
       const [tom] = await svc(`select id from staff_member where user_id = $1`, [USERS.teacherStreet]);
       const [later] = await svc(`select id from class_session where class_id = $1 and starts_at > now() + interval '20 days' order by starts_at limit 1`, [CLASS.juniorTap]);
       await svc(`update class_session set teacher_id = $2 where id = $1`, [later.id, tom.id]);
-      expect(await q(`select 1 from class_session where class_id = $1`, [CLASS.juniorTap])).toHaveLength(0);
+      // He sees the session he is covering on his timetable, but not the class or its children.
+      expect(await q(`select id from class_session where class_id = $1`, [CLASS.juniorTap])).toEqual([{ id: later.id }]);
+      expect(await q(`select 1 from enrolment where class_id = $1`, [CLASS.juniorTap])).toHaveLength(0);
       const soon = await nextSession(svc, CLASS.juniorTap);
       await svc(`update class_session set teacher_id = $2 where id = $1`, [soon.id, tom.id]);
-      expect((await q(`select 1 from class_session where class_id = $1`, [CLASS.juniorTap])).length).toBeGreaterThan(0);
+      await svc(`update class_session set ends_at = now() + interval '50 minutes', starts_at = now() + interval '5 minutes' where id = $1`, [soon.id]);
+      expect((await q(`select 1 from enrolment where class_id = $1`, [CLASS.juniorTap])).length).toBeGreaterThan(0);
     });
   });
 

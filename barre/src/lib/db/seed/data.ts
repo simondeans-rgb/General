@@ -128,6 +128,24 @@ export function buildSeedSql({ today = new Date() }: SeedOptions = {}): string {
     + `analyze;\n`;
 }
 
+/** What families read about each class on the public page (UR-20). */
+const CLASS_INFO: [string, string, string, string][] = [
+  ['Pre-School Ballet', 'Music, movement and imagination for little ones, with simple ballet steps and plenty of stories.', 'No experience needed', 'Leotard or comfortable clothes, ballet shoes or bare feet. A parent stays nearby.'],
+  ['Primary Ballet', 'The first steps of classical ballet: posture, pointed feet and lots of jumps, ready for Grade 1.', 'No experience needed', 'Leotard and pink ballet shoes; hair tied back. Trainers are fine for a first visit.'],
+  ['Grade 2 Ballet', 'Building strength and line through the Grade 2 syllabus, with the option to take the exam.', 'Some ballet: Grade 1 or a year of classes', 'Leotard, pink tights and ballet shoes; hair in a bun.'],
+  ['Grade 3 Ballet', 'Grade 3 syllabus work, character dance and a free movement section, working towards the exam.', 'Grade 2 passed, or the teacher’s invitation', 'Leotard, pink tights, ballet shoes and character shoes; hair in a bun.'],
+  ['Junior Tap', 'Rhythm, timing and lots of noise: shuffles, flaps and simple routines to music children know.', 'No experience needed', 'Comfortable clothes and tap shoes. Trainers are fine for a first visit.'],
+  ['Senior Tap', 'Faster rhythms, time steps and longer routines for older dancers.', 'A year or more of tap', 'Comfortable clothes and tap shoes.'],
+  ['Modern Juniors', 'Energetic modern dance: travelling steps, turns, jumps and short routines.', 'No experience needed', 'Shorts or leggings and a T-shirt; bare feet or jazz shoes.'],
+  ['Contemporary Seniors', 'Floor work, release technique and improvisation, creating pieces together.', 'Some dance experience helps', 'Leggings or joggers and a fitted top; bare feet.'],
+  ['Street Juniors', 'Hip hop grooves, freezes and fun routines to clean, current music.', 'No experience needed', 'Comfortable clothes and clean trainers. Bring a water bottle.'],
+  ['Street Seniors', 'Choreography and freestyle across hip hop, house and commercial styles.', 'Some street dance helps, beginners welcome', 'Comfortable clothes and clean trainers. Bring a water bottle.'],
+  ['Jazz Intermediate', 'Kicks, leaps, turns and sharp jazz routines for confident dancers.', 'A year or more of dance', 'Leggings or shorts, a fitted top and jazz shoes.'],
+  ['Saturday Ballet Grade 1', 'The Grade 1 syllabus on a Saturday morning: posture, footwork and expressive dance.', 'Primary Ballet or a term of classes', 'Leotard, pink ballet shoes; hair tied back.'],
+  ['Adult Contemporary (drop-in)', 'For adults, all levels. Come when you can: pay per class or buy a pack.', 'All levels, including complete beginners', 'Comfortable clothes you can move in; bare feet or socks. Bring water.'],
+];
+const infoFor = (name: string) => CLASS_INFO.find(r => r[0] === name);
+
 type Ctx = {
   termId: string; base: Date;
   LOC: Record<string, string>; ROOM: Record<string, string>;
@@ -168,9 +186,9 @@ function buildClassesAndPeople(ctx: Ctx): string {
     const id = uid(NS.class, i + 1); classIds.push(id);
     return row([id, STUDIO_ID, termId, STYLE[c[1]], LEVEL[c[2]], LOC[c[3]], ROOM[c[4]],
                 STAFF[c[5]], c[0], c[6], c[7], c[8], c[9], c[10], c[11], c[12],
-                'term', 0, true, true, 'public']);
+                'term', 0, true, true, 'public', infoFor(c[0])?.[1] ?? null, infoFor(c[0])?.[2] ?? null, infoFor(c[0])?.[3] ?? null]);
   });
-  push(`insert into class (id,studio_id,term_id,dance_style_id,level_id,location_id,room_id,teacher_id,name,day_of_week,start_time,duration_min,capacity,age_min,age_max,price_minor,pricing,trial_price_minor,trials_enabled,waitlist_enabled,visibility) values
+  push(`insert into class (id,studio_id,term_id,dance_style_id,level_id,location_id,room_id,teacher_id,name,day_of_week,start_time,duration_min,capacity,age_min,age_max,price_minor,pricing,trial_price_minor,trials_enabled,waitlist_enabled,visibility,description,level_note,what_to_bring) values
     ${classRows.join(',\n    ')};`);
   classIds.forEach(id => push(`select app.generate_class_sessions('${id}');`));
 
@@ -1027,6 +1045,8 @@ update studio set plan_id = (select id from plan where code = 'studio'), status 
                   brand_colour = '#1e3a8a', logo_url = ${q(NORTHSTAR_LOGO)},
                   created_at = now() - interval '2 years 3 months'
  where id = ${q(STUDIO_ID)};
+-- Only Northstar holds sample records; onboarding says so only there (UR-11).
+update studio set sample_data = true where id = ${q(STUDIO_ID)};
 
 insert into user_account (id, email, full_name) values
   (${q(PLATFORM_ADMIN)}, 'jordan@swayvo.example', 'Jordan Ellis'),
@@ -1044,6 +1064,9 @@ insert into studio (id, name, slug, contact_email, plan_id, status, trial_ends_o
      'Subscription unpaid since September — two reminders sent', now() - interval '6 days', now() - interval '14 months');
 
 update studio set theme = 'urban', brand_colour = '#c6f432', brand_secondary = '#8b5cf6' where id = ${q(S.kestrel)};
+-- Kestrel lets its teachers see their Kestrel classes in full from other schools (UR-47, 0055);
+-- Northstar keeps the default, busy times only.
+update studio set staff_timetable_sharing = 'details' where id = ${q(S.kestrel)};
 insert into membership (user_id, studio_id, role) values
   (${q(uid(NS.user, 191))}, ${q(S.kestrel)}, 'owner'),
   (${q(uid(NS.user, 192))}, ${q(S.pointe)}, 'owner');
@@ -1066,13 +1089,14 @@ insert into location (studio_id, name, city) values (${q(S.pointe)}, 'The Mill',
 
 -- Adults drop in on Thursday evenings, by the class or with a pack (R-034).
 insert into class (id, studio_id, term_id, dance_style_id, location_id, teacher_id, name, day_of_week, start_time, duration_min,
-                   capacity, age_min, price_minor, pricing, trials_enabled, description)
+                   capacity, age_min, price_minor, pricing, trials_enabled, description, level_note, what_to_bring)
 select ${q(uid(NS.class, 191))}, ${q(STUDIO_ID)}, (select id from term where studio_id = ${q(STUDIO_ID)} order by starts_on desc limit 1),
        (select id from dance_style where studio_id = ${q(STUDIO_ID)} and name = 'Contemporary'),
        (select id from location where studio_id = ${q(STUDIO_ID)} order by name limit 1),
        (select id from staff_member where user_id = ${q(uid(NS.user, 3))} and studio_id = ${q(STUDIO_ID)}),
        'Adult Contemporary (drop-in)', 4, '20:00', 60, 16, 18, 1200, 'drop_in', false,
-       'For adults, all levels. Come when you can: pay per class or buy a pack.';
+       'For adults, all levels. Come when you can: pay per class or buy a pack.',
+       'All levels, including complete beginners', 'Comfortable clothes you can move in; bare feet or socks. Bring water.';
 select app.generate_class_sessions(${q(uid(NS.class, 191))});
 insert into class_pack (studio_id, name, classes, price_minor, valid_days) values
   (${q(STUDIO_ID)}, '5-class pack', 5, 5000, 90), (${q(STUDIO_ID)}, '10-class pack', 10, 9000, 180);

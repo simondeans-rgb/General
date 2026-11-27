@@ -34,9 +34,9 @@ export function ExamsCard() {
   const write = useWrite(() => setAdding(false));
   return (
     <section>
-      <SectionHead title="Exams" meta={rows.data?.length ? `${rows.data.length} session${rows.data.length === 1 ? '' : 's'}` : undefined}
+      <SectionHead title="Exam entries" meta={rows.data?.length ? `${rows.data.length} session${rows.data.length === 1 ? '' : 's'}` : undefined}
         action={!adding && <Button size="sm" variant="ghost" onClick={() => setAdding(true)}><Plus className="size-4" aria-hidden /> Exam session</Button>} />
-      <p className="py-2 text-[13px] text-ink-3">Results become milestones families can see.</p>
+      <p className="py-2 text-[0.8125rem] text-ink-3">Results become milestones families can see.</p>
       {adding && (
         <div className="card mb-3 grid gap-3 p-4 sm:grid-cols-2">
           <Field label="Board" htmlFor="ex-b" hint="RAD, ISTD, IDTA, BTDA or your own"><Input id="ex-b" value={f.board} onChange={e => setF({ ...f, board: e.target.value })} /></Field>
@@ -52,7 +52,7 @@ export function ExamsCard() {
           </div>
         </div>
       )}
-      {rows.data?.length === 0 && !adding && <p className="py-3 text-[14px] text-ink-3">No exam sessions yet.</p>}
+      {rows.data?.length === 0 && !adding && <p className="py-3 text-[0.875rem] text-ink-3">No exam sessions yet. An exam session holds a board’s visit: each child’s grade entry, fee and result. An event of kind Exam above is only the date in families’ diaries; add the session here to enter children.</p>}
       <ul className="divide-y divide-line border-t border-line">
         {rows.data?.map(x => {
           const d = new Date(x.exam_on);
@@ -62,12 +62,12 @@ export function ExamsCard() {
               <button onClick={() => setOpen(o => o === x.id ? null : x.id)} aria-expanded={open === x.id}
                 className="grid w-full grid-cols-[3.25rem_minmax(0,1fr)_auto] items-start gap-x-3 px-1 py-3 text-left hover:bg-surface-2/60">
                 <span className={cn('leading-none', past && 'text-ink-3')}>
-                  <span className="block font-display text-[22px] tnum">{d.getDate()}</span>
-                  <span className="mt-1 block text-[12px] text-ink-3">{d.toLocaleDateString('en-GB', { month: 'short' })}</span>
+                  <span className="block font-display text-[1.375rem] tnum">{d.getDate()}</span>
+                  <span className="mt-1 block text-[0.75rem] text-ink-3">{d.toLocaleDateString('en-GB', { month: 'short' })}</span>
                 </span>
                 <span className="min-w-0">
                   <span className={cn('block font-semibold', past && 'text-ink-2')}>{x.board} · {x.title}</span>
-                  <span className="mt-0.5 block text-[13px] text-ink-3">{x.entries} entered · {x.results} results{x.unbilled ? <> · <span className="font-semibold text-caution">{x.unbilled} fees to bill</span></> : ''}</span>
+                  <span className="mt-0.5 block text-[0.8125rem] text-ink-3">{x.entries} entered · {x.results} results{x.unbilled ? <> · <span className="font-semibold text-caution">{x.unbilled} fees to bill</span></> : ''}</span>
                 </span>
                 <ChevronDown className={cn('mt-1 size-4 text-ink-3 transition-transform', open === x.id && 'rotate-180')} aria-hidden />
               </button>
@@ -88,9 +88,9 @@ function Entries({ session: x }: { session: E.ExamSession }) {
   const [f, setF] = React.useState({ student: '', grade: '', fee: '' });
   return (
     <div className="mb-3 ml-[3.25rem] space-y-3 border-l-2 border-line pb-2 pl-4">
-      {done && <p role="status" className="text-[13px] font-semibold text-positive">{done}</p>}
+      {done && <p role="status" className="text-[0.8125rem] font-semibold text-positive">{done}</p>}
       {write.error != null && <ErrorState error={write.error} />}
-      <ul className="divide-y divide-line text-[14px]">
+      <ul className="divide-y divide-line text-[0.875rem]">
         {rows.data?.map(e => (
           <li key={e.id} className={cn('flex flex-wrap items-center gap-2 py-2', e.status === 'withdrawn' && 'text-ink-3')}>
             <span className="min-w-0 flex-1"><b className="font-semibold">{e.student}</b> · {e.grade}{e.fee_minor ? <span className="text-ink-3"> · {money(e.fee_minor)}</span> : ''}</span>
@@ -128,12 +128,12 @@ function ResultPicker({ entry, onSet }: { entry: E.ExamEntry; onSet: (r: string 
   const [mark, setMark] = React.useState(entry.mark != null ? String(entry.mark) : '');
   return (
     <span className="flex items-center gap-1.5">
-      <Select aria-label={`Result for ${entry.student}`} className="h-9 w-36 text-[13px]" value={entry.result ?? ''}
+      <Select aria-label={`Result for ${entry.student}`} className="h-9 w-36 text-[0.8125rem]" value={entry.result ?? ''}
         onChange={e => onSet(e.target.value || null, mark ? Number(mark) : null)}>
         <option value="">No result yet</option>
         {E.RESULTS.map(([k, v]) => <option key={k} value={k}>{v}</option>)}
       </Select>
-      <Input aria-label={`Mark for ${entry.student}`} className="h-9 w-16 text-[13px]" type="number" min={0} max={100} placeholder="%"
+      <Input aria-label={`Mark for ${entry.student}`} className="h-9 w-16 text-[0.8125rem]" type="number" min={0} max={100} placeholder="%"
         value={mark} onChange={e => setMark(e.target.value)} onBlur={() => entry.result && onSet(entry.result, mark ? Number(mark) : null)} />
     </span>
   );
@@ -145,7 +145,7 @@ export function StudentExams({ studentId, canEnter }: { studentId: string; canEn
   const upcoming = useRows<{ id: string; board: string; title: string; exam_on: string }>(['upcoming-exams'], E.UPCOMING_EXAMS, [], { enabled: !!canEnter });
   const write = useWrite();
   const [f, setF] = React.useState({ session: '', grade: '' });
-  if (!rows.data?.length && !(canEnter && upcoming.data?.length)) return <p className={cn(canEnter ? 'text-[13px]' : '', 'text-ink-3')}>No exams yet.</p>;
+  if (!rows.data?.length && !(canEnter && upcoming.data?.length)) return <p className={cn(canEnter ? 'text-[0.8125rem]' : '', 'text-ink-3')}>No exams yet.</p>;
   return (
     <div className="space-y-2">
       <ul className="space-y-1.5 text-sm">
@@ -155,17 +155,17 @@ export function StudentExams({ studentId, canEnter }: { studentId: string; canEn
             <span className="min-w-0 flex-1">{e.board} {e.grade} <span className="text-ink-3">· {dateShort(e.exam_on)}</span></span>
             {e.result ? (canEnter
               ? <Badge tone={e.result === 'not_yet' ? 'neutral' : 'positive'}>{resultLabel(e.result)}{e.mark != null ? ` · ${e.mark}%` : ''}</Badge>
-              : <span className={cn('text-[13.5px] font-semibold', e.result === 'not_yet' ? 'text-ink-2' : 'text-positive')}>{resultLabel(e.result)}{e.mark != null ? ` · ${e.mark}%` : ''}</span>)
-              : canEnter ? <Select aria-label={`Result, ${e.board} ${e.grade}`} className="h-8 w-32 text-[12.5px]" value=""
+              : <span className={cn('text-[0.8438rem] font-semibold', e.result === 'not_yet' ? 'text-ink-2' : 'text-positive')}>{resultLabel(e.result)}{e.mark != null ? ` · ${e.mark}%` : ''}</span>)
+              : canEnter ? <Select aria-label={`Result, ${e.board} ${e.grade}`} className="h-8 w-32 text-[0.7812rem]" value=""
                   onChange={x => x.target.value && write.mutate({ sql: E.EXAM_RESULT, params: [e.id, x.target.value, null] })}>
                   <option value="">Result…</option>{E.RESULTS.map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Select>
-              : <span className="text-[13.5px] font-semibold text-ink-2">Entered</span>}
+              : <span className="text-[0.8438rem] font-semibold text-ink-2">Entered</span>}
           </li>
         ))}
       </ul>
       {canEnter && !!upcoming.data?.length && (
         <div className="flex gap-1.5">
-          <Select aria-label="Exam session" className="h-9 min-w-0 flex-1 text-[13px]" value={f.session} onChange={e => setF({ ...f, session: e.target.value })}>
+          <Select aria-label="Exam session" className="h-9 min-w-0 flex-1 text-[0.8125rem]" value={f.session} onChange={e => setF({ ...f, session: e.target.value })}>
             <option value="">Enter for an exam…</option>
             {upcoming.data.map(x => <option key={x.id} value={x.id}>{x.board} · {x.title} ({dateShort(x.exam_on)})</option>)}
           </Select>

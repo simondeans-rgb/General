@@ -58,8 +58,8 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
             return (
               <tr key={c.key}>
                 <td className="py-2.5 pr-2"><span className="block font-semibold">{c.label}
-                  {c.locked && <span className="ml-1.5 inline-flex items-center gap-0.5 text-[12.5px] font-medium text-ink-3"><Lock className="size-3" aria-hidden />Always on</span>}</span>
-                  <span className="block text-[13px] text-ink-3">{c.body}</span></td>
+                  {c.locked && <span className="ml-1.5 inline-flex items-center gap-0.5 text-[0.7812rem] font-medium text-ink-3"><Lock className="size-3" aria-hidden />Always on</span>}</span>
+                  <span className="block text-[0.8125rem] text-ink-3">{c.body}</span></td>
                 {(['in_app', 'email'] as const).map(ch => (
                   <td key={ch} className="text-center">
                     <input type="checkbox" aria-label={`${c.label}: ${ch === 'in_app' ? 'in the app' : 'email'}`}
@@ -72,19 +72,19 @@ export function NotificationSettings({ onClose }: { onClose: () => void }) {
           })}
         </tbody>
       </table>
-      <p className="text-[13px] text-ink-3">Class changes and safety notices always reach you. Email starts once the school connects an email service.</p>
+      <p className="text-[0.8125rem] text-ink-3">Class changes and safety notices always reach you. Email starts once the school connects an email service.</p>
       <label className="flex items-start gap-2.5 text-sm">
         <input type="checkbox" className="mt-0.5 size-5 shrink-0 accent-[var(--color-accent)]" checked={!!q0?.email_digest}
           onChange={e => digest.mutate(e.target.checked)} />
         <span className="font-semibold">One email a day instead
-          <span className="block text-[13px] font-normal text-ink-3">A summary at 5pm of anything you haven’t seen. Urgent notices — a class cancelled today, a safety alert — still come straight away.</span></span>
+          <span className="block text-[0.8125rem] font-normal text-ink-3">A summary at 5pm of anything you haven’t seen. Urgent notices — a class cancelled today, a safety alert — still come straight away.</span></span>
       </label>
       <PushToggle />
       <div className="grid grid-cols-2 gap-3">
         <Field label="Quiet from" htmlFor="qh-f"><Input id="qh-f" type="time" value={qFrom} onChange={e => setFrom(e.target.value)} /></Field>
         <Field label="Until" htmlFor="qh-t"><Input id="qh-t" type="time" value={qTo} onChange={e => setTo(e.target.value)} /></Field>
       </div>
-      <p className="text-[13px] text-ink-3">During quiet hours, emails and phone alerts wait until the morning. Leave both empty for none.</p>
+      <p className="text-[0.8125rem] text-ink-3">During quiet hours, emails and phone alerts wait until the morning. Leave both empty for none.</p>
     </RecordSheet>
   );
 }

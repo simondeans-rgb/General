@@ -10,6 +10,7 @@ import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import { Beats, Button, Skeleton, ErrorState } from '@/components/ui';
 import { cn } from '@/lib/cn';
+import { FirstTimetable } from '@/components/app/first-timetable';
 
 /**
  * Studio setup.
@@ -58,7 +59,7 @@ const STEPS: Step[] = [
     href: '/people', cta: 'Add teachers' },
   { key: 'classes', title: 'Classes', blurb: 'Day, time, capacity and price. Sessions are generated for you.',
     count: `select count(*)::int n from class where deleted_at is null`,
-    href: '/classes', cta: 'Create a class' },
+    href: '/onboarding#ob-timetable', cta: 'Create classes' },
   { key: 'families', title: 'Families', blurb: 'Import a spreadsheet you already keep, or add families one by one. Then invite them to the app.',
     count: `select count(*)::int n from family where deleted_at is null`,
     href: '/people?import=1', cta: 'Import or add families' },
@@ -75,6 +76,9 @@ export default function Onboarding() {
     STEPS.map(s => `select '${s.key}' as key, n from (${s.count}) x`).join('\nunion all\n'));
 
   const doneKeys = new Set((rows.data ?? []).filter(r => r.n > 0).map(r => r.key));
+  // Only a school that really holds the demo's sample records says so (UR-11).
+  const sample = useRow<{ sample_data: boolean }>(['sample-data'], `select sample_data from studio where deleted_at is null limit 1`);
+  const [moreClasses, setMoreClasses] = React.useState(false);
   const done = STEPS.filter(s => doneKeys.has(s.key)).length;
   const next = STEPS.find(s => !doneKeys.has(s.key));
 
@@ -85,8 +89,8 @@ export default function Onboarding() {
           <div>
             <p className="label">Progress</p>
             <p id="ob-progress" className="mt-1 flex items-baseline gap-2">
-              <span className="display-xl text-[64px]">{rows.data ? done : '–'}</span>
-              <span className="text-[15px] text-ink-2">of {STEPS.length} steps done</span>
+              <span className="display-xl text-[length:min(4rem,22vw)]">{rows.data ? done : '–'}</span>
+              <span className="text-[0.9375rem] text-ink-2">of {STEPS.length} steps done</span>
             </p>
             <Beats value={done} max={STEPS.length} size="lg" label={`${done} of ${STEPS.length} steps done`} className="mt-3" />
           </div>
@@ -94,15 +98,35 @@ export default function Onboarding() {
             {next ? (
               <>
                 <p className="label text-accent-text">Next</p>
-                <p className="mt-1 font-display text-[22px] font-[800] leading-tight [font-stretch:112%]">{next.title}</p>
-                <p className="mt-1 text-[14px] text-ink-3">{next.blurb}</p>
+                <p className="mt-1 font-display text-[1.375rem] font-[800] leading-tight [font-stretch:112%]">{next.title}</p>
+                <p className="mt-1 text-[0.875rem] text-ink-3">{next.blurb}</p>
                 <Link href={next.href} className="mt-3 inline-block"><Button variant="primary" tabIndex={-1}>{next.cta}</Button></Link>
               </>
             ) : (
-              <p className="font-display text-[22px] font-[800] leading-tight text-positive [font-stretch:112%]">Everything is set up. You are live.</p>
+              <p className="font-display text-[1.375rem] font-[800] leading-tight text-positive [font-stretch:112%]">Everything is set up. You are live.</p>
             )}
           </div>
         </section>
+
+        {rows.data && (!doneKeys.has('classes') || moreClasses) && (
+          <section aria-labelledby="ob-timetable">
+            <div className="flex items-baseline gap-3 border-b-2 border-ink pb-2">
+              <h2 id="ob-timetable" className="section-title flex-1">Your first timetable</h2>
+              <span className="text-[0.8125rem] text-ink-3">Sessions are made for you</span>
+            </div>
+            <p className="pb-4 pt-2 text-[0.875rem] text-ink-2">
+              Type your weekly classes here, all on one page. Use Copy to for a class that runs on more than one day.
+            </p>
+            <FirstTimetable />
+          </section>
+        )}
+        {rows.data && doneKeys.has('classes') && !moreClasses && (
+          <p className="text-[0.875rem] text-ink-2">
+            Classes are on your timetable.{' '}
+            <button className="font-semibold text-accent-text hover:underline" onClick={() => setMoreClasses(true)}>Add several more here</button>
+            {' '}or one at a time from <Link href="/classes" className="font-semibold text-accent-text hover:underline">Classes</Link>.
+          </p>
+        )}
 
         {rows.isLoading && <Skeleton className="h-40" />}
         {rows.error && <ErrorState error={rows.error} onRetry={() => rows.refetch()} />}
@@ -111,7 +135,7 @@ export default function Onboarding() {
           <section aria-labelledby="ob-steps">
             <div className="flex items-baseline gap-3 border-b-2 border-ink pb-2">
               <h2 id="ob-steps" className="section-title flex-1">Every step</h2>
-              <span className="text-[13px] text-ink-3">In order, but any order works</span>
+              <span className="text-[0.8125rem] text-ink-3">In order, but any order works</span>
             </div>
             <ol className="divide-y divide-line">
               {STEPS.map((s, i) => {
@@ -119,15 +143,15 @@ export default function Onboarding() {
                 const count = rows.data!.find(r => r.key === s.key)?.n ?? 0;
                 return (
                   <li key={s.key} className="grid grid-cols-[2.25rem_minmax(0,1fr)] items-start gap-x-3 py-3.5 sm:grid-cols-[2.25rem_minmax(0,1fr)_auto]">
-                    <span aria-hidden className={cn('font-display text-[22px] leading-none tnum', complete ? 'text-ink-3' : 'text-ink')}>
+                    <span aria-hidden className={cn('font-display text-[1.375rem] leading-none tnum', complete ? 'text-ink-3' : 'text-ink')}>
                       {complete ? <Check className="mt-0.5 size-5 text-positive" strokeWidth={2.4} /> : i + 1}
                     </span>
                     <span className="min-w-0">
                       <span className="block font-semibold">{s.title}
                         <span className="sr-only">{complete ? ' (done)' : ' (to do)'}</span></span>
-                      <span className="mt-0.5 block text-[14px] text-ink-3">{s.blurb}</span>
+                      <span className="mt-0.5 block text-[0.875rem] text-ink-3">{s.blurb}</span>
                       {(complete || s.key === 'payments') && (
-                        <span className="mt-1 block text-[13px]">
+                        <span className="mt-1 block text-[0.8125rem]">
                           {complete && <span className="font-semibold text-positive">Done{count > 1 ? ` · ${count} added` : ''}</span>}
                           {complete && s.key === 'payments' && <span className="text-ink-3"> · </span>}
                           {s.key === 'payments' && <span className="text-ink-3">Card payments need Stripe</span>}
@@ -135,7 +159,7 @@ export default function Onboarding() {
                       )}
                     </span>
                     <Link href={s.href}
-                      className="col-start-2 inline-flex min-h-10 shrink-0 items-center gap-0.5 justify-self-start sm:col-start-auto sm:justify-self-auto text-[13.5px] font-semibold text-accent-text hover:underline [@media(pointer:fine)]:min-h-0 [@media(pointer:fine)]:pt-0.5">
+                      className="col-start-2 inline-flex min-h-10 shrink-0 items-center gap-0.5 justify-self-start sm:col-start-auto sm:justify-self-auto text-[0.8438rem] font-semibold text-accent-text hover:underline [@media(pointer:fine)]:min-h-0 [@media(pointer:fine)]:pt-0.5">
                       {complete ? 'Review' : s.cta}
                       <ChevronRight className="size-3.5" aria-hidden />
                     </Link>
@@ -146,10 +170,12 @@ export default function Onboarding() {
           </section>
         )}
 
-        <p className="text-[13px] text-ink-3">
-          This school was created with sample data so you can see how everything fits together.
-          Starting fresh, every step would be empty and this page would walk you through them in order.
-        </p>
+        {sample.data?.sample_data && (
+          <p className="text-[0.8125rem] text-ink-3">
+            This school was created with sample data so you can see how everything fits together.
+            Starting fresh, every step would be empty and this page would walk you through them in order.
+          </p>
+        )}
       </div></div>
     </Shell>
   );

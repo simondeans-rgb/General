@@ -36,9 +36,9 @@ export function LibraryView({ allow, title }: { allow: any; title: string }) {
           <div role="tablist" aria-label="Kind" className="-mb-px flex w-full gap-5 overflow-x-auto border-b border-line">
             {([['all','All'],['video','Videos'],['audio','Tracks'],['document','Resources']] as [Tab,string][]).map(([k, label]) => (
               <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
-                className={cn('-mb-px min-h-[44px] shrink-0 border-b-2 px-0.5 text-[14.5px]',
+                className={cn('-mb-px min-h-[44px] shrink-0 border-b-2 px-0.5 text-[0.9062rem]',
                   tab === k ? 'border-accent font-semibold text-ink' : 'border-transparent text-ink-3 hover:text-ink')}>
-                {label} <span className="tnum text-[13px] text-ink-3">{counts[k]}</span>
+                {label} <span className="tnum text-[0.8125rem] text-ink-3">{counts[k]}</span>
               </button>
             ))}
           </div>
@@ -58,7 +58,7 @@ export function LibraryView({ allow, title }: { allow: any; title: string }) {
           </ul>
         )}
 
-        <p className="text-[13px] text-ink-3">
+        <p className="text-[0.8125rem] text-ink-3">
           Uploaded files play here. Links open in a new tab.
         </p>
       </div>

@@ -1,5 +1,8 @@
 'use client';
-import { StaffChecks } from '@/components/app/safeguarding';
+import { StaffChecks, RaiseConcernSheet } from '@/components/app/safeguarding';
+import { InitialConsents } from '@/components/app/consents';
+import { SET_CONSENT, type ConsentKind } from '@/lib/repos/consent';
+import { GuardianAccessFields, OfficeCollection } from '@/components/app/family-care';
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -10,7 +13,8 @@ import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import { Badge, Button, Field, Input, Select, Skeleton } from '@/components/ui';
 import * as P from '@/lib/repos/people';
-import { ageFrom, dateShort } from '@/lib/format';
+import { LOG_MEDICAL_VIEW } from '@/lib/repos/office';
+import { ageFrom, dateShort, toDateInput } from '@/lib/format';
 
 const COLOURS = ['violet', 'amber', 'teal', 'rose', 'indigo', 'lime'];
 
@@ -111,18 +115,19 @@ export function GuardianSheet({ familyId, row, onClose }: {
         <Input id="g-phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} />
       </Field>
       <fieldset>
-        <legend className="mb-1 text-[13px] font-medium text-ink-2">Their role</legend>
-        <label className="flex min-h-[44px] items-center gap-3 text-[14px]">
+        <legend className="mb-1 text-[0.8125rem] font-medium text-ink-2">Their role</legend>
+        <label className="flex min-h-[44px] items-center gap-3 text-[0.875rem]">
           <input type="checkbox" checked={primary} className="size-[18px] accent-[var(--color-accent)]"
                  onChange={e => setPrimary(e.target.checked)} />
           Main contact for the family
         </label>
-        <label className="flex min-h-[44px] items-center gap-3 text-[14px]">
+        <label className="flex min-h-[44px] items-center gap-3 text-[0.875rem]">
           <input type="checkbox" checked={billing} className="size-[18px] accent-[var(--color-accent)]"
                  onChange={e => setBilling(e.target.checked)} />
           Receives invoices
         </label>
       </fieldset>
+      {row && <GuardianAccessFields guardianId={row.id} />}
     </RecordSheet>
   );
 }
@@ -140,12 +145,24 @@ export function StudentSheet({ familyId, familyName, row, onClose }: {
   const [first, setFirst] = React.useState(row?.first_name ?? '');
   const [last, setLast] = React.useState(row?.last_name ?? '');
   const [preferred, setPreferred] = React.useState(row?.preferred_name ?? '');
-  const [dob, setDob] = React.useState(row?.date_of_birth?.slice(0, 10) ?? '');
+  const [dob, setDob] = React.useState(toDateInput(row?.date_of_birth));
   const [pronouns, setPronouns] = React.useState(row?.pronouns ?? '');
   const [school, setSchool] = React.useState(row?.school ?? '');
   const [notes, setNotes] = React.useState(row?.notes ?? '');
-  const [left, setLeft] = React.useState(row?.left_on?.slice(0, 10) ?? '');
+  const [left, setLeft] = React.useState(toDateInput(row?.left_on));
   const save = useWrite(row ? P.UPDATE_STUDENT : P.CREATE_STUDENT, onClose);
+  // A new child starts with the consent the family gave on joining (UR-08).
+  const [consent, setConsent] = React.useState<Partial<Record<ConsentKind, boolean>>>({});
+  const { session } = useSession();
+  const qc = useQueryClient();
+  const create = useMutation({
+    mutationFn: (params: unknown[]) => runAs(session, async q => {
+      const [r] = await q<{ id: string }>(P.CREATE_STUDENT, params);
+      for (const [k, v] of Object.entries(consent)) await q(SET_CONSENT, [r!.id, k, v, 'Recorded when the child was added', false]);
+    }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['db'] }); onClose(); },
+  });
+  const saving = row ? save : create;
 
   React.useEffect(() => {
     if (!family && families.data?.[0]) setFamily(families.data[0].id);
@@ -157,9 +174,11 @@ export function StudentSheet({ familyId, familyName, row, onClose }: {
   return (
     <RecordSheet title={row ? 'Edit child' : 'Add a child'} onClose={onClose}
       subtitle={familyName ? `In ${familyName}` : undefined}
-      error={save.error} saving={save.isPending}
+      error={saving.error} saving={saving.isPending}
       canSave={first.trim().length >= 1 && last.trim().length >= 1 && dobSane && !!family}
-      onSave={() => save.mutate(row
+      saveHint={!first.trim() || !last.trim() ? 'Add a first and last name.'
+        : !dobSane ? 'Add a date of birth that looks right.' : !family ? 'Choose a family.' : null}
+      onSave={() => saving.mutate(row
         ? [row.id, first.trim(), last.trim(), preferred, dob, pronouns, school, notes, left || null]
         : [family, first.trim(), last.trim(), preferred, dob, pronouns, school, null, notes])}>
       {!familyId && !row && (
@@ -199,12 +218,14 @@ export function StudentSheet({ familyId, familyName, row, onClose }: {
         <textarea id="s-notes" rows={2} value={notes}
                   onChange={e => setNotes(e.target.value)} className={textarea} />
       </Field>
+      {!row && <InitialConsents value={consent} onChange={setConsent} />}
       {row && (
         <Field label="Left the studio on" htmlFor="s-left"
                hint="Leave empty while they are still dancing.">
           <Input id="s-left" type="date" value={left} onChange={e => setLeft(e.target.value)} />
         </Field>
       )}
+      {row && <OfficeCollection studentId={row.id} name={row.first_name} />}
     </RecordSheet>
   );
 }
@@ -222,6 +243,15 @@ export function MedicalSheet({ studentId, studentName, onClose }: {
   const current = useRows<P.Medical>(['medical', studentId], P.MEDICAL, [studentId]);
   const contacts = useRows<P.Emergency>(['emergency', studentId], P.EMERGENCY_CONTACTS, [studentId]);
   const m = current.data?.[0];
+
+  // Opening the full record is logged for the owner to see (UR-35). Silent:
+  // the database writes at most one entry an hour, and a refusal (a read-only
+  // support view, say) must not get in the way of reading.
+  const { session } = useSession();
+  React.useEffect(() => {
+    if (session?.role !== 'owner' && session?.role !== 'admin') return;
+    runAs(session, q => q(LOG_MEDICAL_VIEW, [studentId])).catch(() => undefined);
+  }, [session, studentId]);
 
   const [loaded, setLoaded] = React.useState(false);
   const [allergies, setAllergies] = React.useState('');
@@ -251,7 +281,7 @@ export function MedicalSheet({ studentId, studentName, onClose }: {
       {!loaded && <Skeleton className="h-24" />}
       {loaded && (
         <>
-          <p className="flex gap-2 border-l-2 border-line-strong pl-3 text-[13px] text-ink-2">
+          <p className="flex gap-2 border-l-2 border-line-strong pl-3 text-[0.8125rem] text-ink-2">
             <ShieldAlert className="mt-0.5 size-4 shrink-0 text-ink-3" aria-hidden />
             <span>
               Health data. Teachers of this child’s classes see the allergies,
@@ -261,12 +291,12 @@ export function MedicalSheet({ studentId, studentName, onClose }: {
             </span>
           </p>
 
-          <label className="flex min-h-[44px] items-start gap-3 text-[14px]">
+          <label className="flex min-h-[44px] items-start gap-3 text-[0.875rem]">
             <input type="checkbox" checked={alert} className="mt-0.5 size-[18px] accent-[var(--color-accent)]"
                    onChange={e => setAlert(e.target.checked)} />
             <span>
               <span className="font-semibold">Urgent — show a red alert</span>
-              <span className="mt-0.5 block text-[13px] text-ink-3">
+              <span className="mt-0.5 block text-[0.8125rem] text-ink-3">
                 For anything a teacher must act on quickly. Without it, teachers still see an amber
                 marker and every detail below.
               </span>
@@ -302,7 +332,7 @@ export function MedicalSheet({ studentId, studentName, onClose }: {
           </div>
 
           {m?.updated_at && (
-            <p className="text-[12.5px] text-ink-3">
+            <p className="text-[0.7812rem] text-ink-3">
               Last changed {dateShort(m.updated_at)}
               {m.updated_by_name ? ` by ${m.updated_by_name}` : ''}.
             </p>
@@ -328,14 +358,14 @@ function EmergencyContacts({ studentId, rows }: { studentId: string; rows: P.Eme
   return (
     <div>
       <div className="flex items-center gap-2 border-b border-ink pb-1">
-        <p className="flex-1 text-[14px] font-semibold">Emergency contacts</p>
+        <p className="flex-1 text-[0.875rem] font-semibold">Emergency contacts</p>
         {!adding && <Button size="sm" variant="ghost" onClick={() => setAdding(true)}>
           <Plus className="size-4" aria-hidden /> Add
         </Button>}
       </div>
 
       {rows.length === 0 && !adding && (
-        <p className="mt-2 flex items-center gap-1.5 text-[13px] font-semibold text-caution">
+        <p className="mt-2 flex items-center gap-1.5 text-[0.8125rem] font-semibold text-caution">
           <AlertTriangle className="size-3.5" aria-hidden />
           None recorded. A teacher has nobody to ring.
         </p>
@@ -347,7 +377,7 @@ function EmergencyContacts({ studentId, rows }: { studentId: string; rows: P.Eme
             <li key={c.id} className="flex items-center gap-2 py-2">
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-medium">{c.full_name}</span>
-                <span className="block text-[12.5px] text-ink-2">
+                <span className="block text-[0.7812rem] text-ink-2">
                   {[c.relationship, c.phone].filter(Boolean).join(' · ')}
                 </span>
               </span>
@@ -391,7 +421,9 @@ export function StaffSheet({ row, onClose }: { row: P.StaffRow | null; onClose: 
   const [bio, setBio] = React.useState(row?.bio ?? '');
   const save = useWrite(row ? P.UPDATE_STAFF : P.CREATE_STAFF, onClose);
   const remove = useWrite(P.REMOVE_STAFF, onClose);
-  const isOwner = useSession().session?.role === 'owner';
+  const role = useSession().session?.role;
+  const isOwner = role === 'owner';
+  const [concern, setConcern] = React.useState(false);
 
   return (
     <RecordSheet title={row ? 'Edit teacher' : 'Add a teacher'} onClose={onClose}
@@ -433,17 +465,26 @@ export function StaffSheet({ row, onClose }: { row: P.StaffRow | null; onClose: 
       {/* Adding someone to the timetable and giving them a login are different
           decisions, and the database treats them differently: staff_member is
           admin-writable, membership is owner-only. */}
-      <p className="border-l-2 border-line-strong pl-3 text-[13px] text-ink-2">
+      <p className="border-l-2 border-line-strong pl-3 text-[0.8125rem] text-ink-2">
         {row?.user_id
           ? 'This teacher has a login and can take their own registers.'
           : 'They will appear on the timetable straight away. Giving them a login to take registers is a separate step, and only the owner can do it.'}
       </p>
-      {row && isOwner && (
+      {row && (isOwner || role === 'admin') && (
         <div className="pt-2">
-          <p className="mb-2 border-b border-ink pb-1 text-[14px] font-semibold">Checks and training</p>
-          <StaffChecks staffId={row.id} />
+          <p className="mb-2 border-b border-ink pb-1 text-[0.875rem] font-semibold">Checks and training</p>
+          <StaffChecks staffId={row.id} readOnly={!isOwner} />
         </div>
       )}
+      {row && (
+        <div className="pt-2">
+          <Button size="sm" variant="ghost" onClick={() => setConcern(true)}>
+            <ShieldAlert className="size-4" aria-hidden /> Raise a concern about {row.display_name}
+          </Button>
+          <p className="mt-1 text-[0.7812rem] text-ink-3">Goes to the safeguarding lead and the owner, never to them.</p>
+        </div>
+      )}
+      {concern && row && <RaiseConcernSheet staff={{ id: row.id, name: row.display_name }} onClose={() => setConcern(false)} />}
     </RecordSheet>
   );
 }

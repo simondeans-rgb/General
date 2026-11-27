@@ -19,15 +19,15 @@ export function SessionRow({ session: s, href, onSelect }: { session: S; href?: 
   const body = (
     <span className="grid grid-cols-[4.25rem_minmax(0,1fr)_auto] items-center gap-x-4 px-1 py-3 sm:grid-cols-[4.25rem_minmax(0,1fr)_auto_3.75rem]">
       <span className="self-start pt-0.5">
-        <span className={cn('block font-display text-[19px] leading-none tnum', cancelled && 'text-ink-3 line-through')}>{time(s.starts_at)}</span>
-        <span className="mt-1 block text-[12.5px] text-ink-3 tnum">{time(s.ends_at)}</span>
+        <span className={cn('block font-display text-[1.1875rem] leading-none tnum', cancelled && 'text-ink-3 line-through')}>{time(s.starts_at)}</span>
+        <span className="mt-1 block text-[0.7812rem] text-ink-3 tnum">{time(s.ends_at)}</span>
       </span>
       <span className="min-w-0">
         <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
           <span className={cn('truncate font-semibold', cancelled && 'text-ink-3 line-through')}>{s.name}</span>
-          {s.style && <StyleMark colour={s.colour} name={s.style} className="text-[13px] text-ink-3" />}
+          {s.style && <StyleMark colour={s.colour} name={s.style} className="text-[0.8125rem] text-ink-3" />}
         </span>
-        <span className="mt-0.5 flex min-w-0 flex-wrap items-baseline gap-x-2 text-[13px] text-ink-3">
+        <span className="mt-0.5 flex min-w-0 flex-wrap items-baseline gap-x-2 text-[0.8125rem] text-ink-3">
           {cancelled
             ? <><Word tone="critical">Cancelled</Word>{s.cancel_reason && <span className="text-ink-2">{s.cancel_reason}</span>}</>
             : <>
@@ -38,8 +38,8 @@ export function SessionRow({ session: s, href, onSelect }: { session: S; href?: 
         </span>
       </span>
       {!cancelled && <Beats value={s.enrolled} max={s.capacity} label={`${s.enrolled} of ${s.capacity} places`} tone={full ? 'caution' : 'accent'} className="hidden sm:inline-flex" />}
-      <span className={cn('text-right text-[13.5px] tnum', full ? 'font-semibold text-caution' : 'text-ink-2', cancelled && 'sm:col-span-2')}>
-        {cancelled ? '' : <>{s.enrolled}/{s.capacity}{full && <span className="block text-[12px]">Full</span>}</>}
+      <span className={cn('text-right text-[0.8438rem] tnum', full ? 'font-semibold text-caution' : 'text-ink-2', cancelled && 'sm:col-span-2')}>
+        {cancelled ? '' : <>{s.enrolled}/{s.capacity}{full && <span className="block text-[0.75rem]">Full</span>}</>}
       </span>
     </span>
   );

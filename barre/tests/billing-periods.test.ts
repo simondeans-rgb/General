@@ -1,7 +1,14 @@
 import { beforeAll, afterAll, describe, expect, it } from 'vitest';
-import { asUser, closeDb, expectRejected, rebuild, USERS, CLASS, STUDIO_ID, FAMILY } from './helpers';
+import { asUser, closeDb, commitService, expectRejected, rebuild, USERS, CLASS, STUDIO_ID, FAMILY } from './helpers';
 
-beforeAll(async () => { await rebuild(); }, 60_000);
+beforeAll(async () => {
+  await rebuild();
+  // The seeded "Termly tuition" invoices name no class, so a run now treats
+  // their families as already billed for the term (UR-10). These tests bill
+  // a term nobody has been invoiced for yet: date the seeded ones last term.
+  await commitService(`update invoice set issued_on = issued_on - 120, due_on = due_on - 120
+                        where number between 'INV-1041' and 'INV-1070'`);
+}, 60_000);
 afterAll(async () => { await closeDb(); });
 
 const as = (svc: any, user: string) => svc(`select set_config('request.jwt.claims', $1, true)`, [JSON.stringify({ sub: user, role: 'authenticated' })]);
@@ -78,6 +85,8 @@ describe('pay before use (R-049)', () => {
   it('an unpaid pack cannot be used, and nothing more goes on account past the limit', async () => {
     await asUser(USERS.guardianA, async (q, svc) => {
       await svc(`update studio set pay_before_use = true, account_limit_minor = 0 where id = $1`, [STUDIO_ID]);
+      // About payment, not age: open the (adult) drop-in class to the child.
+      await svc(`update class set age_min = null, age_max = null where pricing = 'drop_in'`);
       const [kid] = await svc(`select s.id from student s where s.family_id = $1 and exists (select 1 from emergency_contact e where e.student_id = s.id) limit 1`, [FAMILY.a]);
       const [pack] = await svc(`select id from class_pack where studio_id = $1 and active limit 1`, [STUDIO_ID]);
       await as(svc, USERS.guardianA);
@@ -95,7 +104,7 @@ describe('pay before use (R-049)', () => {
     await asUser(null as any, async (q, svc) => {
       await svc(`update studio set pay_before_use = true, account_limit_minor = 0 where id = $1`, [STUDIO_ID]);
       const s = await nextDropIn(svc, 1);
-      const form = { name: 'Rui Costa', email: 'rui@example.com', phone: '07700 900111', emergency_phone: '07700 900112', privacy_ack: true };
+      const form = { name: 'Rui Costa', email: 'rui@example.com', phone: '07700 900111', emergency_phone: '07700 900112', privacy_ack: true, adult_confirm: true };
       const [{ r }] = await q(`select app.public_adult_drop_in('northstar', $1, $2::jsonb) r`, [s, JSON.stringify(form)]);
       expect(r).toBe('held');
       const [b] = await svc(`select id, status, invoice_id from drop_in_booking where session_id = $1 and status <> 'cancelled' order by created_at desc limit 1`, [s]);
@@ -120,7 +129,9 @@ describe('public forms (R-048)', () => {
       const [{ slug }] = await svc(`select slug from studio where id = $1`, [STUDIO_ID]);
       // A class with room for six bookings, so the rate limit (five) is what refuses the sixth.
       const [slot] = await q(`select * from app.public_trial_sessions($1) where places_left >= 6 order by starts_at limit 1`, [slug]);
-      const base = { contact_name: 'Jo Bloggs', contact_email: 'jo@example.com', contact_phone: '07700 900222', child_dob: '2017-05-05' };
+      // A child the class's age range suits (UR-06).
+      const [{ dob }] = await svc(`select to_char(current_date - make_interval(years => $1) - interval '1 month', 'YYYY-MM-DD') dob`, [slot.age_min ?? 9]);
+      const base = { contact_name: 'Jo Bloggs', contact_email: 'jo@example.com', contact_phone: '07700 900222', child_dob: dob };
       expect(await expectRejected(() => q(`select app.public_book_trial($1, $2, $3::jsonb)`,
         [slug, slot.session_id, JSON.stringify({ ...base, child_name: 'Kid Zero' })]))).toMatch(/privacy|how the school uses/);
       await q(`select app.public_book_trial($1, $2, $3::jsonb)`, [slug, slot.session_id, JSON.stringify({ ...base, child_name: 'Kid One', privacy_ack: true, marketing: true })]);

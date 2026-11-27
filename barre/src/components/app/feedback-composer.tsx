@@ -56,7 +56,7 @@ export function FeedbackComposer({
           </div>
         ) : (
           <>
-            <h2 id="fb-title" className="font-display text-[20px] leading-tight">
+            <h2 id="fb-title" className="font-display text-[1.25rem] leading-tight">
               Feedback for {student.first_name}
             </h2>
             <div className="mt-4 space-y-3">
@@ -68,19 +68,19 @@ export function FeedbackComposer({
               <Field label="Going well" htmlFor="fb-well">
                 <textarea id="fb-well" rows={3} value={goingWell} onChange={e => setGoingWell(e.target.value)}
                   placeholder="Be specific — it means more than 'good work'."
-                  className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-[15px]
+                  className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-[0.9375rem]
                              focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
               </Field>
               <Field label="To work on" htmlFor="fb-work">
                 <textarea id="fb-work" rows={3} value={workOn} onChange={e => setWorkOn(e.target.value)}
                   placeholder="One thing to practise before next week."
-                  className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-[15px]
+                  className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-[0.9375rem]
                              focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
               </Field>
               <Field label="Private note" htmlFor="fb-priv"
                      hint="Studio staff only. Never shown to the family, whatever you choose below.">
                 <textarea id="fb-priv" rows={2} value={privateNote} onChange={e => setPrivateNote(e.target.value)}
-                  className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface-2 p-3 text-[15px]
+                  className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface-2 p-3 text-[0.9375rem]
                              focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
               </Field>
 
@@ -88,10 +88,10 @@ export function FeedbackComposer({
                 <input type="checkbox" checked={share} onChange={e => setShare(e.target.checked)}
                        className="mt-0.5 size-5 shrink-0 accent-[var(--color-accent)]" />
                 <span>
-                  <span className="block text-[15px] font-semibold">
+                  <span className="block text-[0.9375rem] font-semibold">
                     Share with {student.first_name} and their guardians
                   </span>
-                  <span className="mt-0.5 block text-[13.5px] text-ink-3">
+                  <span className="mt-0.5 block text-[0.8438rem] text-ink-3">
                     {share
                       ? 'They will see it as soon as you save.'
                       : 'Saved as a draft. Nothing reaches the family until you share it.'}

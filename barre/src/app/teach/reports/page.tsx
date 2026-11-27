@@ -39,7 +39,7 @@ export default function ReportsPage() {
       <div className="mx-auto max-w-3xl space-y-8">
         <div className="flex flex-wrap items-end gap-3 print:hidden">
           <label className="min-w-0 flex-1 basis-56">
-            <span className="mb-1.5 block text-[13px] font-medium text-ink-2">Class</span>
+            <span className="mb-1.5 block text-[0.8125rem] font-medium text-ink-2">Class</span>
             <Select value={cls} onChange={e => { setPick(e.target.value); setChosen(new Set()); setDone(null); }}>
               {classes.data?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </Select>
@@ -64,7 +64,7 @@ export default function ReportsPage() {
               </h2>
               {drafts.length > 0 && (
                 <>
-                  <label className="mr-auto flex min-h-11 items-center gap-2 text-[14px] sm:mr-0">
+                  <label className="mr-auto flex min-h-11 items-center gap-2 text-[0.875rem] sm:mr-0">
                     <input type="checkbox" className="size-5 accent-[var(--color-accent)]" checked={allChosen}
                            onChange={e => setChosen(e.target.checked ? new Set(drafts.map(r => r.id)) : new Set())} /> All drafts
                   </label>
@@ -83,7 +83,7 @@ export default function ReportsPage() {
                       checked={chosen.has(r.id)} onChange={e => setChosen(c => { const n = new Set(c); if (e.target.checked) n.add(r.id); else n.delete(r.id); return n; })} />}
                   </div>
                   <div className="min-w-0 space-y-3">
-                    <p className={r.status === 'shared' ? 'text-[13px] font-semibold text-positive print:hidden' : 'text-[13px] font-semibold text-ink-3 print:hidden'}>
+                    <p className={r.status === 'shared' ? 'text-[0.8125rem] font-semibold text-positive print:hidden' : 'text-[0.8125rem] font-semibold text-ink-3 print:hidden'}>
                       {r.status === 'shared' ? 'Shared' : 'Draft'}
                     </p>
                     <ReportCard r={r} />
@@ -104,6 +104,6 @@ function Comment({ r, onSave }: { r: P.Report; onSave: (c: string) => void }) {
   return (
     <textarea aria-label={`Your comment for ${r.student_name}`} rows={2} value={text} onChange={e => setText(e.target.value)}
       onBlur={() => text !== (r.comment ?? '') && onSave(text)} placeholder="A sentence in your own words (optional)"
-      className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-[15px] print:hidden" />
+      className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-[0.9375rem] print:hidden" />
   );
 }

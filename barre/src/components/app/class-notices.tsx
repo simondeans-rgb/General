@@ -40,14 +40,14 @@ export function ClassNotices({ classId, className, canPost }: {
             ? <Button size="sm" onClick={() => setComposing(true)}>
                 <Megaphone className="size-4" aria-hidden /> Post a notice
               </Button>
-            : <span className="text-[13px] text-ink-3">From the teacher to the class</span>}
+            : <span className="text-[0.8125rem] text-ink-3">From the teacher to the class</span>}
         </div>
-        {canPost && <p className="pt-2 text-[13px] text-ink-3">Homework, kit, reminders. Everyone in the class and their parents see these.</p>}
+        {canPost && <p className="pt-2 text-[0.8125rem] text-ink-3">Homework, kit, reminders. Everyone in the class and their parents see these.</p>}
 
         {rows.isPending && <div className="space-y-3 pt-3">{[0, 1].map(i => <Skeleton key={i} className="h-14" />)}</div>}
         {rows.error && <div className="pt-3"><ErrorState error={rows.error} onRetry={() => rows.refetch()} /></div>}
         {!rows.isPending && rows.data?.length === 0 && (
-          <p className="py-3 text-[14.5px] text-ink-3">{canPost
+          <p className="py-3 text-[0.9062rem] text-ink-3">{canPost
               ? 'No notices yet. Set homework, or tell the class what to bring next week.'
               : 'No notices yet. Anything the teacher sends the class shows here.'}</p>
         )}
@@ -86,8 +86,8 @@ function NoticeRow({ n, canManage, onEdit }: {
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           {n.subject && <p className="font-semibold">{n.subject}</p>}
-          <p className="whitespace-pre-line text-[14.5px] leading-relaxed text-ink-2">{n.body}</p>
-          <p className="mt-1 text-[13px] text-ink-3">
+          <p className="whitespace-pre-line text-[0.9062rem] leading-relaxed text-ink-2">{n.body}</p>
+          <p className="mt-1 text-[0.8125rem] text-ink-3">
             {n.sent_by_name ?? 'The studio'} · {relativeDay(n.sent_at)} at {time(n.sent_at)}
           </p>
         </div>
@@ -131,10 +131,10 @@ function Compose({ classId, className, notice, onClose }: {
                    border border-line bg-surface p-4 pb-safe shadow-lg sm:rounded-[var(--radius-xl)]">
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
-            <h2 id="notice-t" className="text-[17px] font-semibold tracking-tight">
+            <h2 id="notice-t" className="text-[1.0625rem] font-semibold tracking-tight">
               {notice ? 'Edit notice' : 'Post a notice'}
             </h2>
-            <p className="mt-0.5 text-[13px] text-ink-2">
+            <p className="mt-0.5 text-[0.8125rem] text-ink-2">
               Goes to everyone in {className} and their parents.
             </p>
           </div>
@@ -154,7 +154,7 @@ function Compose({ classId, className, notice, onClose }: {
               className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm
                          focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
           </Field>
-          <p className="text-[13px] text-ink-3">
+          <p className="text-[0.8125rem] text-ink-3">
             Notices go one way. If a parent needs to reply they contact the studio, so
             the conversation stays on record.
           </p>

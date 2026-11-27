@@ -74,11 +74,11 @@ export function Automations() {
                     {r.enabled && r.due > 0 && <Word tone="caution">{r.due} due</Word>}
                     {!r.enabled && <Word tone="muted">Off</Word>}
                   </span>
-                  <span className="block text-[13px] text-ink-3">
+                  <span className="block text-[0.8125rem] text-ink-3">
                     {e.when}{r.sent ? ` · ${r.sent} sent, last ${relativeDay(r.last_sent!)}` : ''}
                   </span>
                 </span>
-                <Select aria-label={`Template for ${e.title}`} className="h-9 text-[13px]"
+                <Select aria-label={`Template for ${e.title}`} className="h-9 text-[0.8125rem]"
                   value={r.template_id ?? ''}
                   onChange={ev => set.mutate({ id: r.id, enabled: r.enabled, template_id: ev.target.value || null })}>
                   <option value="">No template — nothing sends</option>
@@ -87,7 +87,7 @@ export function Automations() {
                 {/* A real switch: role, state and label, not a coloured div. */}
                 <button role="switch" aria-checked={r.enabled} aria-label={`${e.title}: ${r.enabled ? 'on' : 'off'}`}
                   onClick={() => set.mutate({ id: r.id, enabled: !r.enabled, template_id: r.template_id })}
-                  className="row-start-1 flex min-h-[44px] items-center gap-2 justify-self-end text-[13px] text-ink-2 md:row-start-auto">
+                  className="row-start-1 flex min-h-[44px] items-center gap-2 justify-self-end text-[0.8125rem] text-ink-2 md:row-start-auto">
                   <span className="w-6 text-right">{r.enabled ? 'On' : 'Off'}</span>
                   <span className={cn('relative h-6 w-10 shrink-0 rounded-full transition-colors', r.enabled ? 'bg-ink' : 'bg-line-strong')}>
                     <span className={cn('absolute top-0.5 size-5 rounded-full bg-surface transition-[left]',
@@ -102,19 +102,19 @@ export function Automations() {
 
       <section>
         <SectionHead title="Email outbox" meta={outbox.data?.length ? `${outbox.data.length}` : undefined} />
-        <p className="py-2 text-[13px] text-ink-3">
+        <p className="py-2 text-[0.8125rem] text-ink-3">
           People without an account yet, usually someone booking a first trial, can only be reached by email.
           Email delivery isn’t connected in this build, so these wait here.
         </p>
-        {outbox.data?.length === 0 && <p className="py-3 text-[14px] text-ink-3">Nothing queued.</p>}
+        {outbox.data?.length === 0 && <p className="py-3 text-[0.875rem] text-ink-3">Nothing queued.</p>}
         <ul className="divide-y divide-line border-t border-line">
           {outbox.data?.map(o => (
-            <li key={o.id} className="flex items-center gap-3 px-1 py-2.5 text-[14px]">
+            <li key={o.id} className="flex items-center gap-3 px-1 py-2.5 text-[0.875rem]">
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-medium">{o.subject}</span>
-                <span className="block truncate text-[13px] text-ink-3">To {o.to_name ?? o.to_address} · {relativeDay(o.created_at)} {time(o.created_at)}</span>
+                <span className="block truncate text-[0.8125rem] text-ink-3">To {o.to_name ?? o.to_address} · {relativeDay(o.created_at)} {time(o.created_at)}</span>
               </span>
-              <span className={cn('shrink-0 text-[13px]', o.status === 'queued' ? 'font-semibold text-caution' : o.status === 'sent' ? 'text-positive' : 'text-ink-3')}>
+              <span className={cn('shrink-0 text-[0.8125rem]', o.status === 'queued' ? 'font-semibold text-caution' : o.status === 'sent' ? 'text-positive' : 'text-ink-3')}>
                 {o.status === 'queued' ? 'Waiting for email' : o.status.charAt(0).toUpperCase() + o.status.slice(1)}
               </span>
             </li>

@@ -9,6 +9,7 @@ import { useSession } from '@/lib/auth/session';
 import { Button, ErrorState, Field, Input, Notice, Select, Skeleton } from '@/components/ui';
 import * as C from '@/lib/repos/classes';
 import { cn } from '@/lib/cn';
+import { SaveErrorSummary, useFirstErrorInView } from '@/components/app/form-error';
 
 const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
@@ -52,6 +53,10 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
     ['class-edit', classId ?? ''], C.CLASS_FOR_EDIT, [classId], { enabled: editing });
 
   const [draft, setDraft] = React.useState<C.ClassDraft>(EMPTY);
+  // Level in plain words and what to bring, for the public page (UR-20).
+  const extraRow = useRows<C.ClassPublicExtra>(['class-public-extra', classId ?? ''], C.CLASS_PUBLIC_EXTRA, [classId], { enabled: editing });
+  const [extra, setExtra] = React.useState<C.ClassPublicExtra>({ level_note: null, what_to_bring: null });
+  React.useEffect(() => { if (extraRow.data?.[0]) setExtra(extraRow.data[0]); }, [extraRow.data]);
   const [loaded, setLoaded] = React.useState(false);
   const [done, setDone] = React.useState<string | null>(null);
   const set = <K extends keyof C.ClassDraft>(k: K, v: C.ClassDraft[K]) =>
@@ -104,6 +109,7 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
         if (editing) {
           const [row] = await q<{ id: string }>(C.UPDATE_CLASS, [classId, ...args]);
           if (!row) throw new Error('That class could not be saved.');
+          await q(C.SET_CLASS_PUBLIC_EXTRA, [classId, extra.level_note ?? '', extra.what_to_bring ?? '']);
           if (movesSessions) {
             const [r] = await q<{ net: number }>(C.RESCHEDULE_CLASS, [classId]);
             return `Saved. The timetable was rebuilt from the new time${
@@ -113,6 +119,7 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
         }
         const [row] = await q<{ id: string }>(C.CREATE_CLASS, [draft.term_id, ...args]);
         if (!row) throw new Error('You cannot add a class to that term.');
+        await q(C.SET_CLASS_PUBLIC_EXTRA, [row.id, extra.level_note ?? '', extra.what_to_bring ?? '']);
         const [made] = await q<{ made: number }>(C.GENERATE_SESSIONS, [row.id]);
         return `Added, with ${made?.made ?? 0} session${made?.made === 1 ? '' : 's'} in the term.`;
       });
@@ -125,6 +132,23 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
     && /^\d{2}:\d{2}$/.test(draft.start_time)
     && (draft.age_min == null || draft.age_max == null || draft.age_max >= draft.age_min)
     && (!draft.assistant_id || draft.assistant_id !== draft.teacher_id);
+
+  // Why "Create class" is not available yet, said beside the button rather
+  // than left as a greyed-out mystery (UR-40).
+  const missing = !ready ? null
+    : draft.name.trim().length < 2 ? 'Add a name of at least two letters.'
+    : !draft.term_id ? 'Choose a term. Add one in Studio settings first if there is none.'
+    : !draft.dance_style_id ? 'Choose a style.'
+    : !draft.location_id ? 'Choose where it happens.'
+    : !/^\d{2}:\d{2}$/.test(draft.start_time) ? 'Add a start time.'
+    : !(draft.duration_min > 0) ? 'Add how many minutes it lasts.'
+    : !(draft.capacity > 0) ? 'Add how many places there are.'
+    : draft.age_min != null && draft.age_max != null && draft.age_max < draft.age_min ? 'The oldest age cannot be below the youngest.'
+    : draft.assistant_id && draft.assistant_id === draft.teacher_id ? 'The assistant must be someone other than the teacher.'
+    : null;
+
+  const body = React.useRef<HTMLDivElement>(null);
+  useFirstErrorInView(body, save.error);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 sm:items-center sm:p-6" onClick={onClose}>
@@ -145,10 +169,10 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
           <>
             <div className="flex items-start gap-3 border-b border-line px-5 pb-3 pt-4">
               <div className="min-w-0 flex-1">
-                <h2 id="class-form-t" className="font-display text-[20px] leading-tight">
+                <h2 id="class-form-t" className="font-display text-[1.25rem] leading-tight">
                   {editing ? 'Edit class' : 'New class'}
                 </h2>
-                <p className="mt-1 text-[13.5px] text-ink-3">
+                <p className="mt-1 text-[0.8438rem] text-ink-3">
                   {editing ? 'Changes apply from here on.' : 'The term’s sessions are created for you.'}
                 </p>
               </div>
@@ -157,10 +181,10 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
               </Button>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
+            <div ref={body} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
             {!ready && !loadError && (
               <div className="space-y-3" aria-busy="true">
-                <p className="text-[13px] text-ink-3">Loading the studio’s styles, rooms and terms…</p>
+                <p className="text-[0.8125rem] text-ink-3">Loading the studio’s styles, rooms and terms…</p>
                 {[0,1,2,3].map(i => <Skeleton key={i} className="h-16" />)}
               </div>
             )}
@@ -300,6 +324,14 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
                 <Input id="cf-prereq" value={draft.prerequisites ?? ''} maxLength={200}
                        onChange={e => set('prerequisites', e.target.value)} />
               </Field>
+              <Field label="Level in plain words" htmlFor="cf-levelnote" hint="For example ‘No experience needed’ or ‘A year of tap’.">
+                <Input id="cf-levelnote" value={extra.level_note ?? ''} maxLength={200}
+                       onChange={e => setExtra(x => ({ ...x, level_note: e.target.value }))} />
+              </Field>
+              <Field label="What to wear or bring" htmlFor="cf-bring" hint="Shown to families booking a trial.">
+                <Input id="cf-bring" value={extra.what_to_bring ?? ''} maxLength={400}
+                       onChange={e => setExtra(x => ({ ...x, what_to_bring: e.target.value }))} />
+              </Field>
               <Field label="About the class" htmlFor="cf-desc">
                 <textarea id="cf-desc" rows={3} value={draft.description ?? ''} maxLength={1000}
                   onChange={e => set('description', e.target.value)}
@@ -307,13 +339,13 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
               </Field>
 
               <fieldset className="space-y-1">
-                <legend className="mb-2 w-full border-b border-ink pb-1.5 text-[14px] font-semibold">How families find it</legend>
+                <legend className="mb-2 w-full border-b border-ink pb-1.5 text-[0.875rem] font-semibold">How families find it</legend>
                 {([
                   ['trials_enabled', 'Taking trial bookings'],
                   ['trial_needs_approval', 'Trials need the teacher’s say-so first'],
                   ['waitlist_enabled', 'Keep a waiting list when it is full'],
                 ] as const).map(([k, label]) => (
-                  <label key={k} className="flex min-h-[44px] items-center gap-3 text-[14px]">
+                  <label key={k} className="flex min-h-[44px] items-center gap-3 text-[0.875rem]">
                     <input type="checkbox" checked={draft[k]} className="size-[18px] accent-[var(--color-accent)]"
                            onChange={e => set(k, e.target.checked)} />
                     {label}
@@ -330,7 +362,7 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
               </fieldset>
 
               {draft.age_min != null && draft.age_max != null && draft.age_max < draft.age_min && (
-                <p role="alert" className="flex items-center gap-1.5 text-[12.5px] text-critical">
+                <p role="alert" className="flex items-center gap-1.5 text-[0.7812rem] text-critical">
                   <AlertTriangle className="size-3.5" aria-hidden /> The oldest age cannot be below the youngest.
                 </p>
               )}
@@ -339,7 +371,8 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
               {save.isError && <div className="mt-4"><ErrorState error={save.error} /></div>}
             </div>
 
-            <div className="flex gap-2 border-t border-line px-5 py-3 pb-safe sm:justify-end">
+            <div className="flex flex-wrap gap-2 border-t border-line px-5 py-3 pb-safe sm:flex-nowrap sm:justify-end">
+              <SaveErrorSummary error={save.error ?? undefined} reason={missing} />
               <Button className="flex-1 sm:flex-none" variant="ghost" onClick={onClose}>Cancel</Button>
               <Button className="flex-[2] sm:flex-none" variant="primary" disabled={!ready || !valid}
                       loading={save.isPending} onClick={() => save.mutate()}>
@@ -354,5 +387,5 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
 }
 
 function FormPart({ title }: { title: string }) {
-  return <h3 className="border-b border-ink pb-1.5 pt-2 text-[14px] font-semibold first:pt-0">{title}</h3>;
+  return <h3 className="border-b border-ink pb-1.5 pt-2 text-[0.875rem] font-semibold first:pt-0">{title}</h3>;
 }

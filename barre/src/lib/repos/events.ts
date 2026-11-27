@@ -134,3 +134,12 @@ select i.id, i.name, i.sizes, s.id as student_id, s.first_name, o.size, o.status
   left join costume_order o on o.item_id = i.id and o.student_id = s.id
  where i.event_id = $1 and i.deleted_at is null and s.deleted_at is null
  order by i.name, s.first_name`;
+
+/* ── Notices and helpers (UR-50, migration 0050) ─────────────────────────── */
+export const SEND_EVENT_NOTICE = `select app.send_event_notice($1, $2, $3) as n`;
+export type HelperSlot = { id: string; role: string; starts_at: string | null; ends_at: string | null; needed: number; note: string | null;
+  filled: number; mine: boolean; helpers: string | null };
+export const HELPER_SLOTS = `select * from app.helper_slots($1)`;
+export const ADD_HELPER_SLOT = `insert into event_helper_slot (studio_id, event_id, role, starts_at, needed)
+  select studio_id, id, btrim($2), $3::timestamptz, $4 from studio_event where id = $1 returning id`;
+export const REMOVE_HELPER_SLOT = `update event_helper_slot set deleted_at = now() where id = $1 returning id`;

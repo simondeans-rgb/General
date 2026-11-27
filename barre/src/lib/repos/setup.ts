@@ -53,7 +53,7 @@ export const UPDATE_ROOM = `
 update room set name = $2, capacity = $3, updated_at = now() where id = $1 returning id`;
 
 export type Term = {
-  id: string; name: string; starts_on: string; ends_on: string;
+  id: string; name: string; starts_on: string | Date; ends_on: string | Date;
   status: string; classes: number; breaks: number;
 };
 
@@ -133,6 +133,10 @@ export type StudioRow = {
 export const STUDIO = `
 select id, name, timezone, currency, contact_email, contact_phone, onboarded_at, privacy_notice_url
   from studio where deleted_at is null limit 1`;
+
+/** How long a waiting-list offer stays open (UR-19). Owner only, like the rest of the studio row. */
+export const WAITLIST_SETTING = `select id, waitlist_offer_days from studio where deleted_at is null limit 1`;
+export const SET_WAITLIST_DAYS = `update studio set waitlist_offer_days = $2, updated_at = now() where id = $1 returning id`;
 
 /** Owner only — studio_write is the one policy narrowed past is_admin. */
 export const UPDATE_STUDIO = `

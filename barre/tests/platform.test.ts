@@ -235,8 +235,11 @@ describe('invitations', () => {
   });
 
   it('a student login waits for a guardian unless the guardian sent it', async () => {
-    const [kid] = await commitService(`select id from student where family_id = $1 and user_id is null
-                                        order by date_of_birth limit 1`, [FAMILY.a]);
+    // A teenager: since UR-55 (0053) an under-13 cannot be invited to a login
+    // at all, and this test used to pick the Wrights' nine-year-old.
+    const [kid] = await commitService(`select id from student where studio_id = $1 and user_id is null and deleted_at is null
+                                          and not is_adult and extract(year from age(current_date, date_of_birth)) between 13 and 17
+                                        order by date_of_birth desc, id limit 1`, [STUDIO_ID]);
     const [{ t }] = await commitAs(USERS.owner, `select app.create_invitation($1, 'kid@example.com', 'student', null, null, $2) t`,
       [STUDIO_ID, kid.id]);
     const k = randomUUID();

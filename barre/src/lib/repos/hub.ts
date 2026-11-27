@@ -38,6 +38,10 @@ select r.id, r.kind, r.title, r.description, r.category, r.url, r.poster_url, r.
 export type Feedback = {
   id: string; headline: string | null; going_well: string | null; work_on: string | null;
   created_at: Stamp; shared_at: Stamp | null;
+  /** Set when a teacher changed it after sharing (UR-25). */
+  edited_at?: Stamp | null; style?: string | null; class_id?: string | null;
+  /** "To work on" linked to class material (UR-43). */
+  resource_title?: string | null; resource_url?: string | null;
   class_name: string | null; author: string | null;
   student_name: string; student_id: string;
 };
@@ -45,12 +49,15 @@ export type Feedback = {
 /** Shared notes only — the policy enforces it, and the column list withholds
  *  the staff-only note regardless. */
 export const STUDENT_FEEDBACK = `
-select f.id, f.headline, f.going_well, f.work_on, f.created_at, f.shared_at,
-       c.name as class_name, sm.display_name as author,
+select f.id, f.headline, f.going_well, f.work_on, f.created_at, f.shared_at, f.edited_at,
+       c.name as class_name, sm.display_name as author, ds.name as style, f.class_id,
+       r.title as resource_title, r.url as resource_url,
        s.first_name || ' ' || s.last_name as student_name, s.id as student_id
   from feedback_note f
   join student s on s.id = f.student_id
   left join class c on c.id = f.class_id
+  left join dance_style ds on ds.id = c.dance_style_id
+  left join resource r on r.id = f.work_on_resource_id and r.deleted_at is null
   left join staff_member sm on sm.id = f.author_id
  where f.deleted_at is null and f.shared_at is not null
  order by f.shared_at desc`;
@@ -71,6 +78,8 @@ export type EventRow = {
   requests_open: boolean; teacher: string | null; student_id: string | null;
   going: number; my_status: string | null; my_student: string | null;
   my_invite?: string | null; rehearsals?: { title: string; starts_at: string }[];
+  mine?: { id: string; student_id: string; first_name: string; status: string }[];
+  notices?: { subject: string | null; body: string; sent_at: string }[];
   routines?: { title: string; costume: string | null; position: number }[];
 };
 export const ANSWER_INVITE = `select app.answer_invitation($1, $2) as r`;
@@ -79,14 +88,22 @@ export const EVENTS = `
 select ev.id, ev.kind, ev.title, ev.description, ev.starts_at, ev.ends_at, ev.venue,
        ev.cost_minor, ev.capacity, ev.entries_close_on, ev.requests_open,
        sm.display_name as teacher, ev.student_id,
-       (select count(*)::int from event_participant p
-         where p.event_id = ev.id and p.status = 'confirmed' and p.deleted_at is null) as going,
+       app.event_places(ev.id) as going,
+       -- Each of my children on this event, with their own status (UR-50).
+       -- RLS keeps event_participant to my own children.
+       coalesce((select jsonb_agg(jsonb_build_object('id', p.id, 'student_id', s.id, 'first_name', s.first_name, 'status', p.status::text)
+                                  order by s.date_of_birth)
+                   from event_participant p join student s on s.id = p.student_id
+                  where p.event_id = ev.id and p.deleted_at is null), '[]') as mine,
        (select p.status::text from event_participant p
-         where p.event_id = ev.id and p.deleted_at is null limit 1) as my_status,
-       (select s.first_name from event_participant p join student s on s.id = p.student_id
-         where p.event_id = ev.id and p.deleted_at is null limit 1) as my_student,
+         where p.event_id = ev.id and p.deleted_at is null
+         order by array_position(array['confirmed','invited','requested','waitlisted','declined','withdrawn'], p.status::text) limit 1) as my_status,
+       (select string_agg(s.first_name, ' & ' order by s.date_of_birth) from event_participant p join student s on s.id = p.student_id
+         where p.event_id = ev.id and p.deleted_at is null and p.status not in ('declined', 'withdrawn')) as my_student,
        (select p.id from event_participant p where p.event_id = ev.id and p.deleted_at is null
            and p.status = 'invited' limit 1) as my_invite,
+       coalesce((select jsonb_agg(jsonb_build_object('subject', cm.subject, 'body', cm.body, 'sent_at', cm.sent_at) order by cm.sent_at desc)
+                   from communication cm where cm.event_id = ev.id and cm.deleted_at is null), '[]') as notices,
        coalesce((select jsonb_agg(jsonb_build_object('title', r.title, 'starts_at', r.starts_at) order by r.starts_at)
                    from studio_event r where r.parent_event_id = ev.id and r.deleted_at is null and r.status = 'published'), '[]') as rehearsals,
        coalesce((select jsonb_agg(jsonb_build_object('title', rt.title, 'costume', rt.costume, 'position', rt.position) order by rt.position)

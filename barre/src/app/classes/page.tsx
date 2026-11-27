@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { ChevronRight, Plus, Pencil, UserMinus, Copy, CalendarPlus } from 'lucide-react';
+import { ChevronRight, Plus, Pencil, UserMinus, Copy, CalendarPlus, ArrowRightLeft } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection, KeyValue } from '@/components/app/detail-panel';
 import { useRows } from '@/lib/query';
@@ -12,9 +12,10 @@ import { Beats, Button, EmptyState, Skeleton, ErrorState } from '@/components/ui
 import { SectionHead, StyleMark, ViewTabs, Word } from '@/components/app/session-row';
 import * as C from '@/lib/repos/classes';
 import { ClassForm } from '@/components/app/class-form';
+import { useLocationFilter } from '@/components/app/location-filter';
 import { TermRollover, DuplicateClass } from '@/components/app/term-rollover';
 import {
-  EnrolSheet, WithdrawSheet, WaitlistActions, BookTrialSheet,
+  EnrolSheet, WithdrawSheet, WaitlistActions, BookTrialSheet, MoveSheet,
 } from '@/components/app/enrolment-actions';
 import { money, ageFrom, dateShort } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -34,7 +35,8 @@ function Classes() {
   const [termPick, setTermPick] = React.useState('');
   const termList = (terms.data ?? []).filter(t => t.classes > 0 || t.current);
   const term = termList.find(t => t.id === termPick) ?? termList.find(t => t.current) ?? termList[0];
-  const rows = { ...all, data: all.data?.filter(c => !term || c.term_id === term.id) };
+  const place = useLocationFilter();
+  const rows = { ...all, data: all.data?.filter(c => (!term || c.term_id === term.id) && place.keep(c.location)) };
 
   const byDay = React.useMemo(() => {
     const map = new Map<number, C.ClassRow[]>();
@@ -62,9 +64,14 @@ function Classes() {
         </Button>
       </div>}>
       <div className="mx-auto max-w-[1240px]">
-        {termList.length > 1 && (
-          <ViewTabs label="Term" className="mb-6" value={term?.id ?? ''} onChange={id => { setTermPick(id); select(null); }}
-            options={termList.map(t => [t.id, `${t.name}${t.current ? ' · now' : ''}`] as [string, string])} />
+        {(termList.length > 1 || place.control) && (
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+            {termList.length > 1 ? (
+              <ViewTabs label="Term" value={term?.id ?? ''} onChange={id => { setTermPick(id); select(null); }}
+                options={termList.map(t => [t.id, `${t.name}${t.current ? ' · now' : ''}`] as [string, string])} />
+            ) : <span />}
+            {place.control}
+          </div>
         )}
         <div className={cn('gap-x-10', selected ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:items-start' : 'block')}>
           <div className="min-w-0 space-y-10">
@@ -97,13 +104,13 @@ function ClassLine({ c, active, onSelect }: { c: C.ClassRow; active: boolean; on
     <button onClick={onSelect} aria-current={active || undefined}
       className={cn('grid w-full grid-cols-[4.25rem_minmax(0,1fr)_auto] items-center gap-x-4 px-1 py-3 text-left hover:bg-surface-2/60 sm:grid-cols-[4.25rem_minmax(0,1fr)_auto_5rem]',
         active && 'bg-surface-2 shadow-[inset_3px_0_0_var(--color-accent)]')}>
-      <span className="font-display text-[19px] leading-none tnum">{c.start_time.slice(0,5)}</span>
+      <span className="font-display text-[1.1875rem] leading-none tnum">{c.start_time.slice(0,5)}</span>
       <span className="min-w-0">
         <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
           <span className="truncate font-semibold">{c.name}</span>
-          {c.style && <StyleMark colour={c.colour} name={c.style} className="text-[13px] text-ink-3" />}
+          {c.style && <StyleMark colour={c.colour} name={c.style} className="text-[0.8125rem] text-ink-3" />}
         </span>
-        <span className="mt-0.5 block truncate text-[13px] text-ink-3">
+        <span className="mt-0.5 block truncate text-[0.8125rem] text-ink-3">
           {[c.teacher, c.room, c.age_min != null ? `Ages ${c.age_max != null ? `${c.age_min}–${c.age_max}` : `${c.age_min}+`}` : null]
             .filter(Boolean).join(' · ')}
         </span>
@@ -111,9 +118,9 @@ function ClassLine({ c, active, onSelect }: { c: C.ClassRow; active: boolean; on
       {/* Capacity as beats and a number: never the meter alone. */}
       <Beats value={c.enrolled} max={c.capacity} tone={full || nearly ? 'caution' : 'accent'} label={`${c.enrolled} of ${c.capacity} places`} className="hidden sm:inline-flex" />
       <span className="text-right leading-tight">
-        <span className={cn('block text-[13.5px] tnum', full || nearly ? 'font-semibold text-caution' : 'text-ink-2')}>{c.enrolled}/{c.capacity}</span>
-        {c.waiting > 0 ? <span className="block text-[12px] font-semibold text-critical">{c.waiting} waiting</span>
-          : full ? <span className="block text-[12px] text-caution">Full</span> : null}
+        <span className={cn('block text-[0.8438rem] tnum', full || nearly ? 'font-semibold text-caution' : 'text-ink-2')}>{c.enrolled}/{c.capacity}</span>
+        {c.waiting > 0 ? <span className="block text-[0.75rem] font-semibold text-critical">{c.waiting} waiting</span>
+          : full ? <span className="block text-[0.75rem] text-caution">Full</span> : null}
       </span>
     </button>
   );
@@ -125,16 +132,20 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
   const [duplicating, setDuplicating] = React.useState(false);
   const [enrolling, setEnrolling] = React.useState(false);
   const [trialling, setTrialling] = React.useState(false);
+  const [moving, setMoving] = React.useState<{ id: string; name: string; age: number | null; family_id: string } | null>(null);
   const [withdrawing, setWithdrawing] = React.useState<
     { id: string; name: string } | null>(null);
   const full = !!c && c.enrolled >= c.capacity;
   const roster = useRows<{ id: string; enrolment_id: string; first_name: string; last_name: string;
-                           date_of_birth: string; family_name: string; has_alert: boolean;
-                           attendance_pct: number | null }>(
+                           date_of_birth: string; family_name: string; family_id: string; has_alert: boolean;
+                           attendance_pct: number | null; leaving_on: string | null; leaving_to: string | null;
+                           joining_on: string | null }>(
     ['roster', id], C.CLASS_ROSTER, [id]);
   const waitlist = useRows<{ id: string; position: number; status: string; first_name: string;
-                             last_name: string; family_name: string }>(
+                             last_name: string; family_name: string; date_of_birth: string;
+                             offer_expires_at: string | null }>(
     ['waitlist', id], C.CLASS_WAITLIST, [id]);
+  const free = useRows<{ free: number; offers: number; offer_days: number }>(['class-free', id], C.CLASS_FREE, [id]).data?.[0];
 
   return (
     <DetailPanel open onClose={onClose} title={c?.name ?? 'Class'}
@@ -151,7 +162,7 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
               ['Trials', c.trials_enabled ? 'Open for trials' : 'Not taking trials'],
             ]} />
             <Link href={`/class/?id=${c.id}`}
-                  className="mt-1 flex min-h-[44px] items-center gap-2 border-t border-line text-[14px] font-semibold text-accent-text hover:underline">
+                  className="mt-1 flex min-h-[44px] items-center gap-2 border-t border-line text-[0.875rem] font-semibold text-accent-text hover:underline">
               Videos, music and notes for this class
               <ChevronRight className="ml-auto size-4" aria-hidden />
             </Link>
@@ -164,7 +175,7 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
             <Button variant="ghost" onClick={() => setDuplicating(true)}><Copy className="size-4" aria-hidden /> Duplicate</Button>
           </div>
           {full && (
-            <p className="-mt-4 mb-7 text-[13px] text-ink-2"><Word tone="caution">Full</Word> New names join the waiting list and are offered the next place automatically.</p>
+            <p className="-mt-4 mb-7 text-[0.8125rem] text-ink-2"><Word tone="caution">Full</Word> New names join the waiting list and are offered the next place automatically.</p>
           )}
 
           <DetailSection title={`Register (${roster.data?.length ?? 0})`}>
@@ -175,15 +186,23 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
                 <li key={s.id} className="flex items-center gap-2 py-1.5">
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-1.5">
-                      <span className="truncate text-[14px] font-medium">{s.first_name} {s.last_name}</span>
-                      {s.has_alert && <span className="shrink-0 text-[12px] font-semibold text-critical">Medical</span>}
+                      <span className="truncate text-[0.875rem] font-medium">{s.first_name} {s.last_name}</span>
+                      {s.has_alert && <span className="shrink-0 text-[0.75rem] font-semibold text-critical">Medical</span>}
                     </span>
-                    <span className="block truncate text-[12.5px] text-ink-3">{ageFrom(s.date_of_birth)} · {s.family_name}</span>
+                    <span className="block truncate text-[0.7812rem] text-ink-3">{ageFrom(s.date_of_birth)} · {s.family_name}
+                      {s.leaving_on && ` · moves to ${s.leaving_to ?? 'another class'} ${dateShort(s.leaving_on)}`}
+                      {s.joining_on && ` · joins ${dateShort(s.joining_on)}`}</span>
                   </span>
                   {s.attendance_pct != null && (
-                    <span className={cn('tnum shrink-0 text-[12.5px]',
+                    <span className={cn('tnum shrink-0 text-[0.7812rem]',
                       s.attendance_pct >= 85 ? 'text-ink-3' : 'font-medium text-caution')}>{s.attendance_pct}%</span>
                   )}
+                  <Button size="sm" variant="ghost"
+                    aria-label={`Move ${s.first_name} ${s.last_name} to another class`}
+                    onClick={() => setMoving({ id: s.enrolment_id, name: `${s.first_name} ${s.last_name}`,
+                      age: ageFrom(s.date_of_birth), family_id: s.family_id })}>
+                    <ArrowRightLeft className="size-4" aria-hidden />
+                  </Button>
                   <Button size="sm" variant="ghost"
                     aria-label={`Withdraw ${s.first_name} ${s.last_name}`}
                     onClick={() => setWithdrawing({ id: s.enrolment_id,
@@ -201,17 +220,19 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
                 {waitlist.data!.map(w => (
                   <li key={w.id} className="py-2">
                     <div className="flex items-center gap-3">
-                      <span className="w-6 shrink-0 font-display text-[17px] tnum">{w.position}</span>
-                      <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{w.first_name} {w.last_name}</span>
+                      <span className="w-6 shrink-0 font-display text-[1.0625rem] tnum">{w.position}</span>
+                      <span className="min-w-0 flex-1 truncate text-[0.875rem] font-medium">{w.first_name} {w.last_name}
+                        <span className="font-normal text-ink-3"> · {ageFrom(w.date_of_birth)}</span></span>
                       {w.status === 'offered' && <Word>Offered</Word>}
-                      <span className="shrink-0 truncate text-[12px] text-ink-3">{w.family_name}</span>
+                      <span className="shrink-0 truncate text-[0.75rem] text-ink-3">{w.family_name}</span>
                     </div>
-                    <WaitlistActions entry={w} />
+                    <WaitlistActions entry={w} free={free} />
                   </li>
                 ))}
               </ol>
-              <p className="mt-2 text-[13px] text-ink-3">
-                When a place frees up, the family at position 1 is offered it first.
+              <p className="mt-2 text-[0.8125rem] text-ink-3">
+                When a place frees up, the family at position 1 is offered it first. One offer goes out per free place,
+                and an offer lasts {free?.offer_days ?? 3} day{free?.offer_days === 1 ? '' : 's'} before passing to the next family.
               </p>
             </DetailSection>
           )}
@@ -224,6 +245,10 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
       )}
       {trialling && c && (
         <BookTrialSheet classId={id} className={c.name} onClose={() => setTrialling(false)} />
+      )}
+      {moving && c && (
+        <MoveSheet enrolmentId={moving.id} studentName={moving.name} age={moving.age} familyId={moving.family_id}
+          from={{ id: c.id, name: c.name, price_minor: c.price_minor, pricing: c.pricing }} onClose={() => setMoving(null)} />
       )}
       {withdrawing && (
         <WithdrawSheet enrolmentId={withdrawing.id} name={withdrawing.name}

@@ -28,10 +28,13 @@ select f.id as family_id, f.name as family_name,
 export type Message = {
   id: string; subject: string | null; body: string; sent_at: string; inbound: boolean; reply_to?: string | null;
   sender: string | null; read_by_me: boolean; is_request?: boolean;
+  /** Only one guardian and the office see it (UR-17). */
+  private?: boolean; private_name?: string | null;
 };
 
 export const CONVERSATION = `
 select c.id, c.subject, c.body, c.sent_at, c.inbound, c.request_id is not null as is_request,
+       c.private_to is not null as private, app.sender_name(c.private_to, c.studio_id) as private_name,
        app.sender_name(c.sent_by, c.studio_id) as sender,
        exists (select 1 from communication_read r where r.communication_id = c.id
                 and r.user_id = auth.uid()) as read_by_me
@@ -93,6 +96,13 @@ export const REMOVE_TEMPLATE = `select app.soft_delete('communication_template',
 export const SEND_DIRECT = `
 insert into communication (studio_id, kind, channel, family_id, subject, body)
 select studio_id, 'direct', 'in_app', id, nullif(btrim($2), ''), btrim($3) from family where id = $1
+returning id`;
+/** The office answering one message in a family's conversation. A reply to
+ *  a guardian's own message stays between that guardian and the office
+ *  (UR-17); $3 is the message answered. */
+export const SEND_REPLY = `
+insert into communication (studio_id, kind, channel, family_id, body, reply_to)
+select studio_id, 'direct', 'in_app', id, btrim($2), $3::uuid from family where id = $1
 returning id`;
 /** As above, at a chosen time (R-037). $4 is when. */
 export const SEND_DIRECT_AT = `

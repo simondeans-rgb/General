@@ -56,7 +56,7 @@ export function PersonSwitcher({ className, label }: { className?: string; label
     <>
       {label ? (
         <button onClick={() => setOpen(true)} aria-haspopup="dialog"
-          className={cn('text-[13px] font-semibold text-accent-text hover:underline', className)}>
+          className={cn('text-[0.8125rem] font-semibold text-accent-text hover:underline', className)}>
           {label}
         </button>
       ) : (
@@ -65,7 +65,7 @@ export function PersonSwitcher({ className, label }: { className?: string; label
         aria-haspopup="dialog"
         aria-label={`Signed in as ${session.name}. Switch to another person.`}
         className={cn(
-          'grid size-9 shrink-0 place-items-center rounded-full bg-surface-2 text-[13px] font-semibold',
+          'grid size-9 shrink-0 place-items-center rounded-full bg-surface-2 text-[0.8125rem] font-semibold',
           'text-ink-2 transition-colors hover:bg-surface-3 hover:text-ink',
           className,
         )}
@@ -85,8 +85,8 @@ export function PersonSwitcher({ className, label }: { className?: string; label
                        rounded-t-[var(--radius-xl)] border border-line bg-surface
                        p-4 pb-safe shadow-lg outline-none sm:rounded-[var(--radius-xl)]"
           >
-            <h2 id="switch-title" className="font-display text-[22px] font-[800] leading-tight [font-stretch:112%]">Switch person</h2>
-            <p className="mb-4 mt-1 text-[13.5px] text-ink-3">
+            <h2 id="switch-title" className="font-display text-[1.375rem] font-[800] leading-tight [font-stretch:112%]">Switch person</h2>
+            <p className="mb-4 mt-1 text-[0.8438rem] text-ink-3">
               What each person can read is decided by the database, not by this menu.
             </p>
 
@@ -107,16 +107,16 @@ export function PersonSwitcher({ className, label }: { className?: string; label
                       )}
                     >
                       <span aria-hidden className={cn(
-                        'grid size-10 shrink-0 place-items-center rounded-full font-display text-[14px] font-[800]',
+                        'grid size-10 shrink-0 place-items-center rounded-full font-display text-[0.875rem] font-[800]',
                         current ? 'bg-accent text-on-accent' : 'bg-surface-2 text-ink-2')}>
                         {current ? <Check className="size-4" /> : initials(p.name)}
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="flex flex-wrap items-baseline gap-x-2">
                           <span className="font-semibold">{p.name}</span>
-                          <span className="text-[13px] text-ink-3">{p.title}{current ? ' · you now' : ''}</span>
+                          <span className="text-[0.8125rem] text-ink-3">{p.title}{current ? ' · you now' : ''}</span>
                         </span>
-                        <span className="mt-0.5 block text-[13px] leading-snug text-ink-2">{p.blurb}</span>
+                        <span className="mt-0.5 block text-[0.8125rem] leading-snug text-ink-2">{p.blurb}</span>
                       </span>
                     </button>
                   </li>
@@ -129,7 +129,7 @@ export function PersonSwitcher({ className, label }: { className?: string; label
             <div className="mt-2 flex gap-2 border-t border-line pt-3">
               <Button className="flex-1" onClick={() => setOpen(false)}>Close</Button>
               <Button className="flex-1" variant="secondary"
-                      onClick={() => { setOpen(false); signOut(); router.replace('/'); }}>
+                      onClick={() => { setOpen(false); if (signOut()) router.replace('/'); }}>
                 <LogOut className="size-4" aria-hidden /> Sign out
               </Button>
             </div>

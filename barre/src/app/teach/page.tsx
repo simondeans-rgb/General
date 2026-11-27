@@ -4,12 +4,14 @@ import * as React from 'react';
 import Link from 'next/link';
 import { ArrowRight, ChevronRight, UserRoundX } from 'lucide-react';
 import { CalendarSubscribe } from '@/components/app/calendar-subscribe';
+import { TeacherWeek } from '@/components/app/teacher-week';
+import { CrossSchoolAgenda, useStaffSchools } from '@/components/app/cross-school-agenda';
 import { downloadIcs } from '@/lib/ics';
 import { RehearsalList } from '@/components/app/rehearsals';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
 import { useSession } from '@/lib/auth/session';
-import { Button, Field, Input, Skeleton, ErrorState, SectionHead } from '@/components/ui';
+import { Button, Field, Input, Skeleton, ErrorState, SectionHead, ViewTabs } from '@/components/ui';
 import { RecordSheet } from '@/components/app/record-sheet';
 import { medicalLine } from '@/components/app/medical-brief';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -35,6 +37,21 @@ export default function TeachToday() {
   }, [from]);
   const [asking, setAsking] = React.useState<T.TeachSession | null>(null);
   const sessions = useRows<T.TeachSession>(['my-sessions', from], T.MY_SESSIONS, [from, to]);
+  // Teachers at two or more schools can see their week across all of them (UR-47).
+  const schools = useStaffSchools();
+  const multi = schools.length > 1;
+  // List (the day and the fortnight ahead), the week as a grid, or every school at once.
+  type View = 'list' | 'grid' | 'across';
+  const [view, setView] = React.useState<View>('list');
+  React.useEffect(() => {
+    try {
+      const v = localStorage.getItem('barre.teach.view');
+      if (v === 'grid' || v === 'across') setView(v); else if (v === 'week') setView('across');
+    } catch {}
+  }, []);
+  const pick = (v: View) => { setView(v); try { localStorage.setItem('barre.teach.view', v); } catch {} };
+  const week = multi && view === 'across';
+  const grid = view === 'grid';
 
   const now = new Date();
   const all = sessions.data ?? [];
@@ -47,8 +64,14 @@ export default function TeachToday() {
 
   return (
     <Shell title="Today" subtitle={dateLong(now)} allow={['owner','admin','teacher']}
-           actionsInline actions={<CalendarSubscribe onDownload={() => downloadTeaching(session)} />}>
-      <div className="mx-auto grid max-w-[1040px] gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+           actionsInline actions={<CalendarSubscribe onDownload={() => downloadTeaching(session)} allSchools={multi} />}>
+      <div className={cn('mx-auto mb-6', grid ? 'max-w-[1240px]' : 'max-w-[1040px]')}>
+        <ViewTabs label="Show my classes as" value={week ? 'across' : grid ? 'grid' : 'list'} onChange={pick}
+          options={multi
+            ? [['list', 'List'], ['grid', 'Week grid'], ['across', 'All my schools']]
+            : [['list', 'List'], ['grid', 'Week grid']]} />
+      </div>
+      {week ? <CrossSchoolAgenda /> : grid ? <div className="mx-auto max-w-[1240px]"><TeacherWeek /></div> : <div className="mx-auto grid max-w-[1040px] gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
         {sessions.isLoading && <div className="space-y-4"><Skeleton className="h-24 w-48" /><Skeleton className="h-28" /></div>}
         {sessions.error != null && <ErrorState error={sessions.error} onRetry={() => sessions.refetch()} />}
 
@@ -71,17 +94,17 @@ export default function TeachToday() {
               <section aria-labelledby="fortnight-h">
                 <SectionHead id="fortnight-h" title="Next two weeks" meta={later.length ? plural(later.length, 'class', 'classes') : undefined} />
                 {later.length === 0
-                  ? <p className="py-3 text-[14.5px] text-ink-3">Nothing else on your timetable for two weeks.</p>
+                  ? <p className="py-3 text-[0.9062rem] text-ink-3">Nothing else on your timetable for two weeks.</p>
                   : <ul className="divide-y divide-line">
                       {later.map(s => <li key={s.id}><TeachRow s={s} showDay onAskCover={() => setAsking(s)} /></li>)}
                     </ul>}
-                {later.length > 0 && <p className="pt-3 text-[13px] text-ink-3">Can’t make one? Ask the office for cover from its row.</p>}
+                {later.length > 0 && <p className="pt-3 text-[0.8125rem] text-ink-3">Can’t make one? Ask the office for cover from its row.</p>}
               </section>
               <RehearsalList days={21} />
             </div>
           </>
         )}
-      </div>
+      </div>}
       {asking && <CoverRequestSheet s={asking} onClose={() => setAsking(null)} />}
     </Shell>
   );
@@ -94,7 +117,7 @@ function NextClass({ s, onAskCover }: { s: T.TeachSession | null; onAskCover: ()
   if (!s) return (
     <section aria-labelledby="next-h">
       <p className="label">Next</p>
-      <h2 id="next-h" className="mt-2 font-display text-[28px] leading-tight">Nothing on for two weeks</h2>
+      <h2 id="next-h" className="mt-2 font-display text-[1.75rem] leading-tight">Nothing on for two weeks</h2>
       <p className="mt-1 text-ink-3">New classes and cover appear here as soon as the office adds them.</p>
     </section>
   );
@@ -113,22 +136,25 @@ function NextClass({ s, onAskCover }: { s: T.TeachSession | null; onAskCover: ()
   return (
     <section aria-labelledby="next-h">
       <p className="label text-accent-text">Next · {whenLabel}</p>
-      <p className="display-xl mt-1 text-[80px] text-ink sm:text-[96px]">{time(s.starts_at)}</p>
-      <h2 id="next-h" className="mt-3 font-display text-[26px] leading-tight">{s.name}</h2>
-      <p className="mt-1 text-[15px] text-ink-3">
+      <p className="display-xl mt-1 text-[length:min(5rem,22vw)] text-ink sm:text-[length:min(6rem,22vw)]">{time(s.starts_at)}</p>
+      <h2 id="next-h" className="mt-3 font-display text-[1.625rem] leading-tight">{s.name}</h2>
+      <p className="mt-1 text-[0.9375rem] text-ink-3">
         {[s.location, s.room,
           `${s.enrolled} booked${s.trials ? ` + ${plural(s.trials, 'trial')}` : ''}`].filter(Boolean).join(' · ')}
       </p>
+      {s.reported_absent && (
+        <p className="mt-1 text-[0.9375rem] text-ink-2"><span className="font-semibold">{s.reported_absent}</span> — reported absent</p>
+      )}
       {(s.covering || s.cover_requested) && (
-        <p className="mt-1 text-[14px] font-semibold text-ink-2">{s.covering ? 'You are covering this class' : 'Cover requested · the office will confirm'}</p>
+        <p className="mt-1 text-[0.875rem] font-semibold text-ink-2">{s.covering ? 'You are covering this class' : 'Cover requested · the office will confirm'}</p>
       )}
 
       {flagged.length > 0 && (
         <div role="note" className={cn('mt-4 border-l-4 py-0.5 pl-3', urgent ? 'border-critical' : 'border-caution')}>
-          <p className={cn('text-[15px] font-semibold', urgent ? 'text-critical' : 'text-caution')}>
+          <p className={cn('text-[0.9375rem] font-semibold', urgent ? 'text-critical' : 'text-caution')}>
             {plural(flagged.length, 'medical note')}
           </p>
-          <ul className="mt-0.5 space-y-0.5 text-[15px] text-ink">
+          <ul className="mt-0.5 space-y-0.5 text-[0.9375rem] text-ink">
             {flagged.slice(0, 4).map(r => (
               <li key={r.student_id}>
                 <span className="font-semibold">{r.preferred_name ?? r.first_name} {r.last_name}</span>
@@ -161,13 +187,13 @@ function AfterClass({ done, upcoming }: { done: T.TeachSession | null; upcoming:
   return (
     <section aria-labelledby="after-h" className="rounded-[var(--radius-lg)] bg-surface-2 p-4">
       <h2 id="after-h" className="section-title">After class</h2>
-      <p className="mt-1 text-[15px] text-ink-2">
+      <p className="mt-1 text-[0.9375rem] text-ink-2">
         {done ? `${s.name} is done. Two lines of feedback while it’s fresh?`
               : `When ${s.name} finishes, tap a child and what fits. Families see it once you share.`}
       </p>
       {done && (
         <Link href={`/teach/feedback/?session=${s.id}`}
-              className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-[15px] font-semibold text-accent-text hover:underline">
+              className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-[0.9375rem] font-semibold text-accent-text hover:underline">
           Give feedback for {s.name} <ArrowRight className="size-4" aria-hidden />
         </Link>
       )}
@@ -179,9 +205,10 @@ function CoverRequestSheet({ s, onClose }: { s: T.TeachSession; onClose: () => v
   const { session } = useSession();
   const qc = useQueryClient();
   const [reason, setReason] = React.useState('');
+  const [handover, setHandover] = React.useState('');
   const [sent, setSent] = React.useState(false);
   const ask = useMutation({
-    mutationFn: () => runAs(session, q => q(T.REQUEST_COVER, [s.id, reason.trim()])),
+    mutationFn: () => runAs(session, q => q(T.REQUEST_COVER_HANDOVER, [s.id, reason.trim(), handover.trim() || null])),
     onSuccess: () => { setSent(true); qc.invalidateQueries({ queryKey: ['db'] }); },
   });
   if (sent) return <RecordSheet title="Asked" onClose={onClose} onSave={onClose} saveLabel="Done">
@@ -191,6 +218,10 @@ function CoverRequestSheet({ s, onClose }: { s: T.TeachSession; onClose: () => v
       onClose={onClose} onSave={() => ask.mutate()} saving={ask.isPending} error={ask.error} canSave={reason.trim().length >= 3} saveLabel="Send to the office">
       <Field label="Why" htmlFor="cr-r" required hint="Only the office sees this.">
         <Input id="cr-r" value={reason} onChange={e => setReason(e.target.value)} placeholder="Hospital appointment" />
+      </Field>
+      <Field label="Handover for whoever covers" htmlFor="cr-h" hint="Optional. The plan, music, children to watch. Shown on their register.">
+        <textarea id="cr-h" rows={3} value={handover} onChange={e => setHandover(e.target.value)}
+          className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-[0.9375rem] focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
       </Field>
     </RecordSheet>
   );
@@ -213,17 +244,18 @@ function TeachRow({ s, showDay, onAskCover }: { s: T.TeachSession; showDay?: boo
     : done ? ['Register done', 'text-positive font-semibold']
     : started ? ['Register due', 'text-caution font-semibold']
     : null;
-  const meta = [s.room, `${expected} expected${s.trials ? ` · ${plural(s.trials, 'trial')}` : ''}`].filter(Boolean).join(' · ');
+  const meta = [s.room, `${expected} expected${s.trials ? ` · ${plural(s.trials, 'trial')}` : ''}`,
+    s.reported_absent && `${s.reported_absent} — reported absent`].filter(Boolean).join(' · ');
 
   const inner = (
     <div className="grid min-h-14 grid-cols-[4.25rem_minmax(0,1fr)_auto] items-center gap-x-3 py-3">
       <span className={cn('leading-tight', cancelled && 'text-ink-3')}>
-        {showDay && <span className="block text-[12.5px] text-ink-3">{dayLabel(s.starts_at)}</span>}
-        <span className={cn('font-display text-[19px] tnum', cancelled && 'line-through')}>{time(s.starts_at)}</span>
+        {showDay && <span className="block text-[0.7812rem] text-ink-3">{dayLabel(s.starts_at)}</span>}
+        <span className={cn('font-display text-[1.1875rem] tnum', cancelled && 'line-through')}>{time(s.starts_at)}</span>
       </span>
       <span className="min-w-0">
         <span className={cn('block truncate font-semibold', (cancelled || coveredByOther) && 'text-ink-3')}>{s.name}</span>
-        <span className="block truncate text-[13px] text-ink-3">
+        <span className="block truncate text-[0.8125rem] text-ink-3">
           {status && <span className={status[1]}>{status[0]}</span>}
           {status && !cancelled && !coveredByOther && <span aria-hidden> · </span>}
           {!cancelled && !coveredByOther && meta}
@@ -259,6 +291,6 @@ async function downloadTeaching(session: ReturnType<typeof useSession>['session'
   const rows = await readAs<T.TeachSession>(session, T.MY_SESSIONS, [from.toISOString(), to.toISOString()]);
   downloadIcs('my-teaching.ics', 'Teaching', rows.filter(s => !s.covered_by).map(s => ({
     id: s.id, title: s.covering ? `${s.name} (cover)` : s.name, starts_at: s.starts_at, ends_at: s.ends_at,
-    location: s.room ?? null, cancelled: s.status === 'cancelled',
+    location: [s.room, s.location].filter(Boolean).join(', ') || null, cancelled: s.status === 'cancelled',
   })));
 }
