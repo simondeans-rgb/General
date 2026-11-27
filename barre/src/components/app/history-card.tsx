@@ -23,10 +23,11 @@ export function HistoryCard() {
   const [from, setFrom] = React.useState('');
   const [to, setTo] = React.useState('');
   const [typed, setTyped] = React.useState('');
+  const [limit, setLimit] = React.useState(50);
   React.useEffect(() => { const t = setTimeout(() => setTyped(text.trim()), 250); return () => clearTimeout(t); }, [text]);
 
   const actors = useRows<{ id: string; name: string }>(['audit-actors'], H.AUDIT_ACTORS);
-  const params = [actor || null, entity || null, typed || null, from || null, to || null, 200];
+  const params = [actor || null, entity || null, typed || null, from || null, to || null, limit];
   const rows = useRows<H.HistoryRow>(['audit-history', ...params], H.AUDIT_HISTORY, params);
 
   const exportCsv = () => downloadCsv(`history-${isoDate(new Date())}.csv`, (rows.data ?? []).map(r => ({
@@ -62,7 +63,9 @@ export function HistoryCard() {
         {rows.error && <ErrorState error={rows.error} onRetry={() => rows.refetch()} />}
         {rows.data?.length === 0 && <EmptyState title="Nothing matches" body="Try fewer filters or a wider date range." />}
         {!!rows.data?.length && <HistoryList rows={rows.data} showRecord />}
-        {rows.data?.length === 200 && <p className="pt-2 text-[12.5px] text-ink-3">Showing the latest 200. Narrow the filters to see further back.</p>}
+        {rows.data?.length === limit && (limit < 1000
+          ? <Button size="sm" variant="ghost" className="-ml-2 mt-2" onClick={() => setLimit(l => Math.min(1000, l * 4))}>Show more</Button>
+          : <p className="pt-2 text-[12.5px] text-ink-3">Showing the latest 1,000. Narrow the filters to see further back.</p>)}
       </div>
     </Card>
   );
