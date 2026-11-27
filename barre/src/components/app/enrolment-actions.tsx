@@ -10,7 +10,8 @@ import { useSession } from '@/lib/auth/session';
 import { Button, Field, Input, Notice, Select, Skeleton, errorText } from '@/components/ui';
 import { Word } from './session-row';
 import * as C from '@/lib/repos/classes';
-import { ageFrom, dateShort, time, toDateInput } from '@/lib/format';
+import { SEND_DIRECT } from '@/lib/repos/inbox';
+import { ageFrom, dateShort, money, time, toDateInput } from '@/lib/format';
 
 export function usePipeline(sql: string, onDone?: (rows: any[]) => void) {
   const { session } = useSession();
@@ -195,6 +196,102 @@ export function WithdrawSheet({ enrolmentId, name, onClose }: {
       <Field label={mode === 'move' ? 'Note' : 'Reason'} htmlFor="wd-reason" hint="Optional. Kept on the record.">
         <Input id="wd-reason" value={reason} onChange={e => setReason(e.target.value)}
                placeholder={mode === 'move' ? 'Moving up a grade' : 'Moving away'} />
+      </Field>
+    </RecordSheet>
+  );
+}
+
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const PER: Record<string, string> = { term: 'a term', monthly: 'a month', one_off: 'for the course', drop_in: 'a class' };
+
+/**
+ * Moving a student to another class, as its own action (UR-52): the picker
+ * leaves out the class they are in, shows ages, price and free places, warns
+ * when the age range does not suit, can tell the family in the app, and says
+ * what the move means for the bill.
+ */
+export function MoveSheet({ enrolmentId, studentName, age, familyId, from, onClose }: {
+  enrolmentId: string; studentName: string; age: number | null; familyId?: string | null;
+  from: { id: string; name: string; price_minor: number; pricing: string }; onClose: () => void;
+}) {
+  const { session } = useSession();
+  const qc = useQueryClient();
+  const options = useRows<C.MoveOption>(['move-options', from.id], C.MOVE_OPTIONS, [from.id]);
+  const [to, setTo] = React.useState('');
+  const [note, setNote] = React.useState('');
+  const [tell, setTell] = React.useState(!!familyId);
+  const [done, setDone] = React.useState<string | null>(null);
+  const target = options.data?.find(o => o.id === to);
+  const outOfRange = !!target && age != null &&
+    ((target.age_min != null && age < target.age_min) || (target.age_max != null && age > target.age_max));
+  const ages = (o: C.MoveOption) => o.age_min != null ? (o.age_max != null ? `ages ${o.age_min}–${o.age_max}` : `${o.age_min}+`) : 'any age';
+
+  const move = useMutation({
+    mutationFn: () => runAs(session, async q => {
+      await q(C.TRANSFER, [enrolmentId, to, note || null]);
+      if (tell && familyId && target) {
+        await q(SEND_DIRECT,
+          [familyId, `${studentName} is moving class`,
+           `${studentName} has moved from ${from.name} to ${target.name} (${DAYS[target.day_of_week]} ${String(target.start_time).slice(0, 5)}). `
+           + `Their next class is the next ${DAYS[target.day_of_week]} session. Reply here if anything doesn’t suit.`]);
+      }
+    }),
+    onSuccess: () => { setDone(target?.name ?? 'the new class'); qc.invalidateQueries({ queryKey: ['db'] }); },
+  });
+
+  const diff = target ? target.price_minor - from.price_minor : 0;
+  const sameBasis = target?.pricing === from.pricing;
+
+  if (done) {
+    return (
+      <RecordSheet title="Move to another class" subtitle={studentName} onClose={onClose} onSave={onClose} saveLabel="Done">
+        <Notice word="Moved" tone="positive" title={`${studentName} is now in ${done}`}
+          detail={`Their history comes with them. The place in ${from.name} goes to its waiting list, if anyone is waiting.${tell ? ' The family has a message in the app.' : ''}`} />
+        {diff !== 0 && sameBasis && (
+          <p className="text-[13.5px] text-ink-2">
+            {done} costs {money(Math.abs(diff))} {diff > 0 ? 'more' : 'less'} {PER[target!.pricing] ?? ''}. Invoices already raised are not changed: adjust the
+            next one in <a href="/billing" className="font-semibold text-accent-text hover:underline">Billing</a>.
+          </p>
+        )}
+      </RecordSheet>
+    );
+  }
+
+  return (
+    <RecordSheet title="Move to another class" subtitle={`${studentName} · from ${from.name}`} onClose={onClose}
+      error={move.error} saving={move.isPending} canSave={!!to && !!target && target.free > 0}
+      saveHint={!to ? 'Choose the class they are moving to.' : target && target.free <= 0 ? 'That class has no free place.' : null}
+      saveLabel="Move" onSave={() => move.mutate()}>
+      <Field label="New class" htmlFor="mv-to" required hint="Full classes cannot be chosen. Free places count offers already out.">
+        <Select id="mv-to" value={to} onChange={e => setTo(e.target.value)}>
+          <option value="">Choose a class…</option>
+          {options.data?.map(o => (
+            <option key={o.id} value={o.id} disabled={o.free <= 0}>
+              {o.name} — {DAYS[o.day_of_week]} {String(o.start_time).slice(0, 5)}, {ages(o)}, {money(o.price_minor)}, {o.free > 0 ? `${o.free} free` : 'full'}
+            </option>
+          ))}
+        </Select>
+      </Field>
+      {outOfRange && (
+        <Notice word="Age" tone="caution" title={`${target!.name} is for ${ages(target!)}`}
+          detail={`${studentName} is ${age}. You can still move them if the teacher agrees.`} />
+      )}
+      {target && diff !== 0 && (
+        <p className="text-[13.5px] text-ink-2">
+          {sameBasis
+            ? <>Price: {money(target.price_minor)} {PER[target.pricing] ?? ''}, {money(Math.abs(diff))} {diff > 0 ? 'more' : 'less'} than {from.name}. Existing invoices are not changed.</>
+            : <>{target.name} is charged {PER[target.pricing] ?? target.pricing}, {from.name} {PER[from.pricing] ?? from.pricing}. Check their next invoice.</>}
+        </p>
+      )}
+      {familyId && (
+        <label className="flex min-h-[44px] items-center gap-3 text-[14px]">
+          <input type="checkbox" checked={tell} className="size-[18px] accent-[var(--color-accent)]"
+                 onChange={e => setTell(e.target.checked)} />
+          Tell the family in the app
+        </label>
+      )}
+      <Field label="Note" htmlFor="mv-note" hint="Optional. Kept on the record.">
+        <Input id="mv-note" value={note} onChange={e => setNote(e.target.value)} placeholder="Moving up a grade" />
       </Field>
     </RecordSheet>
   );

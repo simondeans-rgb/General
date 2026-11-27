@@ -6,7 +6,7 @@ export type ClassRow = {
   day_of_week: number; start_time: string; duration_min: number;
   capacity: number; enrolled: number; waiting: number; pct: number | null;
   age_min: number | null; age_max: number | null; price_minor: number;
-  trials_enabled: boolean; sessions_left: number; term_id: string;
+  trials_enabled: boolean; sessions_left: number; term_id: string; pricing: string;
 };
 
 export const CLASSES = `
@@ -16,7 +16,7 @@ select c.id, c.name, ds.name as style, ds.colour, lv.name as level,
        app.class_enrolled_count(c.id) as enrolled,
        app.class_waitlist_count(c.id) as waiting,
        round(100.0 * app.class_enrolled_count(c.id) / nullif(c.capacity,0))::int as pct,
-       c.age_min, c.age_max, c.price_minor, c.trials_enabled, c.term_id,
+       c.age_min, c.age_max, c.price_minor, c.trials_enabled, c.term_id, c.pricing::text as pricing,
        (select count(*)::int from class_session cs
          where cs.class_id = c.id and cs.deleted_at is null
            and cs.starts_at > now() and cs.status = 'scheduled') as sessions_left
@@ -31,7 +31,7 @@ select c.id, c.name, ds.name as style, ds.colour, lv.name as level,
 
 export const CLASS_ROSTER = `
 select s.id, e.id as enrolment_id, s.first_name, s.last_name, s.date_of_birth, e.started_on,
-       f.name as family_name,
+       f.name as family_name, f.id as family_id,
        coalesce((select m.requires_alert from medical_record m
                   where m.student_id = s.id and m.deleted_at is null), false) as has_alert,
        (select round(100.0 * count(*) filter (where ar.status in ('present','late'))
@@ -207,6 +207,25 @@ export const TRANSFER = `select app.transfer_enrolment($1, $2, $3) as id`;
 export const CLASS_OPTIONS = `
 select c.id, c.name, app.class_enrolled_count(c.id) as enrolled, c.capacity
   from class c where c.deleted_at is null order by c.day_of_week, c.start_time`;
+
+/** Classes a student could move to (UR-52): ages, price and free places. */
+export type MoveOption = { id: string; name: string; day_of_week: number; start_time: string;
+  age_min: number | null; age_max: number | null; price_minor: number; pricing: string;
+  capacity: number; free: number };
+export const MOVE_OPTIONS = `
+select c.id, c.name, c.day_of_week, c.start_time, c.age_min, c.age_max, c.price_minor, c.pricing::text as pricing,
+       c.capacity, app.class_free_places(c.id) as free
+  from class c
+ where c.deleted_at is null and c.id <> $1
+   and c.term_id in (select t.id from term t where t.deleted_at is null and t.status <> 'archived')
+ order by c.day_of_week, c.start_time`;
+
+/** A student's places, for moving one from their record. */
+export const STUDENT_PLACES = `
+select e.id as enrolment_id, c.id as class_id, c.name, c.day_of_week, c.start_time, c.price_minor, c.pricing::text as pricing
+  from enrolment e join class c on c.id = e.class_id
+ where e.student_id = $1 and e.status = 'active' and e.deleted_at is null
+ order by c.day_of_week, c.start_time`;
 
 export const TRIAL_OUTCOME = `select app.record_trial_outcome($1, $2, $3) as ok`;
 export const CONVERT_TRIAL = `select app.convert_trial($1, $2) as enrolment_id`;

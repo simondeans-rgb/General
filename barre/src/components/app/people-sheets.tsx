@@ -10,6 +10,7 @@ import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import { Badge, Button, Field, Input, Select, Skeleton } from '@/components/ui';
 import * as P from '@/lib/repos/people';
+import { LOG_MEDICAL_VIEW } from '@/lib/repos/office';
 import { ageFrom, dateShort, toDateInput } from '@/lib/format';
 
 const COLOURS = ['violet', 'amber', 'teal', 'rose', 'indigo', 'lime'];
@@ -224,6 +225,15 @@ export function MedicalSheet({ studentId, studentName, onClose }: {
   const current = useRows<P.Medical>(['medical', studentId], P.MEDICAL, [studentId]);
   const contacts = useRows<P.Emergency>(['emergency', studentId], P.EMERGENCY_CONTACTS, [studentId]);
   const m = current.data?.[0];
+
+  // Opening the full record is logged for the owner to see (UR-35). Silent:
+  // the database writes at most one entry an hour, and a refusal (a read-only
+  // support view, say) must not get in the way of reading.
+  const { session } = useSession();
+  React.useEffect(() => {
+    if (session?.role !== 'owner' && session?.role !== 'admin') return;
+    runAs(session, q => q(LOG_MEDICAL_VIEW, [studentId])).catch(() => undefined);
+  }, [session, studentId]);
 
   const [loaded, setLoaded] = React.useState(false);
   const [allergies, setAllergies] = React.useState('');

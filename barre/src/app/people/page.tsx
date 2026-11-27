@@ -18,6 +18,10 @@ import {
   FamilySheet, GuardianSheet, StudentSheet, MedicalSheet, StaffSheet,
 } from '@/components/app/people-sheets';
 import { money, dateShort, ageFrom } from '@/lib/format';
+import { RecordHistory } from '@/components/app/record-history';
+import { MoveSheet } from '@/components/app/enrolment-actions';
+import * as C from '@/lib/repos/classes';
+import { ArrowRightLeft } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
 type Tab = 'families' | 'students' | 'staff';
@@ -226,6 +230,11 @@ function FamilyDetail({ id, onClose }: { id: string; onClose: () => void }) {
         </>
       )}
 
+      {f && (
+        <DetailSection title="History">
+          <RecordHistory entity="family" id={f.id} />
+        </DetailSection>
+      )}
       {editing && f && <FamilySheet row={f as any} onClose={() => setEditing(false)} />}
       {guardian && f && (
         <GuardianSheet familyId={f.id} row={guardian === 'new' ? null : guardian}
@@ -297,6 +306,9 @@ function StudentDetail({ id, onClose }: { id: string; onClose: () => void }) {
   const [medical, setMedical] = React.useState(false);
   const s = rows.data?.find(r => r.id === id);
   const safety = useRow<Brief>(['safety', id], P.STUDENT_SAFETY, [id]);
+  const places = useRows<{ enrolment_id: string; class_id: string; name: string; day_of_week: number;
+                           start_time: string; price_minor: number; pricing: string }>(['student-places', id], C.STUDENT_PLACES, [id]);
+  const [moving, setMoving] = React.useState<{ enrolment_id: string; class_id: string; name: string; price_minor: number; pricing: string } | null>(null);
 
   return (
     <DetailPanel open onClose={onClose}
@@ -329,6 +341,23 @@ function StudentDetail({ id, onClose }: { id: string; onClose: () => void }) {
             </p>
           </DetailSection>
 
+          <DetailSection title={`Classes (${places.data?.length ?? 0})`}>
+            {places.data?.length === 0 && <p className="text-[14px] text-ink-3">Not in any class.</p>}
+            <ul className="divide-y divide-line">
+              {places.data?.map(p => (
+                <li key={p.enrolment_id} className="flex items-center gap-2 py-1.5">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[14px] font-medium">{p.name}</span>
+                    <span className="block text-[12.5px] text-ink-3">{['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][p.day_of_week]} {String(p.start_time).slice(0, 5)}</span>
+                  </span>
+                  <Button size="sm" variant="ghost" onClick={() => setMoving(p)}>
+                    <ArrowRightLeft className="size-4" aria-hidden /> Move to another class
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </DetailSection>
+
           {safety.data && (
             <DetailSection title="Safety — what this child’s teachers see">
               <MedicalBrief brief={safety.data} layout="stack" />
@@ -337,6 +366,17 @@ function StudentDetail({ id, onClose }: { id: string; onClose: () => void }) {
         </>
       )}
 
+      {s && (
+        <DetailSection title="History">
+          <RecordHistory entity="student" id={id} />
+        </DetailSection>
+      )}
+      {moving && s && (
+        <MoveSheet enrolmentId={moving.enrolment_id} studentName={`${s.preferred_name ?? s.first_name} ${s.last_name}`}
+          age={ageFrom(s.date_of_birth)} familyId={s.family_id}
+          from={{ id: moving.class_id, name: moving.name, price_minor: moving.price_minor, pricing: moving.pricing }}
+          onClose={() => setMoving(null)} />
+      )}
       {editing && detail.data && (
         <StudentSheet row={detail.data} familyName={detail.data.family_name}
                       onClose={() => setEditing(false)} />

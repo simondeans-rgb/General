@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { ChevronRight, Plus, Pencil, UserMinus, Copy, CalendarPlus } from 'lucide-react';
+import { ChevronRight, Plus, Pencil, UserMinus, Copy, CalendarPlus, ArrowRightLeft } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection, KeyValue } from '@/components/app/detail-panel';
 import { useRows } from '@/lib/query';
@@ -14,7 +14,7 @@ import * as C from '@/lib/repos/classes';
 import { ClassForm } from '@/components/app/class-form';
 import { TermRollover, DuplicateClass } from '@/components/app/term-rollover';
 import {
-  EnrolSheet, WithdrawSheet, WaitlistActions, BookTrialSheet,
+  EnrolSheet, WithdrawSheet, WaitlistActions, BookTrialSheet, MoveSheet,
 } from '@/components/app/enrolment-actions';
 import { money, ageFrom, dateShort } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -125,11 +125,12 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
   const [duplicating, setDuplicating] = React.useState(false);
   const [enrolling, setEnrolling] = React.useState(false);
   const [trialling, setTrialling] = React.useState(false);
+  const [moving, setMoving] = React.useState<{ id: string; name: string; age: number | null; family_id: string } | null>(null);
   const [withdrawing, setWithdrawing] = React.useState<
     { id: string; name: string } | null>(null);
   const full = !!c && c.enrolled >= c.capacity;
   const roster = useRows<{ id: string; enrolment_id: string; first_name: string; last_name: string;
-                           date_of_birth: string; family_name: string; has_alert: boolean;
+                           date_of_birth: string; family_name: string; family_id: string; has_alert: boolean;
                            attendance_pct: number | null }>(
     ['roster', id], C.CLASS_ROSTER, [id]);
   const waitlist = useRows<{ id: string; position: number; status: string; first_name: string;
@@ -187,6 +188,12 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
                       s.attendance_pct >= 85 ? 'text-ink-3' : 'font-medium text-caution')}>{s.attendance_pct}%</span>
                   )}
                   <Button size="sm" variant="ghost"
+                    aria-label={`Move ${s.first_name} ${s.last_name} to another class`}
+                    onClick={() => setMoving({ id: s.enrolment_id, name: `${s.first_name} ${s.last_name}`,
+                      age: ageFrom(s.date_of_birth), family_id: s.family_id })}>
+                    <ArrowRightLeft className="size-4" aria-hidden />
+                  </Button>
+                  <Button size="sm" variant="ghost"
                     aria-label={`Withdraw ${s.first_name} ${s.last_name}`}
                     onClick={() => setWithdrawing({ id: s.enrolment_id,
                       name: `${s.first_name} ${s.last_name}` })}>
@@ -228,6 +235,10 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
       )}
       {trialling && c && (
         <BookTrialSheet classId={id} className={c.name} onClose={() => setTrialling(false)} />
+      )}
+      {moving && c && (
+        <MoveSheet enrolmentId={moving.id} studentName={moving.name} age={moving.age} familyId={moving.family_id}
+          from={{ id: c.id, name: c.name, price_minor: c.price_minor, pricing: c.pricing }} onClose={() => setMoving(null)} />
       )}
       {withdrawing && (
         <WithdrawSheet enrolmentId={withdrawing.id} name={withdrawing.name}
