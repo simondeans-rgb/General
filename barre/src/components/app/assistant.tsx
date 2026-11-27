@@ -15,7 +15,7 @@ import { cn } from '@/lib/cn';
  * backend exists, free-text questions go to it. Nothing here pretends to be
  * an AI answer.
  */
-const HIT_LABEL: Record<Hit['kind'], string> = { family: 'Family', student: 'Student', staff: 'Staff', invoice: 'Invoice', class: 'Class' };
+const HIT_LABEL: Record<Hit['kind'], string> = { family: 'Family', student: 'Student', staff: 'Staff', invoice: 'Invoice', class: 'Class', enquiry: 'Enquiry' };
 
 export function AssistantLauncher() {
   const { session } = useSession();

@@ -46,7 +46,8 @@ select s.id, e.id as enrolment_id, s.first_name, s.last_name, s.date_of_birth, e
  order by s.last_name, s.first_name`;
 
 export const CLASS_WAITLIST = `
-select w.id, w.position, w.status, s.first_name, s.last_name, f.name as family_name
+select w.id, (row_number() over (order by w.position))::int as position, w.status, w.offer_expires_at,
+       s.first_name, s.last_name, s.date_of_birth, f.name as family_name
   from waitlist_entry w
   join student s on s.id = w.student_id
   join family f on f.id = s.family_id
@@ -236,6 +237,20 @@ select s.id, s.first_name, s.last_name, s.date_of_birth, f.name as family_name
                     where e.student_id = s.id and e.class_id = $1
                       and e.status = 'active' and e.deleted_at is null)
  order by s.last_name, s.first_name`;
+
+/** Who can be enrolled or wait for a class: not in it, not already waiting,
+ *  with their age and whether the class's age range suits them (UR-19). */
+export type Candidate = { id: string; first_name: string; last_name: string; date_of_birth: string | Date;
+  family_name: string; age: number; in_range: boolean; enrolled: boolean; waiting: boolean };
+export const CLASS_CANDIDATES = `select * from app.class_candidates($1) where not enrolled and not waiting`;
+
+/** Free places: capacity less active places and offers still waiting for an answer. */
+export const CLASS_FREE = `
+select app.class_free_places($1) as free, app.class_live_offers($1) as offers,
+       (select waitlist_offer_days from studio s join class c on c.studio_id = s.id where c.id = $1) as offer_days`;
+
+/** Closing an enquiry as lost, with the reason (UR-18). */
+export const CLOSE_ENQUIRY = `select app.close_enquiry($1, $2) as ok`;
 
 export const SET_ENQUIRY_STAGE = `
 update enquiry set stage = $2::enquiry_stage, updated_at = now(),

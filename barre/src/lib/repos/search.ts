@@ -3,7 +3,7 @@
  * every branch, so a search can only ever surface what the person could open.
  * $1 is the typed text; matching is case- and accent-insensitive on words.
  */
-export type Hit = { kind: 'family' | 'student' | 'staff' | 'invoice' | 'class'; id: string; title: string; detail: string | null; href: string };
+export type Hit = { kind: 'family' | 'student' | 'staff' | 'invoice' | 'class' | 'enquiry'; id: string; title: string; detail: string | null; href: string };
 
 export const SEARCH = `
 with term as (select '%' || lower(btrim($1)) || '%' as p)
@@ -33,4 +33,13 @@ union all
 union all
 (select 'class', c.id, c.name, null, '/classes?id=' || c.id
    from class c, term
-  where c.deleted_at is null and lower(c.name) like term.p limit 4)`;
+  where c.deleted_at is null and lower(c.name) like term.p limit 4)
+union all
+(select 'enquiry', e.id, coalesce(e.child_name, e.contact_name),
+        e.contact_name || ' · ' || replace(e.stage::text, '_', ' '), '/enrolment?enquiry=' || e.id
+   from enquiry e, term
+  where e.deleted_at is null
+    and (lower(e.contact_name) like term.p or lower(coalesce(e.child_name, '')) like term.p
+         or lower(coalesce(e.contact_email, '')) like term.p
+         or regexp_replace(coalesce(e.contact_phone, ''), '\\D', '', 'g') like '%' || nullif(regexp_replace($1, '\\D', '', 'g'), '') || '%')
+  order by e.created_at desc limit 4)`;

@@ -660,15 +660,17 @@ describe('enrolling and withdrawing', () => {
     });
   });
 
-  it('an offer accepted into a class that filled up again is still refused', async () => {
+  it('a full class can neither offer nor take a place from the list', async () => {
+    // UR-19 (admins D4): offering a place in a full class used to succeed and
+    // leave a family promised a place that did not exist. Now it is refused.
     await asUser(USERS.admin, async q => {
       const [top] = await q(`select id from waitlist_entry where class_id = $1
                               and status = 'waiting' and deleted_at is null
                               order by position limit 1`, [CLASS.grade3Ballet]);
-      await q(`select app.offer_waitlist_place($1)`, [top.id]);
-      // The class was never actually emptied, so the capacity trigger holds.
+      expect(await expectRejected(() => q(`select app.offer_waitlist_place($1)`, [top.id])))
+        .toMatch(/NO_FREE_PLACE/);
       expect(await expectRejected(() => q(`select app.accept_waitlist_place($1)`, [top.id])))
-        .toMatch(/CLASS_FULL/);
+        .toMatch(/NO_FREE_PLACE/);
     });
   });
 

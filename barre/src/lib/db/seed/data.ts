@@ -1027,6 +1027,8 @@ update studio set plan_id = (select id from plan where code = 'studio'), status 
                   brand_colour = '#1e3a8a', logo_url = ${q(NORTHSTAR_LOGO)},
                   created_at = now() - interval '2 years 3 months'
  where id = ${q(STUDIO_ID)};
+-- Only Northstar holds sample records; onboarding says so only there (UR-11).
+update studio set sample_data = true where id = ${q(STUDIO_ID)};
 
 insert into user_account (id, email, full_name) values
   (${q(PLATFORM_ADMIN)}, 'jordan@swayvo.example', 'Jordan Ellis'),
