@@ -78,7 +78,7 @@ select f.id, f.name, f.balance_minor,
 
 export const MY_INVOICES = `
 select i.id, i.number, i.status, i.issued_on, i.due_on, i.total_minor, i.paid_minor
-  from invoice i where i.deleted_at is null
+  from invoice i where i.deleted_at is null and i.status <> 'draft'   -- drafts are the office's until sent
  order by i.issued_on desc nulls last limit 8`;
 
 export const MY_MESSAGES = `
