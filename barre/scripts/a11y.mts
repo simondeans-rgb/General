@@ -41,6 +41,11 @@ for (const mobile of [false, true]) {
       await page.goto(BASE + path);
       await page.waitForFunction(() => !/Setting up (Northstar|a real)/.test(document.body.innerText), null, { timeout: 120_000 });
       await page.waitForTimeout(1500);
+      // Entrance animations fade text in; check what people read once it has settled, not mid-fade.
+      await page.evaluate(() => Promise.race([
+        Promise.all(document.getAnimations().map(a => a.finished.catch(() => null))),
+        new Promise(r => setTimeout(r, 4000)),
+      ]));
       await page.addScriptTag({ content: AXE });
       const res = await page.evaluate(async () => (window as any).axe.run(document, {
         runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },

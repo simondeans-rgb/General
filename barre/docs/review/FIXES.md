@@ -1,7 +1,9 @@
 # Panel review fixes: status
 
-Status on branch `claude/hopeful-hamilton-jjchm9`, 27 November 2026. Item numbers refer to the improvement
+Status on branch `claude/hopeful-hamilton-jjchm9`, 27 November 2026, after two rounds. Item numbers refer to the improvement
 register in `REPORT.md` §23.
+
+**Round 2** finished the partial items, in four more workstreams: 0052 money, 0053 accounts, 0054 scale, 0055 cross-school agenda.
 
 **How the work was built.**
 - Seven parallel workstreams, each with its own database migration:
@@ -18,7 +20,7 @@ register in `REPORT.md` §23.
 
 | Check | Result |
 |---|---|
-| Automated tests | 533 / 533 pass (378 before; 155 new) |
+| Automated tests | 590 / 590 pass (378 before; 212 new) |
 | Type check | Clean |
 | `npm run a11y` (axe, WCAG 2.2 AA, phone and desktop, both styles) | No serious or critical issues |
 | Sideways overflow at 320px | None across all routes |
@@ -36,7 +38,7 @@ register in `REPORT.md` §23.
 | UR-05 | Guardians edit only their own details | Done | Others read-only with "Ask the office to change" |
 | UR-06 | Adult drop-in integrity and age limits | Done | Adult record, never a child. Age range enforced on every booking path (the office may place a child just outside a *children's* range; nobody can put an under-18 in an adult class) |
 | UR-07 | Absence reports reach the register | Done | Pre-marked "Excused · reported by parent"; shown on teacher Today; withdrawable until start |
-| UR-08 | Consent with history | Done | Parents and office; most restrictive wins if guardians disagree; teacher brief always states it. Not yet: a read-only view for students 13+ and renaming consent kinds |
+| UR-08 | Consent with history | Done | Parents and office; most restrictive wins if guardians disagree; teacher brief always states it. Round 2: students 13+ see their consents read-only on /learn; schools can rename consent kinds |
 | UR-09 | Office and DSL raise concerns | Done | About children, adults or staff; allegations hidden from their subject |
 | UR-10 | Billing integrity | Done | Credit notes; run guard by family and period (opening balances count); ending discounts; goodwill credit and payment on account |
 | UR-11 | The app says only true things | Done | Absence text, medical visibility text, "See how to pay", onboarding copy, PAYMENTS.md |
@@ -45,11 +47,11 @@ register in `REPORT.md` §23.
 | UR-14 | Email, SMS and push delivery | **Not started: needs decision R-003** | Messages are queued in the outbox as before |
 | UR-15 | Card and Direct Debit payments | **Not started: needs decision R-006** | Labels no longer promise payment |
 | UR-16 | Parents approve or switch off teen logins | Done | Minimum age setting (13–18) |
-| UR-17 | Shared-care privacy | Partial | Private guardian messages, office-set access per guardian, collection list on the register brief. Not done: split billing; medical restriction inside the teacher brief |
+| UR-17 | Shared-care privacy | Done | Private guardian messages; office-set access per guardian; collection list on the register brief. Round 2: medical restriction enforced everywhere (incl. teacher brief view, privacy download); split billing (one guardian, % split, or per child), one invoice per payer. Small gaps: credit on account comes off the oldest invoice whichever guardian it's addressed to; "Coming up" can show the other guardian's invoice number |
 | UR-18 | Enquiry → trial → enrolment | Done | Enquiries in search |
 | UR-19 | Safe waiting-list offers | Done | Expiry setting; expired offers pass on automatically (scheduled job) |
 | UR-20 | Class suitability, price and confirmation on `/join` | Done | Arrival and cancellation wording are defaults with no settings screen yet |
-| UR-21 | Adult student accounts | Partial | Adults can be invited, sign in, see and cancel bookings and see payments. Not done: adult wording throughout, "book for myself" for existing parents |
+| UR-21 | Adult student accounts | Done | Adults invited, sign in, see and cancel bookings and payments. Round 2: adult wording ("Your classes", "You" tab), "Book for myself" for parents, adults see their own feedback |
 | UR-22 | Bank details and family reference | Done | |
 | UR-23 | Invoice and payment notifications | Done | Due-in-3-days runs on the scheduled job |
 | UR-24 | Upcoming costs; privates billed | Done | Costumes are shown as Expected (never billed automatically) |
@@ -60,8 +62,8 @@ register in `REPORT.md` §23.
 | UR-29 | DSL-only safeguarding export | Done | Logged; admins cannot run it |
 | UR-30 | Text scales with user settings | Done | All sizes in rem; header, tabs and hero numbers adapted for large text |
 | UR-31 | Sheets trap and return focus | Done | Global focus manager for every modal |
-| UR-32 | Migration toolkit | Partial | Unmapped-column acknowledgement, timetable import, opening balances. Not done: history imports, bulk invitations (needs UR-14) |
-| UR-33 | Location dimension | Partial | Filters and comparison on reports, classes, schedule. Not done: billing lists, location-scoped roles |
+| UR-32 | Migration toolkit | Done | Unmapped-column acknowledgement, timetable import, opening balances. Round 2: history imports (past invoices read-only, attendance counts, exam results) and a downloadable list of invitation links for the school's own mail tool. Gap: parents' payments page doesn't list imported past invoices yet |
+| UR-33 | Location dimension | Partial | Filters and comparison on reports, classes, schedule and billing lists. Round 2: location-limited admins and teachers, enforced in the database. Gap: location-limited admins are read-only (changes stay with owners and all-location admins); cover isn't checked against a teacher's locations |
 | UR-34 | Retention report | Done | |
 | UR-35 | Audit and access history | Done | Owner-only history with CSV; medical reads by office logged |
 | UR-36 | Trial families told of cancellations | Done | |
@@ -75,27 +77,27 @@ register in `REPORT.md` §23.
 | UR-44 | Bulk, teacher and age-appropriate chips | Done | A class of 12: 4 interactions (was 41) |
 | UR-45 | Support-needs view | Done | |
 | UR-46 | Bulk actions | Done | Messages from filtered families; reminders from overdue list |
-| UR-47 | Cross-school agenda | Not done | Needs a cross-school design (report rated size uncertain) |
+| UR-47 | Cross-school agenda | Done | Round 2: "My week across schools" for teachers in several schools; clashes across schools (own travel time); each school chooses details / busy only / hidden; cover check sees other schools as "Busy"; calendar feed can include all schools |
 | UR-48 | Draft skill levels; taught styles only | Done | |
 | UR-49 | Student "can't make it" and bell | Done | |
 | UR-50 | Events: per child, places, helpers | Done | |
 | UR-51 | Under-filled classes | Done | |
-| UR-52 | Move to another class | Partial | No effective date yet |
+| UR-52 | Move to another class | Done | Round 2: effective date (future moves planned and completed on the day; past dates within the term, admins only); registers and pro-rata billing follow the date |
 | UR-53 | Guided first timetable | Done | |
 | UR-54 | Small fixes bundle | Done | All listed items |
-| UR-55 | Tracking depth | Done | Under-13s have no own login only by the default minimum age, not a hard rule |
-| UR-56 | Make-up classes | Partial | Make-up offers (off by default). Credit for reported absences not built |
+| UR-55 | Tracking depth | Done | Round 2: no own login under 13 is now a database rule (minimum age 13–18) |
+| UR-56 | Make-up classes | Done | Make-up offers (off by default). Round 2: credit for reported absences as a school setting (per-session price or fixed amount), reversed if the report is withdrawn; make-up or credit, not both |
 | UR-57 | Duplicate families | Done | Merge with preview; undo for 30 days |
 | UR-58 | Absence as a welfare signal | Done | Opt-in per child by the DSL |
 | UR-59–61 | Multi-school owner view, video feedback, bank-statement import | Deferred | As recommended in the report |
 
-**Totals across all 61 items.**
+**Totals across all 61 items (after round 2).**
 
 | Status | Items |
 |---|---|
-| Done | 48 (UR-08 has the small gaps noted above) |
-| Partial | 6 (UR-17, 21, 32, 33, 52, 56) |
-| Not done | 1 (UR-47) |
+| Done | 54 (UR-17 and UR-32 have the small gaps noted above) |
+| Partial | 1 (UR-33: location-limited admins are read-only) |
+| Not done | 0 |
 | Waiting on decisions | 3 (UR-13, 14, 15) |
 | Deferred | 3 (UR-59–61) |
 
@@ -106,4 +108,7 @@ register in `REPORT.md` §23.
 - **Billing runs:** skip families already billed for the period, with a per-family override and a reason.
 - **Parents' invoices:** parents no longer see draft invoices.
 - **Consent:** guardians record consent through the Consents controls, not by editing records.
+- **Moves and credit (round 2):** moving a student takes an effective date. Credit for reported absences is a school setting, off by default.
+- **Under-13 logins (round 2):** refused by the database whatever the school's setting.
+- **Location limits (round 2):** an admin limited to locations can no longer act as a full admin anywhere; they read their locations only.
 - **Seed data:** students who sign in have skills in the styles they dance; the seed school is marked as containing sample data.
