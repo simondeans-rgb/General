@@ -46,7 +46,9 @@ describe('staff checks (R-035)', () => {
       await q(`insert into staff_check (staff_id, kind, reference, checked_on, expires_on) values ($1, 'dbs', '001234567890', current_date - 1000, current_date + 20)`, [st.id]);
       await q(`insert into staff_check (staff_id, kind, checked_on, expires_on) values ($1, 'first_aid', current_date - 10, current_date + 900)`, [st.id]);
       await as(svc, USERS.admin);
-      expect(await q(`select 1 from staff_check`)).toHaveLength(0);
+      // UR-41: the office can read checks (the owner still records them).
+      expect(await q(`select 1 from staff_check`)).toHaveLength(2);
+      await expectRejected(() => q(`insert into staff_check (staff_id, kind, checked_on) values ($1, 'dbs', current_date)`, [st.id]));
       expect((await q(`select app.remind_staff_checks($1) n`, [STUDIO_ID]))[0].n).toBe(1);
       expect((await q(`select app.remind_staff_checks($1) n`, [STUDIO_ID]))[0].n).toBe(0);
       expect(await svc(`select 1 from notification where user_id = $1 and kind = 'staff_check_due' and title like '%DBS%'`, [USERS.owner])).toHaveLength(1);

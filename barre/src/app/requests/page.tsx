@@ -22,7 +22,7 @@ import { relativeDay, time, dateLong } from '@/lib/format';
 
 const KIND_LABEL: Record<string, string> = {
   question: 'Question', private_lesson: 'Private lesson', medical_update: 'Medical update',
-  event_interest: 'Event', absence: 'Absence', other: 'Other',
+  event_interest: 'Event', absence: 'Absence', data_request: 'Data request', other: 'Other',
 };
 
 /**

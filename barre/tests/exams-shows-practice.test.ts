@@ -58,7 +58,7 @@ describe('shows in depth (R-057)', () => {
 
       // Programme: only children with photography consent are named.
       await svc(`insert into consent_record (studio_id, student_id, kind, granted) select $1, student_id, 'photography', student_id = $3
-                   from routine_dancer where routine_id = $2 on conflict (student_id, kind) do update set granted = excluded.granted`, [STUDIO_ID, routine, kid.id]);
+                   from routine_dancer where routine_id = $2`, [STUDIO_ID, routine, kid.id]);   // a newer row wins (UR-08: consent keeps history)
       const [prog] = await q(`select * from app.event_programme($1)`, [show]);
       expect(prog.dancers.split(', ')).toHaveLength(1);
       expect(prog.unnamed).toBe(list.length - 1);

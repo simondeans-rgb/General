@@ -17,6 +17,7 @@ import * as F from '@/lib/repos/family';
 import { YourDetails, EmergencyContacts } from '@/components/app/family-details';
 import { ChildClassesSheet, AddChildSheet } from '@/components/app/family-classes';
 import { DropIns } from '@/components/app/drop-ins';
+import { FamilyConsents } from '@/components/app/consents';
 import { ageFrom, dateShort } from '@/lib/format';
 
 type Child = {
@@ -59,17 +60,12 @@ export default function FamilyChildren() {
                   </span>
                 </Row>
               )}
-              <Row label="Photos">
-                {c.photo_consent === false
-                  ? <span className="font-semibold">Not permitted</span>
-                  : c.photo_consent ? <span>Permitted</span>
-                    : <span className="text-ink-3">Not recorded</span>}
-              </Row>
+              <FamilyConsents studentId={c.id} name={c.first_name} />
               {c.has_alert && (
                 <Row label="Medical">
                   <span className="font-semibold text-critical">{c.allergies ?? 'On record'}</span>
                   <p className="mt-1 text-[13px] text-ink-3">
-                    Teachers see allergies and the emergency plan only, never the full record.
+                    {c.first_name}’s teachers see allergies, conditions, medication, the emergency plan, emergency contacts and photo consent, for the classes they teach. The family doctor and the rest of the record stay with the office.
                     To change any of it,{' '}
                     <Link href="/family/enquiries" className="font-semibold text-accent-text underline">tell the studio</Link>,
                     so there is a record of who changed what.
@@ -106,6 +102,7 @@ export default function FamilyChildren() {
             ['/family/feedback', 'Teacher feedback', 'Notes, skills and milestones'],
             ['/family/events', 'Shows and events', 'What’s coming up, and entries'],
             ['/family/enquiries', 'Requests', 'Private lessons, questions, medical updates'],
+            ['/family/privacy', 'Privacy and your data', 'Who sees what, download your data, ask to delete'],
           ].map(([href, title, body]) => (
             <Link key={href} href={href!} className="group flex min-h-[56px] items-center gap-3 py-3">
               <span className="min-w-0 flex-1">

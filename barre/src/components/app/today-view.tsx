@@ -7,6 +7,7 @@ import { Shell } from './shell';
 import { useRows, useRow } from '@/lib/query';
 import { Beats, Button, EmptyState, ErrorState, Skeleton, SectionHead } from '@/components/ui';
 import * as Q from '@/lib/repos/dashboard';
+import { CHECK_GAPS_TODAY, type CheckGap } from '@/lib/repos/safeguarding';
 import { SUMMARY, type BillingSummary } from '@/lib/repos/billing';
 import { money, time, dayRange, dateLong, relativeDay } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -125,12 +126,16 @@ function NeedsAttention() {
   const lapsed = useRows<{ id: string; first_name: string; last_name: string; class_name: string }>(['att-lapsed'], Q.ATTENTION_LAPSED);
   const reqs = useRow<{ open_requests: number; pending_entries: number; medical_updates: number }>(['att-requests'], Q.ATTENTION_REQUESTS);
   const msgs = useRow<{ awaiting: number; names: string | null }>(['att-messages'], Q.ATTENTION_MESSAGES);
-  const loading = pay.isLoading || cap.isLoading || trials.isLoading || lapsed.isLoading || reqs.isLoading || msgs.isLoading;
+  // Staff checks missing or running out (UR-41): shown to the owner and the safeguarding lead only.
+  const checks = useRows<CheckGap>(['att-checks'], CHECK_GAPS_TODAY);
+  const loading = checks.isLoading || pay.isLoading || cap.isLoading || trials.isLoading || lapsed.isLoading || reqs.isLoading || msgs.isLoading;
 
   const items: Item[] = [];
   const r = reqs.data;
   if (r && r.medical_updates > 0) items.push({ key: 'med', n: r.medical_updates, tone: 'critical', href: '/requests', action: 'Review',
     headline: `Medical update${r.medical_updates === 1 ? '' : 's'} to acknowledge`, detail: 'Teachers see the change once you record it' });
+  if (checks.data?.length) items.push({ key: 'checks', n: checks.data.length, tone: 'critical', href: '/safeguarding', action: 'See who',
+    headline: 'Staff checks to sort', detail: checks.data.slice(0, 2).map(c => `${c.name}: ${c.issue}`).join(' · ') + (checks.data.length > 2 ? '…' : '') });
   if (pay.data && pay.data.failed > 0) items.push({ key: 'pay', n: pay.data.failed, tone: 'critical', href: '/billing', action: 'Retry',
     headline: `Card payment${pay.data.failed === 1 ? '' : 's'} failed`, detail: `${money(pay.data.outstanding_minor)} outstanding in all` });
   if (msgs.data && msgs.data.awaiting > 0) items.push({ key: 'msg', n: msgs.data.awaiting, tone: 'ink', href: '/inbox', action: 'Reply',

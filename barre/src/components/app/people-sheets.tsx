@@ -1,5 +1,7 @@
 'use client';
-import { StaffChecks } from '@/components/app/safeguarding';
+import { StaffChecks, RaiseConcernSheet } from '@/components/app/safeguarding';
+import { InitialConsents } from '@/components/app/consents';
+import { SET_CONSENT, type ConsentKind } from '@/lib/repos/consent';
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -147,6 +149,18 @@ export function StudentSheet({ familyId, familyName, row, onClose }: {
   const [notes, setNotes] = React.useState(row?.notes ?? '');
   const [left, setLeft] = React.useState(toDateInput(row?.left_on));
   const save = useWrite(row ? P.UPDATE_STUDENT : P.CREATE_STUDENT, onClose);
+  // A new child starts with the consent the family gave on joining (UR-08).
+  const [consent, setConsent] = React.useState<Partial<Record<ConsentKind, boolean>>>({});
+  const { session } = useSession();
+  const qc = useQueryClient();
+  const create = useMutation({
+    mutationFn: (params: unknown[]) => runAs(session, async q => {
+      const [r] = await q<{ id: string }>(P.CREATE_STUDENT, params);
+      for (const [k, v] of Object.entries(consent)) await q(SET_CONSENT, [r!.id, k, v, 'Recorded when the child was added', false]);
+    }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['db'] }); onClose(); },
+  });
+  const saving = row ? save : create;
 
   React.useEffect(() => {
     if (!family && families.data?.[0]) setFamily(families.data[0].id);
@@ -158,11 +172,11 @@ export function StudentSheet({ familyId, familyName, row, onClose }: {
   return (
     <RecordSheet title={row ? 'Edit child' : 'Add a child'} onClose={onClose}
       subtitle={familyName ? `In ${familyName}` : undefined}
-      error={save.error} saving={save.isPending}
+      error={saving.error} saving={saving.isPending}
       canSave={first.trim().length >= 1 && last.trim().length >= 1 && dobSane && !!family}
       saveHint={!first.trim() || !last.trim() ? 'Add a first and last name.'
         : !dobSane ? 'Add a date of birth that looks right.' : !family ? 'Choose a family.' : null}
-      onSave={() => save.mutate(row
+      onSave={() => saving.mutate(row
         ? [row.id, first.trim(), last.trim(), preferred, dob, pronouns, school, notes, left || null]
         : [family, first.trim(), last.trim(), preferred, dob, pronouns, school, null, notes])}>
       {!familyId && !row && (
@@ -202,6 +216,7 @@ export function StudentSheet({ familyId, familyName, row, onClose }: {
         <textarea id="s-notes" rows={2} value={notes}
                   onChange={e => setNotes(e.target.value)} className={textarea} />
       </Field>
+      {!row && <InitialConsents value={consent} onChange={setConsent} />}
       {row && (
         <Field label="Left the studio on" htmlFor="s-left"
                hint="Leave empty while they are still dancing.">
@@ -403,7 +418,9 @@ export function StaffSheet({ row, onClose }: { row: P.StaffRow | null; onClose: 
   const [bio, setBio] = React.useState(row?.bio ?? '');
   const save = useWrite(row ? P.UPDATE_STAFF : P.CREATE_STAFF, onClose);
   const remove = useWrite(P.REMOVE_STAFF, onClose);
-  const isOwner = useSession().session?.role === 'owner';
+  const role = useSession().session?.role;
+  const isOwner = role === 'owner';
+  const [concern, setConcern] = React.useState(false);
 
   return (
     <RecordSheet title={row ? 'Edit teacher' : 'Add a teacher'} onClose={onClose}
@@ -450,12 +467,21 @@ export function StaffSheet({ row, onClose }: { row: P.StaffRow | null; onClose: 
           ? 'This teacher has a login and can take their own registers.'
           : 'They will appear on the timetable straight away. Giving them a login to take registers is a separate step, and only the owner can do it.'}
       </p>
-      {row && isOwner && (
+      {row && (isOwner || role === 'admin') && (
         <div className="pt-2">
           <p className="mb-2 border-b border-ink pb-1 text-[14px] font-semibold">Checks and training</p>
-          <StaffChecks staffId={row.id} />
+          <StaffChecks staffId={row.id} readOnly={!isOwner} />
         </div>
       )}
+      {row && (
+        <div className="pt-2">
+          <Button size="sm" variant="ghost" onClick={() => setConcern(true)}>
+            <ShieldAlert className="size-4" aria-hidden /> Raise a concern about {row.display_name}
+          </Button>
+          <p className="mt-1 text-[12.5px] text-ink-3">Goes to the safeguarding lead and the owner, never to them.</p>
+        </div>
+      )}
+      {concern && row && <RaiseConcernSheet staff={{ id: row.id, name: row.display_name }} onClose={() => setConcern(false)} />}
     </RecordSheet>
   );
 }

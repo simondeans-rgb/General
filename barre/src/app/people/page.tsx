@@ -2,13 +2,15 @@
 
 import * as React from 'react';
 import { Suspense } from 'react';
-import { Search, CameraOff, Plus, Pencil, HeartPulse, UserPlus, Upload } from 'lucide-react';
+import { Search, CameraOff, Plus, Pencil, HeartPulse, UserPlus, Upload, ShieldAlert } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { ImportWizard } from '@/components/app/import-wizard';
 import { DetailPanel, DetailSection, KeyValue } from '@/components/app/detail-panel';
 import { useRows, useRow } from '@/lib/query';
 import { useSelection } from '@/lib/use-selection';
 import { MedicalBrief, MedicalMarker } from '@/components/app/medical-brief';
+import { OfficeConsents } from '@/components/app/consents';
+import { RaiseConcernSheet } from '@/components/app/safeguarding';
 import type { Brief } from '@/lib/repos/teaching';
 import { useSearchParams } from 'next/navigation';
 import { Input, EmptyState, Skeleton, ErrorState, Button, Select } from '@/components/ui';
@@ -47,7 +49,7 @@ function People() {
     families: 'New family', students: 'Add a child', staff: 'Add a teacher' };
 
   return (
-    <Shell title="People" help={<>Families, students and staff. Import a spreadsheet to get started, then invite families to the app. Medical details are shown to teachers only as allergies and the emergency plan.</>} allow={['owner', 'admin']}
+    <Shell title="People" help={<>Families, students and staff. Import a spreadsheet to get started, then invite families to the app. For the children they teach, teachers see allergies, conditions, medication, the emergency plan, emergency contacts and photo consent — never the family doctor or the rest of the record.</>} allow={['owner', 'admin']}
       actions={<div className="flex gap-2">
         {tab !== 'staff' && <Button size="sm" aria-label="Import" onClick={() => setImporting(true)}>
           <Upload className="size-4" aria-hidden /> <span className="hidden sm:inline">Import</span>
@@ -353,6 +355,7 @@ function StudentDetail({ id, onClose }: { id: string; onClose: () => void }) {
   const detail = useRow<P.StudentDetail>(['student-detail', id], P.STUDENT_DETAIL, [id]);
   const [editing, setEditing] = React.useState(false);
   const [medical, setMedical] = React.useState(false);
+  const [concern, setConcern] = React.useState(false);
   const s = rows.data?.find(r => r.id === id);
   const safety = useRow<Brief>(['safety', id], P.STUDENT_SAFETY, [id]);
   const places = useRows<{ enrolment_id: string; class_id: string; name: string; day_of_week: number;
@@ -407,6 +410,17 @@ function StudentDetail({ id, onClose }: { id: string; onClose: () => void }) {
             </ul>
           </DetailSection>
 
+          <DetailSection title="Consent">
+            <OfficeConsents studentId={id} name={s.preferred_name ?? s.first_name} />
+          </DetailSection>
+
+          <DetailSection title="Safeguarding">
+            <Button onClick={() => setConcern(true)}>
+              <ShieldAlert className="size-4" aria-hidden /> Raise a safeguarding concern
+            </Button>
+            <p className="mt-2 text-[13px] text-ink-3">For something you saw, or a parent or child told you. It goes only to the safeguarding lead and the owner.</p>
+          </DetailSection>
+
           {safety.data && (
             <DetailSection title="Safety — what this child’s teachers see">
               <MedicalBrief brief={safety.data} layout="stack" />
@@ -430,6 +444,7 @@ function StudentDetail({ id, onClose }: { id: string; onClose: () => void }) {
         <StudentSheet row={detail.data} familyName={detail.data.family_name}
                       onClose={() => setEditing(false)} />
       )}
+      {concern && s && <RaiseConcernSheet student={{ id, first_name: s.preferred_name ?? s.first_name }} onClose={() => setConcern(false)} />}
       {medical && s && (
         <MedicalSheet studentId={id} studentName={`${s.preferred_name ?? s.first_name} ${s.last_name}`}
                       onClose={() => setMedical(false)} />
