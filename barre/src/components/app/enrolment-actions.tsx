@@ -37,15 +37,23 @@ type Candidate = {
 export function EnrolSheet({ classId, className, full, onClose }: {
   classId: string; className: string; full: boolean; onClose: () => void;
 }) {
-  const candidates = useRows<Candidate>(
-    ['enrollable', classId], C.ENROLLABLE_STUDENTS, [classId]);
+  // Only children who can join: not in the class, not already waiting, and
+  // by default only those the class's age range suits (UR-19, admins D10).
+  const candidates = useRows<C.Candidate>(
+    ['class-candidates', classId], C.CLASS_CANDIDATES, [classId]);
   const [studentId, setStudentId] = React.useState('');
   const [q, setQ] = React.useState('');
   const [note, setNote] = React.useState('');
+  const [anyAge, setAnyAge] = React.useState(false);
   const [mode, setMode] = React.useState<'enrol' | 'wait'>(full ? 'wait' : 'enrol');
 
-  const list = (candidates.data ?? []).filter(c =>
-    !q || `${c.first_name} ${c.last_name} ${c.family_name}`.toLowerCase().includes(q.toLowerCase()));
+  const outside = (candidates.data ?? []).filter(c => !c.in_range).length;
+  const list = (candidates.data ?? []).filter(c => (anyAge || c.in_range) &&
+    (!q || `${c.first_name} ${c.last_name} ${c.family_name}`.toLowerCase().includes(q.toLowerCase())));
+
+  React.useEffect(() => {
+    if (studentId && !list.some(c => c.id === studentId)) setStudentId('');
+  }, [list, studentId]);
 
   React.useEffect(() => {
     if (!studentId && list[0]) setStudentId(list[0].id);
@@ -92,21 +100,30 @@ export function EnrolSheet({ classId, className, full, onClose }: {
       {candidates.isPending && <Skeleton className="h-24" />}
       {!candidates.isPending && list.length === 0 && (
         <p className="text-[13px] text-ink-3">
-          {q ? 'Nobody matches that.' : 'Every child on your books is already in this class.'}
+          {q ? 'Nobody matches that.' : outside && !anyAge
+            ? 'Nobody else of the right age. Include other ages below if you mean to.'
+            : 'Every child on your books is already in this class or waiting for it.'}
         </p>
       )}
       {list.length > 0 && (
         <Field label="Child" htmlFor="enrol-student" required
-               hint={chosen ? `${ageFrom(chosen.date_of_birth)} years old · ${chosen.family_name}` : undefined}>
+               hint={chosen ? `${chosen.age} years old · ${chosen.family_name}${chosen.in_range ? '' : ' · outside this class’s age range'}` : undefined}>
           <Select id="enrol-student" value={studentId} onChange={e => setStudentId(e.target.value)}
                   size={Math.min(6, Math.max(3, list.length))}>
             {list.slice(0, 200).map(c => (
               <option key={c.id} value={c.id}>
-                {c.first_name} {c.last_name} — {c.family_name}
+                {c.first_name} {c.last_name}, {c.age} — {c.family_name}{c.in_range ? '' : ' (other age)'}
               </option>
             ))}
           </Select>
         </Field>
+      )}
+      {outside > 0 && (
+        <label className="flex min-h-[44px] items-center gap-3 text-[14px]">
+          <input type="checkbox" checked={anyAge} className="size-[18px] accent-[var(--color-accent)]"
+                 onChange={e => setAnyAge(e.target.checked)} />
+          Include {outside} child{outside === 1 ? '' : 'ren'} outside the age range
+        </label>
       )}
 
       <Field label="Note" htmlFor="enrol-note" hint="Optional. Why, or anything to remember.">
@@ -183,25 +200,38 @@ export function WithdrawSheet({ enrolmentId, name, onClose }: {
   );
 }
 
-/** The three things you can do to a waiting-list entry. */
-export function WaitlistActions({ entry }: {
-  entry: { id: string; status?: string; first_name: string; last_name: string };
+/** The three things you can do to a waiting-list entry. Offer and "Took it"
+ *  without an offer need a free place: capacity, less active places, less
+ *  offers already out (UR-19). The database refuses otherwise; this says why first. */
+export function WaitlistActions({ entry, free }: {
+  entry: { id: string; status?: string; first_name: string; last_name: string; offer_expires_at?: string | Date | null };
+  free?: { free: number; offers: number } | null;
 }) {
   const offer = usePipeline(C.OFFER_PLACE);
   const accept = usePipeline(C.ACCEPT_PLACE);
   const decline = usePipeline(C.DECLINE_PLACE);
   const who = `${entry.first_name} ${entry.last_name}`;
   const err = offer.error ?? accept.error ?? decline.error;
+  const offered = entry.status === 'offered'
+    && (!entry.offer_expires_at || new Date(entry.offer_expires_at) > new Date());
+  const noPlace = !!free && free.free <= 0;
+  const why = noPlace
+    ? (free!.offers > 0 ? `No free place — ${free!.offers} offer${free!.offers === 1 ? '' : 's'} already out` : 'No free place — the class is full')
+    : null;
 
   return (
     <div className="mt-1.5">
-      <div className="flex flex-wrap gap-1.5">
-        {entry.status !== 'offered' && (
-          <Button size="sm" loading={offer.isPending} onClick={() => offer.mutate([entry.id, 3])}>
+      {offered && entry.offer_expires_at && (
+        <p className="mb-1.5 text-[12.5px] text-ink-3">Offer open until {dateShort(entry.offer_expires_at)}, then it passes to the next family.</p>
+      )}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {!offered && (
+          <Button size="sm" loading={offer.isPending} disabled={noPlace}
+                  onClick={() => offer.mutate([entry.id, null])}>
             <Clock className="size-3.5" aria-hidden /> Offer
           </Button>
         )}
-        <Button size="sm" loading={accept.isPending}
+        <Button size="sm" loading={accept.isPending} disabled={!offered && noPlace}
                 onClick={() => accept.mutate([entry.id])}>
           <Check className="size-3.5" aria-hidden /> Took it
         </Button>
@@ -209,12 +239,13 @@ export function WaitlistActions({ entry }: {
                 aria-label={`${who} declined`} onClick={() => decline.mutate([entry.id, null])}>
           <X className="size-3.5" aria-hidden /> Declined
         </Button>
+        {!offered && why && <span className="text-[12px] text-ink-3">{why}</span>}
       </div>
       {err != null && (
         <p role="alert" className="mt-1 text-[12px] text-critical">
           {/CLASS_FULL/.test(String((err as Error).message))
             ? 'The class is full again — withdraw someone first.'
-            : (err as Error).message}
+            : errorText(err)}
         </p>
       )}
     </div>

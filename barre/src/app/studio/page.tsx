@@ -61,7 +61,7 @@ export default function StudioSettings() {
           ))}
         </div>
         <div role="tabpanel" id={`st-panel-${tab}`} aria-labelledby={`st-tab-${tab}`} className="space-y-10">
-          {tab === 'school' && <><StudioDetails /><AboutDemo /></>}
+          {tab === 'school' && <><StudioDetails /><WaitlistSettings /><AboutDemo /></>}
           {tab === 'places' && <><Locations /><Rooms /></>}
           {tab === 'terms' && <Terms />}
           {tab === 'teaching' && <>
@@ -108,6 +108,37 @@ function StudioDetails() {
         </p>
       )}
       {editing && s && <StudioSheet studio={s} onClose={() => setEditing(false)} />}
+    </Card>
+  );
+}
+
+/** One setting: how long a family has to answer a waiting-list offer (UR-19). */
+function WaitlistSettings() {
+  const { session } = useSession();
+  const row = useRow<{ id: string; waitlist_offer_days: number }>(['waitlist-setting'], S.WAITLIST_SETTING);
+  const [days, setDays] = React.useState<string>('');
+  const [saved, setSaved] = React.useState(false);
+  const save = useSetupWrite(S.SET_WAITLIST_DAYS, () => setSaved(true));
+  const isOwner = session?.role === 'owner';
+  React.useEffect(() => { if (row.data && days === '') setDays(String(row.data.waitlist_offer_days)); }, [row.data, days]);
+  const n = Number(days);
+  const ok = Number.isInteger(n) && n >= 1 && n <= 30;
+  return (
+    <Card>
+      <CardHeader title="Waiting lists" subtitle="One offer goes out for each free place" />
+      {row.isPending && <div className="pt-3"><Skeleton className="h-14" /></div>}
+      {row.data && (
+        <div className="flex flex-wrap items-end gap-3 pt-3">
+          <Field label="Offers stay open for" htmlFor="wl-days"
+                 hint="Days. Then the offer lapses and the place goes to the next family." error={days && !ok ? 'Between 1 and 30 days.' : undefined}>
+            <Input id="wl-days" type="number" inputMode="numeric" min={1} max={30} className="w-28" disabled={!isOwner}
+                   value={days} onChange={e => { setDays(e.target.value); setSaved(false); }} />
+          </Field>
+          {isOwner && <Button size="sm" disabled={!ok || n === row.data.waitlist_offer_days} loading={save.isPending}
+                              onClick={() => save.mutate([row.data!.id, n])}>{saved ? 'Saved' : 'Save'}</Button>}
+        </div>
+      )}
+      {save.error != null && <div className="pt-3"><ErrorState error={save.error} /></div>}
     </Card>
   );
 }

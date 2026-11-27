@@ -133,8 +133,10 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
                            attendance_pct: number | null }>(
     ['roster', id], C.CLASS_ROSTER, [id]);
   const waitlist = useRows<{ id: string; position: number; status: string; first_name: string;
-                             last_name: string; family_name: string }>(
+                             last_name: string; family_name: string; date_of_birth: string;
+                             offer_expires_at: string | null }>(
     ['waitlist', id], C.CLASS_WAITLIST, [id]);
+  const free = useRows<{ free: number; offers: number; offer_days: number }>(['class-free', id], C.CLASS_FREE, [id]).data?.[0];
 
   return (
     <DetailPanel open onClose={onClose} title={c?.name ?? 'Class'}
@@ -202,16 +204,18 @@ function ClassDetail({ id, rows, onClose }: { id: string; rows: C.ClassRow[]; on
                   <li key={w.id} className="py-2">
                     <div className="flex items-center gap-3">
                       <span className="w-6 shrink-0 font-display text-[17px] tnum">{w.position}</span>
-                      <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{w.first_name} {w.last_name}</span>
+                      <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{w.first_name} {w.last_name}
+                        <span className="font-normal text-ink-3"> · {ageFrom(w.date_of_birth)}</span></span>
                       {w.status === 'offered' && <Word>Offered</Word>}
                       <span className="shrink-0 truncate text-[12px] text-ink-3">{w.family_name}</span>
                     </div>
-                    <WaitlistActions entry={w} />
+                    <WaitlistActions entry={w} free={free} />
                   </li>
                 ))}
               </ol>
               <p className="mt-2 text-[13px] text-ink-3">
-                When a place frees up, the family at position 1 is offered it first.
+                When a place frees up, the family at position 1 is offered it first. One offer goes out per free place,
+                and an offer lasts {free?.offer_days ?? 3} day{free?.offer_days === 1 ? '' : 's'} before passing to the next family.
               </p>
             </DetailSection>
           )}

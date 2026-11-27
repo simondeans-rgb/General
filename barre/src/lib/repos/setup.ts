@@ -134,6 +134,10 @@ export const STUDIO = `
 select id, name, timezone, currency, contact_email, contact_phone, onboarded_at, privacy_notice_url
   from studio where deleted_at is null limit 1`;
 
+/** How long a waiting-list offer stays open (UR-19). Owner only, like the rest of the studio row. */
+export const WAITLIST_SETTING = `select id, waitlist_offer_days from studio where deleted_at is null limit 1`;
+export const SET_WAITLIST_DAYS = `update studio set waitlist_offer_days = $2, updated_at = now() where id = $1 returning id`;
+
 /** Owner only — studio_write is the one policy narrowed past is_admin. */
 export const UPDATE_STUDIO = `
 update studio set name = $2, timezone = $3, contact_email = nullif(btrim($4),''),
