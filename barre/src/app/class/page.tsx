@@ -18,6 +18,7 @@ import { SectionHead, StyleMark, ViewTabs } from '@/components/app/session-row';
 import * as H from '@/lib/repos/hub';
 import { storage, formatBytes, kindForFile, probeDuration } from '@/lib/storage';
 import { cn } from '@/lib/cn';
+import { ChildrenQuestion, consentKindFor, saveChildren } from '@/components/app/media-children';
 
 
 const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -69,7 +70,7 @@ function ClassView() {
       </div>
 
       {adding && c && (
-        <AddMaterial classId={id} className={c.name} onClose={() => setAdding(false)} />
+        <AddMaterial classId={id} className={c.name} isOffice={isOffice} onClose={() => setAdding(false)} />
       )}
     </Shell>
   );
@@ -136,7 +137,8 @@ function Material({ classId, canAdd, isOffice }: {
         {pinned.length > 0 && (
           <ul className="divide-y divide-line">
             {pinned.map(r => (
-              <ResourceRow key={r.id} r={r} canManage={isOffice || (canAdd && r.mine)} />
+              <ResourceRow key={r.id} r={r} canManage={isOffice || (canAdd && r.mine)}
+                           classId={classId} isOffice={isOffice} />
             ))}
           </ul>
         )}
@@ -146,7 +148,7 @@ function Material({ classId, canAdd, isOffice }: {
         <section>
           <SectionHead title="From the studio" meta="Shared with everyone" />
           <ul className="divide-y divide-line">
-            {studioWide.map(r => <ResourceRow key={r.id} r={r} />)}
+            {studioWide.map(r => <ResourceRow key={r.id} r={r} canManage={isOffice} classId={classId} isOffice={isOffice} />)}
           </ul>
         </section>
       )}
@@ -157,8 +159,8 @@ function Material({ classId, canAdd, isOffice }: {
 /* ── Teacher: add material ─────────────────────────────────────────────── */
 type Mode = 'file' | 'link';
 
-function AddMaterial({ classId, className, onClose }: {
-  classId: string; className: string; onClose: () => void;
+function AddMaterial({ classId, className, isOffice, onClose }: {
+  classId: string; className: string; isOffice: boolean; onClose: () => void;
 }) {
   const { session } = useSession();
   const qc = useQueryClient();
@@ -172,6 +174,18 @@ function AddMaterial({ classId, className, onClose }: {
   const [forStudents, setForStudents] = React.useState(true);
   const [forGuardians, setForGuardians] = React.useState(true);
   const [done, setDone] = React.useState(false);
+  // Media of children (0057): asked for every video or photo upload.
+  const [shows, setShows] = React.useState<boolean | null>(null);
+  const [children, setChildren] = React.useState<string[]>([]);
+  const [noneIdentifiable, setNoneIdentifiable] = React.useState(false);
+  const [allStaff, setAllStaff] = React.useState(false);
+
+  const fileKind = file ? kindForFile(file) : null;
+  const isPhoto = !!file && (file.type || '').startsWith('image/');
+  const isMedia = mode === 'file' ? fileKind === 'video' || isPhoto : linkKind === 'video';
+  const kind = mode === 'file' ? (fileKind ?? 'document') : linkKind;
+  // A link defaults to "no children"; an upload has to answer.
+  const showsAnswer = isMedia ? (mode === 'link' ? (shows ?? false) : shows) : false;
 
   const pick = (f: File | null) => {
     setFile(f);
@@ -189,8 +203,15 @@ function AddMaterial({ classId, className, onClose }: {
         const [created] = await q<{ id: string; studio_id: string }>(H.CREATE_RESOURCE, [
           classId, kind, title.trim(), description.trim() || null, category.trim() || null,
           mode === 'link' ? url.trim() : null, duration, forStudents, forGuardians,
+          !!showsAnswer, isOffice && allStaff,
         ]);
         if (!created) throw new Error('You cannot add material to this class.');
+        if (showsAnswer) {
+          await saveChildren(q, created.id, children);
+          if (isOffice && noneIdentifiable && children.length === 0) {
+            await q(H.UPDATE_RESOURCE_MEDIA, [created.id, true, true, allStaff]);
+          }
+        }
 
         if (mode === 'file') {
           await storage.upload(file!, { q, resourceId: created.id, studioId: created.studio_id });
@@ -203,7 +224,7 @@ function AddMaterial({ classId, className, onClose }: {
   });
 
   const tooBig = !!file && file.size > storage.maxBytes;
-  const valid = title.trim().length >= 2 && (
+  const valid = title.trim().length >= 2 && (!isMedia || showsAnswer !== null) && (
     mode === 'file' ? !!file && !tooBig : /^https?:\/\/\S+$/.test(url.trim()));
 
   return (
@@ -280,6 +301,18 @@ function AddMaterial({ classId, className, onClose }: {
                              focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
               </Field>
 
+              {isMedia && (
+                <ChildrenQuestion classId={classId} resourceId={null} consentKind={consentKindFor(kind)}
+                  shows={showsAnswer} onShows={setShows} picked={children} onPicked={setChildren}
+                  isOffice={isOffice} noneIdentifiable={noneIdentifiable} onNoneIdentifiable={setNoneIdentifiable}
+                  required={mode === 'file'} />
+              )}
+              {isMedia && mode === 'link' && showsAnswer && (
+                <p className="text-[0.8125rem] text-caution">
+                  A link is only as private as the site it points to. For a video of children, upload the file instead.
+                </p>
+              )}
+
               <fieldset>
                 <legend className="mb-1 text-[0.8125rem] font-medium text-ink-2">Who can see it</legend>
                 <label className="flex min-h-[44px] items-center gap-3 text-[0.875rem]">
@@ -292,6 +325,13 @@ function AddMaterial({ classId, className, onClose }: {
                          onChange={e => setForGuardians(e.target.checked)} />
                   Their parents
                 </label>
+                {isOffice && (
+                  <label className="flex min-h-[44px] items-center gap-3 text-[0.875rem]">
+                    <input type="checkbox" checked={allStaff} className="size-[18px] accent-[var(--color-accent)]"
+                           onChange={e => setAllStaff(e.target.checked)} />
+                    All staff, not only this class’s teachers
+                  </label>
+                )}
                 <p className="mt-1 text-[0.7812rem] text-ink-3">
                   Untick both and it stays visible to staff only.
                 </p>
