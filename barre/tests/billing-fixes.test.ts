@@ -25,6 +25,9 @@ const termId = async (svc: Q) =>
 const items = (description: string, unit_minor: number) =>
   JSON.stringify([{ kind: 'workshop', description, unit_minor }]);
 /** Deferred notifications (a new invoice) are written at commit; tests roll back, so fire them now. */
+/** Date the seeded "Termly tuition" invoices last term, inside this transaction. */
+const commitFree = (svc: Q) => svc(`update invoice set issued_on = issued_on - 120, due_on = due_on - 120
+                                     where number between 'INV-1041' and 'INV-1070'`);
 const flush = (q: Q) => q('set constraints all immediate');
 const bell = (svc: Q, user: string) =>
   svc(`select kind, title, body, href from notification where user_id = $1 order by created_at, title`, [user]);
@@ -162,6 +165,21 @@ describe('UR-10 · billing runs never bill a family twice for a period', () => {
       // A second run includes them no more: their run invoice now names each class.
       await q(B.ISSUE_BILLING_RUN, [run]);
       expect((await q(B.BILLING_LINES, [t, null, [first.family_id]])).filter((l: any) => l.family_id === first.family_id)).toHaveLength(0);
+    });
+  });
+
+  it('any invoice raised for the term outside a run counts; an opening balance without a term does not', async () => {
+    await asUser(USERS.owner, async (q, svc) => {
+      const t = await termId(svc);
+      await commitFree(svc);
+      const fam = FAMILY.a;
+      const has = async () => (await q(B.BILLING_LINES, [t, null, null])).some((l: any) => l.family_id === fam);
+      expect(await has()).toBe(true);
+      const [{ id }] = await q(`select app.create_invoice($1, $2::jsonb, null, 'Opening balance as at 1 Sep', 0, true, null) id`,
+        [fam, JSON.stringify([{ kind: 'tuition', description: 'Opening balance', unit_minor: 5000 }])]);
+      expect(await has()).toBe(true);
+      await svc(`update invoice set term_id = $1 where id = $2`, [t, id]);
+      expect(await has()).toBe(false);
     });
   });
 

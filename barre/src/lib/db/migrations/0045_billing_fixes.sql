@@ -273,10 +273,12 @@ grant execute on function app.issue_credit_note(uuid, bigint, text, text),
                           app.add_family_credit(uuid, bigint, text) to authenticated;
 
 -- ── 2. Billing runs: one bill per family per period ────────────────────────
--- Live tuition invoices for a period that the line-by-line check cannot see,
--- because their lines do not name a class: imported, hand-made, or from
--- before runs existed. For a term: invoices for that term, or with no term
--- and dated from four weeks before it starts to its end. For a month: lines
+-- Live invoices for a period that the line-by-line check cannot see. For a
+-- term: any invoice raised for that term (term_id) outside a billing run —
+-- hand-made, imported, an opening balance that includes the term's fees —
+-- and, with no term, tuition invoices whose lines name no class, dated from
+-- four weeks before the term to its end (an opening balance with no term is
+-- not counted). For a month: lines
 -- that say they cover that month, or undated invoices from that month whose
 -- line names the month.
 create or replace function app.billing_period_invoices(p_term uuid, p_month date default null)
@@ -293,7 +295,11 @@ create or replace function app.billing_period_invoices(p_term uuid, p_month date
          sum(i.total_minor)::bigint
     from invoice i, w
    where i.studio_id = w.studio_id and i.deleted_at is null and i.status <> 'void'
-     and exists (
+     and (
+       -- Any invoice the office (or an import) raised for this very term,
+       -- other than one from a billing run, which is matched line by line.
+       (p_month is null and i.term_id = w.id and i.billing_run_id is null)
+     or exists (
        select 1 from invoice_item ii
         where ii.invoice_id = i.id and ii.deleted_at is null and ii.class_id is null
           and ii.kind in ('tuition', 'term_fee')
@@ -301,13 +307,15 @@ create or replace function app.billing_period_invoices(p_term uuid, p_month date
                 when p_month is null then
                   ii.period_start is null and (
                     i.term_id = w.id
-                    or (i.term_id is null and coalesce(i.issued_on, i.due_on, i.created_at::date) between w.w0 and w.w1))
+                    or (i.term_id is null and coalesce(i.issued_on, i.due_on, i.created_at::date) between w.w0 and w.w1
+                      -- An opening balance with no term does not cover the term.
+                      and coalesce(i.note, '') not ilike 'Opening balance%'))
                 else
                   ii.period_start = w.pm
                   or (ii.period_start is null and i.term_id is null
                       and coalesce(i.issued_on, i.due_on, i.created_at::date) between w.w0 and w.w1
                       and ii.description ilike '%' || w.mname || '%')
-              end)
+              end))
    group by i.family_id
 $$;
 revoke all on function app.billing_period_invoices(uuid, date) from public, authenticated, anon;
