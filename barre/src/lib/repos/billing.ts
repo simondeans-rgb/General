@@ -73,10 +73,10 @@ select it.id, it.kind, it.description, it.quantity, it.unit_minor, it.discount_m
 
 export type PaymentRow = { id: string; amount_minor: string; refunded_minor: string; method: string;
   provider: string | null; failure_code: string | null; succeeded_at: string | null;
-  created_at: string; note: string | null };
+  created_at: string; note: string | null; credit_note_id?: string | null };
 
 export const INVOICE_PAYMENTS = `
-select id, amount_minor, refunded_minor, method, provider, failure_code, succeeded_at, created_at, note
+select id, amount_minor, refunded_minor, method, provider, failure_code, succeeded_at, created_at, note, credit_note_id
   from payment where invoice_id = $1 and deleted_at is null
  order by created_at`;
 

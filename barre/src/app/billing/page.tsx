@@ -4,7 +4,7 @@ import * as React from 'react';
 import { Suspense } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus, AlertTriangle, ArrowRight, Search, Send, Banknote, Ban, Undo2, Trash2, Wallet, CalendarRange, Download,
+  Plus, AlertTriangle, ArrowRight, Search, Send, Banknote, Ban, Undo2, Trash2, Wallet, CalendarRange, Download, FileMinus, Mail,
 } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection } from '@/components/app/detail-panel';
@@ -13,6 +13,9 @@ import { useRows, useRow } from '@/lib/query';
 import { runAs, readAs } from '@/lib/db/client';
 import { downloadCsv } from '@/lib/csv';
 import { BillingRunPanel } from '@/components/app/billing-run';
+import { FamilyAccount } from '@/components/app/family-account';
+import { PaymentRemindersSheet } from '@/components/app/payment-reminders';
+import { cardPaymentsEnabled, invoiceState } from '@/lib/payments/invoice-status';
 import { useSession } from '@/lib/auth/session';
 import { useSelection } from '@/lib/use-selection';
 import {
@@ -67,6 +70,7 @@ function Billing() {
   const [query, setQuery] = React.useState('');
   const [creating, setCreating] = React.useState(false);
   const [running, setRunning] = React.useState(false);
+  const [reminding, setReminding] = React.useState(false);
 
   const counts = React.useMemo(() => {
     const d = invoices.data ?? [];
@@ -128,7 +132,8 @@ function Billing() {
             <Stat label="Failed payments" loading={summary.isLoading} tone={s && s.failed_payments > 0 ? 'critical' : undefined}
               value={s && String(s.failed_payments)}
               note={s && (s.failed_payments ? `${money(s.failed_minor)} declined` : 'None outstanding')}
-              action={s && s.failed_payments > 0 ? 'Retry' : undefined}
+              // Cards cannot be retried until a provider is connected (UR-11).
+              action={s && s.failed_payments > 0 ? (cardPaymentsEnabled() ? 'Retry' : 'Show failed') : undefined}
               onClick={() => setFilter('attention')} />
             <Stat label="Collected, 30 days" loading={summary.isLoading}
               value={s && money(s.collected_30d_minor)}
@@ -140,6 +145,11 @@ function Billing() {
           <section aria-labelledby="inv-h" className="min-w-0">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b-2 border-ink pb-2">
               <h2 id="inv-h" className="section-title flex-1">Invoices</h2>
+              {s && s.overdue_invoices > 0 && (
+                <Button size="sm" onClick={() => setReminding(true)}>
+                  <Mail className="size-4" aria-hidden /> Remind overdue
+                </Button>
+              )}
               <label className="relative w-full sm:w-64">
                 <span className="sr-only">Search invoices</span>
                 <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-3" aria-hidden />
@@ -238,6 +248,7 @@ function Billing() {
       </div>
 
       {running && <BillingRunPanel onClose={() => setRunning(false)} />}
+      {reminding && <PaymentRemindersSheet onClose={() => setReminding(false)} />}
       {creating && <NewInvoiceSheet onClose={() => setCreating(false)}
                                     onCreated={id => { setCreating(false); select(id); }} />}
     </Shell>
@@ -297,9 +308,9 @@ function Stat({ label, value, note, tone, loading, onClick, action }: {
 
 /** Status as a word. Colour backs it up; it never carries it alone. */
 function InvoiceStatus({ i }: { i: B.InvoiceRow }) {
-  const s = STATUS[i.status] ?? STATUS.draft!;
-  if (i.failed) return <span className="inline-flex items-center gap-1 font-semibold text-critical"><AlertTriangle className="size-3.5" aria-hidden />Card declined</span>;
-  if (i.overdue) return <span className="font-semibold text-caution">Overdue</span>;
+  const s = invoiceState(i);
+  if (i.failed) return <span className="inline-flex items-center gap-1 font-semibold text-critical"><AlertTriangle className="size-3.5" aria-hidden />{s.label}</span>;
+  if (i.overdue) return <span className="font-semibold text-caution">{s.label}</span>;
   return <span className={cn(s.tone === 'positive' ? 'text-positive' : s.tone === 'caution' ? 'text-ink' : 'text-ink-3', 'font-medium')}>{s.label}</span>;
 }
 
@@ -308,9 +319,10 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
   const inv = useRow<B.InvoiceDetail>(['invoice', id], B.INVOICE, [id]);
   const items = useRows<B.ItemRow>(['invoice-items', id], B.INVOICE_ITEMS, [id]);
   const payments = useRows<B.PaymentRow>(['invoice-payments', id], B.INVOICE_PAYMENTS, [id]);
+  const credits = useRows<B.CreditNoteRow>(['invoice-credit-notes', id], B.INVOICE_CREDIT_NOTES, [id]);
   const { session } = useSession();
   const qc = useQueryClient();
-  const [sheet, setSheet] = React.useState<null | 'pay' | 'void' | 'remind' | { refund: B.PaymentRow }>(null);
+  const [sheet, setSheet] = React.useState<null | 'pay' | 'void' | 'remind' | 'credit' | { refund: B.PaymentRow }>(null);
 
   const issue = useMutation({
     mutationFn: () => runAs(session, q => q(B.ISSUE_INVOICE, [id])),
@@ -367,6 +379,11 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
                 <Send className="size-4" aria-hidden /> {failed ? 'Ask for a new card' : 'Send reminder'}
               </Button>
             )}
+            {i.status !== 'void' && i.status !== 'draft' && (
+              <Button variant="ghost" onClick={() => setSheet('credit')}>
+                <FileMinus className="size-4" aria-hidden /> Credit note
+              </Button>
+            )}
             {i.status !== 'void' && Number(i.paid_minor) === 0 && (
               <Button variant="ghost" onClick={() => setSheet('void')}>
                 <Ban className="size-4" aria-hidden /> Void
@@ -408,7 +425,8 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
           <DetailSection title="Payments">
             {payments.data?.length === 0 && <p className="text-sm text-ink-3">Nothing received yet.</p>}
             <ul className="divide-y divide-line border-y border-line">
-              {payments.data?.map(p => {
+              {/* A credit note's own credit is shown as the credit note below. */}
+              {payments.data?.filter(p => !p.credit_note_id).map(p => {
                 const ok = !!p.succeeded_at;
                 const refunded = Number(p.refunded_minor);
                 const canRefund = ok && ['bank_transfer', 'cash'].includes(p.method)
@@ -436,6 +454,21 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
                 );
               })}
             </ul>
+            {!!credits.data?.length && (
+              <ul className="mt-3 divide-y divide-line border-y border-line" aria-label="Credit notes">
+                {credits.data.map(c => (
+                  <li key={c.id} className="flex items-start gap-3 py-2.5 text-sm">
+                    <span className="min-w-0 flex-1">
+                      <span className="block">Credit note <span className="tnum">{c.number}</span></span>
+                      <span className="block text-[12px] text-ink-3">
+                        {dateShort(c.created_at)} · {c.reason} · {creditNoteWhere(c)}
+                      </span>
+                    </span>
+                    <span className="tnum shrink-0 text-positive">−{money(c.amount_minor)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
             {payments.data?.some(p => p.method === 'card' && p.succeeded_at) && (
               <p className="mt-2 text-[12.5px] text-ink-3">
                 Card payments are refunded from the payment provider; the refund appears here once it confirms.
@@ -444,11 +477,7 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
           </DetailSection>
 
           <DetailSection title="Family account">
-            <p className="text-sm">
-              {Number(i.family_balance_minor) > 0 && <>Owes <span className="tnum font-medium">{money(i.family_balance_minor)}</span> in total.</>}
-              {Number(i.family_balance_minor) === 0 && 'Nothing else owed.'}
-              {Number(i.family_balance_minor) < 0 && <>In credit by <span className="tnum font-medium">{money(-Number(i.family_balance_minor))}</span>.</>}
-            </p>
+            <FamilyAccount familyId={i.family_id} />
           </DetailSection>
         </>
       )}
@@ -456,7 +485,11 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
       {i && sheet === 'pay' && <RecordPaymentSheet invoice={i} onClose={() => setSheet(null)} />}
       {i && sheet === 'void' && <VoidSheet invoice={i} onClose={() => setSheet(null)} />}
       {i && sheet === 'remind' && <ReminderSheet invoice={i} failed={!!failed} onClose={() => setSheet(null)} />}
-      {i && sheet && typeof sheet === 'object' && <RefundSheet payment={sheet.refund} onClose={() => setSheet(null)} />}
+      {i && sheet === 'credit' && <CreditNoteSheet invoice={i} credited={(credits.data ?? []).reduce((n, c) => n + Number(c.amount_minor), 0)}
+                                                     cashPaid={(payments.data ?? []).filter(p => p.succeeded_at && ['bank_transfer', 'cash'].includes(p.method))
+                                                       .reduce((n, p) => n + Number(p.amount_minor) - Number(p.refunded_minor), 0)}
+                                                     onClose={() => setSheet(null)} />}
+      {i && sheet && typeof sheet === 'object' && <RefundSheet payment={sheet.refund} invoice={i} onClose={() => setSheet(null)} />}
     </DetailPanel>
   );
 }
@@ -518,24 +551,102 @@ function VoidSheet({ invoice, onClose }: { invoice: B.InvoiceDetail; onClose: ()
   );
 }
 
-function RefundSheet({ payment, onClose }: { payment: B.PaymentRow; onClose: () => void }) {
+/** How a credit note was settled, in words. */
+function creditNoteWhere(c: B.CreditNoteRow) {
+  const parts = [
+    Number(c.applied_minor) > 0 && `${money(c.applied_minor)} off what was owed`,
+    Number(c.refunded_minor) > 0 && `${money(c.refunded_minor)} refunded`,
+    Number(c.account_minor) > 0 && `${money(c.account_minor)} held as credit`,
+  ].filter(Boolean);
+  return parts.join(', ');
+}
+
+/**
+ * Handing money back. Usually the family was charged less (a lesson cancelled):
+ * that is a credit note, and the invoice stays settled (UR-10, admins D6).
+ * Reversing a payment recorded by mistake reopens the invoice instead.
+ */
+function RefundSheet({ payment, invoice, onClose }: { payment: B.PaymentRow; invoice: B.InvoiceDetail; onClose: () => void }) {
   const left = Number(payment.amount_minor) - Number(payment.refunded_minor);
   const [amount, setAmount] = React.useState((left / 100).toFixed(2));
   const [reason, setReason] = React.useState('');
+  const [mode, setMode] = React.useState<'credit_note' | 'mistake'>('credit_note');
   const minor = toMinor(amount);
-  const save = useLedgerMutation(() => (q: any) => q(B.REFUND_PAYMENT, [payment.id, minor, reason]), onClose);
+  const save = useLedgerMutation(() => (q: any) => q(B.REFUND_PAYMENT, [payment.id, minor, reason, mode]), onClose);
   return (
-    <RecordSheet title="Refund payment"
-      subtitle={`${METHOD_LABEL[payment.method]} of ${money(payment.amount_minor)}. Hand the money back first — this records that you have.`}
+    <RecordSheet title="Refund"
+      subtitle={`${METHOD_LABEL[payment.method]} of ${money(payment.amount_minor)} on ${invoice.number}. Hand the money back first — this records that you have.`}
       onClose={onClose} onSave={() => save.mutate(undefined)} saving={save.isPending} error={save.error}
       canSave={minor != null && minor > 0 && minor <= left && reason.trim().length >= 3} saveLabel="Record refund">
+      <fieldset className="space-y-2">
+        <legend className="mb-1 text-[13px] font-medium text-ink-2">What is this refund for?</legend>
+        <label className="flex items-start gap-2.5 text-sm">
+          <input type="radio" name="ref-mode" className="mt-0.5 size-5 accent-[var(--color-accent)]"
+                 checked={mode === 'credit_note'} onChange={() => setMode('credit_note')} />
+          <span><span className="block font-medium">They were charged too much</span>
+            <span className="block text-[13px] text-ink-3">A class cancelled, a fee waived. Issues a credit note; {invoice.number} stays settled.</span></span>
+        </label>
+        <label className="flex items-start gap-2.5 text-sm">
+          <input type="radio" name="ref-mode" className="mt-0.5 size-5 accent-[var(--color-accent)]"
+                 checked={mode === 'mistake'} onChange={() => setMode('mistake')} />
+          <span><span className="block font-medium">The payment was recorded by mistake</span>
+            <span className="block text-[13px] text-ink-3">The payment is reversed and {invoice.number} is owed again.</span></span>
+        </label>
+      </fieldset>
       <Field label="Amount" htmlFor="ref-a" required
              error={minor != null && minor > left ? `At most ${money(left)}` : undefined}>
         <Input id="ref-a" inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} className="tnum" />
       </Field>
       <Field label="Why" htmlFor="ref-r" required>
-        <Input id="ref-r" value={reason} onChange={e => setReason(e.target.value)} maxLength={200} />
+        <Input id="ref-r" value={reason} onChange={e => setReason(e.target.value)} maxLength={200}
+               placeholder="Class cancelled 1 Dec – teacher unwell" />
       </Field>
+    </RecordSheet>
+  );
+}
+
+/** A credit note: lowers what an invoice charges, with a reason. */
+function CreditNoteSheet({ invoice, credited, cashPaid, onClose }: {
+  invoice: B.InvoiceDetail; credited: number; cashPaid: number; onClose: () => void;
+}) {
+  const max = Number(invoice.total_minor) - credited;
+  const owed = Math.max(Number(invoice.total_minor) - Number(invoice.paid_minor), 0);
+  const [amount, setAmount] = React.useState('');
+  const [reason, setReason] = React.useState('');
+  const [settle, setSettle] = React.useState<'account' | 'refund'>('account');
+  const minor = toMinor(amount);
+  const save = useLedgerMutation(() => (q: any) => q(B.ISSUE_CREDIT_NOTE, [invoice.id, minor, reason.trim(), settle]), onClose);
+  const tooMuch = minor != null && minor > max;
+  const noCash = settle === 'refund' && minor != null && minor > cashPaid;
+  return (
+    <RecordSheet title="Credit note" subtitle={`${invoice.number} · ${invoice.family_name}. Up to ${money(max)} can be credited.`}
+      onClose={onClose} onSave={() => save.mutate(undefined)} saving={save.isPending} error={save.error}
+      canSave={minor != null && minor > 0 && !tooMuch && !noCash && reason.trim().length >= 3} saveLabel="Issue credit note">
+      <Field label="Amount" htmlFor="cn-a" required
+             error={tooMuch ? `At most ${money(max)}` : noCash ? `Only ${money(cashPaid)} was paid by transfer or cash. Card refunds are made with the payment provider.` : undefined}>
+        <Input id="cn-a" inputMode="decimal" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} className="tnum" />
+      </Field>
+      <Field label="Why" htmlFor="cn-r" required>
+        <Input id="cn-r" value={reason} onChange={e => setReason(e.target.value)} maxLength={200} placeholder="Class cancelled 1 Dec" />
+      </Field>
+      <fieldset className="space-y-2">
+        <legend className="mb-1 text-[13px] font-medium text-ink-2">Where the money goes</legend>
+        <label className="flex items-start gap-2.5 text-sm">
+          <input type="radio" name="cn-s" className="mt-0.5 size-5 accent-[var(--color-accent)]"
+                 checked={settle === 'account'} onChange={() => setSettle('account')} />
+          <span><span className="block font-medium">Keep it as credit</span>
+            <span className="block text-[13px] text-ink-3">
+              {owed > 0 ? `Comes off the ${money(owed)} still owed on this invoice; anything over goes off their next invoice.`
+                        : 'Held on their account and taken off their next invoice.'}
+            </span></span>
+        </label>
+        <label className="flex items-start gap-2.5 text-sm">
+          <input type="radio" name="cn-s" className="mt-0.5 size-5 accent-[var(--color-accent)]"
+                 checked={settle === 'refund'} onChange={() => setSettle('refund')} />
+          <span><span className="block font-medium">Give the money back</span>
+            <span className="block text-[13px] text-ink-3">Hand it back first, by transfer or cash. It is recorded as a refund.</span></span>
+        </label>
+      </fieldset>
     </RecordSheet>
   );
 }

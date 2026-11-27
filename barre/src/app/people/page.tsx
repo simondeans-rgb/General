@@ -6,6 +6,8 @@ import { Search, CameraOff, Plus, Pencil, HeartPulse, UserPlus, Upload } from 'l
 import { Shell } from '@/components/app/shell';
 import { ImportWizard } from '@/components/app/import-wizard';
 import { DetailPanel, DetailSection, KeyValue } from '@/components/app/detail-panel';
+import { FamilyAccount } from '@/components/app/family-account';
+import { invoiceState } from '@/lib/payments/invoice-status';
 import { useRows, useRow } from '@/lib/query';
 import { useSelection } from '@/lib/use-selection';
 import { MedicalBrief, MedicalMarker } from '@/components/app/medical-brief';
@@ -150,11 +152,7 @@ function FamilyDetail({ id, onClose }: { id: string; onClose: () => void }) {
       {f && (
         <>
           <DetailSection title="Account">
-            <KeyValue rows={[
-              ['Balance', Number(f.balance_minor) > 0
-                ? <span className="font-medium text-caution">{money(f.balance_minor)} outstanding</span>
-                : <span className="text-positive">Up to date</span>],
-            ]} />
+            <FamilyAccount familyId={f.id} />
             {f.notes && <p className="mt-2 border-l-2 border-line-strong pl-3 text-[14px] text-ink-2">{f.notes}</p>}
             <Button size="sm" variant="ghost" className="-ml-2 mt-2" onClick={() => setEditing(true)}>
               <Pencil className="size-4" aria-hidden /> Edit family
@@ -203,9 +201,11 @@ function FamilyDetail({ id, onClose }: { id: string; onClose: () => void }) {
                 <li key={i.id} className="grid grid-cols-[minmax(0,1fr)_auto_5.5rem] items-baseline gap-3 py-2 text-[14px]">
                   <span className="tnum text-ink-2">{i.number}</span>
                   <span className="tnum font-semibold">{money(i.total_minor)}</span>
-                  <span className={cn('text-right text-[13px] font-semibold', i.status === 'paid' ? 'text-positive' : i.status === 'part_paid' ? 'text-caution' : 'text-critical')}>
-                    {i.status === 'part_paid' ? 'Part paid' : i.status === 'paid' ? 'Paid' : i.status.charAt(0).toUpperCase() + i.status.slice(1)}
-                  </span>
+                  {/* The same words as Billing (UR-54, admins D14). */}
+                  {(() => { const st = invoiceState(i); return (
+                    <span className={cn('text-right text-[13px] font-semibold', st.tone === 'positive' ? 'text-positive' : st.tone === 'caution' ? 'text-caution' : st.tone === 'critical' ? 'text-critical' : 'text-ink-3')}>
+                      {st.label}
+                    </span>); })()}
                 </li>
               ))}
             </ul>
