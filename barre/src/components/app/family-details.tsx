@@ -20,10 +20,16 @@ function useSave(after: () => void) {
   });
 }
 
-/** The parents on the account. Changes reach the office straight away. */
+/**
+ * The parents on the account. Each guardian edits only their own details;
+ * anyone else's are read-only here, and a change goes to the office as a
+ * request (UR-05). Changes reach the office straight away.
+ */
 export function YourDetails() {
   const g = useRows<F.Guardian>(['my-guardians'], F.MY_GUARDIANS);
   const [editing, setEditing] = React.useState<F.Guardian | null>(null);
+  const [asking, setAsking] = React.useState<F.Guardian | null>(null);
+  const others = (g.data ?? []).some(p => !p.is_me);
   return (
     <section aria-labelledby="your-details-h">
       <div className="mb-1 flex items-baseline gap-3 border-b-2 border-ink pb-2">
@@ -39,14 +45,57 @@ export function YourDetails() {
               <span className="block truncate text-[13px] text-ink-3">
                 {[p.phone, p.email].filter(Boolean).join(' · ') || 'No phone or email yet'}</span>
             </span>
-            <Button size="sm" variant="ghost" onClick={() => setEditing(p)} aria-label={`Edit ${p.full_name}`}>
-              <Pencil className="size-4" aria-hidden />
-            </Button>
+            {p.is_me ? (
+              <Button size="sm" variant="ghost" onClick={() => setEditing(p)} aria-label={`Edit ${p.full_name}`}>
+                <Pencil className="size-4" aria-hidden />
+              </Button>
+            ) : (
+              <Button size="sm" variant="ghost" onClick={() => setAsking(p)} aria-label={`Ask the office to change ${p.full_name}’s details`}>
+                Ask the office to change
+              </Button>
+            )}
           </li>
         ))}
       </ul>
+      {others && (
+        <p className="mt-1 text-[13px] text-ink-3">
+          You can change your own details. Only the office changes anyone else’s.
+        </p>
+      )}
       {editing && <GuardianSheet g={editing} onClose={() => setEditing(null)} />}
+      {asking && <AskOfficeSheet g={asking} onClose={() => setAsking(null)} />}
     </section>
+  );
+}
+
+function AskOfficeSheet({ g, onClose }: { g: F.Guardian; onClose: () => void }) {
+  const [body, setBody] = React.useState('');
+  const [sent, setSent] = React.useState(false);
+  const { session } = useSession();
+  const qc = useQueryClient();
+  const send = useMutation({
+    mutationFn: () => runAs(session, q => q(F.ASK_TO_CHANGE_GUARDIAN, [g.id, body.trim()])),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['db'] }); setSent(true); },
+  });
+  if (sent) {
+    return (
+      <RecordSheet title="Sent to the office" onClose={onClose} onSave={onClose} saveLabel="Done">
+        <p className="text-[14.5px] text-ink-2">
+          The office has your request and will check it before changing {g.full_name}’s details.
+          You can follow it in Requests.
+        </p>
+      </RecordSheet>
+    );
+  }
+  return (
+    <RecordSheet title="Ask the office to change" subtitle={g.full_name} onClose={onClose}
+      saving={send.isPending} error={send.error} saveLabel="Send to the office"
+      canSave={body.trim().length > 3} onSave={() => send.mutate()}>
+      <Field label="What should change" htmlFor="ask-b" required
+             hint="For example a new mobile number. The office checks with them before changing it.">
+        <Input id="ask-b" value={body} onChange={e => setBody(e.target.value)} />
+      </Field>
+    </RecordSheet>
   );
 }
 
@@ -56,7 +105,7 @@ function GuardianSheet({ g, onClose }: { g: F.Guardian; onClose: () => void }) {
   const [phone, setPhone] = React.useState(g.phone ?? '');
   const save = useSave(onClose);
   return (
-    <RecordSheet title="Edit details" onClose={onClose} saving={save.isPending} error={save.error}
+    <RecordSheet title="Edit your details" onClose={onClose} saving={save.isPending} error={save.error}
       canSave={name.trim().length > 1} onSave={() => save.mutate({ sql: F.UPDATE_GUARDIAN, params: [g.id, name.trim(), email.trim(), phone.trim()] })}>
       <Field label="Name" htmlFor="gd-n" required><Input id="gd-n" value={name} onChange={e => setName(e.target.value)} /></Field>
       <Field label="Mobile" htmlFor="gd-p"><Input id="gd-p" type="tel" value={phone} onChange={e => setPhone(e.target.value)} /></Field>
