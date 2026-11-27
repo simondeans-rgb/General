@@ -121,7 +121,6 @@ export function buildSeedSql({ today = new Date() }: SeedOptions = {}): string {
     + `\nupdate class_session cs set register_closed_at = cs.ends_at
          where cs.ends_at < now() - interval '2 hours' and cs.register_closed_at is null
            and exists (select 1 from attendance_record a where a.session_id = cs.id);`
-    + `\n${CLASS_INFO_SQL}`
     + `\nselect app.award_event_milestones(id) from studio;`
     + `\nselect set_config('app.quiet', 'off', false);\n`
     // Fresh tables have no planner statistics; without them some permission-
@@ -145,9 +144,7 @@ const CLASS_INFO: [string, string, string, string][] = [
   ['Saturday Ballet Grade 1', 'The Grade 1 syllabus on a Saturday morning: posture, footwork and expressive dance.', 'Primary Ballet or a term of classes', 'Leotard, pink ballet shoes; hair tied back.'],
   ['Adult Contemporary (drop-in)', 'For adults, all levels. Come when you can: pay per class or buy a pack.', 'All levels, including complete beginners', 'Comfortable clothes you can move in; bare feet or socks. Bring water.'],
 ];
-const CLASS_INFO_SQL = `update class c set description = coalesce(c.description, v.d), level_note = v.l, what_to_bring = v.b
-  from (values ${CLASS_INFO.map(r => row([r[0], r[1], r[2], r[3]])).join(', ')}) v(n, d, l, b)
- where c.name = v.n and c.studio_id = '${STUDIO_ID}';`;
+const infoFor = (name: string) => CLASS_INFO.find(r => r[0] === name);
 
 type Ctx = {
   termId: string; base: Date;
@@ -189,9 +186,9 @@ function buildClassesAndPeople(ctx: Ctx): string {
     const id = uid(NS.class, i + 1); classIds.push(id);
     return row([id, STUDIO_ID, termId, STYLE[c[1]], LEVEL[c[2]], LOC[c[3]], ROOM[c[4]],
                 STAFF[c[5]], c[0], c[6], c[7], c[8], c[9], c[10], c[11], c[12],
-                'term', 0, true, true, 'public']);
+                'term', 0, true, true, 'public', infoFor(c[0])?.[1] ?? null, infoFor(c[0])?.[2] ?? null, infoFor(c[0])?.[3] ?? null]);
   });
-  push(`insert into class (id,studio_id,term_id,dance_style_id,level_id,location_id,room_id,teacher_id,name,day_of_week,start_time,duration_min,capacity,age_min,age_max,price_minor,pricing,trial_price_minor,trials_enabled,waitlist_enabled,visibility) values
+  push(`insert into class (id,studio_id,term_id,dance_style_id,level_id,location_id,room_id,teacher_id,name,day_of_week,start_time,duration_min,capacity,age_min,age_max,price_minor,pricing,trial_price_minor,trials_enabled,waitlist_enabled,visibility,description,level_note,what_to_bring) values
     ${classRows.join(',\n    ')};`);
   classIds.forEach(id => push(`select app.generate_class_sessions('${id}');`));
 
@@ -1087,13 +1084,14 @@ insert into location (studio_id, name, city) values (${q(S.pointe)}, 'The Mill',
 
 -- Adults drop in on Thursday evenings, by the class or with a pack (R-034).
 insert into class (id, studio_id, term_id, dance_style_id, location_id, teacher_id, name, day_of_week, start_time, duration_min,
-                   capacity, age_min, price_minor, pricing, trials_enabled, description)
+                   capacity, age_min, price_minor, pricing, trials_enabled, description, level_note, what_to_bring)
 select ${q(uid(NS.class, 191))}, ${q(STUDIO_ID)}, (select id from term where studio_id = ${q(STUDIO_ID)} order by starts_on desc limit 1),
        (select id from dance_style where studio_id = ${q(STUDIO_ID)} and name = 'Contemporary'),
        (select id from location where studio_id = ${q(STUDIO_ID)} order by name limit 1),
        (select id from staff_member where user_id = ${q(uid(NS.user, 3))} and studio_id = ${q(STUDIO_ID)}),
        'Adult Contemporary (drop-in)', 4, '20:00', 60, 16, 18, 1200, 'drop_in', false,
-       'For adults, all levels. Come when you can: pay per class or buy a pack.';
+       'For adults, all levels. Come when you can: pay per class or buy a pack.',
+       'All levels, including complete beginners', 'Comfortable clothes you can move in; bare feet or socks. Bring water.';
 select app.generate_class_sessions(${q(uid(NS.class, 191))});
 insert into class_pack (studio_id, name, classes, price_minor, valid_days) values
   (${q(STUDIO_ID)}, '5-class pack', 5, 5000, 90), (${q(STUDIO_ID)}, '10-class pack', 10, 9000, 180);
