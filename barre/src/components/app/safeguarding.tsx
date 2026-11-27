@@ -165,6 +165,7 @@ const STEP_TEXT: [string, string, string][] = [
   ['concern', 'closed concern to delete', 'closed concerns to delete'],
   ['audit', 'batch of old audit log entries to delete', 'batches of old audit log entries to delete'],
   ['access_log', 'batch of old access log entries to delete', 'batches of old access log entries to delete'],
+  ['media', 'video or photo of children to delete', 'videos or photos of children to delete'],
 ];
 
 /** Data retention, owner only (R-041, 0058). */
@@ -178,7 +179,7 @@ export function RetentionCard({ studioId }: { studioId: string }) {
   const [done, setDone] = React.useState<string | null>(null);
   const save = useMutation({
     mutationFn: () => runAs(session, q => q(G.SET_RETENTION, [v.medical_months, v.personal_months, v.financial_months, v.prospect_days, v.concern_months || null,
-      v.message_months, v.attendance_months, v.support_months, v.staff_months, v.staff_check_months, v.audit_months, v.dsl_note_months, v.auto_apply])),
+      v.message_months, v.attendance_months, v.support_months, v.staff_months, v.staff_check_months, v.audit_months, v.dsl_note_months, v.auto_apply, v.media_months])),
     onSuccess: () => { setM({}); qc.invalidateQueries({ queryKey: ['db'] }); },
   });
   const run = useMutation({

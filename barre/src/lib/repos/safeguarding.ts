@@ -56,14 +56,14 @@ export const CHECK_LABEL: Record<string, string> = { dbs: 'DBS', safeguarding_tr
 
 export type Retention = { medical_months: number; personal_months: number; financial_months: number; prospect_days: number; concern_months: number | null;
   message_months: number; attendance_months: number; support_months: number; staff_months: number; staff_check_months: number;
-  audit_months: number; dsl_note_months: number; auto_apply: boolean;
+  audit_months: number; dsl_note_months: number; media_months: number; auto_apply: boolean;
   auto_preview_at: string | null; auto_preview_count: number | null; auto_applied_at: string | null; last_run_at: string | null };
 export const RETENTION = `select medical_months, personal_months, financial_months, prospect_days, concern_months,
-  message_months, attendance_months, support_months, staff_months, staff_check_months, audit_months, dsl_note_months, auto_apply,
+  message_months, attendance_months, support_months, staff_months, staff_check_months, audit_months, dsl_note_months, media_months, auto_apply,
   auto_preview_at, auto_preview_count, auto_applied_at, last_run_at from retention_policy limit 1`;
 export const SET_RETENTION = `update retention_policy set medical_months = $1, personal_months = $2, financial_months = $3, prospect_days = $4, concern_months = $5,
   message_months = $6, attendance_months = $7, support_months = $8, staff_months = $9, staff_check_months = $10, audit_months = $11,
-  dsl_note_months = $12, auto_apply = $13, updated_at = now() returning studio_id`;
+  dsl_note_months = $12, auto_apply = $13, media_months = $14, updated_at = now() returning studio_id`;
 /** Each period the owner can set, with the range the database allows (0030, 0040, 0058). */
 export const RETENTION_FIELDS: { key: keyof Retention; label: string; unit: 'months' | 'days'; min: number; max: number; adviser?: boolean }[] = [
   { key: 'medical_months', label: 'Delete medical records after', unit: 'months', min: 1, max: 120 },
@@ -76,6 +76,7 @@ export const RETENTION_FIELDS: { key: keyof Retention; label: string; unit: 'mon
   { key: 'dsl_note_months', label: 'Clear shared-care notes, after a family leaves', unit: 'months', min: 12, max: 300, adviser: true },
   { key: 'staff_check_months', label: 'Clear certificate numbers, after staff leave', unit: 'months', min: 6, max: 120, adviser: true },
   { key: 'staff_months', label: 'Anonymise staff records, after staff leave', unit: 'months', min: 12, max: 240, adviser: true },
+  { key: 'media_months', label: 'Delete videos and photos of children, after the last child shown leaves', unit: 'months', min: 1, max: 120, adviser: true },
   { key: 'audit_months', label: 'Delete audit and access logs, after', unit: 'months', min: 24, max: 240, adviser: true },
 ];
 export const PREVIEW_RETENTION = `select * from app.apply_retention($1, false)`;

@@ -14,7 +14,7 @@
 |---|---|
 | Product | Swayvo: management software for dance schools, covering several schools (`studio` tenants) |
 | Code reviewed | `barre/` (Next.js app), migrations 0001–0056, docs listed in §12 |
-| Not reviewed | Migration 0057 (student video access), which is being written now and was not visible to the author |
+| Reviewed after drafting | Migrations 0057 (student video access) and 0059 (media retention); §8.1 updated |
 | Draft version | 0.1, 27 November 2026 |
 | Owner of this document | **DECISION NEEDED:** name the Swayvo person responsible, and the DPO or specialist reviewer |
 
@@ -33,7 +33,7 @@ Article 35 of UK GDPR requires a DPIA when processing is likely to result in a h
 | Shared-care and court-order information | `guardian_access.dsl_note` (0046): "e.g. the court order behind a restriction" |
 | Online service used directly by children | Students aged 13 or over may have their own login (`student_login_min_age`, 13–18, 0046/0053). Under-13 logins are refused by the database (0053) |
 | Monitoring | Attendance is tracked as a welfare signal for watched children (`welfare_watch`, `app.welfare_absences`, 0047). Teachers assess skills (`skill_assessment`, 0010/0029/0049) |
-| Photographs and video of children | Media can be held in `resource` and `resource_file` (0010, 0012). See §8.1, which must be confirmed against 0057 |
+| Photographs and video of children | Media can be held in `resource` and `resource_file` (0010, 0012). See §8.1 (confirmed against 0057 and 0059) |
 | New technology and unresolved infrastructure | Sign-in, hosting, delivery and payments are not built (R-001, R-002, R-003, R-006) |
 
 **Initial view:** likely high risk. A full DPIA is needed before any school uses real data. The DPO decides whether the remaining risk is high enough to require prior consultation with the ICO (Article 36). **DECISION NEEDED.**
@@ -207,7 +207,7 @@ Evidence from the design that data is minimised and access limited:
 - **Teacher brief.** It includes conditions and medications, not just allergies (owner's decision, 0020). Is this proportionate for every teacher of the child?
 - **Medical records for location-limited admins.** These admins can read medical records at their locations (0054). Is that necessary?
 - **Family download.** It leaves out office notes and teachers' private notes (`src/lib/repos/privacy.ts`). A complete subject access response must come from the office.
-- **Retention gaps.** 0058 added rules for attendance, support notes, staff, messages, audit and access logs and the DSL note, with long defaults the school must confirm. Categories still without a rule: the collection list (row 3), shared-care flags (row 6), progress records (row 8), media (row 10), requests and notifications (row 14), accounts (row 16) and events (row 21) in §2.2.
+- **Retention gaps.** 0058 added rules for attendance, support notes, staff, messages, audit and access logs and the DSL note, and 0059 added media of children, all with defaults the school must confirm. Categories still without a rule: the collection list (row 3), shared-care flags (row 6), progress records (row 8), requests and notifications (row 14), accounts (row 16) and events (row 21) in §2.2.
 
 ---
 
@@ -263,17 +263,17 @@ This section does not claim conformance. It maps the 15 standards to the product
 
 ### 8.1 Student video and photo access (cross-reference for R5)
 
-> **CONFIRM AGAINST MIGRATION 0057.** Another engineer is changing this now. The author has not seen it.
+Confirmed against migrations 0057 (access) and 0059 (retention).
 
-Student video and photo access is **being tightened**:
+- **Teachers** read only material for classes they teach, assist or cover (cover from the day before to 14 days ahead), their classes' levels, material pinned to their pupils, their own uploads, and anything the office marks `for_all_staff` (only the office can set it): `resource_teacher_read`, `app.teacher_resource_ids` (0057).
+- **Media showing children** (`resource.shows_children`) names the children in it (`resource_child`). Families and students see it only while **every** named child has the matching consent (video for video/audio, photography for images), checked on every read (`app.resource_family_visible`, `app.resource_ids_for_student`). Withdrawing consent hides it at once; giving it shows it again. With nobody named it is staff-only until the office confirms no child is identifiable (`no_identifiable_children`). Media of children never reaches families as studio-wide material.
+- **Storage (hosted design):** a private bucket, files served only through signed links of 60 seconds (5-minute cap) after `app.can_read_media` allows it; no permanent public links (`storage-hosted.ts`, SECURITY.md "Media of children"). **Not yet tested against a real hosted project** (R-002).
+- **Downloads:** families and students are not offered a download for media of children. Screen capture cannot be prevented.
+- **Outside links** (YouTube, Vimeo) cannot be made private; the upload form warns against using them for footage of children.
+- **Retention (0059):** deleted a set period (default 12 months, 1–120) after the last named child has left, unless any of them is held; unnamed staff-only media the same period after it was added. In hosted storage the object is queued for deletion (`media_deletion`).
 
-- teachers are limited to their own classes' material;
-- media showing children are hidden from families unless every named child has video or photo consent;
-- media move to private storage with short-lived signed links.
+**DECISION NEEDED:** the media period; whether withdrawing consent should also delete existing media (today it hides it from families but staff keep it until retention); how media already shared outside Swayvo (programmes, social media) is handled.
 
-What is visible today: media are `resource` rows (scopes `studio`, `class`, `level`, `student`) with flags `visible_to_students` and `visible_to_guardians` (0010). Uploaded bytes are in `resource_file` and inherit the resource's visibility (0012). In the demo, files are stored in Postgres. `storage_path` is reserved for hosted storage. Consent kinds `photography`, `video` and `social_media` are managed with history (0047).
-
-**DECISION NEEDED:** retention periods for media; whether withdrawing consent removes existing media; and how media already shared outside Swayvo is handled.
 
 ---
 
@@ -285,7 +285,7 @@ What is visible today: media are `resource` rows (scopes `studio`, `class`, `lev
 | R10, R11 | Choose UK or EEA hosting (R-002). Encryption at rest. Backups with defined retention. Least-privilege database access | Reduces | Medium | DECISION NEEDED |
 | R7 | Set safeguarding periods, separately for allegations. Require safeguarding export or transfer before a school is erased. (Built in 0058: holds on staff and adult concerns, access-log rows kept on deletion, holds keep the medical record) | Reduces | Medium | DECISION NEEDED |
 | R13 | Confirm the periods added in 0058 and whether to turn automatic applying on. Add rules for the categories that still have none. (Built in 0058: monthly preview from `app.tick`, opt-in automatic apply, soft-deleted rows included, rules for messages, attendance, support notes, staff, logs and the DSL note) | Reduces | Medium | DECISION NEEDED |
-| R5 | Confirm 0057. Media retention. Signed-link expiry | Reduces | Medium | DECISION NEEDED |
+| R5 | Done in 0057/0059: class-scoped teacher access, consent-gated family access, private storage with 60-second links, media retention. Remaining: hosted storage test, outside links | Reduces | Medium | DECISION NEEDED |
 | R9 | Staff device policy: screen lock, no shared browser profiles. Consider clearing cached data on sign-out | Reduces | Low | DECISION NEEDED |
 | R6 | A route for concerns about the owner, for example to the DSL only or out of the app | Reduces | Low–Medium | DECISION NEEDED |
 | R12 | Termly or annual "check your child's details" prompt | Reduces | Low–Medium | DECISION NEEDED |
@@ -305,7 +305,7 @@ What is visible today: media are `resource` rows (scopes `studio`, `class`, `lev
 | A6 | Breach procedure: detection, triage, 72-hour ICO notification by the controller, processor notice to schools without undue delay, a log of incidents | Swayvo + schools | Not started |
 | A7 | Privacy notices: (a) Swayvo's own; (b) a template for each school's parents (`studio.privacy_notice_url`, 0040); (c) **an age-appropriate notice for students aged 13 or over**, and a simpler explainer for younger children if they use the app | Schools + DPO | Not started |
 | A8 | Retention periods agreed with each school's adviser. Close the remaining gaps in `RETENTION-POLICY-DRAFT.md` | Schools + Swayvo | Defaults only. Several gaps closed in 0058 |
-| A9 | Confirm student video access against migration 0057 | Swayvo | In progress |
+| A9 | Test the hosted private-storage path against a real project | Swayvo | Waiting on R-002 |
 | A10 | Independent security review and penetration test, including RLS, support access and the platform console | Swayvo | Not started |
 | A11 | Appropriate Policy Document(s) where DPA 2018 Schedule 1 conditions are relied on | Schools + DPO | Not started |
 | A12 | Rights-request process for access, rectification, erasure and objection, including for students aged 13 or over (UR-38: "process still needs specialist review") | Schools + DPO | Partly built |
