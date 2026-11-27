@@ -5,53 +5,12 @@ import Link from 'next/link';
 import { Beats } from '@/components/ui';
 import { time } from '@/lib/format';
 import { cn } from '@/lib/cn';
-export { SectionHead } from '@/components/ui';
+export { SectionHead, StyleMark, Word, ViewTabs, styleColour } from '@/components/ui';
+import { StyleMark, Word, styleColour } from '@/components/ui';
 import type { SessionRow as S } from '@/lib/repos/dashboard';
 
-/* ── Small office building blocks, shared by the office screens ──────────
-   Kept here (not in components/ui) so the office group can use them without
-   touching the shared primitives. Candidates to promote later. */
-
-const HUES = ['violet', 'amber', 'teal', 'rose', 'indigo', 'lime'] as const;
-
-/** The style hue as a CSS colour (a token, never a hex). */
-export function styleColour(colour?: string | null) {
-  return colour && (HUES as readonly string[]).includes(colour) ? `var(--color-${colour})` : 'var(--color-line-strong)';
-}
-
-/** A dance-style mark: a small square in the style's hue, always beside the style's name. */
-export function StyleMark({ colour, name, className }: { colour?: string | null; name?: string | null; className?: string }) {
-  return (
-    <span className={cn('inline-flex min-w-0 items-center gap-1.5', className)}>
-      <span aria-hidden className="size-2 shrink-0 rounded-[2px]" style={{ background: styleColour(colour) }} />
-      {name && <span className="truncate">{name}</span>}
-    </span>
-  );
-}
-
-
-/** A change set as a word (MOVED, COVER, CANCELLED, CLASH). The word carries the meaning; colour supports it. */
-export function Word({ children, tone = 'ink', className }: { children: React.ReactNode; tone?: 'ink' | 'critical' | 'caution' | 'positive' | 'muted'; className?: string }) {
-  const c = { ink: 'text-ink', critical: 'text-critical', caution: 'text-caution', positive: 'text-positive', muted: 'text-ink-3' }[tone];
-  return <span className={cn('font-display text-[12px] uppercase leading-none tracking-[0.02em] [font-stretch:85%]', c, className)}>{children}</span>;
-}
-
-/** Segmented view switch: quiet text tabs with an ink rule under the current one. */
-export function ViewTabs<T extends string>({ value, onChange, options, label, className }: {
-  value: T; onChange: (v: T) => void; options: [T, string][]; label: string; className?: string;
-}) {
-  return (
-    <div role="tablist" aria-label={label} className={cn('-mx-1 flex max-w-full gap-1 overflow-x-auto', className)}>
-      {options.map(([v, text]) => (
-        <button key={v} role="tab" aria-selected={value === v} onClick={() => onChange(v)}
-          className={cn('min-h-[40px] shrink-0 border-b-2 px-2 text-[14px] transition-colors',
-            value === v ? 'border-ink font-semibold text-ink' : 'border-transparent text-ink-3 hover:text-ink')}>
-          {text}
-        </button>
-      ))}
-    </div>
-  );
-}
+/* The small building blocks once kept here now live in components/ui and
+   are re-exported for existing imports. */
 
 /** One class in a list: time column, name and style, who and where, how full. */
 export function SessionRow({ session: s, href, onSelect }: { session: S; href?: string; onSelect?: () => void }) {

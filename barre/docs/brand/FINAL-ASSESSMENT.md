@@ -46,34 +46,41 @@ were simulated professional judgement; no real users were tested.
 payments, email/SMS/push delivery and real sign-in (not connected — decisions R-001, R-003, R-006).
 
 ## 4. Weighted scorecard
+Re-scored after the refinement round (section 5). The first-round score was 82.2.
+
 | Area | Weight | Score | Evidence | Remaining weakness |
 |---|---|---|---|---|
-| Visual design and UI craftsmanship | 20% | 8.5 | Before/after set; consistent rules-and-type system; no card dashboards | Some secondary screens dense; children page one long column on desktop |
-| User experience and ease of use | 20% | 8.0 | Journeys pass; task-first layouts per role | No real-user testing; public trial list long on phone |
-| Brand identity and consistency | 15% | 8.5 | One identity source; guidelines; school colours layered correctly | No photography yet; wordmark not reviewed by a type designer; trademark not cleared |
-| Creative direction and originality | 10% | 8.0 | The count and notices are specific to dance | Signature motion only lightly used |
+| Visual design and UI craftsmanship | 20% | 8.7 | Before/after set; rules-and-type system; children page two columns on desktop; timetable compact view; register action bar | Some secondary sheets still dense |
+| User experience and ease of use | 20% | 8.3 | Journeys pass; task-first layouts; trials grouped by day; register "Mark the rest" always in reach | No real-user testing |
+| Brand identity and consistency | 15% | 8.5 | One identity source; guidelines; school colours layered correctly; marketing page and store images from the same system | No photography; wordmark not reviewed by a type designer; trademark not cleared |
+| Creative direction and originality | 10% | 8.3 | The count and notices are specific to dance; the count now moves | — |
 | Mobile and responsive | 10% | 8.5 | Phone-first roles; 320/360 checks clean; 44px targets | Emulated devices only |
-| Design system and components | 10% | 8.0 | Tokens, primitives, docs, `/design` | A few helpers (style mark, status word) still duplicated per area |
-| Accessibility and inclusion | 5% | 8.0 | Automated checks clean; status always in words | No assistive-technology review |
-| Motion and interaction | 3% | 6.0 | Principles defined; reduced motion respected | Few motion moments implemented |
-| Commercial credibility | 4% | 8.5 | Sign-in, Today, billing read as an established product | Marketing site and store assets not built |
+| Design system and components | 10% | 8.5 | StyleMark, Word, SectionHead, ViewTabs now shared in `components/ui`; local copies removed | — |
+| Accessibility and inclusion | 5% | 8.0 | Automated checks clean; status always in words; reduced motion respected | No assistive-technology review |
+| Motion and interaction | 3% | 7.5 | Beats fill on the count; attention lists step in a beat apart; register completes in green | No page or sheet transitions (deliberate on office screens) |
+| Commercial credibility | 4% | 9.0 | Sign-in, Today, billing read as established; marketing page `/welcome`; App Store and social images | Real customer quotes and photography |
 | Technical implementation | 3% | 9.0 | 378 tests, journeys, no weight increase, no new dependencies | — |
-| **Weighted total** | | **82.2 / 100** | | |
+| **Weighted total** | | **84.6 / 100** | | |
 
-**Interpretation: 80–89 — a premium commercial product requiring limited refinement.** The 90 target is not
-met, and the score has not been inflated to meet it. The gap is mostly evidence the team cannot produce
-from here (real devices, assistive technology, real users, photography) plus a short list of refinements.
+**Interpretation: 80–89 — a premium commercial product requiring limited refinement.** The 90 target is still
+not met, and the score has not been inflated to meet it. What remains is evidence that cannot be produced from
+here: real users, real devices, assistive technology, photography and a type designer.
 
 ## 5. To reach 90+
+Done in the refinement round:
+- Shared helpers moved into `components/ui` (StyleMark, Word, SectionHead, ViewTabs); local copies removed.
+- Motion signature: Beats fill on the count; on-count entry for attention lists; register completion.
+- Children page in two columns on desktop; public trial slots grouped by day, the first week shown.
+- Marketing page (`/welcome`) and App Store / social images (`public/brand/store/`, `scripts/store-shots.mts`).
+- Flagged fixes: sticky register action bar, compact timetable for busy days, board select sized for touch,
+  shorter Reports and demo text, initials from first and last names.
+
+Still needed, outside what the team can do here:
 1. Usability sessions with 2–3 owners, teachers, parents and teens on the preview; fix what they hit.
 2. Screen-reader and keyboard review (VoiceOver, TalkBack, NVDA) per `docs/ACCESSIBILITY.md`.
-3. Commission a small photography set (real classes, every style, with consent) for the sign-in, parent
-   home hero and marketing.
-4. Type-designer pass on the wordmark (spacing of "yv", stroke joins); then regenerate assets.
-5. Move the remaining shared helpers (style mark, status word) into `components/ui`; remove local copies.
-6. Implement the motion signature: register and progress counts filling on the beat; on-count list entry.
-7. Children page two-column layout on desktop; group public trial slots by day on phones.
-8. Build the marketing site and App Store screenshots from `GUIDELINES.md` §8.
+3. A small photography set (real classes, every style, with consent) for sign-in, parent home and marketing.
+4. A type-designer pass on the wordmark (spacing of "yv", stroke joins); then regenerate assets.
+5. Real-device checks on iOS and Android phones and tablets.
 
 ## 6. Technical summary
 No business logic, permissions, payment or data structures changed. Changes: design tokens and fonts

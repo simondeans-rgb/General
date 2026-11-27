@@ -50,6 +50,13 @@ export function WeekGrid({ sessions, from, onOpen }: { sessions: Q.SessionRow[];
     onSuccess: () => qc.invalidateQueries({ queryKey: ['db'] }),
   });
   const [dragging, setDragging] = React.useState<Q.SessionRow | null>(null);
+  // Compact: one line per class (time and name) — for busy weeks and clash-heavy days.
+  const busiest = React.useMemo(() => {
+    const n = new Map<string, number>(); for (const s of sessions) { const k = `${s.room_id ?? s.location}|${new Date(s.starts_at).toDateString()}`; n.set(k, (n.get(k) ?? 0) + 1); }
+    return Math.max(0, ...n.values());
+  }, [sessions]);
+  const [compact, setCompact] = React.useState<boolean | null>(null);
+  const isCompact = compact ?? busiest >= 3;
 
   return (
     <div className="space-y-5">
@@ -61,6 +68,10 @@ export function WeekGrid({ sessions, from, onOpen }: { sessions: Q.SessionRow[];
         </div>
       )}
       {move.error != null && <ErrorState error={move.error} />}
+      <label className="flex items-center gap-2 text-[13.5px] text-ink-2">
+        <input type="checkbox" className="size-4 accent-[var(--color-accent)]" checked={isCompact} onChange={e => setCompact(e.target.checked)} />
+        Compact view — time and name only
+      </label>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[860px] table-fixed border-collapse text-[13px]">
           <caption className="sr-only">Classes by room and day. Drag a class to another day to move it.</caption>
@@ -117,13 +128,13 @@ export function WeekGrid({ sessions, from, onOpen }: { sessions: Q.SessionRow[];
                                   {time(s.starts_at)}{isNext && <span className="font-sans text-[11.5px] font-semibold no-underline">next</span>}
                                 </span>
                                 <span className={cn('mt-0.5 block font-semibold leading-tight', cancelled ? 'text-ink-3 line-through' : 'text-ink')}>{s.name}</span>
-                                <span className="mt-0.5 block truncate text-[12px] text-ink-3">
+                                {!isCompact && <span className="mt-0.5 block truncate text-[12px] text-ink-3">
                                   {[s.teacher?.split(' ')[0], s.style].filter(Boolean).join(' · ')}
-                                </span>
+                                </span>}
                                 {cancelled && <span className="mt-1 block leading-tight"><Word tone="critical">Cancelled</Word>
-                                  {s.cancel_reason && <span className="block text-[12px] text-ink-2">{s.cancel_reason}</span>}</span>}
+                                  {s.cancel_reason && !isCompact && <span className="block text-[12px] text-ink-2">{s.cancel_reason}</span>}</span>}
                                 {!cancelled && clashed && <span className="mt-1 block leading-tight"><Word tone="critical">Clash</Word>
-                                  <span className="block text-[12px] text-critical">{clash.get(s.id)}</span></span>}
+                                  {!isCompact && <span className="block text-[12px] text-critical">{clash.get(s.id)}</span>}</span>}
                                 {!cancelled && !clashed && (s.moved || s.covered) && <span className="mt-1 flex gap-2 leading-tight">
                                   {s.moved && <Word>Moved</Word>}{s.covered && <Word tone="caution">Cover</Word>}</span>}
                               </button>

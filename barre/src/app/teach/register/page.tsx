@@ -143,6 +143,7 @@ function Register() {
       title={m?.name ?? 'Register'}
       subtitle={m ? [`${dateLong(m.starts_at)} · ${time(m.starts_at)}`, m.location, m.room].filter(Boolean).join(' · ') : undefined}
       allow={['owner','admin','teacher']}
+      actionsInline
       actions={<Link href="/teach" aria-label="Back to Today"
         className="grid size-11 place-items-center rounded-full text-ink-2 hover:bg-surface-2">
         <ArrowLeft className="size-5" aria-hidden /></Link>}
@@ -155,7 +156,7 @@ function Register() {
               {counts}
               {!closed && <span className="font-normal text-ink-3"> · {unmarked.length} to mark</span>}
             </p>
-            <Beats value={marked} max={list.length || 1} size="lg" label={`${marked} of ${list.length} marked`} />
+            <Beats value={marked} max={list.length || 1} size="lg" tone={complete ? 'positive' : 'accent'} label={`${marked} of ${list.length} marked`} />
           </div>
 
           {waiting > 0 && (
@@ -175,24 +176,6 @@ function Register() {
                 </Link>
               </div>
             </>
-          ) : unmarked.length > 0 && list.length > 0 ? (
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <p className="min-w-0 flex-1 text-[14px] text-ink-3">
-                <span className="sr-only">Still to mark: </span>
-                {unmarked.slice(0, 3).map(r => `${firstName(r)}${r.is_trial ? ' (trial)' : ''}`).join(', ')}
-                {unmarked.length > 3 ? ` and ${unmarked.length - 3} more` : ''}
-              </p>
-              <Button variant="primary" size="lg" onClick={() => markAllPresent.mutate()} loading={markAllPresent.isPending}>
-                Mark the rest here
-              </Button>
-            </div>
-          ) : complete ? (
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <p className="flex-1 text-[14px] text-ink-3">Everyone is marked. Closing tells the office the register is complete.</p>
-              <Button variant="primary" size="lg" onClick={() => closeRegister.mutate()} loading={closeRegister.isPending}>
-                Close register
-              </Button>
-            </div>
           ) : null}
           {markAllPresent.isError && <ErrorState error={markAllPresent.error} />}
           {closeRegister.isError && <ErrorState error={closeRegister.error} />}
@@ -231,6 +214,26 @@ function Register() {
 
         {m && <SessionNotes sessionId={sessionId} saved={m.notes ?? ''} />}
         {m?.class_id && <ClassLinks classId={m.class_id} name={m.name} />}
+
+        {/* The action that moves the register on stays within thumb reach while marking. */}
+        {!closed && list.length > 0 && (unmarked.length > 0 || complete) && (
+          <div className="sticky bottom-[calc(64px+env(safe-area-inset-bottom))] z-20 -mx-4 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur lg:bottom-4 lg:mx-0 lg:rounded-[var(--radius-lg)] lg:border">
+            {unmarked.length > 0 ? (
+              <div className="flex items-center gap-3">
+                <p className="min-w-0 flex-1 text-[14px] text-ink-3">
+                  <span className="font-semibold text-ink">{unmarked.length} to mark</span>
+                  <span className="hidden sm:inline"> · {unmarked.slice(0, 3).map(r => `${firstName(r)}${r.is_trial ? ' (trial)' : ''}`).join(', ')}{unmarked.length > 3 ? ` and ${unmarked.length - 3} more` : ''}</span>
+                </p>
+                <Button variant="primary" size="lg" onClick={() => markAllPresent.mutate()} loading={markAllPresent.isPending}>Mark the rest here</Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <p className="min-w-0 flex-1 text-[14px] text-ink-3"><span className="font-semibold text-ink">Everyone is marked.</span> <span className="hidden sm:inline">Closing tells the office.</span></p>
+                <Button variant="primary" size="lg" onClick={() => closeRegister.mutate()} loading={closeRegister.isPending}>Close register</Button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </Shell>
   );

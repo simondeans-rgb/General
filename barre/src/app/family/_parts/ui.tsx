@@ -13,21 +13,9 @@ import { cn } from '@/lib/cn';
  */
 
 export { SectionHead } from '@/components/ui';
+import { StyleMark, Word } from '@/components/ui';
 
-const HUE: Record<string, string> = {
-  violet: 'bg-violet', amber: 'bg-amber', teal: 'bg-teal', rose: 'bg-rose', indigo: 'bg-indigo', lime: 'bg-lime',
-};
-
-/** A dance style named in words, with its hue as a small mark beside it. */
-export function StyleMark({ style, colour, className }: { style: string | null; colour?: string | null; className?: string }) {
-  if (!style) return null;
-  return (
-    <span className={cn('inline-flex items-center gap-1.5 whitespace-nowrap', className)}>
-      <span aria-hidden className={cn('inline-block size-2 rounded-[2px]', HUE[colour ?? ''] ?? 'bg-ink-3')} />
-      {style}
-    </span>
-  );
-}
+export { StyleMark } from '@/components/ui';
 
 /** Day and date in the short form used in time columns: "Tue 1". */
 export function dayShort(v: string | Date) {
@@ -66,12 +54,9 @@ export function useSessionChanges(ids: string[]) {
   return React.useMemo(() => new Map((q.data ?? []).map(c => [c.id, c])), [q.data]);
 }
 
-/** A change word set in display type, inline in a row: CANCELLED, MOVED. */
+/** A change word in a family's row (CANCELLED, MOVED): the shared Word at row size. */
 export function ChangeWord({ word, tone = 'ink' }: { word: string; tone?: 'ink' | 'critical' }) {
-  return (
-    <span className={cn('font-display text-[15px] uppercase leading-none tracking-[-0.01em] [font-stretch:80%]',
-      tone === 'critical' ? 'text-critical' : 'text-ink')}>{word}</span>
-  );
+  return <Word size="md" tone={tone}>{word}</Word>;
 }
 
 /** A class or event on a day list: time in a fixed column, then what, who and where. */

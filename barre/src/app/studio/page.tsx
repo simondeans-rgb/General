@@ -579,19 +579,9 @@ function AboutDemo() {
     <Card>
       <CardHeader title="About this demo" />
       <div className="max-w-2xl space-y-3 pt-3">
-        <div>
-          <p className="text-[14px] leading-relaxed text-ink-2">
-            Everything here lives in a Postgres database running inside this browser tab, built
-            from the same migrations the production app uses. Nothing is sent anywhere.
-          </p>
-        </div>
-        <div>
-          <p className="text-[14px] leading-relaxed text-ink-2">
-            Row level security is on and forced. Signed in as Marcus, the medical table returns
-            no rows at all; signed in as Hannah, you get exactly one family. That is the
-            database refusing, not this interface hiding.
-          </p>
-        </div>
+        <p className="text-[14px] leading-relaxed text-ink-2">
+          This demo runs a real database inside your browser, with the same rules as the live product. Nothing is sent anywhere.
+        </p>
         <ResetDemo />
       </div>
     </Card>

@@ -227,10 +227,7 @@ function Pulse({ d }: { d: R.Headline }) {
     <section aria-labelledby="r-pulse">
       <SectionHead id="r-pulse" title="Studio Pulse" meta="Preview" />
       <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3 pt-4">
-        <p className="max-w-xl text-[14.5px] text-ink-2">
-          One 0–100 health score from five rates the school already produces. The parts are live below;
-          the score appears once there is enough history to trust it.
-        </p>
+        <p className="max-w-xl text-[14.5px] text-ink-2">One health score from five rates you already have.</p>
         {result.score != null
           ? <p className="stat-number text-[40px] leading-none">{result.score}<span className="text-[16px] text-ink-3"> / 100</span></p>
           : <p className="max-w-[280px] text-[13px] text-ink-3"><Info className="mr-1 inline size-3.5 align-[-2px]" aria-hidden />{result.reason}</p>}
@@ -242,14 +239,15 @@ function Pulse({ d }: { d: R.Headline }) {
             <p className="stat-number mt-1 text-[24px] leading-none">
               {c.value == null ? <span className="font-sans text-[14px] font-normal text-ink-3">Not enough data</span> : `${Math.round(c.value * 100)}%`}
             </p>
-            <p className="mt-2 text-[13px] text-ink-2">{c.definition}</p>
-            <p className="mt-1 text-[12.5px] text-ink-3">{c.basis} · counts {Math.round(c.weight * 100)}%</p>
+            <p className="mt-2 text-[13px] text-ink-3" title={`${c.definition} ${c.basis}.`}>Counts {Math.round(c.weight * 100)}%</p>
           </li>
         ))}
       </ul>
-      <p className="mt-3 text-[13px] text-ink-3">
-        The score appears after {MIN_HISTORY_DAYS} days of history and once every rate has a sample of at least 20.
-      </p>
+      <details className="mt-3 text-[13px] text-ink-3">
+        <summary className="cursor-pointer font-semibold text-ink-2">How the score works</summary>
+        <ul className="mt-2 space-y-1">{components.map(c => <li key={c.key}><b className="text-ink-2">{c.label}:</b> {c.definition} ({c.basis})</li>)}
+          <li>The score appears after {MIN_HISTORY_DAYS} days of history and once every rate has at least 20 in its sample.</li></ul>
+      </details>
     </section>
   );
 }

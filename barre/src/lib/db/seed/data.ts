@@ -822,6 +822,22 @@ select ${q(uid(NS.assessment, i + 1))}, f.studio_id, f.student_id, ${q(STYLE.bal
   from feedback_note f where f.id = ${q(uid(NS.feedback, 1))};`);
   });
 
+  // Students who sign in see their skills in the styles they dance, so assess those
+  // framework skills too (the free-text rows above predate frameworks and match none).
+  out.push(`
+select app.ensure_frameworks(id) from studio;
+insert into skill_assessment (studio_id, student_id, dance_style_id, skill, skill_id, level, assessed_by, assessed_on)
+select s.studio_id, s.id, f.dance_style_id, fs.name, fs.id,
+       (array['mastered','secure','developing','secure','developing','not_started','not_started','not_started','not_started'])[fs.position]::assessment_level,
+       (select id from staff_member where display_name = 'Freya Lindqvist' limit 1),
+       current_date - 4
+  from student s
+  join skill_framework f on f.studio_id = s.studio_id and f.deleted_at is null
+   and f.dance_style_id in (select c.dance_style_id from enrolment e join class c on c.id = e.class_id
+                             where e.student_id = s.id and e.status = 'active' and e.deleted_at is null)
+  join framework_skill fs on fs.framework_id = f.id and fs.deleted_at is null and fs.position <= 5
+ where s.login_enabled;`);
+
   return out.join('\n') + '\n' + buildEventsAndRequests(ctx);
 }
 

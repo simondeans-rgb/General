@@ -1,0 +1,5 @@
+/* The website only: "Book a demo" glides to the contact section, unless the
+   visitor has asked for less motion. */
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.welcome-page) { scroll-behavior: smooth; }
+}

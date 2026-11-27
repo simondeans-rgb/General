@@ -48,8 +48,12 @@ export function relativeDay(v: Stamp): string {
   return dateShort(d);
 }
 
-export const initials = (...parts: (string | null | undefined)[]) =>
-  parts.filter(Boolean).map(p => p!.trim()[0]?.toUpperCase() ?? '').join('').slice(0, 2);
+/** Two initials: first and last name, whether given as one string or separate parts. */
+export const initials = (...parts: (string | null | undefined)[]) => {
+  const words = parts.filter(Boolean).flatMap(p => p!.trim().split(/\s+/)).filter(Boolean);
+  const pick = words.length > 1 ? [words[0]!, words[words.length - 1]!] : words;
+  return pick.map(w => w[0]?.toUpperCase() ?? '').join('');
+};
 
 export function ageFrom(dob: Stamp | null | undefined): number | null {
   if (!dob) return null;

@@ -19,7 +19,7 @@ const AXE = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
 const BASE = process.env.BASE_URL ?? 'http://localhost:3000';
 
 const ROUTES: [number | null, string, string, string[], string?][] = [
-  [null, '', '', ['/', '/join?school=northstar']],
+  [null, '', '', ['/', '/welcome', '/join?school=northstar']],
   [1, 'owner', 'Freya', ['/today', '/schedule', '/classes', '/events', '/people', '/enrolment', '/inbox', '/requests', '/billing',
                          '/reports', '/studio', '/safeguarding', '/account', '/onboarding']],
   [2, 'teacher', 'Marcus', ['/teach', '/teach/students', '/teach/messages', '/teach/material', '/teach/reports']],
@@ -36,7 +36,7 @@ for (const mobile of [false, true]) {
   for (const [n, role, name, paths, studio] of ROUTES) {
     await page.goto(BASE + '/');
     await page.evaluate(([k, v]: string[]) => v ? localStorage.setItem(k, v) : localStorage.removeItem(k),
-      ['barre.session.v1', n ? JSON.stringify({ userId: uid(NS.user, n), role, name, ...(studio ? { studio } : {}) }) : '']);
+      [process.env.SESSION_KEY ?? 'barre.session.v1', n ? JSON.stringify({ userId: uid(NS.user, n), role, name, ...(studio ? { studio } : {}) }) : '']);
     for (const path of paths) {
       await page.goto(BASE + path);
       await page.waitForFunction(() => !/Setting up (Northstar|a real)/.test(document.body.innerText), null, { timeout: 120_000 });
