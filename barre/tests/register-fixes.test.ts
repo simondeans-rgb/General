@@ -145,10 +145,14 @@ describe('UR-49 students of 13 and over', () => {
   it('a younger student cannot report for themselves', async () => {
     const [s] = await asUser(null, async (_q, svc) => [await teen(svc)]);
     await asUser(s.user_id, async (q, svc) => {
-      // A school that allows logins from 10, and an 11-year-old.
-      await svc(`update studio set student_login_min_age = 10 where id = $1`, [STUDIO_ID]);
-      await svc(`update student set date_of_birth = current_date - interval '11 years' where id = $1`, [s.id]);
-      expect(await expectRejected(() => q(`select app.report_absence($1, $2::uuid[], 'x')`, [s.id, [s.session.id]]))).toMatch(/FORBIDDEN/);
+      // Since UR-55 (0053) an under-13 cannot have a login at all: a school
+      // cannot set logins from 10, and an 11-year-old's login is refused. This
+      // test used to arrange exactly that; it now checks the database refuses.
+      expect(await expectRejected(() => svc(`update studio set student_login_min_age = 10 where id = $1`, [STUDIO_ID]))).toMatch(/check constraint/);
+      expect(await expectRejected(() => svc(`update student set date_of_birth = current_date - interval '11 years' where id = $1`, [s.id])))
+        .toMatch(/STUDENT_LOGIN_TOO_YOUNG/);
+      // A thirteen-year-old still can.
+      await q(`select app.report_absence($1, $2::uuid[], 'x')`, [s.id, [s.session.id]]);
     });
   });
 

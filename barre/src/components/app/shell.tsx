@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   CalendarDays, LayoutGrid, Users, GraduationCap, Route, ClipboardCheck,
-  Home, Baby, MessageSquare, CreditCard, PlayCircle, Trophy, Inbox, Settings2, Rocket,
+  Home, Baby, User, MessageSquare, CreditCard, PlayCircle, Trophy, Inbox, Settings2, Rocket,
   MoreHorizontal, FolderOpen, Receipt, BarChart3, Building2, Layers, KeyRound, ShieldCheck, LogOut, FileText, ShieldAlert, CircleHelp,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -15,6 +15,7 @@ import { SwayvoLogo, SwayvoIcon } from './swayvo';
 import { SchoolMark, PoweredBy, useSchoolTheme, logoFor } from './brand';
 import { EmptyState, Button } from '@/components/ui';
 import { useRows } from '@/lib/query';
+import { MY_CHILDREN } from '@/lib/repos/family';
 import { runAs } from '@/lib/db/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { dateShort, time } from '@/lib/format';
@@ -120,6 +121,9 @@ export function Shell({
   const self = useRows<{ id: string | null }>(['student-self-check'], `select app.student_self_id() as id`, [],
     { enabled: session?.role === 'student' });
   const loginOff = session?.role === 'student' && self.isSuccess && !self.data?.[0]?.id;
+  // An adult student with no children: their tab is about them, not a family (UR-21).
+  const people = useRows<{ is_me: boolean }>(['my-children'], MY_CHILDREN, [], { enabled: session?.role === 'guardian' });
+  const adultAlone = !!people.data?.length && people.data.every(p => p.is_me);
 
   React.useEffect(() => {
     if (loaded && !session) router.replace('/');
@@ -161,7 +165,9 @@ export function Shell({
     );
   }
 
-  const nav = NAV[session.role];
+  const nav = adultAlone
+    ? NAV[session.role].map(n => n.href === '/family/children' ? { ...n, label: 'You', icon: User } : n)
+    : NAV[session.role];
 
   return (
     <div className="min-h-dvh lg:flex">

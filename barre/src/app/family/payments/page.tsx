@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { ChevronDown, Copy } from 'lucide-react';
 import { useDueReminders } from '@/components/app/family-money';
+import { useFamilyVoice } from '@/components/app/adult-self';
 import { invoiceState } from '@/lib/payments/invoice-status';
 import { Shell } from '@/components/app/shell';
 import { useRows, useRow } from '@/lib/query';
@@ -28,6 +29,7 @@ export default function ParentPayments() {
   const invoices = useRows<Invoice>(['my-invoices'], F.MY_INVOICES);
   const info = useRow<B.PaymentInfo>(['my-payment-info'], B.MY_PAYMENT_INFO);
   useDueReminders();
+  const voice = useFamilyVoice();
 
   const owes = !!balance.data && Number(balance.data.balance_minor) > 0;
   const credit = !!balance.data && Number(balance.data.balance_minor) < 0;
@@ -36,7 +38,7 @@ export default function ParentPayments() {
   const due = unpaid[0]?.due_on;
 
   return (
-    <Shell title="Payments" allow={['guardian']}>
+    <Shell title={voice.solo ? 'Your payments' : 'Payments'} allow={['guardian']}>
       <div className="mx-auto grid max-w-[1080px] gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
         <div className="min-w-0 space-y-10">
           {/* The amount: the one number on this screen worth making big. */}

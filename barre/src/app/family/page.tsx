@@ -17,8 +17,9 @@ import { PendingLogins } from '@/components/app/family-care';
 import { SectionHead, StyleMark, dayDate, dueWord, useSessionChanges, type SessionChange } from './_parts/ui';
 import { cardPaymentsEnabled } from '@/lib/payments/invoice-status';
 import { useDueReminders } from '@/components/app/family-money';
+import { useFamilyVoice } from '@/components/app/adult-self';
 
-type Child = { id: string; first_name: string; last_name: string; date_of_birth: string; class_names: string | null };
+type Child = { id: string; first_name: string; last_name: string; date_of_birth: string; class_names: string | null; is_me?: boolean };
 type Invoice = { id: string; number: string; status: string; issued_on: string; due_on: string; total_minor: number; paid_minor: number };
 
 /**
@@ -32,6 +33,8 @@ export default function FamilyHome() {
 
   const schedule = useRows<F.NextClass>(['my-schedule', from], F.MY_SCHEDULE, [from, to]);
   const children = useRows<Child>(['my-children'], F.MY_CHILDREN);
+  // An adult's own record is "you"; an adult with no children is spoken to alone (UR-21).
+  const voice = useFamilyVoice();
   useDueReminders();
   const balance = useRow<{ name: string; balance_minor: string; unpaid: number; failed: number }>(['my-balance'], F.MY_BALANCE);
   const invoices = useRows<Invoice>(['my-invoices'], F.MY_INVOICES);
@@ -64,10 +67,11 @@ export default function FamilyHome() {
       const c = changes.get(s.id);
       if (!c || s.status === 'cancelled' || !(c.original_starts_at || c.room_moved || c.covered)) return;
       const e = seen.get(s.id);
-      if (e) e.kids.push(s.child); else seen.set(s.id, { s, kids: [s.child], c });
+      const who = voice.self && s.student_id === voice.self.id ? 'You' : s.child;
+      if (e) e.kids.push(who); else seen.set(s.id, { s, kids: [who], c });
     });
     return [...seen.values()];
-  }, [rows, changes]);
+  }, [rows, changes, voice.self]);
 
   const owes = !!balance.data && Number(balance.data.balance_minor) > 0;
   const unpaid = (invoices.data ?? []).filter(i => i.status === 'issued' || i.status === 'part_paid');
@@ -125,7 +129,7 @@ export default function FamilyHome() {
             </section>
           )}
 
-          {/* Each child's week. */}
+          {/* Each child's week, and the adult's own. */}
           {loading && <div className="space-y-3">{[0, 1, 2].map(i => <Skeleton key={i} className="h-14" />)}</div>}
           {schedule.error != null && <ErrorState error={schedule.error} onRetry={() => schedule.refetch()} />}
           {!loading && kids.length === 0 && (
@@ -139,9 +143,9 @@ export default function FamilyHome() {
             return (
               <section key={child.id} aria-labelledby={`kid-${child.id}`}>
                 <div className="mb-1 flex items-baseline gap-3 border-b-2 border-ink pb-2">
-                  <h2 id={`kid-${child.id}`} className="font-display text-[1.375rem] leading-none">{child.first_name}</h2>
+                  <h2 id={`kid-${child.id}`} className="font-display text-[1.375rem] leading-none">{child.is_me ? 'Your classes' : child.first_name}</h2>
                   <span className="min-w-0 flex-1 truncate text-[0.8125rem] text-ink-3">
-                    {age != null ? `${age} · ` : ''}{week.length
+                    {age != null && !child.is_me ? `${age} · ` : ''}{week.length
                       ? `${live} class${live === 1 ? '' : 'es'} this week`
                       : later.length ? 'Nothing this week' : 'No classes booked'}
                   </span>
@@ -149,7 +153,7 @@ export default function FamilyHome() {
                 </div>
                 {week.length === 0 && later.length === 0 ? (
                   <p className="py-3 text-[0.9062rem] text-ink-2">
-                    {child.class_names ? 'No classes in the next two weeks.' : `${child.first_name} isn’t in a class yet. `}
+                    {child.class_names ? 'No classes in the next two weeks.' : child.is_me ? 'You’re not in a class yet. ' : `${child.first_name} isn’t in a class yet. `}
                     {!child.class_names && <Link href="/family/children" className="font-semibold text-accent-text hover:underline">Find a class</Link>}
                   </p>
                 ) : (
@@ -167,7 +171,7 @@ export default function FamilyHome() {
           <MakeUpOffers />
           {/* What is owed, and one way to pay it. */}
           <section aria-labelledby="pay-h">
-            <SectionHead id="pay-h" title="Payments" href="/family/payments" link={owes ? 'Invoices' : 'History'} />
+            <SectionHead id="pay-h" title={voice.solo ? 'Your payments' : 'Payments'} href="/family/payments" link={owes ? 'Invoices' : 'History'} />
             {balance.isLoading && <Skeleton className="mt-3 h-16" />}
             {balance.data && (owes ? (
               <div className="flex flex-wrap items-end gap-x-6 gap-y-3 pt-3">
@@ -200,7 +204,7 @@ export default function FamilyHome() {
                     “{f.going_well ?? f.headline}”
                   </blockquote>
                   <figcaption className="mt-1.5 text-[0.8125rem] text-ink-3">
-                    {[f.author, `about ${f.student_name.split(' ')[0]}`, f.class_name, f.shared_at ? relativeDay(f.shared_at) : null].filter(Boolean).join(' · ')}
+                    {[f.author, voice.solo ? null : `about ${voice.name(f.student_id, f.student_name.split(' ')[0] ?? '')}`, f.class_name, f.shared_at ? relativeDay(f.shared_at) : null].filter(Boolean).join(' · ')}
                   </figcaption>
                 </figure>
               </section>
@@ -228,6 +232,8 @@ export default function FamilyHome() {
             {[
               ['/family/events', 'Shows and events', 'Shows, exams, competitions, privates'],
               ['/family/enquiries', 'Ask the studio', 'Questions, private lessons, medical updates'],
+              // A parent who dances too can book in their own name (UR-21).
+              ...(voice.self ? [] : [['/family/children#for-me', 'Classes for you', 'Adult classes and drop-ins, booked for yourself']]),
             ].map(([href, title, body]) => (
               <Link key={href} href={href!} className="group flex min-h-[56px] items-center gap-3 py-3">
                 <span className="min-w-0 flex-1">
