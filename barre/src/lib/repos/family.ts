@@ -61,8 +61,7 @@ select s.id, s.first_name, s.last_name, s.date_of_birth,
                   where m.student_id = s.id and m.deleted_at is null), false) as has_alert,
        (select m.allergies from medical_record m
          where m.student_id = s.id and m.deleted_at is null) as allergies,
-       (select cr.granted from consent_record cr
-         where cr.student_id = s.id and cr.kind = 'photography' and cr.deleted_at is null) as photo_consent
+       app.consent_now(s.id, 'photography') as photo_consent   -- latest settled choice, one row (UR-08)
   from student s
  where s.deleted_at is null
  order by s.date_of_birth`;
