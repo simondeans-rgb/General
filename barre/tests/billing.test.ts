@@ -147,11 +147,13 @@ describe('taking payment', () => {
 });
 
 describe('refunds and voids', () => {
-  it('refunding a manual payment reopens the invoice', async () => {
+  // A refund is now a credit note by default, and the invoice stays settled
+  // (UR-10, admins D6). Reversing a payment recorded by mistake still reopens it.
+  it('reversing a manual payment recorded by mistake reopens the invoice', async () => {
     await asUser(USERS.owner, async q => {
       const inv = await invoiceOf(q, OWES);
       const [{ id }] = await q(`select app.record_payment($1, 9000, 'cash', $2) id`, [OWES, inv.id]);
-      await q(`select app.refund_payment($1, 9000, 'Duplicate payment')`, [id]);
+      await q(`select app.refund_payment($1, 9000, 'Duplicate payment', 'mistake')`, [id]);
       expect((await invoiceOf(q, OWES)).status).toBe('refunded');
       expect(await balance(q, OWES)).toBe(9000);
       expect(await expectRejected(() => q(`select app.refund_payment($1, 1, 'again')`, [id])))

@@ -39,8 +39,13 @@ export type AttentionRow = {
 /** Card 1 — money that has not arrived. */
 export const ATTENTION_PAYMENTS = `
 select
-  (select count(*)::int from payment
-    where deleted_at is null and failure_code is not null and succeeded_at is null) as failed,
+  (select count(*)::int from payment p
+    where p.deleted_at is null and p.failure_code is not null and p.succeeded_at is null
+      and exists (select 1 from invoice i where i.id = p.invoice_id and i.status in ('issued','part_paid'))) as failed,
+  -- What the declined cards were for, as Billing shows it (UR-54, admins D11).
+  (select coalesce(sum(p.amount_minor), 0)::bigint from payment p
+    where p.deleted_at is null and p.failure_code is not null and p.succeeded_at is null
+      and exists (select 1 from invoice i where i.id = p.invoice_id and i.status in ('issued','part_paid'))) as failed_minor,
   (select coalesce(sum(total_minor - paid_minor), 0)::bigint from invoice
     where deleted_at is null and status in ('issued','part_paid')) as outstanding_minor,
   (select count(*)::int from invoice

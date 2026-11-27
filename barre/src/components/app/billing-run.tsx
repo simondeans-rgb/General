@@ -31,7 +31,14 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
   // '' is the whole term (term- and course-priced classes); a month bills monthly classes.
   const [period, setPeriod] = React.useState('');
   const month = months.includes(period) ? period : '';
-  const lines = useRows<B.BillingLine>(['billing-lines', term, month], B.BILLING_LINES, [term, month || null], { enabled: !!term });
+  // Families already billed for the period by an invoice that does not name
+  // the class are skipped; the office may include one, with a reason (UR-10).
+  const skipped = useRows<B.SkippedFamily>(['billing-skipped', term, month], B.BILLING_SKIPPED, [term, month || null], { enabled: !!term });
+  const [include, setInclude] = React.useState<string[]>([]);
+  const [reason, setReason] = React.useState('');
+  React.useEffect(() => { setInclude([]); setReason(''); }, [term, month]);
+  const lines = useRows<B.BillingLine>(['billing-lines', term, month, include], B.BILLING_LINES,
+    [term, month || null, include.length ? include : null], { enabled: !!term });
   const runs = useRows<B.BillingRun>(['billing-runs'], B.BILLING_RUNS);
   const rules = useRows<B.DiscountRule>(['discount-rules'], B.DISCOUNT_RULES);
   const [due, setDue] = React.useState(() => isoDate(new Date(Date.now() + 14 * 86400_000)));
@@ -129,6 +136,43 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
             {lines.data?.length === 0 && (
               <EmptyState title="Everyone is invoiced" body={`Every child has an invoice for ${periodName}, or no class is billed this way.`} />
             )}
+            {!!skipped.data?.length && (
+              <div className="mt-5">
+                <p className="label">Already billed for this period — skipped ({skipped.data.length})</p>
+                <p className="mt-1 text-[13px] text-ink-3">
+                  These families already have a tuition invoice for {periodName} that does not name its classes, so the run leaves them out.
+                  Include one only if that invoice was for something else.
+                </p>
+                <ul className="mt-2 max-h-56 divide-y divide-line overflow-y-auto border-y border-line">
+                  {skipped.data.map(f => (
+                    <li key={f.family_id} className="flex items-center gap-3 py-2 text-[14px]">
+                      <input type="checkbox" id={`skip-${f.family_id}`} className="size-5 accent-[var(--color-accent)]"
+                        checked={include.includes(f.family_id)}
+                        onChange={e => setInclude(x => e.target.checked ? [...x, f.family_id] : x.filter(y => y !== f.family_id))} />
+                      <label htmlFor={`skip-${f.family_id}`} className="min-w-0 flex-1">
+                        <span className="block font-medium">{f.family_name}</span>
+                        <span className="block truncate text-[12.5px] text-ink-3">
+                          Billed on {f.invoices} · <span className="tnum">{money(f.billed_minor)}</span>
+                        </span>
+                      </label>
+                      <span className="shrink-0 text-right text-[12.5px] text-ink-3">
+                        {include.includes(f.family_id) ? 'Included' : 'Include anyway'}<br />
+                        <span className="tnum text-ink-2">{money(f.would_raise_minor)}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                {include.length > 0 && (
+                  <div className="mt-3">
+                    <Field label={`Why bill ${include.length === 1 ? 'this family' : 'these families'} again?`} htmlFor="run-why" required
+                           hint="Kept in the audit trail against each family.">
+                      <Input id="run-why" value={reason} onChange={e => setReason(e.target.value)} maxLength={200}
+                             placeholder="Their earlier invoice was for last term" />
+                    </Field>
+                  </div>
+                )}
+              </div>
+            )}
             {families.length > 0 && (
               <>
                 <div className="mt-5 flex items-end justify-between gap-4 border-b border-line pb-3">
@@ -163,13 +207,17 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
                   ))}
                 </ul>
                 <div className="border-t border-line pt-4">
-                  <Button variant={draft ? 'secondary' : 'primary'} className="w-full" disabled={!!draft} loading={act.isPending}
-                    onClick={() => act.mutate({ sql: B.CREATE_BILLING_RUN, params: [term, due, month || null],
+                  <Button variant={draft ? 'secondary' : 'primary'} className="w-full"
+                    disabled={!!draft || (include.length > 0 && reason.trim().length < 3)} loading={act.isPending}
+                    onClick={() => act.mutate({ sql: B.CREATE_BILLING_RUN,
+                      params: [term, due, month || null, include.length ? include : null, include.length ? reason.trim() : null],
                       msg: `${families.length} draft invoices raised for ${periodName}. Nothing has been sent yet.` })}>
                     Raise {families.length} draft invoices
                   </Button>
                   <p className="mt-2 text-center text-[13px] text-ink-3">
-                    {draft ? 'Send or discard the drafts above first.' : 'Drafts first. Nothing reaches families until you send.'}
+                    {draft ? 'Send or discard the drafts above first.'
+                      : include.length > 0 && reason.trim().length < 3 ? 'Say why the included families are billed again.'
+                      : 'Drafts first. Nothing reaches families until you send.'}
                   </p>
                 </div>
               </>
@@ -282,6 +330,7 @@ function FamilyDiscounts() {
     mutationFn: (id: string) => runAs(session, q => q(B.END_FAMILY_DISCOUNT, [id])),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['db'] }),
   });
+  const [ended, setEnded] = React.useState<string | null>(null);
   const ok = f.family && Number(f.amount) > 0 && (f.kind !== 'percent' || Number(f.amount) <= 100);
   return (
     <section aria-labelledby="run-fam">
@@ -301,11 +350,15 @@ function FamilyDiscounts() {
               </span>
               <span className="tnum font-medium">{d.kind === 'percent' ? `${d.amount}%` : `${money(d.amount)} off`}</span>
               <button className="grid size-10 place-items-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-critical" aria-label={`End discount for ${d.family_name}`}
-                onClick={() => end.mutate(d.id)}><Trash2 className="size-4" aria-hidden /></button>
+                disabled={end.isPending}
+                onClick={() => end.mutate(d.id, { onSuccess: () => setEnded(`${d.family_name}’s discount has ended. The next run charges the full price.`) })}>
+                <Trash2 className="size-4" aria-hidden /></button>
             </li>
           ))}
         </ul>
       )}
+      {ended && !end.error && <p role="status" className="mt-2 text-[13px] text-ink-2">{ended}</p>}
+      {end.error != null && <div className="mt-2"><ErrorState error={end.error} /></div>}
       {adding && (
         <div className="mt-2 grid gap-3 border-t border-line pt-4 sm:grid-cols-2">
           <Field label="Family" htmlFor="fd-f" required>

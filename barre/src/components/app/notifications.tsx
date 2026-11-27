@@ -22,6 +22,7 @@ const KIND: Record<string, string> = {
   new_enrolment: 'Enrolment', waitlist: 'Waiting list', waitlist_offer: 'Place offered',
   medical_updated: 'Medical update', request: 'Request', request_answered: 'Answered', teacher_changed: 'Teacher change',
   schedule_change: 'Class change', cover_assigned: 'Cover', contact_updated: 'Contact details', message_reminder: 'Reminder', safeguarding: 'Safeguarding', staff_check_due: 'Check due', milestone: 'Milestone', feedback_published: 'Feedback', report_shared: 'Report',
+  invoice_issued: 'Invoice', payment_received: 'Payment', event_invite: 'Event',
 };
 const URGENT: Record<string, string> = { payment_failed: 'text-critical', safeguarding: 'text-critical', medical_updated: 'text-caution', schedule_change: 'text-caution', staff_check_due: 'text-caution' };
 

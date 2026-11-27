@@ -14,6 +14,8 @@ import { money, time, relativeDay, dateLong, dayRange, ageFrom } from '@/lib/for
 import { cn } from '@/lib/cn';
 import { PendingLogins } from '@/components/app/family-care';
 import { SectionHead, StyleMark, dayDate, dueWord, useSessionChanges, type SessionChange } from './_parts/ui';
+import { cardPaymentsEnabled } from '@/lib/payments/invoice-status';
+import { useDueReminders } from '@/components/app/family-money';
 
 type Child = { id: string; first_name: string; last_name: string; date_of_birth: string; class_names: string | null };
 type Invoice = { id: string; number: string; status: string; issued_on: string; due_on: string; total_minor: number; paid_minor: number };
@@ -29,6 +31,7 @@ export default function FamilyHome() {
 
   const schedule = useRows<F.NextClass>(['my-schedule', from], F.MY_SCHEDULE, [from, to]);
   const children = useRows<Child>(['my-children'], F.MY_CHILDREN);
+  useDueReminders();
   const balance = useRow<{ name: string; balance_minor: string; unpaid: number; failed: number }>(['my-balance'], F.MY_BALANCE);
   const invoices = useRows<Invoice>(['my-invoices'], F.MY_INVOICES);
   const messages = useRows<{ id: string; kind: string; subject: string; body: string; sent_at: string; class_name: string | null }>(
@@ -172,7 +175,11 @@ export default function FamilyHome() {
                     {balance.data.failed > 0 ? 'A card payment did not go through.' : `${balance.data.unpaid} invoice${balance.data.unpaid === 1 ? '' : 's'} outstanding`}
                   </p>
                 </div>
-                <Link href="/family/payments"><Button variant="primary" size="lg" tabIndex={-1}>Pay {money(balance.data.balance_minor)}</Button></Link>
+                {/* Nothing can be paid in the app until cards are connected, so the button
+                    says where it goes (UR-11, parents D5). */}
+                <Link href="/family/payments"><Button variant="primary" size="lg" tabIndex={-1}>
+                  {cardPaymentsEnabled() ? `Pay ${money(balance.data.balance_minor)}` : 'See how to pay'}
+                </Button></Link>
               </div>
             ) : (
               <p className="py-3 text-[15px] text-ink-2"><span className="font-semibold text-positive">Paid.</span> Nothing is due.</p>

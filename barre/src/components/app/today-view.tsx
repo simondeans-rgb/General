@@ -11,6 +11,7 @@ import { CHECK_GAPS_TODAY, type CheckGap } from '@/lib/repos/safeguarding';
 import { SUMMARY, type BillingSummary } from '@/lib/repos/billing';
 import { money, time, dayRange, dateLong, relativeDay } from '@/lib/format';
 import { cn } from '@/lib/cn';
+import { cardPaymentsEnabled } from '@/lib/payments/invoice-status';
 
 /**
  * The owner's Today (reference screen for docs/brand/DESIGN-SYSTEM.md).
@@ -120,7 +121,7 @@ function TodaysClasses({ rows, loading, error, retry }: { rows?: Q.SessionRow[];
 type Item = { key: string; n: number; tone: 'critical' | 'caution' | 'ink'; headline: string; detail: string; href: string; action: string };
 
 function NeedsAttention() {
-  const pay = useRow<{ failed: number; outstanding_minor: string; unpaid_invoices: number }>(['att-pay'], Q.ATTENTION_PAYMENTS);
+  const pay = useRow<{ failed: number; failed_minor: string; outstanding_minor: string; unpaid_invoices: number }>(['att-pay'], Q.ATTENTION_PAYMENTS);
   const cap = useRows<{ id: string; name: string; capacity: number; enrolled: number; waiting: number; pct: number }>(['att-cap'], Q.ATTENTION_CAPACITY);
   const trials = useRows<{ id: string; contact_name: string; child_name: string; class_name: string }>(['att-trials'], Q.ATTENTION_TRIALS);
   const lapsed = useRows<{ id: string; first_name: string; last_name: string; class_name: string }>(['att-lapsed'], Q.ATTENTION_LAPSED);
@@ -136,8 +137,11 @@ function NeedsAttention() {
     headline: `Medical update${r.medical_updates === 1 ? '' : 's'} to acknowledge`, detail: 'Teachers see the change once you record it' });
   if (checks.data?.length) items.push({ key: 'checks', n: checks.data.length, tone: 'critical', href: '/safeguarding', action: 'See who',
     headline: 'Staff checks to sort', detail: checks.data.slice(0, 2).map(c => `${c.name}: ${c.issue}`).join(' · ') + (checks.data.length > 2 ? '…' : '') });
-  if (pay.data && pay.data.failed > 0) items.push({ key: 'pay', n: pay.data.failed, tone: 'critical', href: '/billing', action: 'Retry',
-    headline: `Card payment${pay.data.failed === 1 ? '' : 's'} failed`, detail: `${money(pay.data.outstanding_minor)} outstanding in all` });
+  // Cards cannot be retried until a payment provider is connected, so the
+  // action opens the invoices rather than promising a retry (UR-11).
+  if (pay.data && pay.data.failed > 0) items.push({ key: 'pay', n: pay.data.failed, tone: 'critical', href: '/billing',
+    action: cardPaymentsEnabled() ? 'Retry' : 'See invoices',
+    headline: `Card payment${pay.data.failed === 1 ? '' : 's'} failed`, detail: `${money(pay.data.failed_minor)} declined` });
   if (msgs.data && msgs.data.awaiting > 0) items.push({ key: 'msg', n: msgs.data.awaiting, tone: 'ink', href: '/inbox', action: 'Reply',
     headline: `Famil${msgs.data.awaiting === 1 ? 'y' : 'ies'} waiting for a reply`, detail: (msgs.data.names ?? '') + (msgs.data.awaiting > 3 ? '…' : '') });
   if (r && (r.open_requests > 0 || r.pending_entries > 0)) items.push({ key: 'req', n: r.open_requests + r.pending_entries, tone: 'ink', href: '/requests', action: 'Open',
