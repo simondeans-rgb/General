@@ -51,6 +51,7 @@ select cs.id, cs.class_id, c.name, cs.starts_at, cs.ends_at, cs.status,
 
 export const MY_CHILDREN = `
 select s.id, s.first_name, s.last_name, s.date_of_birth, s.is_adult,
+       s.preferred_name, s.pronouns, s.school,
        s.self_guardian_id in (select g.id from guardian g where g.user_id = auth.uid()) as is_me,
        (select string_agg(c.name, ', ' order by c.name) from enrolment e
           join class c on c.id = e.class_id
@@ -194,3 +195,6 @@ export type MyPack = { id: string; first_name: string; name: string; remaining: 
 export const MY_PACKS = `select p.id, s.first_name, k.name, p.remaining, p.expires_on from pack_purchase p
   join student s on s.id = p.student_id join class_pack k on k.id = p.pack_id
  where p.remaining > 0 and p.expires_on >= current_date order by p.expires_on`;
+
+/** Everyday details a parent changes directly; the office is told (0056). */
+export const UPDATE_CHILD_DETAILS = `select app.guardian_update_child($1, $2, $3, $4)`;

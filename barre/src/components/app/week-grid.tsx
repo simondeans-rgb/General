@@ -19,7 +19,11 @@ const overlaps = (a: Q.SessionRow, b: Q.SessionRow) =>
  * in words, not only in red. Drag a class to another day to move that week's
  * session (families are told). Today's column carries the accent.
  */
-export function WeekGrid({ sessions, from, onOpen }: { sessions: Q.SessionRow[]; from: string | Date; onOpen: (s: Q.SessionRow) => void }) {
+export function WeekGrid({ sessions, from, onOpen, readOnly = false }: {
+  sessions: Q.SessionRow[]; from: string | Date; onOpen: (s: Q.SessionRow) => void;
+  /** A teacher's own week: look and open, but no dragging to move classes. */
+  readOnly?: boolean;
+}) {
   const { session } = useSession();
   const qc = useQueryClient();
   const days = React.useMemo(() => Array.from({ length: 7 }, (_, i) => { const d = new Date(from); d.setDate(d.getDate() + i); return d; }), [from]);
@@ -72,9 +76,9 @@ export function WeekGrid({ sessions, from, onOpen }: { sessions: Q.SessionRow[];
         <input type="checkbox" className="size-4 accent-[var(--color-accent)]" checked={isCompact} onChange={e => setCompact(e.target.checked)} />
         Compact view — time and name only
       </label>
-      <div className="overflow-x-auto">
+      <div className="relative overflow-x-auto">
         <table className="w-full min-w-[860px] table-fixed border-collapse text-[0.8125rem]">
-          <caption className="sr-only">Classes by room and day. Drag a class to another day to move it.</caption>
+          <caption className="sr-only">{readOnly ? 'Classes by room and day.' : 'Classes by room and day. Drag a class to another day to move it.'}</caption>
           <thead>
             <tr>
               <th scope="col" className="w-44 border-b-2 border-ink pb-2 pr-3 text-left align-bottom"><span className="label">Room</span></th>
@@ -117,7 +121,7 @@ export function WeekGrid({ sessions, from, onOpen }: { sessions: Q.SessionRow[];
                           const isNext = next?.id === s.id;
                           return (
                             <li key={s.id}>
-                              <button draggable={!cancelled} onDragStart={() => setDragging(s)} onDragEnd={() => setDragging(null)}
+                              <button draggable={!cancelled && !readOnly} onDragStart={() => { if (!readOnly) setDragging(s); }} onDragEnd={() => setDragging(null)}
                                 onClick={() => onOpen(s)} title={clash.get(s.id)}
                                 aria-label={`${s.name}, ${time(s.starts_at)}${s.teacher ? `, ${s.teacher}` : ''}${cancelled ? ', cancelled' : ''}${clashed ? `, clash: ${clash.get(s.id)}` : ''}${isNext ? ', next class' : ''}`}
                                 className={cn('block w-full rounded-[var(--radius-sm)] border border-l-[3px] bg-surface px-2 py-1.5 text-left transition-colors hover:bg-surface-2',
@@ -153,7 +157,7 @@ export function WeekGrid({ sessions, from, onOpen }: { sessions: Q.SessionRow[];
       {styles.length > 0 && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[0.7812rem] text-ink-3">
           {styles.map(([name, colour]) => <StyleMark key={name} colour={colour} name={name} />)}
-          <span className="sm:ml-auto">Drag a class to another day to move it. Families are told.</span>
+          {!readOnly && <span className="sm:ml-auto">Drag a class to another day to move it. Families are told.</span>}
         </div>
       )}
     </div>

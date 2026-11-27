@@ -5,7 +5,8 @@ import { StudentExams } from '@/components/app/exams';
 import { PracticeLog } from '@/components/app/practice';
 import Link from 'next/link';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowRight, CalendarOff, Sparkles, UserPlus } from 'lucide-react';
+import { ArrowRight, CalendarOff, Pencil, Sparkles, UserPlus } from 'lucide-react';
+import { ChildDetailsSheet } from '@/components/app/child-details-sheet';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
@@ -29,6 +30,7 @@ type Child = {
   has_alert: boolean; allergies: string | null; photo_consent: boolean | null;
   /** An adult participant (UR-21); is_me when that adult is the signed-in guardian. */
   is_adult?: boolean; is_me?: boolean;
+  preferred_name?: string | null; pronouns?: string | null; school?: string | null;
 };
 
 export default function FamilyChildren() {
@@ -36,6 +38,7 @@ export default function FamilyChildren() {
   const [reporting, setReporting] = React.useState<Child | null>(null);
   const [browsing, setBrowsing] = React.useState<Child | null>(null);
   const [adding, setAdding] = React.useState(false);
+  const [editing, setEditing] = React.useState<Child | null>(null);
   // An adult student on their own reads about themselves, not a family (UR-21).
   const voice = useFamilyVoice();
 
@@ -58,6 +61,11 @@ export default function FamilyChildren() {
             <div className="grid gap-x-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
             <div className="min-w-0">
             <dl className="divide-y divide-line text-[0.9062rem]">
+              {(c.preferred_name || c.pronouns || c.school) && (
+                <Row label="Details">
+                  {[c.preferred_name && `Goes by ${c.preferred_name}`, c.pronouns, c.school].filter(Boolean).join(' · ')}
+                </Row>
+              )}
               <Row label="Classes">{c.class_names ?? <span className="text-ink-3">{c.is_me ? 'You’re not in a class yet' : 'Not in a class yet'}</span>}</Row>
               {c.attendance_pct != null && (
                 <Row label="Attendance">
@@ -92,6 +100,9 @@ export default function FamilyChildren() {
               </Button>
               <Button onClick={() => setReporting(c)}>
                 <CalendarOff className="size-4" aria-hidden /> Report an absence
+              </Button>
+              <Button onClick={() => setEditing(c)}>
+                <Pencil className="size-4" aria-hidden /> Update details
               </Button>
             </div>
             <div className="pt-4"><PracticeLog studentId={c.id} who={c.is_me ? 'you' : c.first_name} bare /></div>
@@ -130,6 +141,7 @@ export default function FamilyChildren() {
       {reporting && <AbsenceDialog child={reporting} onClose={() => setReporting(null)} />}
       {browsing && <ChildClassesSheet child={browsing} onClose={() => setBrowsing(null)} />}
       {adding && <AddChildSheet onClose={() => setAdding(false)} />}
+      {editing && <ChildDetailsSheet child={editing} onClose={() => setEditing(null)} />}
     </Shell>
   );
 }

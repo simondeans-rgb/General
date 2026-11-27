@@ -4,6 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { ArrowRight, ChevronRight, UserRoundX } from 'lucide-react';
 import { CalendarSubscribe } from '@/components/app/calendar-subscribe';
+import { TeacherWeek } from '@/components/app/teacher-week';
 import { CrossSchoolAgenda, useStaffSchools } from '@/components/app/cross-school-agenda';
 import { downloadIcs } from '@/lib/ics';
 import { RehearsalList } from '@/components/app/rehearsals';
@@ -39,12 +40,18 @@ export default function TeachToday() {
   // Teachers at two or more schools can see their week across all of them (UR-47).
   const schools = useStaffSchools();
   const multi = schools.length > 1;
-  const [view, setView] = React.useState<'today' | 'week'>('today');
+  // List (the day and the fortnight ahead), the week as a grid, or every school at once.
+  type View = 'list' | 'grid' | 'across';
+  const [view, setView] = React.useState<View>('list');
   React.useEffect(() => {
-    try { if (localStorage.getItem('barre.teach.view') === 'week') setView('week'); } catch {}
+    try {
+      const v = localStorage.getItem('barre.teach.view');
+      if (v === 'grid' || v === 'across') setView(v); else if (v === 'week') setView('across');
+    } catch {}
   }, []);
-  const pick = (v: 'today' | 'week') => { setView(v); try { localStorage.setItem('barre.teach.view', v); } catch {} };
-  const week = multi && view === 'week';
+  const pick = (v: View) => { setView(v); try { localStorage.setItem('barre.teach.view', v); } catch {} };
+  const week = multi && view === 'across';
+  const grid = view === 'grid';
 
   const now = new Date();
   const all = sessions.data ?? [];
@@ -58,13 +65,13 @@ export default function TeachToday() {
   return (
     <Shell title="Today" subtitle={dateLong(now)} allow={['owner','admin','teacher']}
            actionsInline actions={<CalendarSubscribe onDownload={() => downloadTeaching(session)} allSchools={multi} />}>
-      {multi && (
-        <div className="mx-auto mb-6 max-w-[1040px]">
-          <ViewTabs label="Show" value={week ? 'week' : 'today'} onChange={pick}
-            options={[['today', 'This school'], ['week', 'My week across schools']]} />
-        </div>
-      )}
-      {week ? <CrossSchoolAgenda /> : <div className="mx-auto grid max-w-[1040px] gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+      <div className={cn('mx-auto mb-6', grid ? 'max-w-[1240px]' : 'max-w-[1040px]')}>
+        <ViewTabs label="Show my classes as" value={week ? 'across' : grid ? 'grid' : 'list'} onChange={pick}
+          options={multi
+            ? [['list', 'List'], ['grid', 'Week grid'], ['across', 'All my schools']]
+            : [['list', 'List'], ['grid', 'Week grid']]} />
+      </div>
+      {week ? <CrossSchoolAgenda /> : grid ? <div className="mx-auto max-w-[1240px]"><TeacherWeek /></div> : <div className="mx-auto grid max-w-[1040px] gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
         {sessions.isLoading && <div className="space-y-4"><Skeleton className="h-24 w-48" /><Skeleton className="h-28" /></div>}
         {sessions.error != null && <ErrorState error={sessions.error} onRetry={() => sessions.refetch()} />}
 
