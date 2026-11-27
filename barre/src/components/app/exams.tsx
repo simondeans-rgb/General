@@ -34,7 +34,7 @@ export function ExamsCard() {
   const write = useWrite(() => setAdding(false));
   return (
     <section>
-      <SectionHead title="Exams" meta={rows.data?.length ? `${rows.data.length} session${rows.data.length === 1 ? '' : 's'}` : undefined}
+      <SectionHead title="Exam entries" meta={rows.data?.length ? `${rows.data.length} session${rows.data.length === 1 ? '' : 's'}` : undefined}
         action={!adding && <Button size="sm" variant="ghost" onClick={() => setAdding(true)}><Plus className="size-4" aria-hidden /> Exam session</Button>} />
       <p className="py-2 text-[13px] text-ink-3">Results become milestones families can see.</p>
       {adding && (
@@ -52,7 +52,7 @@ export function ExamsCard() {
           </div>
         </div>
       )}
-      {rows.data?.length === 0 && !adding && <p className="py-3 text-[14px] text-ink-3">No exam sessions yet.</p>}
+      {rows.data?.length === 0 && !adding && <p className="py-3 text-[14px] text-ink-3">No exam sessions yet. An exam session holds a board’s visit: each child’s grade entry, fee and result. An event of kind Exam above is only the date in families’ diaries; add the session here to enter children.</p>}
       <ul className="divide-y divide-line border-t border-line">
         {rows.data?.map(x => {
           const d = new Date(x.exam_on);
