@@ -1,5 +1,6 @@
 'use client';
 import { StaffChecks } from '@/components/app/safeguarding';
+import { GuardianAccessFields, OfficeCollection } from '@/components/app/family-care';
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -123,6 +124,7 @@ export function GuardianSheet({ familyId, row, onClose }: {
           Receives invoices
         </label>
       </fieldset>
+      {row && <GuardianAccessFields guardianId={row.id} />}
     </RecordSheet>
   );
 }
@@ -205,6 +207,7 @@ export function StudentSheet({ familyId, familyName, row, onClose }: {
           <Input id="s-left" type="date" value={left} onChange={e => setLeft(e.target.value)} />
         </Field>
       )}
+      {row && <OfficeCollection studentId={row.id} name={row.first_name} />}
     </RecordSheet>
   );
 }

@@ -128,6 +128,7 @@ export default function FamilyMessages() {
                   {!send.isPending && <Send className="size-4" aria-hidden />}
                 </Button>
               </div>
+              <p className="mt-1.5 px-1 text-[12px] text-ink-3">Only you and the office see what you send here. Messages the studio sends to your family reach every parent.</p>
             </form>
           </Card>
         )}

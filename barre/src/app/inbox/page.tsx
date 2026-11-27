@@ -143,9 +143,16 @@ function Conversation({ familyId, onBack }: { familyId: string; onBack: () => vo
 
   React.useEffect(() => { end.current?.scrollIntoView({ block: 'end' }); }, [messages.data?.length]);
 
+  // A guardian's own messages are between them and the office (UR-17), so a
+  // reply to one goes to that guardian only, unless the office chooses the
+  // whole family.
+  const lastPrivate = [...(messages.data ?? [])].reverse().find(m => m.inbound && m.private);
+  const [toFamily, setToFamily] = React.useState(false);
   const send = useMutation({
-    mutationFn: () => runAs(session, q => q(I.SEND_DIRECT, [familyId, '', draft])),
-    onSuccess: () => { setDraft(''); qc.invalidateQueries({ queryKey: ['db'] }); },
+    mutationFn: () => runAs(session, q => lastPrivate && !toFamily
+      ? q(I.SEND_REPLY, [familyId, draft, lastPrivate.id])
+      : q(I.SEND_DIRECT, [familyId, '', draft])),
+    onSuccess: () => { setDraft(''); setToFamily(false); qc.invalidateQueries({ queryKey: ['db'] }); },
   });
 
   const useTemplate = (id: string) => {
@@ -193,6 +200,7 @@ function Conversation({ familyId, onBack }: { familyId: string; onBack: () => vo
                   <p className="whitespace-pre-wrap break-words">{m.body}</p>
                   <p className={cn('mt-1.5 text-[12px]', m.inbound ? 'text-ink-3' : 'text-ink-invert opacity-75')}>
                     {m.sender ?? (m.inbound ? thread?.family_name : 'Studio')} · {time(m.sent_at)}
+                    {m.private && ` · only ${m.private_name ?? 'one guardian'} and the office`}
                   </p>
                 </div>
               </div>
@@ -205,6 +213,13 @@ function Conversation({ familyId, onBack }: { familyId: string; onBack: () => vo
       <form className="border-t border-line p-3" onSubmit={e => { e.preventDefault(); if (draft.trim() && !unfilled) send.mutate(); }}>
         {send.error && <div className="mb-2"><ErrorState error={send.error} /></div>}
         {unfilled && <p role="alert" className="mb-2 text-[12.5px] text-caution">Fill in the {'{{…}}'} gaps before sending.</p>}
+        {lastPrivate && (
+          <Select aria-label="Who the reply goes to" value={toFamily ? 'family' : 'one'} onChange={e => setToFamily(e.target.value === 'family')}
+                  className="mb-2 h-9 max-w-full text-[13px] sm:max-w-[320px]">
+            <option value="one">Reply to {lastPrivate.private_name ?? lastPrivate.sender ?? 'them'} only</option>
+            <option value="family">Send to everyone in the family</option>
+          </Select>
+        )}
         <label htmlFor="reply" className="sr-only">Reply to {thread?.family_name}</label>
         <textarea id="reply" value={draft} onChange={e => setDraft(e.target.value)} rows={3}
           placeholder="Write a reply…"
