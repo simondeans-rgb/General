@@ -149,17 +149,36 @@ export function StaffChecks({ staffId, readOnly = false }: { staffId: string; re
   );
 }
 
-/** Data retention for leavers, owner only (R-041). */
+/** What each retention step does, for the "Due now" line. */
+const STEP_TEXT: [string, string, string][] = [
+  ['medical', 'medical record to delete', 'medical records to delete'],
+  ['anonymise', 'child to anonymise', 'children to anonymise'],
+  ['purge', 'child with long-deleted records to remove', 'children with long-deleted records to remove'],
+  ['support', 'support note to delete', 'support notes to delete'],
+  ['attendance', 'leaver’s attendance to delete', 'leavers’ attendance to delete'],
+  ['prospect', 'old enquiry to remove', 'old enquiries to remove'],
+  ['financial', 'family to anonymise on invoices', 'families to anonymise on invoices'],
+  ['dsl_note', 'shared-care note to clear', 'shared-care notes to clear'],
+  ['messages', 'conversation with old messages to delete', 'conversations with old messages to delete'],
+  ['staff_check', 'former staff member’s certificate numbers to clear', 'former staff members’ certificate numbers to clear'],
+  ['staff', 'former staff record to anonymise', 'former staff records to anonymise'],
+  ['concern', 'closed concern to delete', 'closed concerns to delete'],
+  ['audit', 'batch of old audit log entries to delete', 'batches of old audit log entries to delete'],
+  ['access_log', 'batch of old access log entries to delete', 'batches of old access log entries to delete'],
+];
+
+/** Data retention, owner only (R-041, 0058). */
 export function RetentionCard({ studioId }: { studioId: string }) {
   const { session } = useSession();
   const qc = useQueryClient();
   const pol = useRows<G.Retention>(['retention'], G.RETENTION).data?.[0];
-  const preview = useRows<{ step: string; student_id: string; who: string; left_on: string; reason: string | null }>(['retention-preview'], G.PREVIEW_RETENTION, [studioId]);
+  const preview = useRows<{ step: string; student_id: string | null; who: string; left_on: string; reason: string | null; entity_id: string | null }>(['retention-preview'], G.PREVIEW_RETENTION, [studioId]);
   const [m, setM] = React.useState<Partial<G.Retention>>({});
   const v = { ...pol, ...m } as G.Retention;
   const [done, setDone] = React.useState<string | null>(null);
   const save = useMutation({
-    mutationFn: () => runAs(session, q => q(G.SET_RETENTION, [v.medical_months, v.personal_months, v.financial_months, v.prospect_days, v.concern_months || null])),
+    mutationFn: () => runAs(session, q => q(G.SET_RETENTION, [v.medical_months, v.personal_months, v.financial_months, v.prospect_days, v.concern_months || null,
+      v.message_months, v.attendance_months, v.support_months, v.staff_months, v.staff_check_months, v.audit_months, v.dsl_note_months, v.auto_apply])),
     onSuccess: () => { setM({}); qc.invalidateQueries({ queryKey: ['db'] }); },
   });
   const run = useMutation({
@@ -167,45 +186,66 @@ export function RetentionCard({ studioId }: { studioId: string }) {
     onSuccess: n => { setDone(`${n} change${n === 1 ? '' : 's'} made and recorded in the audit log.`); qc.invalidateQueries({ queryKey: ['db'] }); },
   });
   if (!pol) return <Card><Skeleton className="h-24" /></Card>;
-  const count = (k: string) => (preview.data ?? []).filter(p => p.step === k).length;
-  const held = (preview.data ?? []).filter(p => p.step === 'held');
-  const med = count('medical'), anon = count('anonymise'), pros = count('prospect'), fin = count('financial'), con = count('concern');
+  const rows = preview.data ?? [];
+  const held = rows.filter(p => p.step === 'held');
+  const due = STEP_TEXT.map(([k, one, many]) => [rows.filter(p => p.step === k).length, one, many] as const).filter(([n]) => n > 0);
+  const total = rows.length - held.length;
+  const applyOn = pol.auto_preview_at ? new Date(new Date(pol.auto_preview_at).getTime() + 14 * 86_400_000) : null;
+  const field = (f: typeof G.RETENTION_FIELDS[number]) => (
+    <Field key={f.key} label={f.label} htmlFor={`rt-${f.key}`}
+      hint={`${f.unit}, ${f.min} to ${f.max}${f.adviser ? '. Check with your data protection adviser.' : ''}`}>
+      <Input id={`rt-${f.key}`} type="number" min={f.min} max={f.max} value={v[f.key] as number}
+        onChange={e => setM(x => ({ ...x, [f.key]: Number(e.target.value) }))} />
+    </Field>
+  );
   return (
     <Card>
-      <CardHeader title="Keeping data" subtitle="How long details are kept after a child stops coming, and for enquiries that went nowhere. Check these with your own adviser." />
+      <CardHeader title="Keeping data" subtitle="How long details are kept after a child or a member of staff leaves, and for enquiries that went nowhere. These are starting points: check every period with your data protection adviser." />
       <div className="space-y-4 pt-4">
         <div className="grid gap-3 sm:grid-cols-3">
-          {([['medical_months', 'Delete medical records after'], ['personal_months', 'Anonymise the child after'], ['financial_months', 'Keep invoices for']] as const).map(([k, l]) => (
-            <Field key={k} label={l} htmlFor={`rt-${k}`} hint="months">
-              <Input id={`rt-${k}`} type="number" min={1} max={240} value={v[k]} onChange={e => setM(x => ({ ...x, [k]: Number(e.target.value) }))} />
-            </Field>
-          ))}
-          <Field label="Remove enquiries with no activity after" htmlFor="rt-pd" hint="days">
-            <Input id="rt-pd" type="number" min={30} max={730} value={v.prospect_days} onChange={e => setM(x => ({ ...x, prospect_days: Number(e.target.value) }))} />
-          </Field>
+          {G.RETENTION_FIELDS.filter(f => !f.adviser).map(field)}
           <Field label="Delete closed safeguarding concerns after" htmlFor="rt-cm" hint="months — empty keeps them. Set from your safeguarding policy (often until the child is 25).">
             <Input id="rt-cm" type="number" min={12} max={600} value={v.concern_months ?? ''} placeholder="Keep"
                    onChange={e => setM(x => ({ ...x, concern_months: e.target.value ? Number(e.target.value) : null }))} />
           </Field>
         </div>
-        {Object.keys(m).length > 0 && <Button size="sm" loading={save.isPending} onClick={() => save.mutate()}>Save periods</Button>}
+        <div>
+          <h3 className="text-[0.9062rem] font-semibold">Other records</h3>
+          <p className="text-[0.8125rem] text-ink-3">Kept long by default. A legal hold or a safeguarding record keeps everything about that child or member of staff.</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">{G.RETENTION_FIELDS.filter(f => f.adviser).map(field)}</div>
+        </div>
+        <label className="flex items-start gap-3 border-t border-line pt-3 text-[0.9062rem]">
+          <input type="checkbox" className="mt-0.5 size-5 accent-[var(--color-accent)]" checked={v.auto_apply}
+                 onChange={e => setM(x => ({ ...x, auto_apply: e.target.checked }))} />
+          <span><span className="font-medium">Apply automatically each month</span>
+            <span className="block text-[0.8125rem] text-ink-3">Each month you are told what is due. With this on, it is applied 14 days later unless you apply it first; anything that became due since waits for the next month. Off by default.</span></span>
+        </label>
+        {Object.keys(m).length > 0 && <Button size="sm" loading={save.isPending} onClick={() => save.mutate()}>Save settings</Button>}
         {save.error != null && <ErrorState error={save.error} />}
-        <p className="border-t border-line pt-3 text-[0.9062rem]">Due now: <b>{med}</b> medical record{med === 1 ? '' : 's'} to delete, <b>{anon}</b> child{anon === 1 ? '' : 'ren'} to anonymise,
-          {' '}<b>{pros}</b> old enquir{pros === 1 ? 'y' : 'ies'} to remove, <b>{fin}</b> famil{fin === 1 ? 'y' : 'ies'} to anonymise on invoices
-          {pol.concern_months ? <>, <b>{con}</b> closed concern{con === 1 ? '' : 's'} to delete</> : ''}.
-          {pol.last_run_at ? ` Last run ${dateShort(pol.last_run_at)}.` : ''}</p>
+        <div className="border-t border-line pt-3 text-[0.9062rem]">
+          {due.length === 0
+            ? <p>Nothing is due now.</p>
+            : <><p>Due now:</p>
+              <ul className="mt-1 text-[0.875rem]">{due.map(([n, one, many]) => <li key={one}><b>{n}</b> {n === 1 ? one : many}</li>)}</ul></>}
+          <p className="mt-1 text-[0.8125rem] text-ink-3">
+            {pol.last_run_at ? `Last applied ${dateShort(pol.last_run_at)}. ` : ''}
+            {pol.auto_preview_at ? `Monthly check ${dateShort(pol.auto_preview_at)}: ${pol.auto_preview_count ?? 0} due.` : 'The first monthly check has not run yet.'}
+            {pol.auto_apply && pol.auto_preview_at && !pol.auto_applied_at && (pol.auto_preview_count ?? 0) > 0 && applyOn ? ` Applies automatically on ${dateShort(applyOn.toISOString())}.` : ''}
+            {pol.auto_applied_at ? ` Applied automatically ${dateShort(pol.auto_applied_at)}.` : ''}
+          </p>
+        </div>
         {held.length > 0 && (
           <div>
-            <p className="text-[0.9062rem]"><b>{held.length}</b> child{held.length === 1 ? '' : 'ren'} held back from anonymising, because of a safeguarding record:</p>
+            <p className="text-[0.9062rem]"><b>{held.length}</b> record{held.length === 1 ? '' : 's'} held back because of a legal hold or a safeguarding record:</p>
             <ul className="mt-1 divide-y divide-line text-[0.875rem]">
-              {held.map(h => <li key={h.student_id} className="flex flex-wrap justify-between gap-x-3 py-1.5"><span>{h.who}</span><span className="text-ink-3">{h.reason}</span></li>)}
+              {held.map(h => <li key={h.entity_id ?? h.who} className="flex flex-wrap justify-between gap-x-3 py-1.5"><span>{h.who}</span><span className="text-ink-3">{h.reason}</span></li>)}
             </ul>
             <p className="mt-1 text-[0.7812rem] text-ink-3">The safeguarding lead reviews holds on the Safeguarding page.</p>
           </div>
         )}
         {done && <p role="status" className="text-sm text-positive">{done}</p>}
         {run.error != null && <ErrorState error={run.error} />}
-        <Button size="sm" disabled={!med && !anon && !pros && !fin && !con} loading={run.isPending} onClick={() => run.mutate()}>Apply now</Button>
+        <Button size="sm" disabled={total === 0} loading={run.isPending} onClick={() => run.mutate()}>Apply now</Button>
       </div>
     </Card>
   );
