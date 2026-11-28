@@ -3,6 +3,7 @@ import { asUser, closeDb, expectRejected, rebuild, uid, NS, USERS, STUDIO_ID } f
 import { PLATFORM_ADMIN } from '../src/lib/db/seed/data';
 import * as R from '../src/lib/repos/reports';
 import * as A from '../src/lib/repos/account';
+import * as B from '../src/lib/repos/billing';
 
 beforeAll(async () => { await rebuild(); }, 60_000);
 afterAll(async () => { await closeDb(); });
@@ -282,6 +283,11 @@ describe('money per location (U8, F12)', () => {
       const [hb] = await q(R.HEADLINE_AT, [LOC.blackheath]);
       expect(Number(hb.collected_30d_minor)).toBe(Number(col.collected_30d_minor));
       void g;
+      // Billing totals for one location come from the same split (U8).
+      const [sb] = await q(B.SUMMARY_AT, ['Blackheath Studio']);
+      expect(Number(sb.collected_30d_minor)).toBe(Number(col.collected_30d_minor));
+      expect(Number(sb.outstanding_minor)).toBe(Number(col.outstanding_minor));
+      expect(sb.owing_families).toBeGreaterThan(0);
 
       await limitNadia(svc);
     });

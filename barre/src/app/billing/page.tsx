@@ -65,7 +65,9 @@ export default function BillingPage() {
 }
 
 function Billing() {
-  const summary = useRow<B.BillingSummary>(['billing-summary'], B.SUMMARY);
+  // The totals follow the location filter (U8; location_money, 0062).
+  const loc = useLocationFilter();
+  const summary = useRow<B.BillingSummary>(['billing-summary', loc.current], loc.current ? B.SUMMARY_AT : B.SUMMARY, loc.current ? [loc.current] : []);
   const invoices = useRows<B.InvoiceRow>(['invoices'], B.INVOICES);
   const { selected, select } = useSelection();
   const [filter, setFilter] = React.useState<Filter>('attention');
@@ -74,7 +76,6 @@ function Billing() {
   const [running, setRunning] = React.useState(false);
   const [reminding, setReminding] = React.useState(false);
   // Schools with more than one location can narrow every list to one (UR-33).
-  const loc = useLocationFilter();
   const atLoc = React.useMemo(() => (invoices.data ?? []).filter(i => !loc.current || (i.locations ?? []).includes(loc.current)),
     [invoices.data, loc.current]);
 
@@ -113,7 +114,7 @@ function Billing() {
 
   return (
     <Shell title="Billing" help={<>Invoices for every family. Use <b>Billing runs</b> to raise a whole term’s (or month’s) invoices at once: check the drafts, then send them together. Discounts — sibling, multi-class and per-family bursaries — are applied automatically. <b>Export</b> gives your accountant spreadsheets, aged debt and a Xero import file.</>} allow={['owner', 'admin']}
-      subtitle={s ? `${money(s.outstanding_minor)} outstanding across ${s.owing_families} famil${s.owing_families === 1 ? 'y' : 'ies'}` : undefined}
+      subtitle={s ? `${money(s.outstanding_minor)} outstanding across ${s.owing_families} famil${s.owing_families === 1 ? 'y' : 'ies'}${loc.current ? ` at ${loc.current}` : ''}` : undefined}
       actions={<div className="flex gap-2">
         <ExportButton location={loc.current || null} />
         <Button size="sm" aria-label="Billing runs" onClick={() => setRunning(true)}>

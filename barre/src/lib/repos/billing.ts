@@ -26,6 +26,34 @@ select
      as collected_30d_minor,
   coalesce((select -sum(balance_minor) from family where deleted_at is null and balance_minor < 0), 0)::bigint as credit_minor`;
 
+/** SUMMARY for one location ($1, its name), so the totals follow the
+ *  location filter (U8). Money comes from location_money (0062): invoices
+ *  split by their class lines, payments following their invoice. Families
+ *  and invoices count at a location when an invoice has a class line there,
+ *  or, with no class lines, when the family has a child in a class there. */
+export const SUMMARY_AT = `
+with loc as (select id from location where name = $1 and deleted_at is null),
+m as (select lm.* from location_money lm where lm.location_id in (select id from loc)),
+fam_here as (select distinct s.family_id from enrolment e join student s on s.id = e.student_id join class c on c.id = e.class_id
+              where e.status = 'active' and e.deleted_at is null and c.location_id in (select id from loc)),
+inv_here as (select i.* from invoice i where i.deleted_at is null and (
+               exists (select 1 from invoice_item ii join class c on c.id = ii.class_id
+                        where ii.invoice_id = i.id and ii.deleted_at is null and c.location_id in (select id from loc))
+               or (not exists (select 1 from invoice_item ii where ii.invoice_id = i.id and ii.deleted_at is null and ii.class_id is not null)
+                   and i.family_id in (select family_id from fam_here))))
+select
+  coalesce((select sum(outstanding_minor) from m), 0)::bigint as outstanding_minor,
+  (select count(distinct family_id)::int from inv_here where status in ('issued','part_paid')) as owing_families,
+  coalesce((select sum(overdue_minor) from m), 0)::bigint as overdue_minor,
+  (select count(*)::int from inv_here where status in ('issued','part_paid','refunded') and due_on < current_date) as overdue_invoices,
+  (select count(*)::int from payment p where p.deleted_at is null and p.failure_code is not null
+     and p.succeeded_at is null and p.invoice_id in (select id from inv_here where status in ('issued','part_paid'))) as failed_payments,
+  coalesce((select sum(p.amount_minor) from payment p where p.deleted_at is null and p.failure_code is not null
+     and p.succeeded_at is null and p.invoice_id in (select id from inv_here where status in ('issued','part_paid'))), 0)::bigint as failed_minor,
+  coalesce((select sum(collected_30d_minor) from m), 0)::bigint as collected_30d_minor,
+  coalesce((select -sum(balance_minor) from family where deleted_at is null and balance_minor < 0
+     and id in (select family_id from fam_here)), 0)::bigint as credit_minor`;
+
 export type InvoiceRow = {
   id: string; number: string; status: string; issued_on: string | null; due_on: string | null;
   total_minor: string; paid_minor: string; family_id: string; family_name: string;
