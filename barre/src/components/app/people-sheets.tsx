@@ -6,6 +6,8 @@ import { GuardianAccessFields, OfficeCollection } from '@/components/app/family-
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useWrite, refreshAfterWrite } from '@/lib/write';
+import { announceSaved } from '@/lib/saved';
 import { AlertTriangle, Plus, ShieldAlert } from 'lucide-react';
 import { RecordSheet } from '@/components/app/record-sheet';
 import { useRows } from '@/lib/query';
@@ -15,17 +17,12 @@ import { Badge, Button, Field, Input, Select, Skeleton } from '@/components/ui';
 import * as P from '@/lib/repos/people';
 import { LOG_MEDICAL_VIEW } from '@/lib/repos/office';
 import { ageFrom, dateShort, toDateInput } from '@/lib/format';
+import { type FamilyPick } from '@/lib/repos/billing';
+import { FAMILIES as FAMILY_PICK } from '@/lib/repos/account';
+import { pickerLabels } from '@/lib/office-words';
 
 const COLOURS = ['violet', 'amber', 'teal', 'rose', 'indigo', 'lime'];
 
-function useWrite(sql: string, onDone?: () => void) {
-  const { session } = useSession();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (params: unknown[]) => runAs(session, q => q(sql, params)),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['db'] }); onDone?.(); },
-  });
-}
 
 const textarea =
   'w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm ' +
@@ -42,7 +39,7 @@ export function FamilySheet({ row, onClose }: {
   const [city, setCity] = React.useState(row?.city ?? '');
   const [postcode, setPostcode] = React.useState(row?.postcode ?? '');
   const [notes, setNotes] = React.useState(row?.notes ?? '');
-  const save = useWrite(row ? P.UPDATE_FAMILY : P.CREATE_FAMILY, onClose);
+  const save = useWrite(row ? P.UPDATE_FAMILY : P.CREATE_FAMILY, { onDone: onClose, saved: row ? `Saved ${name.trim()}` : `Added ${name.trim()}` });
 
   return (
     <RecordSheet title={row ? 'Edit family' : 'New family'} onClose={onClose}
@@ -87,8 +84,8 @@ export function GuardianSheet({ familyId, row, onClose }: {
   const [rel, setRel] = React.useState(row?.relationship ?? '');
   const [primary, setPrimary] = React.useState(row?.is_primary ?? false);
   const [billing, setBilling] = React.useState(row?.receives_billing ?? true);
-  const save = useWrite(row ? P.UPDATE_GUARDIAN : P.CREATE_GUARDIAN, onClose);
-  const remove = useWrite(P.REMOVE_GUARDIAN, onClose);
+  const save = useWrite(row ? P.UPDATE_GUARDIAN : P.CREATE_GUARDIAN, { onDone: onClose, saved: `Saved ${name.trim()}’s details` });
+  const remove = useWrite(P.REMOVE_GUARDIAN, { onDone: onClose, saved: `Removed ${row?.full_name ?? 'the guardian'}` });
 
   return (
     <RecordSheet title={row ? 'Edit guardian' : 'Add a guardian'} onClose={onClose}
@@ -137,9 +134,8 @@ export function StudentSheet({ familyId, familyName, row, onClose }: {
   familyId?: string; familyName?: string;
   row: P.StudentDetail | null; onClose: () => void;
 }) {
-  const families = useRows<{ id: string; name: string }>(['family-picker'],
-    `select id, name from family where deleted_at is null order by name`,
-    [], { enabled: !familyId && !row });
+  const families = useRows<FamilyPick>(['family-picker'], FAMILY_PICK, [], { enabled: !familyId && !row });
+  const labels = React.useMemo(() => pickerLabels(families.data ?? []), [families.data]);
 
   const [family, setFamily] = React.useState(row?.family_id ?? familyId ?? '');
   const [first, setFirst] = React.useState(row?.first_name ?? '');
@@ -150,7 +146,7 @@ export function StudentSheet({ familyId, familyName, row, onClose }: {
   const [school, setSchool] = React.useState(row?.school ?? '');
   const [notes, setNotes] = React.useState(row?.notes ?? '');
   const [left, setLeft] = React.useState(toDateInput(row?.left_on));
-  const save = useWrite(row ? P.UPDATE_STUDENT : P.CREATE_STUDENT, onClose);
+  const save = useWrite(row ? P.UPDATE_STUDENT : P.CREATE_STUDENT, { onDone: onClose, saved: `Saved ${(preferred.trim() || first.trim())}’s details` });
   // A new child starts with the consent the family gave on joining (UR-08).
   const [consent, setConsent] = React.useState<Partial<Record<ConsentKind, boolean>>>({});
   const { session } = useSession();
@@ -159,8 +155,8 @@ export function StudentSheet({ familyId, familyName, row, onClose }: {
     mutationFn: (params: unknown[]) => runAs(session, async q => {
       const [r] = await q<{ id: string }>(P.CREATE_STUDENT, params);
       for (const [k, v] of Object.entries(consent)) await q(SET_CONSENT, [r!.id, k, v, 'Recorded when the child was added', false]);
-    }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['db'] }); onClose(); },
+    }).then(() => refreshAfterWrite(qc)),
+    onSuccess: () => { announceSaved(`Added ${first.trim()} ${last.trim()}`); onClose(); },
   });
   const saving = row ? save : create;
 
@@ -184,7 +180,7 @@ export function StudentSheet({ familyId, familyName, row, onClose }: {
       {!familyId && !row && (
         <Field label="Family" htmlFor="s-family" required>
           <Select id="s-family" value={family} onChange={e => setFamily(e.target.value)}>
-            {families.data?.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+            {families.data?.map(f => <option key={f.id} value={f.id}>{labels.get(f.id) ?? f.name}</option>)}
           </Select>
         </Field>
       )}
@@ -270,7 +266,7 @@ export function MedicalSheet({ studentId, studentName, onClose }: {
     setDoctorPhone(m?.doctor_phone ?? ''); setLoaded(true);
   }, [m, current.isPending, loaded]);
 
-  const save = useWrite(P.SAVE_MEDICAL, onClose);
+  const save = useWrite(P.SAVE_MEDICAL, { onDone: onClose, saved: `Saved ${studentName}’s medical details` });
 
 
   return (
@@ -419,8 +415,8 @@ export function StaffSheet({ row, onClose }: { row: P.StaffRow | null; onClose: 
   const [colour, setColour] = React.useState(row?.colour ?? 'violet');
   const [status, setStatus] = React.useState(row?.status ?? 'active');
   const [bio, setBio] = React.useState(row?.bio ?? '');
-  const save = useWrite(row ? P.UPDATE_STAFF : P.CREATE_STAFF, onClose);
-  const remove = useWrite(P.REMOVE_STAFF, onClose);
+  const save = useWrite(row ? P.UPDATE_STAFF : P.CREATE_STAFF, { onDone: onClose, saved: `Saved ${name.trim()}` });
+  const remove = useWrite(P.REMOVE_STAFF, { onDone: onClose, saved: `Removed ${row?.display_name ?? 'them'}` });
   const role = useSession().session?.role;
   const isOwner = role === 'owner';
   const [concern, setConcern] = React.useState(false);

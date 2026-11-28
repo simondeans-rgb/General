@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useWrite } from '@/lib/write';
 import { ArrowLeftRight, Undo2 } from 'lucide-react';
 import { RecordSheet } from '@/components/app/record-sheet';
 import { useRows } from '@/lib/query';
@@ -203,11 +204,4 @@ function MergeSheet({ pair, onClose, onBack }: { pair: H.Duplicate; onClose: () 
   );
 }
 
-function useWrite(sql: string, onDone?: (rows: any[]) => void) {
-  const { session } = useSession();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (params: unknown[]) => runAs(session, q => q(sql, params)),
-    onSuccess: rows => { qc.invalidateQueries({ queryKey: ['db'] }); onDone?.(rows as any[]); },
-  });
-}
+
