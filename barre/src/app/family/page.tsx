@@ -340,7 +340,7 @@ function ClassRow({ s, c, later }: { s: F.NextClass; c?: SessionChange; later?: 
         className="grid min-h-[56px] grid-cols-[4.75rem_minmax(0,1fr)] items-start gap-x-4 py-3 hover:bg-surface-2/60">
         <span>
           <span className={cn('block text-[0.7812rem]', today ? 'font-semibold text-ink' : 'text-ink-3')}>
-            {later ? dayDate(s.starts_at) : day.length > 9 ? day.slice(0, 3) : day}
+            {later ? dayDate(s.starts_at) : day}
           </span>
           <span className={cn('block font-display text-[1.1875rem] leading-tight tnum', cancelled && 'text-ink-3 line-through')}>{time(s.starts_at)}</span>
         </span>

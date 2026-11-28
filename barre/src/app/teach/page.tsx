@@ -92,7 +92,7 @@ export default function TeachToday() {
             ? [['list', 'List'], ['grid', 'Week grid'], ['across', 'All my schools']]
             : [['list', 'List'], ['grid', 'Week grid']]} />}
         {!week && !grid && examDays.map(x => (
-          <Notice key={x.session_id} word="Exam" tone="ink"
+          <Notice key={x.session_id} word={x.unpaid ? 'Check' : 'Booked'} tone="ink"
             title={`${x.title.toLowerCase().includes(x.board.toLowerCase()) ? x.title : `${x.board} · ${x.title}`}, ${relativeDay(x.exam_on)}`}
             detail={`${x.candidates} of your student${x.candidates === 1 ? '' : 's'}${x.unpaid ? ` · ${x.unpaid} fee${x.unpaid === 1 ? '' : 's'} not paid` : ' · all fees paid'}`}
             action={<Link href={`/exams/register/?session=${x.session_id}`} className="inline-flex min-h-10 items-center gap-1 text-[0.875rem] font-semibold text-accent-text hover:underline">Exam register <ArrowRight className="size-4" aria-hidden /></Link>} />
@@ -167,7 +167,7 @@ function NextClass({ s, clashes, onAskCover }: { s: T.TeachSession | null; clash
   const now = Date.now();
   const mins = Math.round((new Date(s.starts_at).getTime() - now) / 60000);
   const isToday = sameDay(s.starts_at, new Date());
-  const whenLabel = !isToday ? `${relativeDay(s.starts_at)}${/^\d/.test(relativeDay(s.starts_at)) ? '' : ` ${dateShort(s.starts_at)}`}`
+  const whenLabel = !isToday ? relativeDay(s.starts_at)
     : mins <= 0 ? 'on now' : mins < 90 ? `in ${mins} min` : `at ${time(s.starts_at)}`;
   const flagged = (roll.data ?? []).filter(r => r.requires_alert || r.has_medical_need)
     .sort((a, b) => Number(b.requires_alert) - Number(a.requires_alert));
@@ -296,7 +296,7 @@ function TeachRow({ s, showDay, clashes, onAskCover }: { s: T.TeachSession; show
   const clashText = !cancelled && !coveredByOther && clashes?.length
     ? `overlaps ${clashes.map(c => `${c.other_name} ${time(c.other_starts_at)}${c.same_school ? (c.other_location && c.other_location !== s.location ? `, ${c.other_location}` : '') : ` (${c.other_school})`}`).join(', ')}`
     : null;
-  const meta = [s.room, `${expected} expected${s.trials ? ` · ${plural(s.trials, 'trial')}` : ''}`,
+  const meta = [s.room, `${s.enrolled} booked${s.trials ? ` + ${plural(s.trials, 'trial')}` : ''}`,
     s.reported_absent && `${s.reported_absent} — reported absent`].filter(Boolean).join(' · ');
 
   const inner = (
@@ -332,10 +332,7 @@ function TeachRow({ s, showDay, clashes, onAskCover }: { s: T.TeachSession; show
   );
 }
 
-const dayLabel = (v: string | Date) => {
-  const r = relativeDay(v);
-  return /^\d/.test(r) ? r : r.length > 9 ? r.slice(0, 3) + ' ' + dateShort(v) : r;
-};
+const dayLabel = (v: string | Date) => relativeDay(v);
 
 /** A teacher's classes for the coming term as a calendar file (R-036). */
 async function downloadTeaching(session: ReturnType<typeof useSession>['session']) {

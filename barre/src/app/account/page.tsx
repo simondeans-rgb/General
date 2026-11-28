@@ -15,12 +15,12 @@ import { useRows } from '@/lib/query';
 import { runAs, readAs } from '@/lib/db/client';
 import { useSession, type Role } from '@/lib/auth/session';
 import {
-  Beats, Button, EmptyState, ErrorState, Field, Input, Select, Skeleton, type Tone,
+  Beats, Button, EmptyState, ErrorState, Field, Input, Select, Skeleton, type Tone, FilterTabs, Choice
 } from '@/components/ui';
 import { SettingsSection as Card, SettingsHead as CardHeader } from '@/components/app/progress-settings';
 import * as A from '@/lib/repos/account';
 import { inviteLink } from '@/lib/repos/platform';
-import { money, dateShort, relativeDay, time } from '@/lib/format';
+import { money, dateShort, relativeDay, time, dayDateTime } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { pickerLabels } from '@/lib/office-words';
 
@@ -222,14 +222,8 @@ function Team({ isOwner, studioId }: { isOwner: boolean; studioId?: string }) {
         action={!session?.platform && <Button size="sm" onClick={() => setInviting(true)}>
           <MailPlus className="size-4" aria-hidden /> Invite
         </Button>} />
-      <div role="tablist" aria-label="People with access" className="flex gap-1 border-b border-line">
-        {([['staff', 'Staff', count(staffRoles)], ['families', 'Parents and students', count(['guardian', 'student'])]] as const).map(([k, l, n]) => (
-          <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
-            className={cn('-mb-px h-11 border-b-2 px-2.5 text-[0.875rem]', tab === k ? 'border-ink font-semibold text-ink' : 'border-transparent text-ink-2 hover:text-ink')}>
-            {l} <span className="tnum text-[0.75rem] text-ink-3">{n}</span>
-          </button>
-        ))}
-      </div>
+      <FilterTabs label="People with access" value={tab} onChange={setTab} className="mx-0 border-b border-line"
+        options={[['staff', 'Staff', count(staffRoles)], ['families', 'Parents and students', count(['guardian', 'student'])]]} />
       {act.error != null && <div className="pt-3"><ErrorState error={act.error} /></div>}
       {members.isLoading && <div className="space-y-2 pt-3">{[0, 1, 2].map(i => <Skeleton key={i} className="h-12" />)}</div>}
       {members.data && shown.length === 0 && <EmptyState title="Nobody here yet"
@@ -351,21 +345,11 @@ function InviteSheet({ studioId, isOwner, onClose }: { studioId: string; isOwner
   return (
     <RecordSheet title="Invite someone" onClose={onClose} onSave={() => send.mutate()} saving={send.isPending}
       error={send.error} canSave={valid} saveLabel="Create invitation">
-      <fieldset>
-        <legend className="mb-1.5 text-[0.8125rem] font-medium text-ink-2">Role</legend>
-        <div className="space-y-1.5">
-          {roles.map(r => (
-            <label key={r} className={cn('flex cursor-pointer items-start gap-3 rounded-[var(--radius-md)] border p-2.5',
-              role === r ? 'border-accent-line bg-accent-soft/50' : 'border-line hover:bg-surface-2')}>
-              <input type="radio" name="role" value={r} checked={role === r} onChange={() => setRole(r)} className="mt-1 accent-[var(--color-accent)]" />
-              <span>
-                <span className="block text-sm font-medium">{ROLE[r]!.label}</span>
-                <span className="block text-[0.7812rem] text-ink-2">{ROLE[r]!.does}</span>
-              </span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      <div>
+        <p aria-hidden className="mb-1.5 text-[0.8125rem] font-medium text-ink-2">Role</p>
+        <Choice label="Role" layout="stack" value={role} onChange={setRole}
+          options={roles.map(r => ({ value: r, label: ROLE[r]!.label, hint: ROLE[r]!.does }))} />
+      </div>
       {role === 'guardian' && (
         <Field label="Family" htmlFor="in-f" required hint="They will see this family’s children and nobody else’s.">
           <Select id="in-f" value={family} onChange={e => setFamily(e.target.value)}>
@@ -447,7 +431,7 @@ function SupportCard({ studioId }: { studioId: string }) {
           <div>
             <h3 className="border-b border-line pb-1.5 text-[0.875rem] font-semibold">When support looked</h3>
             <ul className="divide-y divide-line text-[0.875rem] text-ink-2">
-              {visits.data.map((v, n) => <li key={n} className="py-2">{relativeDay(v.at)} {time(v.at)} — {v.summary}</li>)}
+              {visits.data.map((v, n) => <li key={n} className="py-2">{dayDateTime(v.at)} — {v.summary}</li>)}
             </ul>
           </div>
         )}

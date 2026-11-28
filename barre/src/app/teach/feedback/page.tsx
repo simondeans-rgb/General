@@ -11,7 +11,7 @@ import { LastFeedback } from '@/components/app/last-feedback';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Beats, Button, EmptyState, ErrorState, Input, Notice, Skeleton } from '@/components/ui';
+import { Beats, Button, EmptyState, ErrorState, Input, Notice, Skeleton, Choice, StatusLine } from '@/components/ui';
 import * as P from '@/lib/repos/progress';
 import * as H from '@/lib/repos/hub';
 import { time, dateLong, dateShort } from '@/lib/format';
@@ -146,7 +146,7 @@ function ClassFeedback() {
       actions={<Link href={`/teach/register/?session=${sessionId}`} aria-label="Back to the register"
         className="grid size-11 place-items-center rounded-full text-ink-2 hover:bg-surface-2"><ArrowLeft className="size-5" aria-hidden /></Link>}>
       <div className="mx-auto max-w-2xl space-y-6">
-        {done && <div role="status"><Notice word={done.startsWith('Families can') ? 'Shared' : 'Saved'} tone="positive" title={done} /></div>}
+        {done && <div role="status"><StatusLine live={false} title={done} /></div>}
         {save.error != null && <ErrorState error={save.error} />}
         {kids.isLoading && <Skeleton className="h-40" />}
         {kids.data && list.length === 0 && <EmptyState title="Nobody to give feedback to" body="Take the register first. Feedback is for the children who were there."
@@ -273,21 +273,11 @@ function ClassFeedback() {
 
 function ChipRow({ kind, chips, on, onTap }: { kind: Kind; chips: P.ClassChip[]; on: (label: string) => boolean; onTap: (label: string) => void }) {
   return (
-    <div role="group" aria-label={kind === 'going_well' ? 'Going well' : 'To work on'}>
-      <p className="mb-1.5 text-[0.8125rem] font-semibold text-ink-2">{kind === 'going_well' ? 'Going well' : 'To work on'}</p>
-      <div className="flex flex-wrap gap-2">
-        {chips.map(c => {
-          const pressed = on(c.label);
-          return (
-            <button key={c.id} aria-pressed={pressed} onClick={() => onTap(c.label)}
-              className={cn('inline-flex min-h-10 items-center rounded-full border px-3.5 text-[0.875rem] font-medium',
-                pressed ? 'border-ink bg-ink text-surface' : 'border-line-strong bg-surface text-ink hover:bg-surface-2')}>
-              {pressed && <Check className="mr-1 size-3.5" aria-hidden />}
-              {c.sticker && <span aria-hidden className="mr-1.5">{c.sticker}</span>}{c.label}
-            </button>
-          );
-        })}
-      </div>
+    <div>
+      <p aria-hidden className="mb-1.5 text-[0.8125rem] font-semibold text-ink-2">{kind === 'going_well' ? 'Going well' : 'To work on'}</p>
+      <Choice multiple label={kind === 'going_well' ? 'Going well' : 'To work on'} value={chips.filter(c => on(c.label)).map(c => c.label)}
+        onChange={next => { const t = chips.find(c => next.includes(c.label) !== on(c.label)); if (t) onTap(t.label); }}
+        options={chips.map(c => ({ value: c.label, label: <>{c.sticker && <span aria-hidden className="mr-1.5">{c.sticker}</span>}{c.label}</> }))} />
     </div>
   );
 }
@@ -305,13 +295,9 @@ function SkillPicker({ studentId, value, onChange }: { studentId: string; value:
         <option value="">Move a skill on…</option>
         {skills.data.map(s => <option key={s.skill_id} value={s.skill_id}>{s.skill}{s.level ? ` (${P.LEVELS.find(l => l.key === s.level)?.label})` : ''}</option>)}
       </select>
-      {cur && P.LEVELS.slice(1).map(l => (
-        <button key={l.key} aria-pressed={value[cur.skill_id] === l.key}
-          onClick={() => onChange({ ...value, [cur.skill_id]: l.key })}
-          className={cn('inline-flex min-h-10 items-center rounded-full border px-3.5 text-[0.875rem] font-medium', value[cur.skill_id] === l.key ? 'border-ink bg-ink text-surface' : 'border-line-strong bg-surface')}>
-          {l.label}
-        </button>
-      ))}
+      {cur && <Choice label={`${cur.skill}: new level`} value={value[cur.skill_id] ?? null}
+        onChange={v => onChange({ ...value, [cur.skill_id]: v })}
+        options={P.LEVELS.slice(1).map(l => ({ value: l.key, label: l.label }))} />}
     </div>
   );
 }

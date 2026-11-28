@@ -25,6 +25,7 @@ import { useSession } from '@/lib/auth/session';
 import { useSelection } from '@/lib/use-selection';
 import {
   Button, EmptyState, ErrorState, Field, Input, Select, Skeleton, type Tone,
+  FilterTabs,
 } from '@/components/ui';
 import * as B from '@/lib/repos/billing';
 import { money, dateShort, isoDate, toMinor } from '@/lib/format';
@@ -131,7 +132,7 @@ function Billing() {
         {/* The ledger's four figures. Two of them lead to the invoices that need action. */}
         <section aria-label={loc.current ? `Money at ${loc.current}` : 'Money at a glance'}>
           {loc.current && <p className="label mb-3">{loc.current} only</p>}
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-6 border-b border-line pb-6 lg:grid-cols-4 lg:gap-x-0 lg:divide-x lg:divide-line">
+          <dl className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,10rem),1fr))] gap-x-6 gap-y-6 border-b border-line pb-6 lg:grid-cols-4 lg:gap-x-0 lg:divide-x lg:divide-line">
             <Stat label="Outstanding" loading={summary.isLoading}
               value={s && money(s.outstanding_minor)}
               note={s && `Owed by ${s.owing_families} famil${s.owing_families === 1 ? 'y' : 'ies'}`} />
@@ -178,18 +179,8 @@ function Billing() {
                        placeholder="Family or invoice number" className="pl-9" />
               </label>
             </div>
-            <div role="tablist" aria-label="Show invoices" className="-mx-1 flex gap-0.5 overflow-x-auto border-b border-line px-1 py-1.5">
-              {FILTERS.map(f => (
-                <button key={f.key} role="tab" aria-selected={filter === f.key}
-                  onClick={() => setFilter(f.key)}
-                  className={cn('flex h-10 shrink-0 items-center gap-1.5 rounded-[var(--radius-md)] px-3 text-[0.875rem]',
-                    filter === f.key ? 'bg-ink font-semibold text-ink-invert' : 'text-ink-2 hover:bg-surface-2 hover:text-ink')}>
-                  {f.label}
-                  {invoices.data && <span className={cn('tnum text-[0.75rem]',
-                    filter === f.key ? 'opacity-75' : 'text-ink-3')}>{counts[f.key]}</span>}
-                </button>
-              ))}
-            </div>
+            <FilterTabs label="Show invoices" value={filter} onChange={setFilter} className="mx-0 border-b border-line"
+              options={FILTERS.map(f => [f.key, f.label, invoices.data ? counts[f.key] : null])} />
 
             {invoices.isLoading && <div className="space-y-3 pt-3">{[0,1,2,3].map(i => <Skeleton key={i} className="h-12" />)}</div>}
             {invoices.error && <div className="pt-4"><ErrorState error={invoices.error} onRetry={() => invoices.refetch()} /></div>}
@@ -319,7 +310,7 @@ function Stat({ label, value, note, tone, loading, onClick, action }: {
     <div className="min-w-0 lg:px-6 lg:first:pl-0 lg:last:pr-0">
       <dt className="label">{label}</dt>
       {loading ? <dd><Skeleton className="mt-2 h-8 w-28" /></dd> : (
-        <dd className={cn('stat-number mt-1.5 text-[1.75rem] leading-none lg:text-[2rem]',
+        <dd className={cn('stat-number mt-1.5 break-words text-[1.75rem] leading-none lg:text-[2rem]',
           tone === 'caution' && 'text-caution', tone === 'critical' && 'text-critical')}>{value}</dd>
       )}
       {note && <dd className="mt-1.5 text-[0.8125rem] text-ink-3">{note}</dd>}

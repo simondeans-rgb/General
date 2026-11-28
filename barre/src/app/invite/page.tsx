@@ -117,7 +117,7 @@ function Problem({ title, text }: { title?: string; text: string }) {
   return (
     <div>
       <h1 className="sr-only">{title ?? 'Invitation'}</h1>
-      <Notice word="Can’t use this link" tone="caution" title={title ?? 'Invitation'} detail={text} />
+      <Notice word="Closed" tone="caution" title={title ?? 'Invitation'} detail={text} />
     </div>
   );
 }

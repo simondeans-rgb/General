@@ -8,7 +8,7 @@ import { useFamilyVoice } from '@/components/app/adult-self';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Button, Card, EmptyState, ErrorState, Skeleton } from '@/components/ui';
+import { Button, Card, EmptyState, ErrorState, Skeleton, ViewTabs } from '@/components/ui';
 import * as I from '@/lib/repos/inbox';
 import { relativeDay, time } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -57,17 +57,9 @@ export default function FamilyMessages() {
   return (
     <Shell title="Messages" allow={['guardian']}>
       <div className="mx-auto max-w-lg">
-        <div role="tablist" aria-label="Messages" className="mb-4 flex gap-6 border-b border-line">
-          {([['studio', 'The studio', unreadConv.length], ['notices', 'Class notices', unreadNotices.length]] as const).map(([k, l, n]) => (
-            <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
-              className={cn('-mb-px flex min-h-[44px] items-center gap-1.5 border-b-2 px-0.5 text-[0.9375rem]',
-                tab === k ? 'border-accent font-semibold text-ink' : 'border-transparent text-ink-3 hover:text-ink')}>
-              {l}
-              {n > 0 && <span className="tnum text-[0.8125rem] font-semibold text-ink">
-                {n}<span className="sr-only"> unread</span></span>}
-            </button>
-          ))}
-        </div>
+        <ViewTabs label="Messages" value={tab} onChange={setTab} className="mx-0 mb-4 border-b border-line"
+          options={[['studio', 'The studio', unreadConv.length > 0 && <>{unreadConv.length}<span className="sr-only"> unread</span></>],
+                    ['notices', 'Class notices', unreadNotices.length > 0 && <>{unreadNotices.length}<span className="sr-only"> unread</span></>]]} />
 
         {tab === 'studio' && (
           <Card className="flex h-[calc(100dvh-226px-env(safe-area-inset-bottom))] min-h-[360px] flex-col overflow-hidden lg:h-[calc(100dvh-170px)]">

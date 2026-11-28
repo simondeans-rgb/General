@@ -100,7 +100,7 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
 
         <div className="space-y-9 pb-6">
           {draft && (
-            <Notice word="Drafts waiting" tone="caution"
+            <Notice word="Check" tone="caution"
               title={`${draft.invoice_count} invoices for ${draft.period_month ? monthName(draft.period_month) : draft.term_name} · ${money(draft.total_minor)}`}
               detail={`Due ${dateShort(draft.due_on)}. Check them in the Drafts tab, then send them together.`}
               className="border-b border-line pb-5"

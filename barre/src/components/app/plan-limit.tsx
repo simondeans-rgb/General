@@ -24,7 +24,7 @@ export function PlanLimitNotice({ error }: { error: unknown }) {
   const asked = ask.isSuccess;
   return (
     <div role="status" data-form-error className="border-l-2 border-accent-line py-1 pl-3">
-      <Notice word="Limit" tone="accent" title="Your plan is full here"
+      <Notice word="Full" tone="accent" title="Your plan is full here"
         detail={`${errorText(error).replace(/\s*Ask Swayvo to move you to a larger plan\.?$/, '')} Nothing is lost: you can add more once the plan is larger.`}
         action={undefined} />
       <div className="mt-3 flex flex-wrap items-center gap-2">

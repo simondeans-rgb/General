@@ -54,7 +54,7 @@ function ExamRegister() {
 
         {rows.data && list.length > 0 && (
           owing.length > 0
-            ? <Notice word="Fees" tone="critical"
+            ? <Notice word="Check" tone="critical"
                 title={`${owing.length} of ${list.length} exam fee${list.length === 1 ? '' : 's'} not paid`}
                 detail={office
                   ? `${unbilled ? `${unbilled} not billed yet. ` : ''}Families are reminded 24 hours before their child’s exam, and you are told who is still unpaid.`
@@ -63,7 +63,7 @@ function ExamRegister() {
                   <Button size="sm" loading={write.isPending} onClick={() => write.mutate({ sql: E.BILL_EXAM, params: [id] })}>
                     <Receipt className="size-4" aria-hidden /> Bill {unbilled}
                   </Button>) : undefined} />
-            : <Notice word="Fees" tone="positive" title="Every exam fee is paid" />
+            : <Notice word="Paid" tone="positive" title="Every exam fee is paid" />
         )}
 
         <section aria-labelledby="cands-h">

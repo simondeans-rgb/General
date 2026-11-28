@@ -6,7 +6,7 @@ import { EmptyState, Notice, Skeleton, ErrorState, ViewTabs, Word } from '@/comp
 import { diaryClashes, diaryClashLine } from '@/lib/clash';
 import { SectionHead, SessionRow, useSessionChanges } from '@/app/family/_parts/ui';
 import type { CalEvent } from '@/lib/ics';
-import { time, relativeDay, dateLong, dateShort, dayName, isoDate, dayRange } from '@/lib/format';
+import { time, relativeDay, dateLong, dateShort, dayName, isoDate, dayRange, dayDate } from '@/lib/format';
 
 /** One line in a family's or a student's diary (app.my_diary, UR-26). */
 export type DiaryItem = {
@@ -76,7 +76,7 @@ export function Diary({ days = 28, family = false, empty }: { days?: number; fam
       {firstClash && (
         <div role="status" className="border-l-2 border-critical pl-3">
           <Notice word="Clash" tone="critical"
-            title={`${family ? `${firstClash.child} is` : 'You are'} booked for two things at ${time(firstClash.starts_at)} on ${dayName(firstClash.starts_at).slice(0, 3)} ${dateShort(firstClash.starts_at)}`}
+            title={`${family ? `${firstClash.child} is` : 'You are'} booked for two things at ${time(firstClash.starts_at)} on ${dayDate(firstClash.starts_at)}`}
             detail={`${firstClash.title}: ${diaryClashLine(clashes.get(`${firstClash.uid}|${firstClash.student_id}`)![0]!).replace(/^O/, 'o')}.`
               + (clashed.length > 2 ? ' More clashes are marked below.' : '') + ' Tell the school if one needs to change.'} />
         </div>

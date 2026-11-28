@@ -1,9 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { Check } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button, ErrorState } from '@/components/ui';
+import { Button, Choice, ErrorState } from '@/components/ui';
 import { Word } from '@/components/app/session-row';
 import { useRow } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
@@ -38,15 +37,9 @@ export function TrialFeedbackBox({ trialId, name, recommendation, comments, writ
     <section aria-label={`How ${name}’s trial went`} className="mt-3 rounded-[var(--radius-md)] border border-peach bg-peach-soft/50 p-3">
       <h3 className="text-[0.9375rem] font-semibold">How did {name}’s trial go?</h3>
       <p className="text-[0.8125rem] text-ink-2">For the office’s decision about a place. The family doesn’t see this.</p>
-      <div role="group" aria-label="Your recommendation" className="mt-2 flex flex-wrap gap-2">
-        {T.TRIAL_RECOMMENDATIONS.map(([k, label]) => (
-          <button key={k} type="button" aria-pressed={rec === k} onClick={() => { setRec(rec === k ? null : k); setSaved(false); }}
-            className={cn('inline-flex min-h-11 items-center gap-1.5 rounded-[var(--radius-md)] border px-3 text-[0.875rem] font-semibold',
-              rec === k ? 'border-ink bg-surface text-ink ring-1 ring-ink' : 'border-line-strong bg-surface text-ink-2 hover:bg-surface-2')}>
-            {rec === k && <Check className="size-4" strokeWidth={2.5} aria-hidden />}{label}
-          </button>
-        ))}
-      </div>
+      <Choice label="Your recommendation" className="mt-2" value={rec}
+        options={T.TRIAL_RECOMMENDATIONS.map(([value, label]) => ({ value, label }))}
+        onChange={v => { setRec(v); setSaved(false); }} />
       <label htmlFor={`trial-note-${trialId}`} className="mt-3 block text-[0.875rem] font-semibold">Comments</label>
       <textarea id={`trial-note-${trialId}`} rows={3} value={text} maxLength={2000}
         onChange={e => { setText(e.target.value); setSaved(false); }}

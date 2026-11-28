@@ -6,10 +6,10 @@ import { Play } from 'lucide-react';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Button, EmptyState, ErrorState, Notice, Select, Skeleton } from '@/components/ui';
+import { Button, EmptyState, ErrorState, Notice, Select, Skeleton, StatusLine } from '@/components/ui';
 import { SectionHead, Word } from './session-row';
 import * as I from '@/lib/repos/inbox';
-import { relativeDay, time } from '@/lib/format';
+import { relativeDay, time, dayDateTime } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 const EVENTS: Record<string, { title: string; when: string }> = {
@@ -57,7 +57,7 @@ export function Automations() {
             </Button>} />
         {result !== null && (
           <div role="status" className="border-b border-line py-3">
-            <Notice word={result ? 'Sent' : 'Nothing new'} tone={result ? 'positive' : 'ink'}
+            <StatusLine tone={result ? 'positive' : 'ink'}
               title={result ? `${result} message${result === 1 ? '' : 's'} sent.` : 'Everything due has already gone.'} />
           </div>
         )}
@@ -112,7 +112,7 @@ export function Automations() {
             <li key={o.id} className="flex items-center gap-3 px-1 py-2.5 text-[0.875rem]">
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-medium">{o.subject}</span>
-                <span className="block truncate text-[0.8125rem] text-ink-3">To {o.to_name ?? o.to_address} · {relativeDay(o.created_at)} {time(o.created_at)}</span>
+                <span className="block truncate text-[0.8125rem] text-ink-3">To {o.to_name ?? o.to_address} · {dayDateTime(o.created_at)}</span>
               </span>
               <span className={cn('shrink-0 text-[0.8125rem]', o.status === 'queued' ? 'font-semibold text-caution' : o.status === 'sent' ? 'text-positive' : 'text-ink-3')}>
                 {o.status === 'queued' ? 'Waiting for email' : o.status.charAt(0).toUpperCase() + o.status.slice(1)}

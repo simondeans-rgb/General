@@ -8,7 +8,7 @@ import { RecordSheet } from '@/components/app/record-sheet';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Button, Field, Input, Notice, Skeleton } from '@/components/ui';
+import { Button, Field, Input, Notice, Skeleton, StatusLine } from '@/components/ui';
 import { SEND_DIRECT } from '@/lib/repos/inbox';
 import * as H from '@/lib/repos/office';
 import { dateShort } from '@/lib/format';
@@ -45,7 +45,7 @@ export function BulkMessageSheet({ families, filterLabel, onClose }: {
   if (sent != null) {
     return (
       <RecordSheet title="Message families" onClose={onClose} onSave={onClose} saveLabel="Done">
-        <Notice word="Sent" tone="positive" title={`Sent to ${sent} famil${sent === 1 ? 'y' : 'ies'}`}
+        <StatusLine title={`Sent to ${sent} famil${sent === 1 ? 'y' : 'ies'}`}
           detail="Each family has its own copy in Messages, and it shows on their record." />
       </RecordSheet>
     );
@@ -160,7 +160,7 @@ function MergeSheet({ pair, onClose, onBack }: { pair: H.Duplicate; onClose: () 
   if (done != null) {
     return (
       <RecordSheet title="Merged" onClose={onClose} onSave={onClose} saveLabel="Done" error={undo.error}>
-        <Notice word="Merged" tone="positive" title={`${gone.name} is now part of ${keep.name}`}
+        <StatusLine title={`${gone.name} is now part of ${keep.name}`}
           detail="Everything that moved is recorded, and both families’ histories say so. You can undo this for 30 days." />
         <Button size="sm" variant="ghost" className="-ml-2" loading={undo.isPending} onClick={() => undo.mutate([done])}>
           <Undo2 className="size-4" aria-hidden /> Undo the merge

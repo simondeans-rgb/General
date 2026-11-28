@@ -6,10 +6,10 @@ import { useSearchParams } from 'next/navigation';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { readAs, runAs } from '@/lib/db/client';
 import { SchoolMark, PoweredBy, useSchoolTheme, logoFor, SchoolHero } from '@/components/app/brand';
-import { Button, EmptyState, ErrorState, Field, Input, Notice, Skeleton } from '@/components/ui';
+import { Button, EmptyState, ErrorState, Field, Input, Notice, Skeleton, Choice } from '@/components/ui';
 import { CalendarPlus, Copy } from 'lucide-react';
 import { addBookingToCalendar } from '@/components/app/bookings';
-import { money, dateLong, time } from '@/lib/format';
+import { money, dateLong, time, dayDate } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 type School = { name: string; brand_colour: string | null; logo_url: string | null; open: boolean; theme: string; brand_secondary: string | null; privacy_notice_url: string | null; hero_url: string | null; logo_light_url: string | null };
@@ -112,10 +112,10 @@ function Join() {
         {s && (
           <header className="space-y-5">
             <SchoolHero src={s.hero_url} name={s.name} />
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <SchoolMark name={s.name} logo={logoFor(s)} className="size-12" />
-              <div className="min-w-0">
-                <h1 className="font-display text-[1.625rem] font-[800] leading-tight [font-stretch:112%] sm:text-[1.875rem]">{s.name}</h1>
+              <div className="min-w-[min(100%,14rem)] flex-1">
+                <h1 className="break-words font-display text-[1.625rem] font-[800] leading-tight [font-stretch:112%] sm:text-[1.875rem]">{s.name}</h1>
                 <p className="text-[0.9375rem] text-ink-2">Book a trial class. No account needed.</p>
               </div>
             </div>
@@ -136,16 +136,9 @@ function Join() {
           <section aria-labelledby="j-trials" className="space-y-4">
             <fieldset className="space-y-2">
               <legend className="section-title pb-2 text-[1.0625rem]">Who is the class for?</legend>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {([['self', 'I’m booking for myself', 'Adult classes and drop-ins'], ['child', 'For my child', 'Children’s and teens’ classes']] as const).map(([v, label, hint]) => (
-                  <button key={v} type="button" aria-pressed={who === v} onClick={() => { setWho(v); setPick(null); }}
-                    className={cn('min-h-[56px] rounded-[var(--radius-md)] border px-4 py-2.5 text-left',
-                      who === v ? 'border-ink bg-accent-soft' : 'border-line-strong hover:border-ink-3')}>
-                    <span className="block font-semibold">{label}</span>
-                    <span className="block text-[0.8125rem] text-ink-3">{hint}</span>
-                  </button>
-                ))}
-              </div>
+              <Choice label="Who is the class for?" layout="grid" className="sm:grid-cols-2" value={who} onChange={v => { setWho(v); setPick(null); }}
+                options={[{ value: 'self', label: 'I’m booking for myself', hint: 'Adult classes and drop-ins' },
+                          { value: 'child', label: 'For my child', hint: 'Children’s and teens’ classes' }]} />
             </fieldset>
             {who && (
             <div className="flex flex-wrap items-end gap-x-6 gap-y-3 border-b-2 border-ink pb-3">
@@ -172,14 +165,14 @@ function Join() {
                 <div className="space-y-6">
                   {visible.map(([k, xs]) => (
                     <div key={k}>
-                      <h3 className="label pb-1">{new Date(xs[0]!.starts_at).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
-                      <ul className="divide-y divide-line border-t border-line" aria-label={`Trial classes, ${new Date(xs[0]!.starts_at).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}`}>
+                      <h3 className="label pb-1">{dateLong(xs[0]!.starts_at)}</h3>
+                      <ul className="divide-y divide-line border-t border-line" aria-label={`Trial classes, ${dateLong(xs[0]!.starts_at)}`}>
                         {xs.map(x => {
                           const on = pick?.session_id === x.session_id;
                 return (
-                            <li key={x.session_id}>
+                            <li key={x.session_id} className="@container">
                               <button onClick={() => setPick(x)} aria-pressed={on}
-                                className={cn('grid w-full grid-cols-[4.25rem_minmax(0,1fr)_auto] items-center gap-x-3 py-3.5 text-left hover:bg-surface-2/60',
+                                className={cn('grid w-full grid-cols-1 items-start gap-x-3 gap-y-1 py-3.5 text-left hover:bg-surface-2/60 @xs:grid-cols-[4.25rem_minmax(0,1fr)_auto] @xs:items-center',
                                   on && 'bg-accent-soft hover:bg-accent-soft')}>
                                 <span className="pl-1">
                                   <span className="block font-display text-[1.25rem] leading-none tnum">{time(x.starts_at)}</span>
@@ -194,7 +187,7 @@ function Join() {
                                   )}
                                   {on && <span className="block text-[0.8125rem] font-semibold text-accent-text">Chosen — add your details below</span>}
                                 </span>
-                                <span className="shrink-0 pr-1 text-right text-[0.8438rem]">
+                                <span className="shrink-0 pr-1 text-[0.8438rem] @xs:text-right">
                                   <span className="block font-semibold">{x.trial_price_minor ? `Trial ${money(x.trial_price_minor)}` : 'Free trial'}</span>
                                   {ongoing(about.get(x.class_name)) && <span className="block text-ink-2">then {ongoing(about.get(x.class_name))}</span>}
                                   <span className={cn('block', x.places_left <= 2 ? 'font-semibold text-caution' : 'text-ink-3')}>{x.places_left} place{x.places_left === 1 ? '' : 's'} left</span>
@@ -207,7 +200,7 @@ function Join() {
                     </div>
                   ))}
                   {!allDates && visible.length < list.length && list.length > 0 && (
-                    <Button onClick={() => setAllDates(true)}>Show later dates ({list.length - visible.length} more day{list.length - visible.length === 1 ? '' : 's'})</Button>
+                    <Button className="h-auto min-h-10 whitespace-normal py-2 [@media(pointer:coarse)]:h-auto" onClick={() => setAllDates(true)}>Show later dates ({list.length - visible.length} more day{list.length - visible.length === 1 ? '' : 's'})</Button>
                   )}
                 </div>
               );
@@ -289,12 +282,12 @@ function AdultDropIn({ slug, school, about, info }: { slug: string; school: Scho
       </div>
       <ul className="divide-y divide-line" aria-label="Drop-in classes">
         {rows.data.map(x => (
-          <li key={x.session_id}>
+          <li key={x.session_id} className="@container">
             <button onClick={() => setPick(x)} aria-pressed={pick?.session_id === x.session_id}
-              className={cn('grid w-full grid-cols-[4.25rem_minmax(0,1fr)_auto] items-center gap-x-3 py-3.5 text-left hover:bg-surface-2/60', pick?.session_id === x.session_id && 'bg-accent-soft hover:bg-accent-soft')}>
+              className={cn('grid w-full grid-cols-1 items-start gap-x-3 gap-y-1 py-3.5 text-left hover:bg-surface-2/60 @xs:grid-cols-[4.25rem_minmax(0,1fr)_auto] @xs:items-center', pick?.session_id === x.session_id && 'bg-accent-soft hover:bg-accent-soft')}>
               <span className="pl-1">
                 <span className="block font-display text-[1.25rem] leading-none tnum">{time(x.starts_at)}</span>
-                <span className="mt-1 block text-[0.7812rem] text-ink-3">{new Date(x.starts_at).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                <span className="mt-1 block text-[0.7812rem] text-ink-3">{dayDate(x.starts_at)}</span>
               </span>
               <span className="min-w-0"><span className="block font-semibold">{x.class_name}</span>
                 <span className="block text-[0.8125rem] text-ink-3">{[about.get(x.class_name)?.level_note, `${x.places_left} place${x.places_left === 1 ? '' : 's'} left`].filter(Boolean).join(' · ')}</span>

@@ -7,7 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   CalendarDays, LayoutGrid, Users, GraduationCap, Route, ClipboardCheck,
   Home, Baby, User, MessageSquare, CreditCard, PlayCircle, Trophy, Inbox, Settings2, Rocket,
-  MoreHorizontal, FolderOpen, Receipt, BarChart3, Building2, Layers, KeyRound, ShieldCheck, LogOut, FileText, ShieldAlert, CircleHelp,
+  MoreHorizontal, MoreVertical, ChevronDown, FolderOpen, Receipt, BarChart3, Building2, Layers, KeyRound, ShieldCheck, LogOut, FileText, ShieldAlert, CircleHelp, Check,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useSession, type Role } from '@/lib/auth/session';
@@ -99,6 +99,39 @@ const ROLE_HOME: Record<Role, string> = {
   guardian: '/family', student: '/learn', platform: '/platform',
 };
 
+/** Root text size in px, tracked live (browser or OS text size, or a zoom
+ *  that changes it). Large text is 150% or more of the 16px default (U1). */
+function useLargeText(): boolean {
+  const read = () => typeof window === 'undefined' ? 16 : parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  const [px, setPx] = React.useState(read);
+  React.useEffect(() => {
+    const probe = document.createElement('span');
+    probe.setAttribute('aria-hidden', 'true');
+    probe.style.cssText = 'position:absolute;visibility:hidden;width:1rem;height:0;pointer-events:none';
+    document.body.appendChild(probe);
+    const ro = new ResizeObserver(() => setPx(probe.getBoundingClientRect().width || read()));
+    ro.observe(probe);
+    return () => { ro.disconnect(); probe.remove(); };
+  }, []);
+  return px >= 24;
+}
+
+/** Whether the desktop layout (rail, tab rows) is showing: Tailwind's lg. */
+function useDesktop(): boolean {
+  const q = '(min-width: 64rem)';
+  const [on, setOn] = React.useState(() => typeof window !== 'undefined' && window.matchMedia(q).matches);
+  React.useEffect(() => {
+    const m = window.matchMedia(q);
+    const fn = () => setOn(m.matches);
+    fn(); m.addEventListener('change', fn);
+    return () => m.removeEventListener('change', fn);
+  }, []);
+  return on;
+}
+
+/** Header icon buttons: at least 44px, growing with the text but not doubling (U1). */
+export const HEADER_ICON = 'grid size-[max(44px,1.5rem)] shrink-0 place-items-center rounded-full text-ink-2 hover:bg-surface-2 hover:text-ink';
+
 export function Shell({
   title, subtitle, actions, children, allow, help, actionsInline, noSchoolSwitch,
 }: {
@@ -115,6 +148,13 @@ export function Shell({
   noSchoolSwitch?: boolean;
 }) {
   const [helpOpen, setHelpOpen] = React.useState(false);
+  // Phone header menus: the area's screens under the title, and (at large
+  // text) everything that is not the title or the bell (U1, U10).
+  const [menu, setMenu] = React.useState<null | 'area' | 'more'>(null);
+  const hash = useLocationHash();
+  const large = useLargeText();
+  const desktop = useDesktop();
+  const compact = large && !desktop;
   const { session, signOut, loaded } = useSession();
   // The school this person is in (or, for Swayvo support, viewing).
   const studio = useRows<{ name: string; status: string; data_deletion_due_on: string | null;
@@ -141,6 +181,13 @@ export function Shell({
   React.useEffect(() => {
     if (loaded && !session) router.replace('/');
   }, [loaded, session, router]);
+  React.useEffect(() => { setMenu(null); }, [pathname]);
+  React.useEffect(() => {
+    if (!menu) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenu(null); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [menu]);
 
   if (!loaded || !session) return <div className="min-h-dvh" />;
 
@@ -185,6 +232,9 @@ export function Shell({
       : NAV[session.role]).map(n => n.sub && (session.role !== 'owner' || session.platform || session.support)
       ? { ...n, sub: n.sub.filter(x => !x.ownerOnly) } : n);
 
+  const office = session.role === 'owner' || session.role === 'admin';
+  const area = nav.find(i => i.sub && i.sub.length > 1 && groupActive(pathname, i));
+
   return (
     <div className="min-h-dvh lg:flex">
       {/* Desktop rail */}
@@ -224,31 +274,98 @@ export function Shell({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/85">
-          <div className="relative flex min-h-14 flex-wrap items-center gap-x-2 gap-y-2 px-4 py-2.5 lg:min-h-[68px] lg:flex-nowrap lg:gap-x-3 lg:px-8">
-            {branded
-              ? <SchoolMark name={studio!.name} logo={logoFor(studio!)} className="size-8 lg:hidden" />
-              : <SwayvoIcon className="size-8 lg:hidden" />}
-            {/* At least 9rem for the title: with large text the buttons wrap to a second row instead. */}
-            <div className="min-w-[min(100%,9rem)] flex-1">
-              <h1 className="page-title line-clamp-2 break-words tracking-tight">{title}</h1>
-              {subtitle && <div className="mt-0.5 line-clamp-2 text-[0.8125rem] text-ink-3">{subtitle}</div>}
+        <header className="sticky top-0 z-30 border-b border-line bg-surface">
+          <div className={cn('relative flex flex-wrap items-center gap-y-2 lg:min-h-[68px] lg:flex-nowrap lg:gap-x-3 lg:px-8 lg:py-2.5',
+            compact ? 'gap-x-1 py-1 pl-4 pr-2 [&>button]:size-[44px]' : 'min-h-14 gap-x-2 px-4 py-2.5')}>
+            {/* At large text the title needs the room: the school's name stays at the foot of the page. */}
+            {!compact && (branded
+              ? <SchoolMark name={studio!.name} logo={logoFor(studio!)} className="size-8 shrink-0 lg:hidden" />
+              : <SwayvoIcon className="size-8 shrink-0 lg:hidden" />)}
+            {/* At least 7rem for the title: with large text the buttons wrap to a second row instead. */}
+            <div className={cn('min-w-0 flex-1', !compact && 'min-w-[min(100%,7rem)]')}>
+              <h1 className="page-title line-clamp-2 break-words tracking-tight [hyphens:auto]">
+                {area && !desktop && !compact ? (
+                  /* On a phone the area's other screens sit under the title, not in a second tab row (U10). */
+                  <button onClick={() => setMenu(m => m === 'area' ? null : 'area')} aria-expanded={menu === 'area'} aria-controls="area-menu"
+                    className="inline-flex max-w-full items-center gap-1 text-left">
+                    <span className="line-clamp-2 min-w-0 break-words">{title}</span>
+                    <ChevronDown aria-hidden className={cn('size-[0.8em] shrink-0 text-ink-3 transition-transform', menu === 'area' && 'rotate-180')} />
+                    <span className="sr-only">, {area.label}: other screens</span>
+                  </button>
+                ) : title}
+              </h1>
+              {subtitle && !compact && <div className="mt-0.5 line-clamp-2 text-[0.8125rem] text-ink-3">{subtitle}</div>}
             </div>
-            {help && (
+            {help && !compact && !(area && !desktop) && (
               <button onClick={() => setHelpOpen(o => !o)} aria-expanded={helpOpen} aria-controls="page-help"
-                aria-label={`About ${title}`} className="grid size-10 shrink-0 place-items-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-ink">
-                <CircleHelp className="size-[18px]" aria-hidden />
+                aria-label={`About ${title}`} className={HEADER_ICON}>
+                <CircleHelp className="size-[1.125rem]" aria-hidden />
               </button>
             )}
-            {/* On a phone the page's own buttons take a row of their own, under the title. */}
-            {actions && <div className={cn('flex justify-end', actionsInline ? '' : 'order-last w-full lg:order-none lg:w-auto')}>{actions}</div>}
-            {(session.role === 'owner' || session.role === 'admin') && <AssistantLauncher />}
+            {office && !compact && <AssistantLauncher />}
             {/* Students get a bell too, for cancellations and cover (UR-49). */}
             <NotificationBell />
-            <PersonSwitcher className="lg:hidden" />
+            {/* Office people switch person from More; others keep their avatar here (U10). */}
+            {!office && !compact && <PersonSwitcher className="lg:hidden" />}
+            {compact && (
+              <button onClick={() => setMenu(m => m === 'more' ? null : 'more')} aria-expanded={menu === 'more'} aria-controls="header-more"
+                aria-label="More for this screen" className={HEADER_ICON}>
+                <MoreVertical className="size-[1.125rem]" aria-hidden />
+              </button>
+            )}
+            {/* The page's own buttons: in the title row when they fit, else on a row of their own. */}
+            {actions && !compact && (
+              <div className={cn('flex justify-end', actionsInline ? '' : 'order-last ml-auto lg:order-none lg:ml-0')}>{actions}</div>
+            )}
           </div>
-          {!noSchoolSwitch && <SchoolSwitcher className="border-t border-line lg:hidden" />}
-          <SubTabs nav={nav} pathname={pathname} />
+          {compact && (
+            /* Kept mounted while closed, so a sheet an action opens keeps its state. */
+            <div id="header-more" hidden={menu !== 'more'} className="space-y-3 border-t border-line px-4 py-3"
+              onClick={e => { if ((e.target as HTMLElement).closest('button, a')) setTimeout(() => setMenu(null), 0); }}>
+              {subtitle && <div className="text-[0.8125rem] text-ink-3">{subtitle}</div>}
+              {/* There is room here for the words a phone header hides ("+" becomes "+ New family"). */}
+              {actions && <div className="flex flex-wrap gap-2 [&>*]:flex-wrap [&_.hidden.sm\:inline]:inline [&_.sm\:hidden]:hidden">{actions}</div>}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                {help && (
+                  <button onClick={() => setHelpOpen(o => !o)} aria-expanded={helpOpen} aria-controls="page-help"
+                    className="inline-flex min-h-11 items-center gap-2 text-[0.875rem] font-semibold text-ink-2">
+                    <CircleHelp className="size-[1.125rem]" aria-hidden /> About this screen
+                  </button>
+                )}
+                {office && <span className="[&_.hidden.sm\:flex]:flex [&_.sm\:hidden]:hidden"><AssistantLauncher /></span>}
+                {!office && <span className="inline-flex min-h-11 items-center gap-2"><PersonSwitcher /> <PersonSwitcher label="Switch person" /></span>}
+              </div>
+              {!noSchoolSwitch && <SchoolSwitcher className="-mx-3" />}
+            </div>
+          )}
+          {area && !desktop && (
+            <nav id="area-menu" aria-label={area.label} hidden={menu !== (compact ? 'more' : 'area')} className="border-t border-line px-2 py-2">
+              <ul className="grid gap-0.5 sm:grid-cols-2">
+                {area.sub!.map(x => {
+                  const active = subActive(area, x.href, pathname, hash);
+                  return (
+                    <li key={x.href}>
+                      <Link href={x.href} aria-current={active ? 'page' : undefined}
+                        onClick={e => { onSectionClick(e, x.href, pathname); setMenu(null); }}
+                        className={cn('flex min-h-11 items-center gap-2 rounded-[var(--radius-md)] px-2 text-[0.9375rem]',
+                          active ? 'font-semibold text-ink' : 'text-ink-2 hover:bg-surface-2 hover:text-ink')}>
+                        <Check aria-hidden className={cn('size-[1em] shrink-0', active ? 'text-ink' : 'text-transparent')} />
+                        {x.label}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+              {help && !compact && (
+                <button onClick={() => { setHelpOpen(o => !o); setMenu(null); }} aria-expanded={helpOpen} aria-controls="page-help"
+                  className="mt-1 flex min-h-11 w-full items-center gap-2 border-t border-line px-2 pt-1 text-[0.9375rem] text-ink-2 hover:text-ink">
+                  <CircleHelp className="size-[1em] shrink-0" aria-hidden /> About this screen
+                </button>
+              )}
+            </nav>
+          )}
+          {!noSchoolSwitch && !compact && <SchoolSwitcher className="border-t border-line lg:hidden" />}
+          {desktop && <SubTabs nav={nav} pathname={pathname} />}
         </header>
 
         {help && helpOpen && (
@@ -272,6 +389,8 @@ export function Shell({
         )}
         <main id="main" className="flex-1 px-4 pb-24 pt-5 lg:px-8 lg:pb-12 lg:pt-7">
           <ScopeNotice />
+          {/* At large text the subtitle leaves the header for the top of the page (U1). */}
+          {compact && subtitle && <div className="-mt-1 mb-4 text-[0.8125rem] text-ink-3">{subtitle}</div>}
           {children}
           {/* On a phone the sidebar's name and credit are not visible. */}
           {branded && (
@@ -283,7 +402,7 @@ export function Shell({
         </main>
       </div>
 
-      <MobileTabs nav={nav} pathname={pathname} />
+      <MobileTabs nav={nav} pathname={pathname} who={office ? session.name : null} />
     </div>
   );
 }
@@ -296,6 +415,12 @@ function isActive(pathname: string, href: string) {
 const groupActive = (pathname: string, item: NavItem) =>
   item.sub ? item.sub.some(x => isActive(pathname, x.href)) : isActive(pathname, item.href);
 
+/** Whether one of an area's screens is the current one (some are sections of a page, by hash). */
+function subActive(group: NavItem, href: string, pathname: string, hash: string) {
+  return href.includes('#') || group.sub!.some(o => o.href !== href && o.href.startsWith(href + '#'))
+    ? sectionActive(group.sub!, href, pathname, hash) : isActive(pathname, href);
+}
+
 /** The screens of the current area, as tabs (R-027). */
 function SubTabs({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
   const hash = useLocationHash();
@@ -304,8 +429,7 @@ function SubTabs({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
   return (
     <nav aria-label={group.label} className="relative -mb-px flex gap-4 overflow-x-auto px-4 lg:px-8">
       {group.sub!.map(x => {
-        const active = x.href.includes('#') || group.sub!.some(o => o !== x && o.href.startsWith(x.href + '#'))
-          ? sectionActive(group.sub!, x.href, pathname, hash) : isActive(pathname, x.href);
+        const active = subActive(group, x.href, pathname, hash);
         return (
           <Link key={x.href} href={x.href} aria-current={active ? 'page' : undefined} onClick={e => onSectionClick(e, x.href, pathname)}
             className={cn('shrink-0 border-b-2 py-2.5 text-[0.8438rem]',
@@ -333,7 +457,7 @@ function RailLink({ item, pathname }: { item: NavItem; pathname: string }) {
 }
 
 /** At most five targets in the bar; the remainder live behind More. */
-function MobileTabs({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
+function MobileTabs({ nav, pathname, who }: { nav: NavItem[]; pathname: string; who: string | null }) {
   const [open, setOpen] = React.useState(false);
   const hash = useLocationHash();
   const marked = nav.filter(i => i.primary);
@@ -355,11 +479,10 @@ function MobileTabs({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
         {shown.map(item => <TabLink key={item.href} item={item} pathname={pathname} />)}
         {rest.length > 0 && (
           <button onClick={() => setOpen(true)} aria-haspopup="dialog" aria-label="More sections"
-            className={cn('relative flex min-h-[56px] min-w-0 flex-1 flex-col items-center justify-center gap-1 px-0.5 pt-2 text-[0.6875rem] font-medium',
-              rest.some(i => groupActive(pathname, i)) ? 'text-ink' : 'text-ink-3')}>
+            className={cn(TAB_CLASS, 'font-medium', rest.some(i => groupActive(pathname, i)) ? 'text-ink' : 'text-ink-3')}>
             {rest.some(i => groupActive(pathname, i)) && <span aria-hidden className="absolute left-1/2 top-0 h-[3px] w-6 -translate-x-1/2 rounded-b-[2px] bg-accent" />}
-            <MoreHorizontal className="size-[20px]" aria-hidden />
-            <span className="max-w-full truncate">More</span>
+            <MoreHorizontal className={TAB_ICON} aria-hidden />
+            <span className={TAB_LABEL}>More</span>
           </button>
         )}
       </nav>
@@ -370,6 +493,16 @@ function MobileTabs({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
                onClick={e => e.stopPropagation()}
                className="max-h-[80dvh] w-full overflow-y-auto rounded-t-[var(--radius-xl)] border-t
                           border-line bg-surface p-3 pb-safe shadow-lg">
+            {/* On a phone the office switches person here, not from the header (U10). */}
+            {who && (
+              <div className="mb-2 flex items-center gap-3 border-b border-line px-3 pb-3 pt-1">
+                <PersonSwitcher />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium">{who}</span>
+                  <PersonSwitcher label="Switch person" />
+                </span>
+              </div>
+            )}
             <ul className="space-y-1">
               {rest.map(item => {
                 const Icon = item.icon;
@@ -406,16 +539,22 @@ function MobileTabs({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
   );
 }
 
+/* Tab bar labels grow with the text up to 14px, then wrap to a second line
+   rather than truncate ("Mes…"); icons grow up to 28px. Five labels at 14px
+   fit a 320px phone (U1). */
+const TAB_CLASS = 'relative flex min-h-[56px] min-w-0 flex-1 flex-col items-center justify-center gap-1 px-0.5 pb-1 pt-2 text-[min(0.6875rem,14px)]';
+const TAB_ICON = 'size-[min(1.25rem,28px)] shrink-0';
+const TAB_LABEL = 'max-w-full text-center leading-tight [overflow-wrap:anywhere]';
+
 function TabLink({ item, pathname }: { item: NavItem; pathname: string }) {
   const active = groupActive(pathname, item);
   const Icon = item.icon;
   return (
     <Link href={item.href} aria-current={active ? 'page' : undefined}
-      className={cn('relative flex min-h-[56px] min-w-0 flex-1 flex-col items-center justify-center gap-1 px-0.5 pt-2 text-[0.6875rem]',
-        active ? 'text-ink' : 'text-ink-3')}>
+      className={cn(TAB_CLASS, active ? 'text-ink' : 'text-ink-3')}>
       {active && <span aria-hidden className="absolute left-1/2 top-0 h-[3px] w-6 -translate-x-1/2 rounded-b-[2px] bg-accent" />}
-      <Icon className="size-[20px]" aria-hidden strokeWidth={active ? 2.3 : 1.8} />
-      <span className={cn('max-w-full truncate', active ? 'font-semibold' : 'font-medium')}>{item.label}</span>
+      <Icon className={TAB_ICON} aria-hidden strokeWidth={active ? 2.3 : 1.8} />
+      <span className={cn(TAB_LABEL, active ? 'font-semibold' : 'font-medium')}>{item.label}</span>
     </Link>
   );
 }

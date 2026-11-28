@@ -53,16 +53,21 @@ export default function ParentPayments() {
                 <p id="due-h" className={cn('label', owes && 'text-caution')}>
                   {owes ? (due ? `Due ${dueWord(due)}` : 'To pay') : credit ? 'In credit' : 'Balance'}
                 </p>
-                <p className="display-xl mt-1 text-[length:min(3.5rem,13vw)] leading-none sm:text-[length:min(4.5rem,13vw)]">
-                  {owes ? money(balance.data.balance_minor) : credit ? money(-Number(balance.data.balance_minor)) : '£0.00'}
-                </p>
-                <p className="mt-2 text-[0.9375rem] text-ink-2">
+                {/* Big numbers only where a decision hangs on them: an amount to pay (round 2, brand U3). */}
+                {owes ? (
+                  <p className="display-xl mt-1 text-[length:min(3.5rem,13vw)] leading-none sm:text-[length:min(4.5rem,13vw)]">
+                    {money(balance.data.balance_minor)}
+                  </p>
+                ) : credit ? (
+                  <p className="stat-number mt-1 text-[1.75rem] leading-none">{money(-Number(balance.data.balance_minor))}</p>
+                ) : null}
+                <p className={cn('text-[0.9375rem] text-ink-2', (owes || credit) ? 'mt-2' : 'mt-1 font-semibold text-ink')}>
                   {owes
                     ? balance.data.failed > 0
                       ? 'A card payment did not go through. Nothing was taken.'
                       : `${balance.data.unpaid} invoice${balance.data.unpaid === 1 ? '' : 's'} outstanding.`
                     : credit ? 'Credit on your account comes off the next invoice.'
-                      : 'Everything is paid. Nothing is due.'}
+                      : 'Paid. Nothing is due.'}
                 </p>
               </>
             )}
@@ -261,7 +266,7 @@ function ComingUp() {
   })), ['date', 'month', 'who', 'what', 'state', 'invoice', 'amount']);
   return (
     <section aria-labelledby="up-h">
-      <SectionHead id="up-h" title="Coming up" meta={all.length ? 'Fees, events and lessons ahead' : undefined}
+      <SectionHead id="up-h" title="Coming up" meta={all.length ? (expected > 0 ? 'Expected amounts are estimates until invoiced' : 'Fees, events and lessons ahead') : undefined}
         action={all.length ? <Button size="sm" variant="ghost" onClick={exportCsv}><Download className="size-4" aria-hidden /> CSV</Button> : undefined} />
       {rows.isLoading && <Skeleton className="mt-3 h-20" />}
       {rows.error != null && <ErrorState error={rows.error} />}
@@ -275,7 +280,7 @@ function ComingUp() {
         return (
           <div key={k} className="border-b border-line py-2">
             <p className="flex items-baseline gap-3 pb-1 pt-1">
-              <span className="label min-w-0 flex-1">{view === 'child' ? k : k === 'later' ? 'Date to be set' : monthName(`${k}-01`)}</span>
+              <span className="min-w-0 flex-1 text-[0.875rem] font-semibold">{view === 'child' ? k : k === 'later' ? 'Date to be set' : monthName(`${k}-01`)}</span>
               {view === 'month' && <span className="tnum text-[0.8125rem] font-semibold">{money(due)}</span>}
             </p>
             <ul>
@@ -284,7 +289,8 @@ function ComingUp() {
                   <span className="min-w-0">
                     <span className="block">{view === 'month' ? `${r.child} · ${r.title}` : r.title}</span>
                     <span className="flex flex-wrap items-baseline gap-x-2 text-[0.7812rem] text-ink-3">
-                      <Word tone={STATE_TONE[r.state]}>{STATE_WORD[r.state]}</Word>
+                      {/* "Expected" is said once, in the section head; only invoiced and paid rows carry a word. */}
+                      {r.state !== 'expected' && <Word tone={STATE_TONE[r.state]}>{STATE_WORD[r.state]}</Word>}
                       <span>{r.due_on ? (r.state === 'expected' ? dateShort(r.due_on) : `due ${dateShort(r.due_on)}`) : 'Date to be set'}</span>
                       {r.invoice_number && <span className="tnum">{r.invoice_number}</span>}
                     </span>

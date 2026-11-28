@@ -12,7 +12,7 @@ import { useRow, useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import {
-  Beats, Button, EmptyState, ErrorState, Field, Input, Notice, Select, Skeleton, Spinner,
+  Beats, Button, EmptyState, ErrorState, Field, Input, Notice, Select, Skeleton, Spinner, FileField
 } from '@/components/ui';
 import { SectionHead, StyleMark, ViewTabs } from '@/components/app/session-row';
 import { ClassUniform } from '@/components/app/uniform';
@@ -265,16 +265,13 @@ function AddMaterial({ classId, className, isOffice, onClose }: {
               <ViewTabs label="Kind of material" value={mode} onChange={setMode}
                 options={[['file', 'Upload a file'], ['link', 'Add a link']]} />
               {mode === 'file' ? (
-                <Field label="File" htmlFor="material-file" required
-                       error={tooBig ? `That file is ${formatBytes(file!.size)} — the limit is ${formatBytes(storage.maxBytes)}.` : undefined}
-                       hint={`Video, music or a document. Stored in ${storage.label}, up to ${formatBytes(storage.maxBytes)}.`}>
-                  <input id="material-file" type="file"
-                         accept="video/*,audio/*,.pdf,.doc,.docx,image/*"
-                         onChange={e => pick(e.target.files?.[0] ?? null)}
-                         className="block w-full text-sm text-ink-2 file:mr-3 file:h-10 file:rounded-[var(--radius-md)]
-                                    file:border file:border-line-strong file:bg-surface file:px-3.5
-                                    file:text-sm file:font-medium file:text-ink hover:file:bg-surface-2" />
-                </Field>
+                <div className="space-y-1.5">
+                  <FileField id="material-file" label={file ? 'Choose another file' : 'Choose a video, music or a document'}
+                    accept="video/*,audio/*,.pdf,.doc,.docx,image/*" onFiles={f => pick(f[0] ?? null)}
+                    chosen={file ? `${file.name} · ${formatBytes(file.size)}` : undefined}
+                    hint={`Up to ${formatBytes(storage.maxBytes)}. Stored in ${storage.label}.`} />
+                  {tooBig && <p role="alert" className="text-[0.7812rem] text-critical">That file is {formatBytes(file!.size)} — the limit is {formatBytes(storage.maxBytes)}.</p>}
+                </div>
               ) : (
                 <>
                   <Field label="What kind of thing is it" htmlFor="material-kind">
@@ -314,7 +311,7 @@ function AddMaterial({ classId, className, isOffice, onClose }: {
                   required={mode === 'file'} />
               )}
               {linkBlocked && (
-                <Notice word="Upload instead" tone="caution" title="Your school does not allow links for videos of children"
+                <Notice word="Limited" tone="caution" title="Your school does not allow links for videos of children"
                   detail="A link is only as private as the site it points to. Upload the file, and families see it only while every child in it has consent."
                   action={<Button size="sm" onClick={() => setMode('file')}>Upload a file</Button>} />
               )}

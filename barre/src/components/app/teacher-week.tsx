@@ -66,7 +66,7 @@ export function TeacherWeek({ onAskCover }: { onAskCover?: (s: T.TeachSession) =
           <Button size="sm" variant="ghost" onClick={() => shift(-1)} aria-label="Previous week">
             <ChevronLeft className="size-4" aria-hidden />
           </Button>
-          <Button size="sm" variant="secondary" onClick={() => setAnchor(new Date())} disabled={thisWeek}>
+          <Button size="sm" variant={thisWeek ? "ghost" : "secondary"} onClick={() => setAnchor(new Date())} disabled={thisWeek}>
             {thisWeek ? 'This week' : 'Back to this week'}
           </Button>
           <Button size="sm" variant="ghost" onClick={() => shift(1)} aria-label="Next week">

@@ -6,7 +6,7 @@ import { X, AlertTriangle } from 'lucide-react';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Button, ErrorState, Field, Input, Notice, Select, Skeleton } from '@/components/ui';
+import { Button, ErrorState, Field, Input, Notice, Select, Skeleton, StatusLine } from '@/components/ui';
 import * as C from '@/lib/repos/classes';
 import { cn } from '@/lib/cn';
 import { SaveErrorSummary, useFirstErrorInView } from '@/components/app/form-error';
@@ -159,7 +159,7 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
           <>
             <div className="px-5 py-6">
               <h2 id="class-form-t" className="sr-only">{draft.name}</h2>
-              <Notice word={editing ? 'Saved' : 'New'} tone="positive" title={draft.name} detail={done} />
+              <StatusLine title={draft.name} detail={done} />
             </div>
             <div className="flex border-t border-line px-5 py-3 pb-safe sm:justify-end">
               <Button className="w-full sm:w-auto" variant="primary" onClick={onClose}>Done</Button>
@@ -169,7 +169,7 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
           <>
             <div className="flex items-start gap-3 border-b border-line px-5 pb-3 pt-4">
               <div className="min-w-0 flex-1">
-                <h2 id="class-form-t" className="font-display text-[1.25rem] leading-tight">
+                <h2 id="class-form-t" className="text-[1.0625rem] font-semibold leading-tight tracking-[-0.01em]">
                   {editing ? 'Edit class' : 'New class'}
                 </h2>
                 <p className="mt-1 text-[0.8438rem] text-ink-3">

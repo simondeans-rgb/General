@@ -9,7 +9,7 @@ import { Beats, Button, EmptyState, ErrorState, Skeleton, SectionHead } from '@/
 import * as Q from '@/lib/repos/dashboard';
 import { CHECK_GAPS_TODAY, SAFEGUARDING_TODAY, type CheckGap } from '@/lib/repos/safeguarding';
 import { SUMMARY, type BillingSummary } from '@/lib/repos/billing';
-import { money, time, dayRange, dateLong, dateShort, relativeDay } from '@/lib/format';
+import { money, time, dayRange, dateLong, relativeDay, dayDateTime } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { cardPaymentsEnabled } from '@/lib/payments/invoice-status';
 import { groupAttention } from '@/lib/office-words';
@@ -151,7 +151,7 @@ function NeedsAttention() {
   if (regs.data?.length) items.push({ key: 'registers', n: regs.data.length, when: 'today', urgent: true,
     href: `/teach/register/?session=${regs.data[0]!.session_id}`, action: 'Open',
     headline: `Register${regs.data.length === 1 ? '' : 's'} not completed`,
-    detail: regs.data.slice(0, 2).map(r => `${r.class_name}, ${dateShort(r.starts_at)}${r.teacher_name ? ` (${r.teacher_name})` : ''}`).join(' · ')
+    detail: regs.data.slice(0, 2).map(r => `${r.class_name}, ${relativeDay(r.starts_at)}${r.teacher_name ? ` (${r.teacher_name})` : ''}`).join(' · ')
       + (regs.data.length > 2 ? '…' : '') });
   for (const x of xfees.data ?? []) {
     const n = x.unpaid + x.unbilled;
@@ -159,7 +159,7 @@ function NeedsAttention() {
     items.push({ key: `exam-fees-${x.session_id}`, n, when: soon ? 'today' : 'week', urgent: soon,
       href: `/exams/register/?session=${x.session_id}`, action: 'See who',
       headline: `Exam fee${n === 1 ? '' : 's'} unpaid: ${x.title}`,
-      detail: `${dateShort(x.exam_on)} · ${money(x.owed_minor)} owed${x.unbilled ? ` · ${x.unbilled} not billed yet` : ''}` });
+      detail: `${relativeDay(x.exam_on)} · ${money(x.owed_minor)} owed${x.unbilled ? ` · ${x.unbilled} not billed yet` : ''}` });
   }
   if (tfb.data?.length) items.push({ key: 'trial-feedback', n: tfb.data.length, when: 'today', href: '/enrolment', action: 'Decide',
     headline: `Trial${tfb.data.length === 1 ? '' : 's'} to decide`,
@@ -278,7 +278,7 @@ function UpcomingTrials() {
   return <MiniList title="Trials coming up" rows={rows} href="/enrolment" link="Enrolment" empty="No trials booked." render={r => (
     <div className="flex items-baseline justify-between gap-3"><span className="min-w-0"><span className="font-medium">{r.who}</span>
       <span className="block truncate text-[0.8125rem] text-ink-3">{r.class_name}</span></span>
-      <span className="shrink-0 text-[0.7812rem] text-ink-3">{r.starts_at ? `${relativeDay(r.starts_at)} ${time(r.starts_at)}` : 'Not booked'}</span></div>)} />;
+      <span className="shrink-0 text-[0.7812rem] text-ink-3">{r.starts_at ? dayDateTime(r.starts_at) : 'Not booked'}</span></div>)} />;
 }
 
 function RecentMessages() {

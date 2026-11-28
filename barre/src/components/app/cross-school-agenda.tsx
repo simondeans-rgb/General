@@ -9,7 +9,7 @@ import { runAs } from '@/lib/db/client';
 import { useSession, type Role } from '@/lib/auth/session';
 import { Button, ErrorState, Input, SectionHead, Skeleton, Word } from '@/components/ui';
 import * as A from '@/lib/repos/agenda';
-import { time, isoDate, relativeDay, dateShort, dayName } from '@/lib/format';
+import { time, isoDate, relativeDay, dateShort, dayName, dayHeading } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 type School = { studio_id: string; name: string; roles: Role[] };
@@ -92,10 +92,7 @@ export function CrossSchoolAgenda() {
   );
 }
 
-const dayTitle = (v: A.AgendaRow['starts_at']) => {
-  const r = relativeDay(v);
-  return `${/^\d/.test(r) ? dayName(v) : r} ${dateShort(v)}`;
-};
+const dayTitle = (v: A.AgendaRow['starts_at']) => dayHeading(v);
 
 function AgendaItem({ r, onOpen }: { r: A.AgendaRow; onOpen: () => void }) {
   const busy = r.detail === 'busy';
