@@ -322,7 +322,8 @@ export function Shell({
             <div id="header-more" hidden={menu !== 'more'} className="space-y-3 border-t border-line px-4 py-3"
               onClick={e => { if ((e.target as HTMLElement).closest('button, a')) setTimeout(() => setMenu(null), 0); }}>
               {subtitle && <div className="text-[0.8125rem] text-ink-3">{subtitle}</div>}
-              {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+              {/* There is room here for the words a phone header hides ("+" becomes "+ New family"). */}
+              {actions && <div className="flex flex-wrap gap-2 [&>*]:flex-wrap [&_.hidden.sm\:inline]:inline [&_.sm\:hidden]:hidden">{actions}</div>}
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                 {help && (
                   <button onClick={() => setHelpOpen(o => !o)} aria-expanded={helpOpen} aria-controls="page-help"
