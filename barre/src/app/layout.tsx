@@ -3,6 +3,8 @@ import './globals.css';
 import { Providers } from './providers';
 import { THEME_COLOR } from '@/lib/swayvo-logo';
 
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+
 export const metadata: Metadata = {
   title: 'Swayvo',
   description: 'More time for dance. Classes, registers, payments, messages and progress for dance schools.',
@@ -32,6 +34,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Skip to content
         </a>
         <Providers>{children}</Providers>
+        {/* Starts the in-browser database downloading while the page is still
+            being read, before the app's own JavaScript has arrived (not on the
+            marketing page). An async script: React puts it in the head. */}
+        <script async src={`${BASE}/db-preload.js`} data-barre-preload="" data-base={BASE} />
       </body>
     </html>
   );
