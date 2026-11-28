@@ -129,7 +129,7 @@ update class_session set teacher_id = '${g.priya}'
     ${a([t.STUDIO_ID,"waitlist_offer",(0,t.uid)(t.NS.comm,23),!0])};`),o.push(`insert into notification (id,studio_id,user_id,kind,title,body,href) values
     ${a([(0,t.uid)(t.NS.notification,1),t.STUDIO_ID,(0,t.uid)(t.NS.user,1),"payment_failed","3 card payments failed","Three families were invoiced but the card was declined.","/billing"])},
     ${a([(0,t.uid)(t.NS.notification,2),t.STUDIO_ID,(0,t.uid)(t.NS.user,1),"waitlist","Grade 3 Ballet is full","8 students are waiting for a place.","/classes"])},
-    ${a([(0,t.uid)(t.NS.notification,3),t.STUDIO_ID,(0,t.uid)(t.NS.user,1),"medical_updated","Medical details updated","A guardian updated an allergy record this week.","/people"])};`),o.join("\n")+"\n"+function(e){let s,n,r,o,d,l,c,m,h,{base:_,students:p,classIds:f,STAFF:S,STYLE:y,LEVEL:g}=e,w=[],b=(e,t)=>{let i=new Date(e);return i.setUTCDate(i.getUTCDate()+t),i};[1,2,3].forEach((e,a)=>{let s,n,r,o=(0,t.uid)(t.NS.user,40+a);s=`
+    ${a([(0,t.uid)(t.NS.notification,3),t.STUDIO_ID,(0,t.uid)(t.NS.user,1),"medical_updated","Medical details updated","A guardian updated an allergy record this week.","/people"])};`),o.join("\n")+"\n"+function(e){let s,n,r,o,d,l,c,m,h,_,{base:p,students:f,classIds:S,STAFF:y,STYLE:g,LEVEL:w}=e,b=[],v=(e,t)=>{let i=new Date(e);return i.setUTCDate(i.getUTCDate()+t),i};[1,2,3].forEach((e,a)=>{let s,n,r,o=(0,t.uid)(t.NS.user,40+a);s=`
 insert into user_account (id, email, full_name)
 select ${i(o)},
        lower(s.first_name) || '.' || lower(s.last_name) || '@example.com',
@@ -137,10 +137,10 @@ select ${i(o)},
   from student s
  where s.family_id = ${i((0,t.uid)(t.NS.family,e))}
    and extract(year from age(current_date, s.date_of_birth)) >= 14
- order by s.date_of_birth limit 1;`,w.push(s),n=`
+ order by s.date_of_birth limit 1;`,b.push(s),n=`
 insert into membership (id, user_id, studio_id, role)
 select ${i((0,t.uid)(t.NS.membership,40+a))}, ${i(o)}, ${i(t.STUDIO_ID)}, 'student'
- where exists (select 1 from user_account where id = ${i(o)});`,w.push(n),r=`
+ where exists (select 1 from user_account where id = ${i(o)});`,b.push(n),r=`
 update student s
    set user_id = ${i(o)},
        login_enabled = true,
@@ -152,7 +152,7 @@ update student s
                 where s2.family_id = ${i((0,t.uid)(t.NS.family,e))}
                   and extract(year from age(current_date, s2.date_of_birth)) >= 14
                 order by s2.date_of_birth limit 1)
-   and exists (select 1 from user_account where id = ${i(o)});`,w.push(r)}),s=`
+   and exists (select 1 from user_account where id = ${i(o)});`,b.push(r)}),s=`
 insert into enrolment (studio_id, class_id, student_id, status, started_on)
 select s.studio_id, c.id, s.id, 'active', current_date - 30
   from student s
@@ -165,7 +165,7 @@ select s.studio_id, c.id, s.id, 'active', current_date - 30
  where s.login_enabled
    and not exists (select 1 from enrolment e
                     where e.student_id = s.id and e.status = 'active' and e.deleted_at is null)
-on conflict do nothing;`,w.push(s),n=`
+on conflict do nothing;`,b.push(s),n=`
 insert into attendance_record (studio_id, session_id, student_id, status, marked_at)
 select e.studio_id, cs.id, e.student_id,
        case when (('x' || substr(md5(cs.id::text || e.student_id::text), 1, 7))::bit(28)::int % 100) < 12
@@ -175,7 +175,7 @@ select e.studio_id, cs.id, e.student_id,
   join enrolment e on e.class_id = cs.class_id and e.status = 'active'
   join student s on s.id = e.student_id and s.login_enabled
  where cs.starts_at < now() and cs.status = 'scheduled'
-on conflict do nothing;`,w.push(n),[["Really strong week","Your timing in the fast section is spot on now, and you kept the shoulders down through the whole barre.","Spotting on the turns — pick one point on the back wall and stay with it."],["Good progress","You picked the new routine up quickly and helped two others with the counts.","Land more quietly. Think about rolling through the foot rather than dropping onto it."]].forEach(([e,t,a],s)=>{let n;n=`
+on conflict do nothing;`,b.push(n),[["Really strong week","Your timing in the fast section is spot on now, and you kept the shoulders down through the whole barre.","Spotting on the turns — pick one point on the back wall and stay with it."],["Good progress","You picked the new routine up quickly and helped two others with the counts.","Land more quietly. Think about rolling through the foot rather than dropping onto it."]].forEach(([e,t,a],s)=>{let n;n=`
 insert into feedback_note (studio_id, student_id, class_id, author_id, headline, going_well, work_on,
                            shared_at, share_with_student, share_with_guardian, created_at)
 select s.studio_id, s.id, e.class_id, c.teacher_id, ${i(e)}, ${i(t)}, ${i(a)},
@@ -185,16 +185,21 @@ select s.studio_id, s.id, e.class_id, c.teacher_id, ${i(e)}, ${i(t)}, ${i(a)},
   join class c on c.id = e.class_id
  where s.login_enabled
    and e.id = (select e2.id from enrolment e2 where e2.student_id = s.id
-                and e2.status = 'active' and e2.deleted_at is null order by e2.id limit 1);`,w.push(n)}),[["Plié — all positions","secure"],["Port de bras","mastered"],["Pirouette en dehors","developing"],["Musicality and timing","secure"],["Grand jeté","developing"],["Reverence","not_started"]].forEach(([e,t])=>{let a;a=`
+                and e2.status = 'active' and e2.deleted_at is null order by e2.id limit 1);`,b.push(n)}),[["Plié — all positions","secure"],["Port de bras","mastered"],["Pirouette en dehors","developing"],["Musicality and timing","secure"],["Grand jeté","developing"],["Reverence","not_started"]].forEach(([e,t])=>{let a;a=`
 insert into skill_assessment (studio_id, student_id, dance_style_id, skill, level, assessed_by, assessed_on)
-select s.studio_id, s.id, ${i(y.ballet)}, ${i(e)}, ${i(t)}::assessment_level,
+select s.studio_id, s.id, ${i(g.ballet)}, ${i(e)}, ${i(t)}::assessment_level,
        (select id from staff_member where display_name = 'Freya Lindqvist' limit 1),
        current_date - 4
-  from student s where s.login_enabled;`,w.push(a)}),r=`insert into resource (id,studio_id,kind,title,category,url,poster_url,duration_sec,description,created_by) values
-    ${[[1,"video","Grade 3 barre — full exercise","Technique","https://vimeo.com/76979871",null,742,1],[2,"video","Port de bras, slowly","Technique","https://vimeo.com/76979871",null,305,1],[3,"video","Summer show routine — Street Seniors","Choreography","https://vimeo.com/76979871",null,218,4],[4,"video","Tap: shuffle drills at three speeds","Technique","https://vimeo.com/76979871",null,411,2],[5,"audio","Grade 3 exam music — full","Exam music","https://example.com/tracks/grade3-full.mp3",null,1680,1],[6,"audio","Grade 3 exam music — barre only","Exam music","https://example.com/tracks/grade3-barre.mp3",null,620,1],[7,"audio","Street Seniors show track (clean edit)","Show music","https://example.com/tracks/street-show.mp3",null,194,4],[8,"audio","Warm-up mix","Class music","https://example.com/tracks/warmup.mp3",null,540,5],[9,"document","Uniform and shoes — what to buy","Uniform","https://example.com/docs/uniform.pdf",null,null,5],[10,"document","Exam day: what to expect","Exams","https://example.com/docs/exam-day.pdf",null,null,5],[11,"document","Competition packing list","Competitions","https://example.com/docs/packing.pdf",null,null,5],[12,"link","How to do a secure bun","Uniform","https://example.com/guides/bun",null,null,5],[13,"document","Stretching safely at home","Wellbeing","https://example.com/docs/stretching.pdf",null,null,5]].map(e=>a([(0,t.uid)(t.NS.resource,e[0]),t.STUDIO_ID,e[1],e[2],e[3],e[4],e[5],e[6],"audio"===e[1]?"Play or download for practice at home.":"video"===e[1]?"Watch as many times as you like — the counts are called out.":"Everything you need in one page.",(0,t.uid)(t.NS.user,e[7])])).join(",\n    ")};`,w.push(r);let v=[[1,1,"class",f[3]],[2,2,"class",f[3]],[3,3,"class",f[9]],[4,4,"class",f[4]],[5,5,"class",f[3]],[6,6,"class",f[3]],[7,7,"class",f[9]],[8,8,"studio",null],[9,9,"studio",null],[10,10,"studio",null],[11,11,"studio",null],[12,12,"studio",null],[13,13,"studio",null]];o=`insert into resource_assignment (id,studio_id,resource_id,scope,class_id) values
-    ${v.map(e=>a([(0,t.uid)(t.NS.assignment,e[0]),t.STUDIO_ID,(0,t.uid)(t.NS.resource,e[1]),e[2],e[3]])).join(",\n    ")};`,w.push(o);let I=[[14,5,"audio","Junior Tap — count-in (8 bars)","Class music","junior-tap-count-in.wav",2,12,"Clap along at home. Eight bars in, then the shuffle starts on one."],[15,5,"document","Junior Tap — this term at a glance","Term plan","junior-tap-term-plan.pdf",2,null,"One page: what we cover each week, and what to practise."]];return d=`insert into resource (id,studio_id,kind,title,category,storage_path,duration_sec,description,created_by) values
-    ${I.map(e=>a([(0,t.uid)(t.NS.resource,e[0]),t.STUDIO_ID,e[2],e[3],e[4],`local:${(0,t.uid)(t.NS.file,e[0])}`,e[7],e[8],(0,t.uid)(t.NS.user,e[6])])).join(",\n    ")};`,w.push(d),l=`insert into resource_file (id,studio_id,resource_id,file_name,mime_type,size_bytes,bytes,uploaded_by) values
-    ${I.map(e=>{let a="audio"===e[2]?function(){let e=Math.round(4e3),t=8*e,i=new Uint8Array(t);for(let a=0;a<t;a++){let t=a%e,s=t<400?1-t/400:0;i[a]=128+Math.round(60*s*Math.sin(2*Math.PI*1e3*a/8e3))}let a=new Uint8Array(44+t),s=new DataView(a.buffer),n=(e,t)=>{for(let i=0;i<t.length;i++)a[e+i]=t.charCodeAt(i)};return n(0,"RIFF"),s.setUint32(4,36+t,!0),n(8,"WAVEfmt "),s.setUint32(16,16,!0),s.setUint16(20,1,!0),s.setUint16(22,1,!0),s.setUint32(24,8e3,!0),s.setUint32(28,8e3,!0),s.setUint16(32,1,!0),s.setUint16(34,8,!0),n(36,"data"),s.setUint32(40,t,!0),a.set(i,44),a}():function(){let e="BT\n"+[["Junior Tap - this term",20,760],["Northstar Dance Academy",11,738],["Weeks 1-3   Shuffle, ball change, and keeping the knees soft.",11,700],["Weeks 4-6   Time steps at two speeds. Counts called out loud.",11,682],["Weeks 7-9   The routine, section by section.",11,664],["Weeks 10-12 Whole routine, then the end-of-term showing.",11,646],["At home     Five minutes of shuffles. Little and often beats an hour",11,610],["            the night before.",11,594]].map(([e,t,i])=>`/F1 ${t} Tf 1 0 0 1 62 ${i} Tm (${e.replace(/([()\\])/g,"\\$1")}) Tj`).join("\n")+"\nET\n",t=["<< /Type /Catalog /Pages 2 0 R >>","<< /Type /Pages /Kids [3 0 R] /Count 1 >>","<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",`<< /Length ${e.length} >>
+  from student s where s.login_enabled;`,b.push(a)}),r=`insert into resource (id,studio_id,kind,title,category,url,poster_url,duration_sec,description,created_by) values
+    ${[[1,"video","Grade 3 barre — full exercise","Technique","https://vimeo.com/76979871",null,742,1],[2,"video","Port de bras, slowly","Technique","https://vimeo.com/76979871",null,305,1],[3,"video","Summer show routine — Street Seniors","Choreography","https://vimeo.com/76979871",null,218,4],[4,"video","Tap: shuffle drills at three speeds","Technique","https://vimeo.com/76979871",null,411,2],[5,"audio","Grade 3 exam music — full","Exam music","https://example.com/tracks/grade3-full.mp3",null,1680,1],[6,"audio","Grade 3 exam music — barre only","Exam music","https://example.com/tracks/grade3-barre.mp3",null,620,1],[7,"audio","Street Seniors show track (clean edit)","Show music","https://example.com/tracks/street-show.mp3",null,194,4],[8,"audio","Warm-up mix","Class music","https://example.com/tracks/warmup.mp3",null,540,5],[9,"document","Uniform and shoes — what to buy","Uniform","https://example.com/docs/uniform.pdf",null,null,5],[10,"document","Exam day: what to expect","Exams","https://example.com/docs/exam-day.pdf",null,null,5],[11,"document","Competition packing list","Competitions","https://example.com/docs/packing.pdf",null,null,5],[12,"link","How to do a secure bun","Uniform","https://example.com/guides/bun",null,null,5],[13,"document","Stretching safely at home","Wellbeing","https://example.com/docs/stretching.pdf",null,null,5]].map(e=>a([(0,t.uid)(t.NS.resource,e[0]),t.STUDIO_ID,e[1],e[2],e[3],e[4],e[5],e[6],"audio"===e[1]?"Play or download for practice at home.":"video"===e[1]?"Watch as many times as you like — the counts are called out.":"Everything you need in one page.",(0,t.uid)(t.NS.user,e[7])])).join(",\n    ")};`,b.push(r);let I=[[1,1,"class",S[3]],[2,2,"class",S[3]],[3,3,"class",S[9]],[4,4,"class",S[4]],[5,5,"class",S[3]],[6,6,"class",S[3]],[7,7,"class",S[9]],[8,8,"studio",null],[9,9,"studio",null],[10,10,"studio",null],[11,11,"studio",null],[12,12,"studio",null],[13,13,"studio",null]];o=`insert into resource_assignment (id,studio_id,resource_id,scope,class_id) values
+    ${I.map(e=>a([(0,t.uid)(t.NS.assignment,e[0]),t.STUDIO_ID,(0,t.uid)(t.NS.resource,e[1]),e[2],e[3]])).join(",\n    ")};`,b.push(o),d=`update resource set for_all_staff = true where id in (${I.filter(e=>"studio"===e[2]).map(e=>i((0,t.uid)(t.NS.resource,e[1]))).join(",")});
+update resource set shows_children = true where id = ${i((0,t.uid)(t.NS.resource,3))};
+insert into resource_child (studio_id, resource_id, student_id)
+select e.studio_id, ${i((0,t.uid)(t.NS.resource,3))}::uuid, e.student_id from enrolment e
+ where e.class_id = ${i(S[9])} and e.status = 'active' and e.deleted_at is null
+ order by e.student_id limit 2;`,b.push(d);let D=[[14,5,"audio","Junior Tap — count-in (8 bars)","Class music","junior-tap-count-in.wav",2,12,"Clap along at home. Eight bars in, then the shuffle starts on one."],[15,5,"document","Junior Tap — this term at a glance","Term plan","junior-tap-term-plan.pdf",2,null,"One page: what we cover each week, and what to practise."]];return l=`insert into resource (id,studio_id,kind,title,category,storage_path,duration_sec,description,created_by) values
+    ${D.map(e=>a([(0,t.uid)(t.NS.resource,e[0]),t.STUDIO_ID,e[2],e[3],e[4],`local:${(0,t.uid)(t.NS.file,e[0])}`,e[7],e[8],(0,t.uid)(t.NS.user,e[6])])).join(",\n    ")};`,b.push(l),c=`insert into resource_file (id,studio_id,resource_id,file_name,mime_type,size_bytes,bytes,uploaded_by) values
+    ${D.map(e=>{let a="audio"===e[2]?function(){let e=Math.round(4e3),t=8*e,i=new Uint8Array(t);for(let a=0;a<t;a++){let t=a%e,s=t<400?1-t/400:0;i[a]=128+Math.round(60*s*Math.sin(2*Math.PI*1e3*a/8e3))}let a=new Uint8Array(44+t),s=new DataView(a.buffer),n=(e,t)=>{for(let i=0;i<t.length;i++)a[e+i]=t.charCodeAt(i)};return n(0,"RIFF"),s.setUint32(4,36+t,!0),n(8,"WAVEfmt "),s.setUint32(16,16,!0),s.setUint16(20,1,!0),s.setUint16(22,1,!0),s.setUint32(24,8e3,!0),s.setUint32(28,8e3,!0),s.setUint16(32,1,!0),s.setUint16(34,8,!0),n(36,"data"),s.setUint32(40,t,!0),a.set(i,44),a}():function(){let e="BT\n"+[["Junior Tap - this term",20,760],["Northstar Dance Academy",11,738],["Weeks 1-3   Shuffle, ball change, and keeping the knees soft.",11,700],["Weeks 4-6   Time steps at two speeds. Counts called out loud.",11,682],["Weeks 7-9   The routine, section by section.",11,664],["Weeks 10-12 Whole routine, then the end-of-term showing.",11,646],["At home     Five minutes of shuffles. Little and often beats an hour",11,610],["            the night before.",11,594]].map(([e,t,i])=>`/F1 ${t} Tf 1 0 0 1 62 ${i} Tm (${e.replace(/([()\\])/g,"\\$1")}) Tj`).join("\n")+"\nET\n",t=["<< /Type /Catalog /Pages 2 0 R >>","<< /Type /Pages /Kids [3 0 R] /Count 1 >>","<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",`<< /Length ${e.length} >>
 stream
 ${e}endstream`,"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"],i="%PDF-1.4\n",a=[];t.forEach((e,t)=>{a.push(i.length),i+=`${t+1} 0 obj
 ${e}
@@ -208,35 +213,35 @@ endobj
 startxref
 ${s}
 %%EOF
-`).length);for(let e=0;e<i.length;e++)n[e]=255&i.charCodeAt(e);return n}();return`(${i((0,t.uid)(t.NS.file,e[0]))},${i(t.STUDIO_ID)},${i((0,t.uid)(t.NS.resource,e[0]))},${i(e[5])},${i("audio"===e[2]?"audio/wav":"application/pdf")},${a.length},'\\x${u(a)}'::bytea,${i((0,t.uid)(t.NS.user,e[6]))})`}).join(",\n    ")};`,w.push(l),c=`insert into resource_assignment (id,studio_id,resource_id,scope,class_id) values
-    ${a([(0,t.uid)(t.NS.assignment,14),t.STUDIO_ID,(0,t.uid)(t.NS.resource,14),"class",f[4]])},
-    ${a([(0,t.uid)(t.NS.assignment,15),t.STUDIO_ID,(0,t.uid)(t.NS.resource,15),"class",f[4]])},
-    ${a([(0,t.uid)(t.NS.assignment,16),t.STUDIO_ID,(0,t.uid)(t.NS.resource,14),"class",f[5]])};`,w.push(c),m=`insert into resource_assignment (studio_id,resource_id,scope,class_id)
+`).length);for(let e=0;e<i.length;e++)n[e]=255&i.charCodeAt(e);return n}();return`(${i((0,t.uid)(t.NS.file,e[0]))},${i(t.STUDIO_ID)},${i((0,t.uid)(t.NS.resource,e[0]))},${i(e[5])},${i("audio"===e[2]?"audio/wav":"application/pdf")},${a.length},'\\x${u(a)}'::bytea,${i((0,t.uid)(t.NS.user,e[6]))})`}).join(",\n    ")};`,b.push(c),m=`insert into resource_assignment (id,studio_id,resource_id,scope,class_id) values
+    ${a([(0,t.uid)(t.NS.assignment,14),t.STUDIO_ID,(0,t.uid)(t.NS.resource,14),"class",S[4]])},
+    ${a([(0,t.uid)(t.NS.assignment,15),t.STUDIO_ID,(0,t.uid)(t.NS.resource,15),"class",S[4]])},
+    ${a([(0,t.uid)(t.NS.assignment,16),t.STUDIO_ID,(0,t.uid)(t.NS.resource,14),"class",S[5]])};`,b.push(m),h=`insert into resource_assignment (studio_id,resource_id,scope,class_id)
 select distinct s.studio_id, ${i((0,t.uid)(t.NS.resource,14))}::uuid, 'class'::resource_scope, e.class_id
   from student s
   join enrolment e on e.student_id = s.id and e.status = 'active' and e.deleted_at is null
  where s.login_enabled
    and not exists (select 1 from resource_assignment a
-                    where a.resource_id = ${i((0,t.uid)(t.NS.resource,14))} and a.class_id = e.class_id);`,w.push(m),h=`
+                    where a.resource_id = ${i((0,t.uid)(t.NS.resource,14))} and a.class_id = e.class_id);`,b.push(h),_=`
 insert into feedback_note (id, studio_id, student_id, class_id, author_id, headline, going_well, work_on,
                            shared_at, share_with_student, share_with_guardian)
 select ${i((0,t.uid)(t.NS.feedback,1))}, e.studio_id, e.student_id, e.class_id, c.teacher_id,
        'placeholder', 'placeholder', 'placeholder', null, true, true
   from enrolment e join class c on c.id = e.class_id
- where false;`,w.push(h),[["Lovely week","Really strong port de bras — the arms finally look unhurried and the shoulders stayed down all lesson.","Spotting on the turns. Pick one point on the back wall and stay with it.",3,0,!0],["Exam prep going well","Knows the whole barre without prompting now, and the timing is secure.","The reverence is rushed. Slow down and finish the arm before you step back.",3,2,!0],["Great energy","Picked up the new eight-count faster than anyone and helped two others with it.","Land more quietly — think about rolling through the foot.",9,6,!0],["Coming along","Much more confident in the centre than last term.","Practise the shuffle drill at the slower speed before trying it fast.",4,4,!0],["Careful this week","Working hard and clearly enjoying it.","Keep the knee tracking over the toe in plié — I will keep an eye on it.",3,4,!1]].forEach(([e,a,s,n,r,o],d)=>{let l;l=`
+ where false;`,b.push(_),[["Lovely week","Really strong port de bras — the arms finally look unhurried and the shoulders stayed down all lesson.","Spotting on the turns. Pick one point on the back wall and stay with it.",3,0,!0],["Exam prep going well","Knows the whole barre without prompting now, and the timing is secure.","The reverence is rushed. Slow down and finish the arm before you step back.",3,2,!0],["Great energy","Picked up the new eight-count faster than anyone and helped two others with it.","Land more quietly — think about rolling through the foot.",9,6,!0],["Coming along","Much more confident in the centre than last term.","Practise the shuffle drill at the slower speed before trying it fast.",4,4,!0],["Careful this week","Working hard and clearly enjoying it.","Keep the knee tracking over the toe in plié — I will keep an eye on it.",3,4,!1]].forEach(([e,a,s,n,r,o],d)=>{let l;l=`
 insert into feedback_note (id, studio_id, student_id, class_id, author_id, headline, going_well, work_on,
                            shared_at, share_with_student, share_with_guardian, created_at)
 select ${i((0,t.uid)(t.NS.feedback,d+1))}, e.studio_id, e.student_id, e.class_id, c.teacher_id,
        ${i(e)}, ${i(a)}, ${i(s)},
-       ${o?i(b(_,-(d+1)).toISOString()):"null"}, true, true,
-       ${i(b(_,-(d+1)).toISOString())}
+       ${o?i(v(p,-(d+1)).toISOString()):"null"}, true, true,
+       ${i(v(p,-(d+1)).toISOString())}
   from enrolment e join class c on c.id = e.class_id
- where e.class_id = ${i(f[n])} and e.status = 'active' and e.deleted_at is null
- order by e.student_id offset ${r} limit 1;`,w.push(l)}),[["Plié — all positions","secure"],["Port de bras","mastered"],["Pirouette en dehors","developing"],["Grand jeté","developing"],["Musicality and timing","secure"],["Reverence","not_started"]].forEach(([e,a],s)=>{let n;n=`
+ where e.class_id = ${i(S[n])} and e.status = 'active' and e.deleted_at is null
+ order by e.student_id offset ${r} limit 1;`,b.push(l)}),[["Plié — all positions","secure"],["Port de bras","mastered"],["Pirouette en dehors","developing"],["Grand jeté","developing"],["Musicality and timing","secure"],["Reverence","not_started"]].forEach(([e,a],s)=>{let n;n=`
 insert into skill_assessment (id, studio_id, student_id, dance_style_id, skill, level, assessed_by, assessed_on)
-select ${i((0,t.uid)(t.NS.assessment,s+1))}, f.studio_id, f.student_id, ${i(y.ballet)}, ${i(e)},
-       ${i(a)}::assessment_level, f.author_id, ${i(b(_,-4).toISOString().slice(0,10))}
-  from feedback_note f where f.id = ${i((0,t.uid)(t.NS.feedback,1))};`,w.push(n)}),w.push(`
+select ${i((0,t.uid)(t.NS.assessment,s+1))}, f.studio_id, f.student_id, ${i(g.ballet)}, ${i(e)},
+       ${i(a)}::assessment_level, f.author_id, ${i(v(p,-4).toISOString().slice(0,10))}
+  from feedback_note f where f.id = ${i((0,t.uid)(t.NS.feedback,1))};`,b.push(n)}),b.push(`
 select app.ensure_frameworks(id) from studio;
 insert into skill_assessment (studio_id, student_id, dance_style_id, skill, skill_id, level, assessed_by, assessed_on)
 select s.studio_id, s.id, f.dance_style_id, fs.name, fs.id,
@@ -248,7 +253,7 @@ select s.studio_id, s.id, f.dance_style_id, fs.name, fs.id,
    and f.dance_style_id in (select c.dance_style_id from enrolment e join class c on c.id = e.class_id
                              where e.student_id = s.id and e.status = 'active' and e.deleted_at is null)
   join framework_skill fs on fs.framework_id = f.id and fs.deleted_at is null and fs.position <= 5
- where s.login_enabled;`),w.join("\n")+"\n"+function(e){let{base:s,classIds:n,STAFF:r,LOC:o}=e,d=[],l=e=>d.push(e),u=e=>e.toISOString().slice(0,10),c=(e,t)=>{let i=new Date(e);return i.setUTCDate(i.getUTCDate()+t),i},m=(e,t)=>`${u(c(s,e))}T${t}:00Z`;l(`insert into studio_event (id,studio_id,kind,status,title,description,starts_at,ends_at,venue,cost_minor,capacity,entries_close_on,requests_open,teacher_id) values
+ where s.login_enabled;`),b.join("\n")+"\n"+function(e){let{base:s,classIds:n,STAFF:r,LOC:o}=e,d=[],l=e=>d.push(e),u=e=>e.toISOString().slice(0,10),c=(e,t)=>{let i=new Date(e);return i.setUTCDate(i.getUTCDate()+t),i},m=(e,t)=>`${u(c(s,e))}T${t}:00Z`;l(`insert into studio_event (id,studio_id,kind,status,title,description,starts_at,ends_at,venue,cost_minor,capacity,entries_close_on,requests_open,teacher_id) values
     ${[[1,"competition","Thames Valley Dance Festival","Two days of solos, duets and troupes. Entries close three weeks before — let us know early if you would like to compete.",26,"09:00","Watford Colosseum",null,3500,40],[2,"show","Summer Show — Greenwich Theatre","Our whole-school show. Every class performs. Two rehearsals in the fortnight beforehand.",48,"18:30","Greenwich Theatre",null,1800,null],[3,"exam","RAD Grade 3 Ballet examinations","Examiner visiting the Greenwich studio. Candidates should arrive 30 minutes early, hair in a bun.",19,"10:00","Greenwich Studio",null,6200,14],[4,"workshop","Commercial workshop with a guest choreographer","Open to Street Seniors and Contemporary Seniors. Two hours, finishing with a filmed routine.",12,"14:00","Blackheath Studio",null,2500,24],[5,"rehearsal","Summer Show — full dress rehearsal","Everyone in costume. Please arrive with hair and make-up done.",45,"17:00","Greenwich Theatre",null,null,null]].map(e=>a([(0,t.uid)(t.NS.event,e[0]),t.STUDIO_ID,e[1],"published",e[2],e[3],m(e[4],e[5]),m(e[4],"competition"===e[1]?"17:00":"20:30"),e[6],e[8],e[9],u(c(s,Math.max(1,e[4]-21))),!0,"exam"===e[1]?r.freya:"workshop"===e[1]?r.tomasz:null])).join(",\n    ")};`);for(let e=0;e<4;e++)l(`
 insert into studio_event (id, studio_id, kind, status, title, description, starts_at, ends_at,
                           venue, teacher_id, student_id, cost_minor, requests_open)

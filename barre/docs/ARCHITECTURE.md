@@ -46,6 +46,13 @@ Three things change, and nothing else:
 
 Migrations move across as-is: `supabase db push` over `src/lib/db/migrations`.
 
+Files are the one place a fourth swap is needed: set `storage` in
+`src/lib/storage.ts` to `hostedStorageAdapter({...})`, which keeps uploads in a
+private Supabase Storage bucket and plays them through signed URLs that expire
+in 60 seconds. `resource_file` then holds the object key instead of the bytes.
+The bucket policies are in docs/SECURITY.md, "Media of children". No public
+bucket, and no permanent URL for a child's video, anywhere.
+
 ## Why selection lives in the query string
 
 Record detail is `?id=…` rather than `/families/[id]`. Three reasons, in order

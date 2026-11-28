@@ -66,7 +66,7 @@ export function SkillsPanel({ studentId, editable, headingLevel = 3 }: { student
                     </a>
                   )}
                   <button className="ml-2 text-[0.7188rem] text-ink-3 underline" aria-label={`Demonstration link for ${s.skill}`}
-                    onClick={() => { const u = window.prompt(`A secure link (https://) to a demonstration of ${s.skill}. Leave empty to remove.`, demos.get(s.skill_id) ?? '');
+                    onClick={() => { const u = window.prompt(`A secure link (https://) to a demonstration of ${s.skill} by a teacher or professional, not a video of pupils (share those in the class library, where consent is checked). Leave empty to remove.`, demos.get(s.skill_id) ?? '');
                       if (u !== null) write.mutate({ sql: P.SET_SKILL_DEMO, params: [s.skill_id, u] }); }}>
                     {demos.get(s.skill_id) ? 'change link' : 'add demo'}
                   </button>

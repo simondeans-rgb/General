@@ -35,6 +35,7 @@ export default function SafeguardingPage() {
   // Reading the log writes to the access log, so it runs as a (logged) write.
   const log = useQuery({ queryKey: ['sg-log', me?.id, opening], enabled: !!me?.can_read, staleTime: Infinity,
     queryFn: () => runAs(session, q => q<G.Concern>(G.LOG, [me!.id, opening])) });
+  const holds = useRows<G.ConcernHold>(['sg-concern-holds', me?.id], G.CONCERN_HOLDS, [me?.id], { enabled: !!me?.can_read });
   const [open, setOpen] = React.useState<G.Concern | null>(null);
   const [raising, setRaising] = React.useState(false);
   const owner = session?.role === 'owner';
@@ -67,6 +68,7 @@ export default function SafeguardingPage() {
                       <span className="font-semibold">{c.subject_name ?? c.student_name ?? 'Child'}</span>
                       {c.allegation && <Word tone="critical">Allegation · LADO</Word>}
                       {c.subject_kind === 'adult' && <span className="text-[0.8125rem] text-ink-3">adult</span>}
+                      {holds.data?.some(h => h.concern_id === c.id) && <span className="text-[0.8125rem] font-semibold text-ink-2">On hold</span>}
                       <span className={cn('text-[0.8125rem] font-semibold', STATUS_TEXT[c.status] ?? 'text-ink-3')}>{STATUS_WORD[c.status] ?? c.status}</span>
                       <span className="ml-auto text-[0.8125rem] text-ink-3">{relativeDay(c.created_at)}</span>
                     </div>
@@ -85,13 +87,13 @@ export default function SafeguardingPage() {
         {me?.can_read && <AccessLog studioId={me.id} />}
         {me?.can_read && <ExportCard studioId={me.id} />}
       </div></div>
-      {open && <ConcernSheet c={open} onClose={() => setOpen(null)} />}
+      {open && <ConcernSheet c={open} hold={holds.data?.find(h => h.concern_id === open.id) ?? null} onClose={() => setOpen(null)} />}
       {raising && <RaiseConcernSheet onClose={() => setRaising(false)} />}
     </Shell>
   );
 }
 
-function ConcernSheet({ c, onClose }: { c: G.Concern; onClose: () => void }) {
+function ConcernSheet({ c, hold, onClose }: { c: G.Concern; hold: G.ConcernHold | null; onClose: () => void }) {
   const { session } = useSession();
   const qc = useQueryClient();
   const opening = React.useMemo(newOpening, []);
@@ -119,6 +121,7 @@ function ConcernSheet({ c, onClose }: { c: G.Concern; onClose: () => void }) {
             <p>{a.note}</p></li>
         ))}
       </ol>
+      <ConcernHoldRow concernId={c.id} hold={hold} />
       <Field label="What was done" htmlFor="sg-n" required>
         <textarea id="sg-n" rows={3} value={note} onChange={e => setNote(e.target.value)} className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
       </Field>
@@ -129,6 +132,34 @@ function ConcernSheet({ c, onClose }: { c: G.Concern; onClose: () => void }) {
         </Select>
       </Field>
     </RecordSheet>
+  );
+}
+
+/** A legal hold on this one concern: retention never deletes it, and nothing
+ *  about the person it concerns is anonymised, until it is released. */
+function ConcernHoldRow({ concernId, hold }: { concernId: string; hold: G.ConcernHold | null }) {
+  const set = useLeadWrite(G.SET_CONCERN_HOLD);
+  const release = useLeadWrite(G.RELEASE_CONCERN_HOLD);
+  const [reason, setReason] = React.useState('');
+  return (
+    <div className="border-b border-line pb-3">
+      {hold ? (
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <span className="text-[0.9062rem] font-semibold">Legal hold</span>
+          <span className="text-[0.8125rem] text-ink-3">{hold.reason} · {hold.set_by}, {dateShort(hold.set_at)}</span>
+          <Button size="sm" variant="ghost" className="ml-auto" loading={release.isPending} onClick={() => release.mutate([concernId])}>Release hold</Button>
+        </div>
+      ) : (
+        <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+          <Field label="Legal hold on this concern" htmlFor={`sg-ch-${concernId}`} hint="Retention never deletes a held concern, including one about an adult or a member of staff. Logged.">
+            <Input id={`sg-ch-${concernId}`} value={reason} onChange={e => setReason(e.target.value)} placeholder="e.g. employment tribunal" />
+          </Field>
+          <Button size="sm" disabled={reason.trim().length < 3} loading={set.isPending}
+            onClick={() => set.mutate([concernId, reason], { onSuccess: () => setReason('') })}>Place hold</Button>
+        </div>
+      )}
+      {(set.error ?? release.error) != null && <ErrorState error={set.error ?? release.error} />}
+    </div>
   );
 }
 
@@ -191,7 +222,7 @@ function HoldsCard({ studioId }: { studioId: string }) {
   const [reason, setReason] = React.useState('');
   return (
     <Card>
-      <CardHeader title="Legal holds" subtitle="Retention never anonymises a child with an open concern, or a closed one still kept. A hold does the same for any other reason, until you release it." />
+      <CardHeader title="Legal holds" subtitle="Retention never deletes or anonymises anything about a child with an open concern, or a closed one still kept, including their medical record. A hold does the same for any other reason, until you release it. To hold a concern about an adult or a member of staff, open the concern." />
       {rows.error != null && <ErrorState error={rows.error} />}
       <ul className="divide-y divide-line">
         {rows.data?.map(h => (

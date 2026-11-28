@@ -2,13 +2,14 @@
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ExternalLink, Download, Trash2 } from 'lucide-react';
+import { ExternalLink, Download, Trash2, Users } from 'lucide-react';
 import { Button, ErrorState } from '@/components/ui';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import * as H from '@/lib/repos/hub';
 import { storage, formatBytes } from '@/lib/storage';
 import { cn } from '@/lib/cn';
+import { EditChildren, HiddenFromFamilies } from '@/components/app/media-children';
 
 const KIND_LABEL = { video: 'Video', audio: 'Track', document: 'Document', link: 'Link' } as const;
 
@@ -27,14 +28,23 @@ type Extra = { added_by?: string | null };
  * adapter — which reads it back under the viewer's own row level security, so
  * a blob URL is only ever minted for someone allowed to have it — and then
  * played or downloaded in place. The URL is revoked when the row unmounts.
+ *
+ * Media that shows children (0057) is view-only for families and students:
+ * no download link, no picture-in-picture, no right-click save. That is a
+ * courtesy, not a control: nothing in a browser stops a screen recording,
+ * which is why the consent rule itself is enforced in the database.
  */
-export function ResourceRow({ r, canManage }: {
-  r: H.Resource & Extra; canManage?: boolean;
+export function ResourceRow({ r, canManage, classId, isOffice }: {
+  r: H.Resource & Extra; canManage?: boolean; classId?: string; isOffice?: boolean;
 }) {
   const { session } = useSession();
   const qc = useQueryClient();
   const length = mmss(r.duration_sec);
   const isFile = !!r.storage_path;
+  const family = session?.role === 'guardian' || session?.role === 'student';
+  const viewOnly = family && !!r.shows_children;
+  const isImage = (r.mime_type ?? '').startsWith('image/');
+  const [editing, setEditing] = React.useState(false);
 
   const [url, setUrl] = React.useState<string | null>(null);
   const [opening, setOpening] = React.useState(false);
@@ -85,6 +95,12 @@ export function ResourceRow({ r, canManage }: {
               <ExternalLink className="size-3.5" aria-hidden /> Open
             </Button>
           )}
+          {canManage && classId && (
+            <Button size="sm" variant="ghost" className="size-10 p-0" aria-label={`Children in ${r.title}`}
+                    onClick={() => setEditing(true)}>
+              <Users className="size-4" aria-hidden />
+            </Button>
+          )}
           {canManage && (
             <Button size="sm" variant="ghost" className="size-10 p-0" aria-label={`Remove ${r.title}`}
                     loading={remove.isPending} onClick={() => remove.mutate()}>
@@ -94,6 +110,11 @@ export function ResourceRow({ r, canManage }: {
         </div>
       </div>
 
+      {!family && <HiddenFromFamilies r={r} />}
+      {editing && classId && (
+        <EditChildren r={r} classId={classId} isOffice={!!isOffice} onClose={() => setEditing(false)} />
+      )}
+
       {failed && <p role="alert" className="mt-2 text-[0.7812rem] text-critical">{failed}</p>}
       {remove.isError && <div className="mt-2"><ErrorState error={remove.error} /></div>}
 
@@ -101,10 +122,23 @@ export function ResourceRow({ r, canManage }: {
         <div className="mt-3">
           {r.kind === 'video' && (
             <video src={url} controls playsInline preload="metadata"
+                   {...(viewOnly ? { controlsList: 'nodownload', disablePictureInPicture: true,
+                                     onContextMenu: (e: React.MouseEvent) => e.preventDefault() } : {})}
                    className="w-full rounded-[var(--radius-md)] bg-ink" />
           )}
-          {r.kind === 'audio' && <audio src={url} controls className="w-full" />}
-          {r.kind !== 'video' && r.kind !== 'audio' && (
+          {r.kind === 'audio' && (
+            <audio src={url} controls className="w-full"
+                   {...(viewOnly ? { controlsList: 'nodownload', onContextMenu: (e: React.MouseEvent) => e.preventDefault() } : {})} />
+          )}
+          {r.kind !== 'video' && r.kind !== 'audio' && viewOnly && isImage && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={url} alt={r.title} draggable={false} onContextMenu={e => e.preventDefault()}
+                 className="w-full select-none rounded-[var(--radius-md)]" />
+          )}
+          {r.kind !== 'video' && r.kind !== 'audio' && viewOnly && !isImage && (
+            <p className="text-[0.8125rem] text-ink-3">This shows children, so it is view-only. Ask the studio if you need a copy.</p>
+          )}
+          {r.kind !== 'video' && r.kind !== 'audio' && !viewOnly && (
             <a href={url} download={r.file_name ?? r.title} target="_blank" rel="noopener noreferrer"
                className="inline-flex items-center gap-2 text-sm font-medium text-accent-ink hover:underline">
               <Download className="size-4" aria-hidden />

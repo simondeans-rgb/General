@@ -757,6 +757,15 @@ select s.studio_id, s.id, ${q(STYLE.ballet)}, ${q(skill)}, ${q(level)}::assessme
   ];
   push(`insert into resource_assignment (id,studio_id,resource_id,scope,class_id) values
     ${assigns.map(a => row([uid(NS.assignment, a[0]), STUDIO_ID, uid(NS.resource, a[1]), a[2], a[3]])).join(',\n    ')};`);
+  // The studio-wide pages are for all staff (0057). The show routine films the
+  // Street Seniors themselves: two are named, and until both have video consent
+  // it stays with staff.
+  push(`update resource set for_all_staff = true where id in (${assigns.filter(a => a[2] === 'studio').map(a => q(uid(NS.resource, a[1]))).join(',')});
+update resource set shows_children = true where id = ${q(uid(NS.resource, 3))};
+insert into resource_child (studio_id, resource_id, student_id)
+select e.studio_id, ${q(uid(NS.resource, 3))}::uuid, e.student_id from enrolment e
+ where e.class_id = ${q(classIds[9]!)} and e.status = 'active' and e.deleted_at is null
+ order by e.student_id limit 2;`);
 
   // ── Two of them are real uploaded files ──────────────────────────────────
   // Everything above is a link, which would make the demo's "Play" button a

@@ -20,11 +20,22 @@ export type Resource = {
   storage_path: string | null; file_name: string | null;
   mime_type: string | null; size_bytes: number | null;
   scope_label: string | null;
+  /** Media that shows children (0057). */
+  shows_children?: boolean; for_all_staff?: boolean; no_identifiable_children?: boolean;
+  /** Staff only (null for families): who is named and whether families can see it. */
+  named?: number | null; without_consent?: number | null;
+  family_visible?: boolean | null; needs_names?: boolean | null;
 };
+
+/** The children-in-it columns, for any query over `resource r`. The status
+ *  function returns nothing for families, so those columns stay null. */
+const MEDIA_COLUMNS = `r.shows_children, r.for_all_staff, r.no_identifiable_children,
+       cs.named, cs.without_consent, cs.family_visible, cs.needs_names`;
+const MEDIA_JOIN = `left join lateral app.resource_child_status(r.id) cs on r.shows_children`;
 
 export const RESOURCES = `
 select r.id, r.kind, r.title, r.description, r.category, r.url, r.poster_url, r.duration_sec,
-       r.storage_path, f.file_name, f.mime_type, f.size_bytes,
+       r.storage_path, f.file_name, f.mime_type, f.size_bytes, ${MEDIA_COLUMNS},
        (select string_agg(distinct coalesce(c.name, lv.name, 'Everyone'), ', ')
           from resource_assignment a
           left join class c on c.id = a.class_id
@@ -32,6 +43,7 @@ select r.id, r.kind, r.title, r.description, r.category, r.url, r.poster_url, r.
          where a.resource_id = r.id and a.deleted_at is null) as scope_label
   from resource r
   left join resource_file f on f.resource_id = r.id and f.deleted_at is null
+  ${MEDIA_JOIN}
  where r.deleted_at is null
  order by r.kind, r.category nulls last, r.title`;
 
@@ -270,7 +282,7 @@ export type ClassResource = Resource & {
 export const CLASS_RESOURCES = `
 select r.id, r.kind, r.title, r.description, r.category, r.url, r.poster_url,
        r.duration_sec, r.storage_path, r.created_at,
-       f.file_name, f.mime_type, f.size_bytes,
+       f.file_name, f.mime_type, f.size_bytes, ${MEDIA_COLUMNS},
        u.full_name as added_by,
        (r.created_by = auth.uid()) as mine,
        case when a.class_id is null then 'Everyone' else null end as scope_label
@@ -279,6 +291,7 @@ select r.id, r.kind, r.title, r.description, r.category, r.url, r.poster_url,
          on a.resource_id = r.id and a.deleted_at is null and a.class_id = $1
   left join resource_file f on f.resource_id = r.id and f.deleted_at is null
   left join user_account u on u.id = r.created_by
+  ${MEDIA_JOIN}
  where r.deleted_at is null
    and (a.id is not null
         or not exists (select 1 from resource_assignment a2
@@ -288,10 +301,50 @@ select r.id, r.kind, r.title, r.description, r.category, r.url, r.poster_url,
 /** Create the resource row first; the file upload then fills in storage_path. */
 export const CREATE_RESOURCE = `
 insert into resource (studio_id, kind, title, description, category, url,
-                      duration_sec, visible_to_students, visible_to_guardians, created_by)
-select c.studio_id, $2::resource_kind, $3, $4, $5, $6, $7, $8, $9, auth.uid()
+                      duration_sec, visible_to_students, visible_to_guardians, created_by,
+                      shows_children, for_all_staff)
+select c.studio_id, $2::resource_kind, $3, $4, $5, $6, $7, $8, $9, auth.uid(),
+       coalesce($10::boolean, false), coalesce($11::boolean, false)
   from class c where c.id = $1
 returning id, studio_id`;
+
+/* ── Media that shows children (0057) ───────────────────────────────────── */
+export type ChildConsent = {
+  id: string; name: string; in_class: boolean; named: boolean;
+  /** Current consent: true given, false withdrawn, null not recorded. */
+  video: boolean | null; photo: boolean | null;
+};
+
+/** The children a teacher can name for one class's material: the class, plus
+ *  anyone already named on this resource ($2, may be null). */
+export const CLASS_CHILDREN_CONSENT = `
+with kids as (
+  select e.student_id as id, true as in_class from enrolment e
+   where e.class_id = $1 and e.status = 'active' and e.deleted_at is null
+  union
+  select rc.student_id, false from resource_child rc where rc.resource_id = $2::uuid
+)
+select s.id, s.first_name || ' ' || s.last_name as name,
+       bool_or(k.in_class) as in_class,
+       exists (select 1 from resource_child rc where rc.resource_id = $2::uuid and rc.student_id = s.id) as named,
+       app.consent_now(s.id, 'video') as video, app.consent_now(s.id, 'photography') as photo
+  from kids k join student s on s.id = k.id and s.deleted_at is null
+ group by s.id, s.first_name, s.last_name
+ order by s.first_name, s.last_name`;
+
+/** Set the named children to exactly $2 (uuid[]). */
+export const CLEAR_RESOURCE_CHILDREN = `
+delete from resource_child where resource_id = $1 and not (student_id = any($2::uuid[]))`;
+export const ADD_RESOURCE_CHILDREN = `
+insert into resource_child (studio_id, resource_id, student_id)
+select r.studio_id, r.id, x from resource r, unnest($2::uuid[]) x where r.id = $1
+on conflict (resource_id, student_id) do nothing`;
+
+/** Office-only fields are refused by the database for teachers. */
+export const UPDATE_RESOURCE_MEDIA = `
+update resource set shows_children = $2, no_identifiable_children = $3 and $2,
+                    for_all_staff = $4, updated_at = now()
+ where id = $1 returning id`;
 
 export const ASSIGN_RESOURCE_TO_CLASS = `
 insert into resource_assignment (studio_id, resource_id, scope, class_id)
