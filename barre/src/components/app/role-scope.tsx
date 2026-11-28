@@ -42,7 +42,7 @@ export function effectiveAccess(role: string, places: string[]): string {
   switch (role) {
     case 'owner': return 'Everything, at every location';
     case 'admin': return places.length
-      ? `${at}: sees the families with a child there, their classes, registers, invoices and reports. Read-only — changes, billing, imports and invitations stay with an owner`
+      ? `${at}: runs the families with a child there — their details, places, registers, messages and invoices — and sees reports for there. A family that is also at another location, billing runs, imports and invitations stay with an owner`
       : 'Day-to-day running at every location: people, classes, billing, messages';
     case 'teacher': return places.length
       ? `Their own classes and registers; sees the timetable at ${at}`
@@ -125,6 +125,6 @@ export function ScopeNotice() {
   return (
     <Notice word="Limited" tone="accent" className="mx-auto mb-6 max-w-[1240px]"
       title={`You see ${mine.data.map(m => m.name).join(' and ')} only`}
-      detail="Families with a child in a class there, their classes, registers, invoices and reports. Changes, billing, imports and invitations are made by an owner." />
+      detail="You run the families with a child in a class there: their details, places, registers, messages and invoices. A family also at another location, billing runs, imports and invitations are for an owner." />
   );
 }

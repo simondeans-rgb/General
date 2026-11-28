@@ -10,6 +10,7 @@ import { RecordSheet } from '@/components/app/record-sheet';
 import { InviteLink } from '@/components/app/invite-link';
 import { useRoleScopes, ScopeButton, effectiveAccess } from '@/components/app/role-scope';
 import { BrandSettings, ImagerySettings } from '@/components/app/brand-settings';
+import { useSection } from '@/components/app/section-hash';
 import { useRows } from '@/lib/query';
 import { runAs, readAs } from '@/lib/db/client';
 import { useSession, type Role } from '@/lib/auth/session';
@@ -35,39 +36,66 @@ const STATUS: Record<string, string> = {
   trialling: 'Free trial', active: 'Active', past_due: 'Payment overdue', suspended: 'Paused', cancelled: 'Closed',
 };
 
+const SECTIONS = ['brand', 'plan', 'people', 'data', 'history'] as const;
+type Section = typeof SECTIONS[number];
+const TITLES: Record<Section, string> = {
+  brand: 'Brand', plan: 'Plan', people: 'People and access', data: 'Data and privacy', history: 'History',
+};
+
 /**
- * The school's own account: what it is on, who can get in, whether Swayvo
- * support may look, and its data to take away. Owners and administrators.
+ * The school's own account, one section at a time, chosen from the settings
+ * tab row (U4): its brand, its plan, who can get in, its data (Swayvo
+ * support, keeping data, export) and its history. Owners and administrators;
+ * data and history are the owner's.
  */
 export default function AccountPage() {
   const { session } = useSession();
   const acct = useRows<A.AccountRow>(['account'], A.ACCOUNT).data?.[0];
   const isOwner = session?.role === 'owner';
+  const ownerHere = isOwner && !session?.platform;
+  const section = useSection<Section>(ownerHere ? SECTIONS : ['brand', 'plan', 'people']);
 
   return (
-    <Shell title="Account" subtitle={acct ? `${acct.name} · ${STATUS[acct.status] ?? acct.status}` : undefined}
+    <Shell title="Account" subtitle={acct ? `${TITLES[section]} · ${acct.name} · ${STATUS[acct.status] ?? acct.status}` : TITLES[section]}
       allow={['owner', 'admin']}>
       <div className="mx-auto max-w-[1240px]"><div className="max-w-3xl space-y-12">
-        <BrandSettings canEdit={isOwner && !session?.platform} />
-        <ImagerySettings canEdit={isOwner && !session?.platform} />
-        <PlanCard acct={acct} />
-        <Team isOwner={isOwner} studioId={acct?.id} />
-        {!session?.platform && <HistoryCard isOwner={isOwner} />}
-        {isOwner && !session?.platform && acct && <SupportCard studioId={acct.id} />}
-        {isOwner && !session?.platform && acct && <RetentionCard studioId={acct.id} />}
-        {isOwner && !session?.platform && <ExportCard name={acct?.name} />}
+        {section === 'brand' && <>
+          <BrandSettings canEdit={ownerHere} />
+          <ImagerySettings canEdit={ownerHere} />
+        </>}
+        {section === 'plan' && <PlanCard acct={acct} canChange={ownerHere} />}
+        {section === 'people' && <Team isOwner={isOwner} studioId={acct?.id} />}
+        {section === 'data' && ownerHere && acct && <>
+          <SupportCard studioId={acct.id} />
+          <RetentionCard studioId={acct.id} />
+          <ExportCard name={acct.name} />
+        </>}
+        {section === 'history' && !session?.platform && <HistoryCard isOwner={isOwner} />}
       </div></div>
     </Shell>
   );
 }
 
-function PlanCard({ acct }: { acct?: A.AccountRow }) {
+type PlanRow = { code: string; name: string; price_minor: number; max_students: number | null;
+  max_locations: number | null; max_staff: number | null; is_trial: boolean };
+const PLANS = `select code, name, price_minor, max_students, max_locations, max_staff, is_trial
+  from plan where active order by sort, price_minor`;
+const CHANGE_PLAN = `select app.change_plan($1) as name`;
+const capText = (n: number | null, what: string) => (n == null ? `any number of ${what}`
+  : `up to ${n.toLocaleString('en-GB')} ${n === 1 ? ({ students: 'student', locations: 'location' } as Record<string, string>)[what] ?? what : what}`);
+
+function PlanCard({ acct, canChange }: { acct?: A.AccountRow; canChange: boolean }) {
+  const plans = useRows<PlanRow>(['plans-on-offer'], PLANS);
+  const [moving, setMoving] = React.useState<PlanRow | null>(null);
   if (!acct) return <Card><Skeleton className="h-24" /></Card>;
   const rows: [string, number, number | null][] = [
     ['Students', acct.students, acct.max_students],
     ['Locations', acct.locations, acct.max_locations],
     ['Staff', acct.staff, acct.max_staff],
   ];
+  const fits = (p: PlanRow) => (p.max_students == null || acct.students <= p.max_students)
+    && (p.max_locations == null || acct.locations <= p.max_locations) && (p.max_staff == null || acct.staff <= p.max_staff);
+  const offered = (plans.data ?? []).filter(p => !p.is_trial);
   return (
     <Card>
       <CardHeader title="Plan" subtitle={acct.plan_name
@@ -95,10 +123,67 @@ function PlanCard({ acct }: { acct?: A.AccountRow }) {
             );
           })}
         </dl>
-        <p className="text-[0.8125rem] text-ink-3">Students on the plan are every child record the school holds, including trial children and those who have left; Reports counts only those in a class now.</p>
-        <p className="text-[0.8125rem] text-ink-3">To change plan, contact Swayvo. Nothing is ever deleted for being over a limit — you just cannot add more.</p>
+        <p className="text-[0.8125rem] text-ink-3">
+          Students on the plan are children in a class, on a trial or on a waiting list, and new records not placed yet.
+          Children who have left are kept and do not count{acct.leavers > 0 ? ` (${acct.leavers} now)` : ''}.
+          Nothing is ever deleted for being over a limit — you just cannot add more.
+        </p>
       </div>
+
+      {offered.length > 0 && (
+        <section aria-labelledby="plan-choose" className="pt-8">
+          <h3 id="plan-choose" className="border-b border-line pb-1.5 text-[0.9062rem] font-semibold">Plans</h3>
+          <ul className="divide-y divide-line">
+            {offered.map(p => {
+              const current = p.name === acct.plan_name;
+              return (
+                <li key={p.code} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-semibold">{p.name}{current && <span className="font-normal text-ink-3"> · your plan</span>}</span>
+                    <span className="block text-[0.8125rem] text-ink-2">
+                      {capText(p.max_students, 'students')}, {capText(p.max_locations, 'locations')}, {capText(p.max_staff, 'staff')}
+                    </span>
+                  </span>
+                  <span className="stat-number text-[1.125rem]">{money(p.price_minor)}<span className="font-sans text-[0.8125rem] font-normal text-ink-3"> a month</span></span>
+                  {canChange && !current && (fits(p)
+                    ? <Button size="sm" onClick={() => setMoving(p)}>Move to {p.name}</Button>
+                    : <span className="text-[0.8125rem] text-ink-3">Too small for your school now</span>)}
+                </li>
+              );
+            })}
+          </ul>
+          <p className="pt-2 text-[0.8125rem] text-ink-3">
+            {canChange
+              ? 'Card payment for plans is not connected yet: Swayvo sends the school an invoice for the new price.'
+              : 'Only an owner can change the plan.'}
+          </p>
+        </section>
+      )}
+      {moving && <MovePlanSheet plan={moving} acct={acct} onClose={() => setMoving(null)} />}
     </Card>
+  );
+}
+
+function MovePlanSheet({ plan, acct, onClose }: { plan: PlanRow; acct: A.AccountRow; onClose: () => void }) {
+  const { session } = useSession();
+  const qc = useQueryClient();
+  const move = useMutation({
+    mutationFn: () => runAs(session, q => q(CHANGE_PLAN, [plan.code])),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['db'] }); onClose(); },
+  });
+  const up = plan.price_minor >= (acct.price_minor ?? 0);
+  return (
+    <RecordSheet title={`Move to ${plan.name}?`} subtitle={`${money(plan.price_minor)} a month, from today`}
+      onClose={onClose} onSave={() => move.mutate()} saving={move.isPending} error={move.error} saveLabel={`Move to ${plan.name}`}>
+      <p className="text-[0.9062rem] text-ink-2">
+        {capText(plan.max_students, 'students')}, {capText(plan.max_locations, 'locations')} and {capText(plan.max_staff, 'staff')}.
+        The new limits apply straight away{acct.status === 'trialling' ? ', and your free trial carries on until it ends' : ''}.
+      </p>
+      <p className="text-[0.9062rem] text-ink-2">
+        Card payment for plans is not connected yet, so nothing is charged here. Swayvo sends the school an invoice
+        {up ? ' for the new price' : ' at the new price from the next month'}.
+      </p>
+    </RecordSheet>
   );
 }
 

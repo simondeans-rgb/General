@@ -24,6 +24,7 @@ import { SchoolSwitcher } from './school-switcher';
 import { useBrandedManifest } from './pwa';
 import { NotificationBell } from './notifications';
 import { ScopeNotice } from './role-scope';
+import { useLocationHash, sectionActive, onSectionClick } from './section-hash';
 import dynamic from 'next/dynamic';
 // Office-only, so families and teachers never download it (R-062).
 const AssistantLauncher = dynamic(() => import('./assistant').then(m => m.AssistantLauncher), { ssr: false });
@@ -35,7 +36,7 @@ type NavItem = {
    *  Enrolment and Studio unreachable on a phone. */
   primary?: boolean;
   /** Screens grouped under this area, shown as tabs at the top of each (R-027). */
-  sub?: { href: string; label: string }[];
+  sub?: { href: string; label: string; ownerOnly?: boolean }[];
 };
 
 /* Each role gets the navigation for the job it actually does. A teacher has no
@@ -52,7 +53,13 @@ const OFFICE_NAV: NavItem[] = [
   { href: '/billing', label: 'Money', icon: Receipt,
     sub: [{ href: '/billing', label: 'Billing' }, { href: '/reports', label: 'Reports' }] },
   { href: '/studio', label: 'Settings', icon: Settings2,
-    sub: [{ href: '/studio', label: 'School' }, { href: '/safeguarding', label: 'Safeguarding' }, { href: '/account', label: 'Account' },
+    // One row of settings tabs (U4): school settings and account sections
+    // are sections of their pages, addressed by the hash.
+    sub: [{ href: '/studio', label: 'Details' }, { href: '/studio#places', label: 'Places' }, { href: '/studio#terms', label: 'Terms' },
+          { href: '/studio#teaching', label: 'Teaching' }, { href: '/studio#money', label: 'Money' },
+          { href: '/safeguarding', label: 'Safeguarding' },
+          { href: '/account', label: 'Brand' }, { href: '/account#plan', label: 'Plan' }, { href: '/account#people', label: 'People and access' },
+          { href: '/account#data', label: 'Data and privacy', ownerOnly: true }, { href: '/account#history', label: 'History' },
           { href: '/onboarding', label: 'Setup' }] },
 ];
 
@@ -171,11 +178,12 @@ export function Shell({
     );
   }
 
-  const nav = adultAlone
+  const nav = (adultAlone
     ? NAV[session.role].map(n => n.href === '/family/children' ? { ...n, label: 'You', icon: User } : n)
     : regOnly && session.role === 'teacher'
       ? NAV.teacher.map(n => n.href === '/teach' ? { ...n, primary: true } : n)
-      : NAV[session.role];
+      : NAV[session.role]).map(n => n.sub && (session.role !== 'owner' || session.platform || session.support)
+      ? { ...n, sub: n.sub.filter(x => !x.ownerOnly) } : n);
 
   return (
     <div className="min-h-dvh lg:flex">
@@ -281,6 +289,7 @@ export function Shell({
 }
 
 function isActive(pathname: string, href: string) {
+  href = href.split('#')[0]!;
   const clean = pathname.replace(/\/$/, '');
   return clean === href || (!['/teach','/family','/learn','/platform'].includes(href) && clean.startsWith(href + '/'));
 }
@@ -289,14 +298,16 @@ const groupActive = (pathname: string, item: NavItem) =>
 
 /** The screens of the current area, as tabs (R-027). */
 function SubTabs({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
+  const hash = useLocationHash();
   const group = nav.find(i => i.sub && i.sub.length > 1 && groupActive(pathname, i));
   if (!group) return null;
   return (
     <nav aria-label={group.label} className="relative -mb-px flex gap-4 overflow-x-auto px-4 lg:px-8">
       {group.sub!.map(x => {
-        const active = isActive(pathname, x.href);
+        const active = x.href.includes('#') || group.sub!.some(o => o !== x && o.href.startsWith(x.href + '#'))
+          ? sectionActive(group.sub!, x.href, pathname, hash) : isActive(pathname, x.href);
         return (
-          <Link key={x.href} href={x.href} aria-current={active ? 'page' : undefined}
+          <Link key={x.href} href={x.href} aria-current={active ? 'page' : undefined} onClick={e => onSectionClick(e, x.href, pathname)}
             className={cn('shrink-0 border-b-2 py-2.5 text-[0.8438rem]',
               active ? 'border-accent-line font-semibold text-ink' : 'border-transparent font-medium text-ink-3 hover:text-ink')}>
             {x.label}
@@ -324,6 +335,7 @@ function RailLink({ item, pathname }: { item: NavItem; pathname: string }) {
 /** At most five targets in the bar; the remainder live behind More. */
 function MobileTabs({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
   const [open, setOpen] = React.useState(false);
+  const hash = useLocationHash();
   const marked = nav.filter(i => i.primary);
   const shown = marked.length ? marked : nav.length <= 5 ? nav : nav.slice(0, 4);
   const rest = nav.filter(i => !shown.includes(i));
@@ -369,10 +381,11 @@ function MobileTabs({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
                       <Icon className="size-3.5" aria-hidden /> {item.label}</p>}
                     <ul>
                       {links.map(x => {
-                        const active = isActive(pathname, x.href);
+                        const active = x.href.includes('#') || links.some(o => o !== x && o.href.startsWith(x.href + '#'))
+                          ? sectionActive(links, x.href, pathname, hash) : isActive(pathname, x.href);
                         return (
                           <li key={x.href}>
-                            <Link href={x.href} onClick={() => setOpen(false)} aria-current={active ? 'page' : undefined}
+                            <Link href={x.href} onClick={e => { onSectionClick(e, x.href, pathname); setOpen(false); }} aria-current={active ? 'page' : undefined}
                               className={cn('flex min-h-[48px] items-center gap-3 rounded-[var(--radius-md)] px-3 text-sm',
                                 active ? 'bg-accent-soft font-medium text-accent-ink' : 'hover:bg-surface-2')}>
                               {!item.sub && <Icon className="size-[18px]" aria-hidden />} {x.label}

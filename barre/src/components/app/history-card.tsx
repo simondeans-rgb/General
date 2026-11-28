@@ -65,11 +65,11 @@ export function HistoryCard({ isOwner = true }: { isOwner?: boolean }) {
         </Field>
         <Field label="From" htmlFor="h-from"><Input id="h-from" type="date" value={from} onChange={e => setFrom(e.target.value)} /></Field>
         <Field label="To" htmlFor="h-to"><Input id="h-to" type="date" value={to} onChange={e => setTo(e.target.value)} /></Field>
+        <label className="col-span-2 flex min-h-11 items-center gap-2.5 text-[0.875rem] sm:col-span-3">
+          <input type="checkbox" className="size-[18px] accent-[var(--color-accent)]" checked={automatic} onChange={e => setAutomatic(e.target.checked)} />
+          Include automatic changes <span className="text-ink-3">(imports, reminders and scheduled jobs)</span>
+        </label>
       </div>
-      <label className="mt-3 flex min-h-[44px] items-center gap-3 text-[0.875rem]">
-        <input type="checkbox" checked={automatic} onChange={e => setAutomatic(e.target.checked)} className="size-[18px] accent-[var(--color-accent)]" />
-        Include automatic changes (starting data, imports and scheduled jobs)
-      </label>
       <div className="pt-2">
         {rows.isPending && <Skeleton className="h-24" />}
         {rows.error && <ErrorState error={rows.error} onRetry={() => rows.refetch()} />}

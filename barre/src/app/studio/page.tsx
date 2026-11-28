@@ -13,6 +13,7 @@ import { BankDetailsSettings } from '@/components/app/bank-details';
 import { RegisterSettings } from '@/components/app/register-settings';
 import { TimetableSharing } from '@/components/app/timetable-sharing';
 import { RecordSheet } from '@/components/app/record-sheet';
+import { useSection } from '@/components/app/section-hash';
 import { useRows, useRow } from '@/lib/query';
 import { resetDemo, runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
@@ -41,32 +42,19 @@ function useSetupWrite(sql: string, onDone?: () => void) {
   });
 }
 
-const TABS = [['school', 'School'], ['places', 'Places'], ['terms', 'Terms'], ['teaching', 'Teaching'], ['money', 'Money']] as const;
-type Tab = typeof TABS[number][0];
+const TABS = ['school', 'places', 'terms', 'teaching', 'money'] as const;
+const TITLES: Record<typeof TABS[number], string> = {
+  school: 'Details', places: 'Places', terms: 'Terms', teaching: 'Teaching', money: 'Money',
+};
 
-/** Settings in five tabs, so each area is one tap away (R-053). */
+/** Settings in five sections, chosen from the one settings tab row (U4, R-053). */
 export default function StudioSettings() {
-  const [tab, setTab] = React.useState<Tab>('school');
-  React.useEffect(() => {
-    const read = () => { const h = window.location.hash.slice(1); if (TABS.some(t => t[0] === h)) setTab(h as Tab); };
-    read();
-    window.addEventListener('hashchange', read);
-    return () => window.removeEventListener('hashchange', read);
-  }, []);
-  const go = (t: Tab) => { setTab(t); history.replaceState(null, '', `#${t}`); };
+  const tab = useSection(TABS);
   return (
-    <Shell title="School settings" subtitle="Everything a timetable is built from"
+    <Shell title="School settings" subtitle={`${TITLES[tab]} · everything a timetable is built from`}
            allow={['owner', 'admin']}>
       <div className="mx-auto max-w-[1240px]"><div className="max-w-3xl space-y-8">
-        <div role="tablist" aria-label="Settings" className="-mx-1 flex gap-1 overflow-x-auto border-b border-line px-1">
-          {TABS.map(([k, l]) => (
-            <button key={k} role="tab" aria-selected={tab === k} aria-controls={`st-panel-${k}`} id={`st-tab-${k}`} onClick={() => go(k)}
-              className={cn('-mb-px h-11 shrink-0 border-b-2 px-2 text-[0.9062rem] sm:px-3', tab === k ? 'border-ink font-semibold text-ink' : 'border-transparent text-ink-2 hover:text-ink')}>
-              {l}
-            </button>
-          ))}
-        </div>
-        <div role="tabpanel" id={`st-panel-${tab}`} aria-labelledby={`st-tab-${tab}`} className="space-y-10">
+        <div id={`st-panel-${tab}`} aria-label={TITLES[tab]} className="space-y-10">
           {tab === 'school' && <><StudioDetails /><WaitlistSettings /><StudentLoginAge /><ConsentWording /><AboutDemo /></>}
           {tab === 'places' && <><Locations /><Rooms /></>}
           {tab === 'terms' && <Terms />}

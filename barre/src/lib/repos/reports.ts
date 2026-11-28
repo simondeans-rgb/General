@@ -13,12 +13,14 @@ export type Headline = {
 
 /** $1 (when `at`) is a location id, or null for the whole school. A student
  *  counts at a location when enrolled in any class there; "All" counts each
- *  student once (UR-33). Money stays school-wide: payments are not tied to a
- *  site, so the per-location comparison shows what was billed instead. */
+ *  student once (UR-33). Money at a location comes from location_money
+ *  (0062): invoices split by their class lines, payments following their
+ *  invoice. "All" keeps the school-wide ledger figures. */
 const headline = (at: boolean) => {
   const inLoc = (col: string) => at ? ` and ${col} in (select id from class where $1::uuid is null or location_id = $1::uuid)` : '';
   return `
-with active_now as (
+with ${at ? `lm as materialized (select outstanding_minor, collected_30d_minor from location_money where $1::uuid is not null and location_id = $1::uuid),
+` : ''}active_now as (
   select distinct student_id from enrolment where status = 'active' and deleted_at is null${inLoc('class_id')}
 ),
 first_start as (
@@ -63,9 +65,11 @@ select
   -- The same definitions as the Enrolment funnel (FUNNEL in classes.ts), so the
   -- two screens agree: came to a trial = reached "tried a class" or enrolled.
   (select count(*)::int from enquiry where deleted_at is null and stage in ('trial_attended','enrolled')) as trials_attended,
-  coalesce((select sum(balance_minor) from family where deleted_at is null and balance_minor > 0), 0)::bigint as outstanding_minor,
-  coalesce((select sum(amount_minor - refunded_minor) from payment where deleted_at is null
-     and succeeded_at >= now() - interval '30 days' and method not in ('account','credit')), 0)::bigint as collected_30d_minor,
+  ${at ? `case when $1::uuid is null then ` : ''}coalesce((select sum(balance_minor) from family where deleted_at is null and balance_minor > 0), 0)::bigint${at ? `
+       else coalesce((select sum(outstanding_minor) from lm), 0)::bigint end` : ''} as outstanding_minor,
+  ${at ? `case when $1::uuid is null then ` : ''}coalesce((select sum(amount_minor - refunded_minor) from payment where deleted_at is null
+     and succeeded_at >= now() - interval '30 days' and method not in ('account','credit')), 0)::bigint${at ? `
+       else coalesce((select sum(collected_30d_minor) from lm), 0)::bigint end` : ''} as collected_30d_minor,
   coalesce((select sum(total_minor) from invoice where deleted_at is null and status <> 'void' and status <> 'draft'
      and issued_on > current_date - 90), 0)::bigint as issued_90d_minor,
   coalesce((select sum(total_minor - paid_minor) from invoice where deleted_at is null
@@ -151,8 +155,10 @@ export function underFilled(c: { enrolled: number; capacity: number; pricing?: s
 
 /** Side by side, one row per location: students counted once per site. */
 export type LocationRow = { id: string; name: string; classes: number; students: number; enrolled: number; capacity: number;
-  attended: number; marked: number; billed_30d_minor: string; fees_term_minor: string };
+  attended: number; marked: number; billed_30d_minor: string; fees_term_minor: string;
+  collected_30d_minor: string; outstanding_minor: string; overdue_minor: string };
 export const BY_LOCATION = `
+with m as materialized (select * from location_money)
 select l.id, l.name,
        (select count(*)::int from class c where c.location_id = l.id and c.deleted_at is null) as classes,
        (select count(distinct e.student_id)::int from enrolment e join class c on c.id = e.class_id
@@ -165,22 +171,38 @@ select l.id, l.name,
        (select count(*) filter (where ar.status in ('present','late','absent'))::int from attendance_record ar
           join class_session cs on cs.id = ar.session_id join class c on c.id = cs.class_id
          where c.location_id = l.id and ar.deleted_at is null and cs.starts_at >= now() - interval '28 days' and cs.starts_at < now()) as marked,
-       coalesce((select sum(ii.total_minor) from invoice_item ii join invoice i on i.id = ii.invoice_id join class c on c.id = ii.class_id
-         where c.location_id = l.id and ii.deleted_at is null and i.deleted_at is null and i.status not in ('draft', 'void')
-           and i.issued_on > current_date - 30), 0)::bigint as billed_30d_minor,
+       coalesce(m.billed_30d_minor, 0)::bigint as billed_30d_minor,
        coalesce((select sum(coalesce(e.price_minor, c.price_minor)) from enrolment e join class c on c.id = e.class_id and c.deleted_at is null
           join term t on t.id = c.term_id and current_date between t.starts_on and t.ends_on
-         where c.location_id = l.id and e.status = 'active' and e.deleted_at is null and c.pricing in ('term', 'one_off')), 0)::bigint as fees_term_minor
-  from location l where l.deleted_at is null and ${IN_MY_SCOPE} order by l.name`;
+         where c.location_id = l.id and e.status = 'active' and e.deleted_at is null and c.pricing in ('term', 'one_off')), 0)::bigint as fees_term_minor,
+       coalesce(m.collected_30d_minor, 0)::bigint as collected_30d_minor,
+       coalesce(m.outstanding_minor, 0)::bigint as outstanding_minor,
+       coalesce(m.overdue_minor, 0)::bigint as overdue_minor
+  from location l left join m on m.location_id = l.id where l.deleted_at is null and ${IN_MY_SCOPE} order by l.name`;
+
+/** Money no location can be given: invoices with no class lines for a family
+ *  in no class now. Shown under the comparison so the columns add up. */
+export const UNPLACED_MONEY = `
+select coalesce(sum(collected_30d_minor), 0)::bigint as collected_30d_minor,
+       coalesce(sum(outstanding_minor), 0)::bigint as outstanding_minor
+  from location_money where location_id is null`;
 
 /* ── Retention, term on term (UR-34) ──────────────────────────────────────── */
 // $1 is the term; the term before it is the one that started most recently
 // before it. A student is "in" a term when enrolled (then or since left) in
 // any of its classes; moving class within the school is not leaving.
-const TERMS = `
+// Before the first term in Swayvo there is no term before it, so the latest
+// term in the imported attendance history stands in for it (labelled as
+// imported). Imported classes are matched to a class of the same name for
+// their style and location.
+// `loc` is the placeholder of a location id, or null for the whole school.
+const terms = (loc: string | null) => `
 with t as (select id, studio_id, name, starts_on from term where id = $1::uuid),
 p as (select pt.id, pt.name from term pt, t where pt.studio_id = t.studio_id and pt.deleted_at is null and pt.id <> t.id
         and pt.starts_on < t.starts_on order by pt.starts_on desc limit 1),
+hp as (select h.period from attendance_history h, t
+        where h.studio_id = t.studio_id and h.attended > 0 and not exists (select 1 from p)
+        group by h.period order by app.period_rank(h.period) desc, max(h.created_at) desc limit 1),
 roll as (
   select case when c.term_id = (select id from t) then 'c' else 'p' end as src, e.student_id, c.id as class_id, c.name as class_name,
          coalesce(ds.name, 'No style') as style, e.started_on, e.ended_on, s.date_of_birth
@@ -188,24 +210,38 @@ roll as (
     join student s on s.id = e.student_id and s.deleted_at is null
     left join dance_style ds on ds.id = c.dance_style_id
    where e.deleted_at is null and e.status <> 'cancelled'
-     and (c.term_id = (select id from t) or c.term_id = (select id from p))
+     and (c.term_id = (select id from t) or c.term_id = (select id from p))${loc ? `
+     and c.location_id = ${loc}::uuid` : ''}
+  union all
+  select 'p', h.student_id, null::uuid, coalesce(nullif(h.class_name, ''), 'Imported records'),
+         coalesce(mc.style, 'Not known'), null::date, null::date, s.date_of_birth
+    from attendance_history h join student s on s.id = h.student_id and s.deleted_at is null
+    left join lateral (select c.location_id, ds.name as style from class c left join dance_style ds on ds.id = c.dance_style_id
+                        where c.studio_id = h.studio_id and c.deleted_at is null and lower(c.name) = lower(h.class_name)
+                        order by c.created_at desc limit 1) mc on true
+   where h.period = (select period from hp) and h.attended > 0${loc ? `
+     and mc.location_id = ${loc}::uuid` : ''}
 ),
 cur as (select distinct student_id from roll where src = 'c'),
 prv as (select distinct student_id from roll where src = 'p')`;
 
 export type RetentionSummary = { current_term: string; previous_term: string | null; previous: number; current: number;
-  continuing: number; lapsed: number; new: number };
-export const RETENTION_SUMMARY = `${TERMS}
-select (select name from t) as current_term, (select name from p) as previous_term,
+  continuing: number; lapsed: number; new: number; imported: boolean };
+const retentionSummary = (loc: string | null) => `${terms(loc)}
+select (select name from t) as current_term, coalesce((select name from p), (select period from hp)) as previous_term,
+       (not exists (select 1 from p) and exists (select 1 from hp)) as imported,
        (select count(*)::int from prv) as previous, (select count(*)::int from cur) as current,
        (select count(*)::int from prv where student_id in (select student_id from cur)) as continuing,
        (select count(*)::int from prv where student_id not in (select student_id from cur)) as lapsed,
        (select count(*)::int from cur where student_id not in (select student_id from prv)) as new`;
+export const RETENTION_SUMMARY = retentionSummary(null);
+/** [term, location] */
+export const RETENTION_SUMMARY_AT = retentionSummary('$2');
 
 /** $2: 'class' | 'style' | 'age'. Leavers and stayers are counted against what
  *  they did last term; new students against what they do this term. */
 export type RetentionRow = { label: string; previous: number; continuing: number; lapsed: number; new: number };
-export const RETENTION_BY = `${TERMS},
+const retentionBy = (loc: string | null) => `${terms(loc)},
 keyed as (
   select distinct src, student_id,
          case $2::text when 'class' then class_name when 'style' then style
@@ -224,11 +260,14 @@ select label,
        count(*) filter (where src = 'c' and student_id not in (select student_id from prv))::int as new
   from keyed group by label
  order by count(*) filter (where src = 'p') desc, label`;
+export const RETENTION_BY = retentionBy(null);
+/** [term, 'class' | 'style' | 'age', location] */
+export const RETENTION_BY_AT = retentionBy('$3');
 
 /** Who to contact: last term's students with nothing this term. */
 export type LapsedRow = { student_id: string; student: string; family_id: string; family: string; last_class: string;
   last_on: string | null; contact: string | null; phone: string | null; email: string | null };
-export const LAPSED = `${TERMS}
+const lapsed = (loc: string | null) => `${terms(loc)}
 select distinct on (r.student_id) r.student_id, s.first_name || ' ' || s.last_name as student, f.id as family_id, f.name as family,
        r.class_name as last_class, coalesce(r.ended_on, r.started_on) as last_on,
        g.full_name as contact, g.phone, g.email
@@ -237,6 +276,9 @@ select distinct on (r.student_id) r.student_id, s.first_name || ' ' || s.last_na
                       order by g.is_primary desc limit 1) g on true
  where r.src = 'p' and r.student_id not in (select student_id from cur)
  order by r.student_id, coalesce(r.ended_on, r.started_on) desc nulls last`;
+export const LAPSED = lapsed(null);
+/** [term, location] */
+export const LAPSED_AT = lapsed('$2');
 
 export const TERMS_LIST = `select id, name, starts_on from term where deleted_at is null order by starts_on desc`;
 
