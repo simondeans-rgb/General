@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Award, ChevronDown, Plus, Receipt } from 'lucide-react';
+import Link from 'next/link';
+import { Award, ChevronDown, ClipboardCheck, Plus, Receipt } from 'lucide-react';
 import { useRows, useRow } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
@@ -53,7 +54,7 @@ export function ExamsCard() {
   const rows = useRows<E.ExamSession>(['exam-sessions'], E.EXAM_SESSIONS);
   const [open, setOpen] = React.useState<string | null>(null);
   const [adding, setAdding] = React.useState(false);
-  const [f, setF] = React.useState({ board: '', title: '', on: '', venue: '', close: '', fee: '' });
+  const [f, setF] = React.useState({ board: '', title: '', on: '', venue: '', close: '', fee: '', billOnEntry: true });
   const write = useWrite(() => setAdding(false));
   return (
     <section>
@@ -68,11 +69,12 @@ export function ExamsCard() {
           <Field label="Entries close" htmlFor="ex-c"><Input id="ex-c" type="date" value={f.close} onChange={e => setF({ ...f, close: e.target.value })} /></Field>
           <Field label="Venue" htmlFor="ex-v"><Input id="ex-v" value={f.venue} onChange={e => setF({ ...f, venue: e.target.value })} /></Field>
           <Field label="Fee per entry (£)" htmlFor="ex-f" hint="You can change it for each child"><Input id="ex-f" type="number" min={0} step={0.5} value={f.fee} onChange={e => setF({ ...f, fee: e.target.value })} /></Field>
+          <BillOnEntry id="ex-boe" checked={f.billOnEntry} onChange={v => setF({ ...f, billOnEntry: v })} className="sm:col-span-2" />
           {write.error != null && <div className="sm:col-span-2"><ErrorState error={write.error} /></div>}
           <div className="flex justify-end gap-2 sm:col-span-2">
             <Button variant="ghost" onClick={() => setAdding(false)}>Cancel</Button>
             <Button variant="primary" disabled={!f.board.trim() || !f.title.trim() || !f.on} loading={write.isPending}
-              onClick={() => write.mutate({ sql: E.ADD_EXAM_SESSION, params: [f.board, f.title, f.on, f.venue, f.close || null, f.fee ? Math.round(Number(f.fee) * 100) : 0] })}>Save session</Button>
+              onClick={() => write.mutate({ sql: E.ADD_EXAM_SESSION, params: [f.board, f.title, f.on, f.venue, f.close || null, f.fee ? Math.round(Number(f.fee) * 100) : 0, f.billOnEntry] })}>Save session</Button>
           </div>
         </div>
       )}
@@ -129,10 +131,14 @@ function Entries({ session: x }: { session: E.ExamSession }) {
   const [editing, setEditing] = React.useState<string | null>(null);
   const write = useWrite();
   const [f, setF] = React.useState({ student: '', grade: '', fee: '' });
+  const { session } = useSession();
+  const office = session?.role === 'owner' || session?.role === 'admin';
   return (
     <div className="space-y-3">
       {done && <p role="status" className="text-[0.8125rem] font-semibold text-positive">{done}</p>}
       {write.error != null && <ErrorState error={write.error} />}
+      {office && <BillOnEntry id={`boe-${x.id}`} checked={!!x.bill_on_entry}
+        onChange={v => write.mutate({ sql: E.SET_EXAM_BILLING, params: [x.id, v] })} />}
       <ul className="divide-y divide-line text-[0.875rem]">
         {rows.data?.map(e => {
           const stage = S.examStage(e);
@@ -166,6 +172,10 @@ function Entries({ session: x }: { session: E.ExamSession }) {
           onClick={() => { write.mutate({ sql: E.ENTER_EXAM, params: [x.id, f.student, f.grade, f.fee ? Math.round(Number(f.fee) * 100) : null] }); setF({ ...f, student: '' }); }}>
           Enter
         </Button>
+        <Link href={`/exams/register/?session=${x.id}`}
+          className="inline-flex h-9 items-center gap-2 rounded-[var(--radius-md)] px-3 text-[0.8125rem] font-semibold text-ink-2 hover:bg-surface-2 hover:text-ink [@media(pointer:coarse)]:h-10">
+          <ClipboardCheck className="size-4" aria-hidden /> Exam-day register
+        </Link>
         {x.unbilled > 0 && (
           <Button size="sm" variant="ghost" onClick={() => write.mutate({ sql: E.BILL_EXAM, params: [x.id] }, { onSuccess: r => setDone(`${r?.n ?? 0} invoice${r?.n === 1 ? '' : 's'} sent for exam fees.`) })}>
             <Receipt className="size-4" aria-hidden /> Bill {x.unbilled} fee{x.unbilled === 1 ? '' : 's'}
@@ -173,6 +183,17 @@ function Entries({ session: x }: { session: E.ExamSession }) {
         )}
       </div>
     </div>
+  );
+}
+
+/** Whether entering a child invoices the family at once (0072). */
+function BillOnEntry({ id, checked, onChange, className }: { id: string; checked: boolean; onChange: (v: boolean) => void; className?: string }) {
+  return (
+    <label htmlFor={id} className={cn('flex min-h-11 items-start gap-2.5 text-[0.875rem]', className)}>
+      <input id={id} type="checkbox" className="mt-0.5 size-[18px] shrink-0 accent-[var(--color-accent)]" checked={checked} onChange={e => onChange(e.target.checked)} />
+      <span>Invoice the family when a child is entered
+        <span className="block text-[0.8125rem] text-ink-3">Otherwise use “Bill fees” when you are ready. Unpaid fees are flagged 24 hours before the exam, to you and the family.</span></span>
+    </label>
   );
 }
 

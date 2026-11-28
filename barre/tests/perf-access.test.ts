@@ -132,7 +132,8 @@ select s.id, s.first_name, s.last_name, s.preferred_name, s.date_of_birth,
 const OLD_REGISTER = T.REGISTER
   .replace(/^([\s\S]*?\n\))\nselect[\s\S]*$/, (_m, roll) => `${roll}
 select roll.id as student_id, roll.first_name, roll.last_name, roll.preferred_name,
-       roll.date_of_birth, roll.is_trial,
+       roll.date_of_birth, roll.is_trial, roll.trial_id,
+       tf.recommendation as trial_recommendation, tf.comments as trial_comments, tf.written_by_name as trial_written_by,
        ar.status, ar.reason, ar.mark_kind,
        rep.note as reported_note, rep.reporter as reported_by,
        ${OLD_BRIEF},
@@ -141,6 +142,7 @@ select roll.id as student_id, roll.first_name, roll.last_name, roll.preferred_na
   left join attendance_record ar on ar.student_id = roll.id and ar.session_id = $1 and ar.deleted_at is null
   left join absence_report rep on rep.student_id = roll.id and rep.session_id = $1 and rep.status = 'active'
   left join student_safety_brief b on b.student_id = roll.id
+  left join trial_feedback tf on tf.trial_id = roll.trial_id
  order by roll.last_name, roll.first_name`);
 
 const sorted = (rows: any[]) => JSON.stringify(rows.map(r => ({ ...r })).sort((a, b) =>

@@ -257,3 +257,8 @@ export const ATTENTION_REGISTERS = `select r.* from app.overdue_registers(
 export type TrialToDecide = { trial_id: string; child: string; class_name: string; recommendation: string | null; written_by_name: string | null; updated_at: string };
 export const ATTENTION_TRIAL_FEEDBACK = `select * from app.trials_to_decide(
   (select id from studio where id in (select app.studio_ids()) limit 1))`;
+
+/** Exam fees still owed for exams in the coming week (0072). */
+export type ExamFeesUnpaid = { session_id: string; title: string; exam_on: string; unpaid: number; unbilled: number; owed_minor: number };
+export const ATTENTION_EXAM_FEES = `select * from app.exam_fees_unpaid(
+  (select id from studio where id in (select app.studio_ids()) limit 1))`;

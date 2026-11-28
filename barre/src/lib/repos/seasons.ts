@@ -4,7 +4,7 @@
 /* ── Exams ───────────────────────────────────────────────────────────────── */
 /** The session behind an "Exam" event. */
 export const SESSION_FOR_EVENT = `
-select x.id, x.board, x.title, x.exam_on, x.venue, x.entries_close_on, x.fee_minor, x.event_id,
+select x.id, x.board, x.title, x.exam_on, x.venue, x.entries_close_on, x.fee_minor, x.event_id, x.bill_on_entry,
        count(e.*) filter (where e.status <> 'withdrawn')::int as entries,
        count(e.*) filter (where e.result is not null)::int as results,
        count(e.*) filter (where e.status <> 'withdrawn' and e.invoice_id is null and e.fee_minor > 0)::int as unbilled

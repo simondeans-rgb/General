@@ -84,17 +84,17 @@ export const MY_TICKETS = `select b.id, t.event_id, t.name, b.quantity from tick
 
 /* ── Exams (migration 0042) ──────────────────────────────────────────────── */
 export type ExamSession = { id: string; board: string; title: string; exam_on: string; venue: string | null; entries_close_on: string | null;
-  entries: number; results: number; unbilled: number; fee_minor?: number; event_id?: string | null };
+  entries: number; results: number; unbilled: number; fee_minor?: number; event_id?: string | null; bill_on_entry?: boolean };
 export const EXAM_SESSIONS = `
-select x.id, x.board, x.title, x.exam_on, x.venue, x.entries_close_on, x.fee_minor, x.event_id,
+select x.id, x.board, x.title, x.exam_on, x.venue, x.entries_close_on, x.fee_minor, x.event_id, x.bill_on_entry,
        count(e.*) filter (where e.status <> 'withdrawn')::int as entries,
        count(e.*) filter (where e.result is not null)::int as results,
        count(e.*) filter (where e.status <> 'withdrawn' and e.invoice_id is null and e.fee_minor > 0)::int as unbilled
   from exam_session x left join exam_entry e on e.session_id = x.id
  where x.deleted_at is null group by x.id order by (x.exam_on < current_date), x.exam_on`;
 export const ADD_EXAM_SESSION = `
-insert into exam_session (studio_id, board, title, exam_on, venue, entries_close_on, fee_minor)
-select m.studio_id, btrim($1), btrim($2), $3::date, nullif(btrim($4), ''), $5::date, coalesce($6::int, 0)
+insert into exam_session (studio_id, board, title, exam_on, venue, entries_close_on, fee_minor, bill_on_entry)
+select m.studio_id, btrim($1), btrim($2), $3::date, nullif(btrim($4), ''), $5::date, coalesce($6::int, 0), coalesce($7::boolean, false)
   from membership m where m.user_id = auth.uid() and m.role in ('owner','admin') and m.deleted_at is null and app.in_scope(m.studio_id) limit 1 returning id`;
 export type ExamEntry = { id: string; session_id: string; student_id: string; student: string; grade: string; fee_minor: number; status: string;
   result: string | null; mark: number | null; board: string; exam_title: string; exam_on: string;
@@ -116,6 +116,19 @@ export const ENTER_EXAM = `select app.enter_exam($1, $2, $3, $4::int) as id`;
 export const EXAM_RESULT = `select app.exam_result($1, $2, $3)`;
 export const WITHDRAW_EXAM = `select app.withdraw_exam($1)`;
 export const BILL_EXAM = `select app.bill_exam($1) as n`;
+
+/* ── Exam fees and the exam-day register (0072) ─────────────────────────── */
+export type ExamFeeState = 'none' | 'unbilled' | 'unpaid' | 'part_paid' | 'paid';
+export const FEE_WORD: Record<ExamFeeState, string> = { none: 'No fee', unbilled: 'Not billed', unpaid: 'Unpaid', part_paid: 'Part paid', paid: 'Paid' };
+export const FEE_TONE: Record<ExamFeeState, 'positive' | 'critical' | 'caution' | 'muted'> = { none: 'muted', unbilled: 'caution', unpaid: 'critical', part_paid: 'caution', paid: 'positive' };
+export type ExamRegisterRow = { entry_id: string; student_id: string; student: string; grade: string; sits_at: string | null; status: string;
+  attendance: 'here' | 'absent' | null; fee_minor: number; fee_state: ExamFeeState; due_on: string | null };
+export const EXAM_REGISTER = `select * from app.exam_register($1)`;
+export const EXAM_SESSION_ONE = `select id, board, title, exam_on, venue, fee_minor, bill_on_entry from exam_session where id = $1 and deleted_at is null`;
+export const MARK_EXAM_ATTENDANCE = `select app.mark_exam_attendance($1, $2)`;
+export const SET_EXAM_BILLING = `select app.set_exam_billing($1, $2)`;
+export type ExamDay = { session_id: string; board: string; title: string; exam_on: string; venue: string | null; candidates: number; unpaid: number };
+export const MY_EXAM_DAYS = `select * from app.my_exam_days(current_date, current_date + 7)`;
 export const STUDENT_PICK = `select id, first_name || ' ' || last_name as name from student where deleted_at is null order by first_name, last_name`;
 export const RESULTS: [string, string][] = [['distinction', 'Distinction'], ['merit', 'Merit'], ['pass', 'Pass'],
   ['highly_commended', 'Highly commended'], ['commended', 'Commended'], ['not_yet', 'Not yet']];

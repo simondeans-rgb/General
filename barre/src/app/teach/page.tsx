@@ -19,6 +19,7 @@ import { medicalLine } from '@/components/app/medical-brief';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { runAs, readAs } from '@/lib/db/client';
 import * as T from '@/lib/repos/teaching';
+import * as E from '@/lib/repos/events';
 import { time, dateLong, dateShort, dayRange, relativeDay } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
@@ -46,6 +47,8 @@ export default function TeachToday() {
     for (const c of clashRows.data ?? []) m.set(c.session_id, [...(m.get(c.session_id) ?? []), c]);
     return m;
   }, [clashRows.data]);
+  // Exams in the coming week with this teacher's students: the exam-day register (0072).
+  const examDays = useRows<E.ExamDay>(['my-exam-days'], E.MY_EXAM_DAYS).data ?? [];
   // A teacher who wants just registers (F14): today, and the register.
   const regOnly = useRows<{ on: boolean }>(['register-only'], T.MY_REGISTER_ONLY).data?.[0]?.on ?? false;
   // Teachers at two or more schools can see their week across all of them (UR-47).
@@ -88,6 +91,12 @@ export default function TeachToday() {
           options={multi
             ? [['list', 'List'], ['grid', 'Week grid'], ['across', 'All my schools']]
             : [['list', 'List'], ['grid', 'Week grid']]} />}
+        {!week && !grid && examDays.map(x => (
+          <Notice key={x.session_id} word="Exam" tone="ink"
+            title={`${x.title.toLowerCase().includes(x.board.toLowerCase()) ? x.title : `${x.board} · ${x.title}`}, ${relativeDay(x.exam_on)}`}
+            detail={`${x.candidates} of your student${x.candidates === 1 ? '' : 's'}${x.unpaid ? ` · ${x.unpaid} fee${x.unpaid === 1 ? '' : 's'} not paid` : ' · all fees paid'}`}
+            action={<Link href={`/exams/register/?session=${x.session_id}`} className="inline-flex min-h-10 items-center gap-1 text-[0.875rem] font-semibold text-accent-text hover:underline">Exam register <ArrowRight className="size-4" aria-hidden /></Link>} />
+        ))}
         {!week && !grid && pairs > 0 && firstClash && firstClashSession && (
           <div role="status" className="border-l-2 border-critical pl-3">
             <Notice word="Clash" tone="critical"

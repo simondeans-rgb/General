@@ -137,10 +137,11 @@ function NeedsAttention() {
   const checks = useRows<CheckGap>(['att-checks'], CHECK_GAPS_TODAY);
   const regs = useRows<Q.OverdueRegister>(['att-registers'], Q.ATTENTION_REGISTERS);
   const tfb = useRows<Q.TrialToDecide>(['att-trial-feedback'], Q.ATTENTION_TRIAL_FEEDBACK);
+  const xfees = useRows<Q.ExamFeesUnpaid>(['att-exam-fees'], Q.ATTENTION_EXAM_FEES);
   // Safeguarding setup (F1, N-06): until a lead is named, and anything to review.
   const sg = useRow<{ no_lead: boolean; media_links: number; holds_due: number }>(['att-safeguarding'], SAFEGUARDING_TODAY);
   const [all, setAll] = React.useState(false);
-  const loading = sg.isLoading || regs.isLoading || tfb.isLoading || checks.isLoading || pay.isLoading || cap.isLoading || trials.isLoading || lapsed.isLoading || reqs.isLoading || msgs.isLoading || follow.isLoading;
+  const loading = sg.isLoading || regs.isLoading || tfb.isLoading || xfees.isLoading || checks.isLoading || pay.isLoading || cap.isLoading || trials.isLoading || lapsed.isLoading || reqs.isLoading || msgs.isLoading || follow.isLoading;
   const names = (list: string[], max = 3) => list.slice(0, max).join(', ') + (list.length > max ? '…' : '');
 
   const items: Item[] = [];
@@ -152,6 +153,14 @@ function NeedsAttention() {
     headline: `Register${regs.data.length === 1 ? '' : 's'} not completed`,
     detail: regs.data.slice(0, 2).map(r => `${r.class_name}, ${dateShort(r.starts_at)}${r.teacher_name ? ` (${r.teacher_name})` : ''}`).join(' · ')
       + (regs.data.length > 2 ? '…' : '') });
+  for (const x of xfees.data ?? []) {
+    const n = x.unpaid + x.unbilled;
+    const soon = new Date(x.exam_on).getTime() - Date.now() < 2 * 86400000;
+    items.push({ key: `exam-fees-${x.session_id}`, n, when: soon ? 'today' : 'week', urgent: soon,
+      href: `/exams/register/?session=${x.session_id}`, action: 'See who',
+      headline: `Exam fee${n === 1 ? '' : 's'} unpaid: ${x.title}`,
+      detail: `${dateShort(x.exam_on)} · ${money(x.owed_minor)} owed${x.unbilled ? ` · ${x.unbilled} not billed yet` : ''}` });
+  }
   if (tfb.data?.length) items.push({ key: 'trial-feedback', n: tfb.data.length, when: 'today', href: '/enrolment', action: 'Decide',
     headline: `Trial${tfb.data.length === 1 ? '' : 's'} to decide`,
     detail: tfb.data.slice(0, 2).map(t => `${t.child}, ${t.class_name}: ${TRIAL_REC_WORD[t.recommendation ?? ''] ?? 'teacher’s comments in'}`).join(' · ')
