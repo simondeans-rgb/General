@@ -103,7 +103,9 @@ select s.id as student_id, s.first_name, s.last_name, a.status::text as status, 
   join student s on s.id = one.student_id and s.deleted_at is null
   left join attendance_record a on a.session_id = cs.id and a.student_id = s.id and a.deleted_at is null
   left join feedback_note f on f.session_id = cs.id and f.student_id = s.id and f.deleted_at is null
- order by (a.status in ('present', 'late', 'trial')) desc nulls last, s.first_name`;
+-- One order everywhere, the register's: by last name. It must not move
+ -- between saves (round 2 panel), so nothing that changes is in it.
+ order by s.last_name, s.first_name, s.id`;
 
 /** "Same as last week" (UR-44): each child's phrases from this class's last session with feedback. */
 export type PreviousChips = { student_id: string; going_well_chips: string[] | null; work_on_chips: string[] | null; starts_at: string };
@@ -132,7 +134,9 @@ select f.id, f.going_well, f.work_on, coalesce(cs.starts_at, f.shared_at, f.crea
  order by coalesce(cs.starts_at, f.created_at) desc limit 1`;
 
 /** UR-45: a teacher's own students who may need support. Staff only. */
-export type SupportRow = { student_id: string; absence_streak: number; last_here: string | null; not_yet: number; support_note: string | null };
+export type SupportRow = { student_id: string; absence_streak: number; last_here: string | null; not_yet: number; support_note: string | null;
+  /** This term, present or late (0063). */
+  attendance_pct?: number | null };
 export const SUPPORT_NEEDS = `select * from app.support_needs()`;
 export const SET_SUPPORT_NOTE = `select app.set_support_note($1, $2) as ok`;
 export const SAVE_CLASS_FEEDBACK = `select app.save_class_feedback($1, $2::jsonb, $3) as n`;
@@ -187,3 +191,18 @@ export type Milestone = { id: string; kind: string; title: string; reached_on: s
 export const MILESTONES = `select id, kind, title, reached_on from milestone where student_id = $1 order by reached_on desc`;
 
 export const MOODS = ['😣', '😕', '😐', '🙂', '🤩'];
+
+/** F9: a class's children × skills (0063). Read only; drafts flagged. */
+export type ProgressCell = { student_id: string; student_name: string; framework_id: string; framework: string;
+  skill_id: string; skill: string; ord: number; level: Level | null; assessed_on: string | null; published: boolean;
+  previous: Level | null; depth: Depth };
+export const CLASS_PROGRESS = `select * from app.class_progress($1)`;
+/** The classes a teacher may see a matrix for, with their style. */
+export const MY_PROGRESS_CLASSES = `
+select c.id, c.name, ds.name as style, app.class_depth(c.id) as depth,
+       exists (select 1 from skill_framework f join framework_skill fs on fs.framework_id = f.id and fs.deleted_at is null
+                where f.deleted_at is null and f.dance_style_id = c.dance_style_id)
+       and exists (select 1 from enrolment e where e.class_id = c.id and e.status = 'active' and e.deleted_at is null) as has_skills
+  from class c left join dance_style ds on ds.id = c.dance_style_id
+ where c.deleted_at is null and c.id in (select app.teacher_class_ids())
+ order by ds.name nulls last, c.name`;

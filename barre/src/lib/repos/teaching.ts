@@ -246,3 +246,23 @@ select cs.id, c.name, cs.starts_at from class_session cs join class c on c.id = 
    and cs.starts_at < date_trunc('day', (select starts_at from this)) + interval '1 day'
    and (c.teacher_id in (select id from me) or c.assistant_id in (select id from me) or cs.teacher_id in (select id from me))
  order by cs.starts_at limit 1`;
+
+/** U6: which of my sessions clash with which other one (migration 0063). */
+export type Clash = { session_id: string; other_session_id: string; other_name: string; other_starts_at: Stamp;
+  other_ends_at: Stamp; other_school: string; other_location: string | null; same_school: boolean };
+export const MY_CLASHES = `select * from app.my_clashes($1::timestamptz, $2::timestamptz)`;
+
+/** Round 2 panel: "Working on" under each name on the register, one query for the roll. */
+export type WorkingOn = { student_id: string; work_on: string | null; going_well: string | null; at: Stamp };
+export const REGISTER_WORKING_ON = `
+select distinct on (f.student_id) f.student_id, f.work_on, f.going_well, coalesce(cs.starts_at, f.created_at) as at
+  from feedback_note f
+  left join class_session cs on cs.id = f.session_id
+ where f.student_id = any($2::uuid[]) and f.deleted_at is null
+   and (f.work_on is not null or f.going_well is not null)
+   and f.session_id is distinct from $1::uuid
+ order by f.student_id, coalesce(cs.starts_at, f.created_at) desc`;
+
+/** F14: a teacher who wants just registers (a personal setting). */
+export const MY_REGISTER_ONLY = `select app.my_register_only() as on`;
+export const SET_REGISTER_ONLY = `select app.set_register_only($1) as on`;

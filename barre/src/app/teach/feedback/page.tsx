@@ -65,13 +65,16 @@ function ClassFeedback() {
   const byId = new Map(list.map(k => [k.student_id, k]));
   const draftOf = (id: string): Draft => drafts[id] ?? (byId.get(id) ? saved(byId.get(id)!) : saved({} as P.FeedbackKid));
   const changed = Object.entries(drafts).filter(([id, d]) => byId.get(id) && !same(d, saved(byId.get(id)!)));
-  const upd = (id: string, f: (d: Draft) => Draft) => setDrafts(x => ({ ...x, [id]: f(x[id] ?? draftOf(id)) }));
+  // While a save or share is on its way, children's feedback is locked.
+  const busy = React.useRef(false);
+  const upd = (id: string, f: (d: Draft) => Draft) => { if (!busy.current) setDrafts(x => ({ ...x, [id]: f(x[id] ?? draftOf(id)) })); };
   const toggle = (id: string, kind: Kind, label: string) =>
     upd(id, d => ({ ...d, [kind]: d[kind].includes(label) ? d[kind].filter(l => l !== label) : [...d[kind], label] }));
 
   // "Apply to selected children": a phrase goes on everyone picked, or comes
   // off everyone if they all have it already.
   const applyToPicked = (kind: Kind, label: string) => {
+    if (busy.current) return;
     const ids = [...picked];
     const all = ids.every(id => draftOf(id)[kind].includes(label));
     setDrafts(x => {
@@ -84,7 +87,7 @@ function ClassFeedback() {
     });
   };
   const lastWeek = (previous.data ?? []).filter(p => byId.has(p.student_id) && ((p.going_well_chips?.length ?? 0) + (p.work_on_chips?.length ?? 0)) > 0);
-  const sameAsLastWeek = () => setDrafts(x => {
+  const sameAsLastWeek = () => !busy.current && setDrafts(x => {
     const next = { ...x };
     lastWeek.forEach(p => {
       const d = next[p.student_id] ?? draftOf(p.student_id);
@@ -102,13 +105,16 @@ function ClassFeedback() {
         work_on_note: d.work_on_note, work_on_resource_id: d.resource, replace: true,
         skills: Object.entries(d.skills).map(([skill_id, level]) => ({ skill_id, level })) }));
       const edits = changed.filter(([id]) => byId.get(id)?.shared).length;
+      // Exactly what is being sent: anything typed after this stays a draft (round 2: an edit was lost once).
+      const sent: Record<string, Draft> = Object.fromEntries(changed);
       return runAs(session, async q => {
         const [r] = await q<{ n: number }>(P.SAVE_CLASS_FEEDBACK, [sessionId, JSON.stringify(items), false]);
         if (share) await q(P.SHARE_SESSION_FEEDBACK, [sessionId]);
-        return { n: r?.n ?? 0, share, edits };
+        return { n: r?.n ?? 0, share, edits, sent };
       });
     },
-    onSuccess: async ({ n, share, edits }) => {
+    onSuccess: async ({ n, share, edits, sent }) => {
+      const drafts = sent;
       // Show the new state at once rather than "0 of 12" until a refetch lands (teachers D9).
       qc.setQueriesData<P.FeedbackKid[]>({ predicate: q => q.queryKey.includes('session-feedback') && q.queryKey.includes(sessionId) },
         old => old?.map(k => {
@@ -118,13 +124,16 @@ function ClassFeedback() {
             work_on_resource_id: d.resource, going_well: has ? (k.going_well ?? '…') : null, work_on: d.work_on.length || d.work_on_note ? (k.work_on ?? '…') : null } : k;
           return share && has ? { ...nk, shared: true } : nk;
         }));
-      setDrafts({}); setOpen(null); setPicked(new Set());
+      // Clear only the drafts that went; a change made meanwhile is kept.
+      setDrafts(x => Object.fromEntries(Object.entries(x).filter(([id, d]) => sent[id] !== d)));
+      setOpen(null); setPicked(new Set());
       setDone(share ? 'Families can see it now, and have been told.'
         : edits && edits === n ? `Saved. Families see the change, marked as edited.`
         : `${n - edits} draft${n - edits === 1 ? '' : 's'} saved. Nothing new is shared yet.${edits ? ` ${edits} shared note${edits === 1 ? '' : 's'} updated, marked as edited.` : ''}`);
       await qc.invalidateQueries({ queryKey: ['db'] });
     },
   });
+  busy.current = save.isPending;
   const drafted = (kids.data ?? []).filter(k => byId.has(k.student_id) && (k.going_well || k.work_on)).length;
   const shared = (kids.data ?? []).filter(k => byId.has(k.student_id) && k.shared).length;
   const unshared = (kids.data ?? []).filter(k => (k.going_well || k.work_on) && !k.shared).length;
@@ -151,6 +160,13 @@ function ClassFeedback() {
               <Beats value={drafted} max={list.length} label={`${drafted} of ${list.length} have feedback`} />
             </div>
 
+            <fieldset disabled={save.isPending} className="m-0 min-w-0 border-0 p-0">
+            <legend className="sr-only">Feedback for each child</legend>
+            {save.isPending && (
+              <p role="status" className="pt-3 text-[0.8125rem] font-semibold text-ink-2">
+                {save.variables ? 'Sharing with families…' : 'Saving…'} Editing waits until it has gone.
+              </p>
+            )}
             <div className="flex flex-wrap items-center gap-2 py-3">
               <Button size="sm" aria-pressed={allPicked} onClick={() => setPicked(allPicked ? new Set() : new Set(list.map(k => k.student_id)))}>
                 {allPicked ? <><X className="size-4" aria-hidden /> Clear selection</> : <><Check className="size-4" aria-hidden /> Select all {list.length}</>}
@@ -230,6 +246,7 @@ function ClassFeedback() {
                 );
               })}
             </ul>
+            </fieldset>
           </section>
         )}
 

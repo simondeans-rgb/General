@@ -18,7 +18,7 @@ import { SectionHead, StyleMark, ViewTabs } from '@/components/app/session-row';
 import * as H from '@/lib/repos/hub';
 import { storage, formatBytes, kindForFile, probeDuration } from '@/lib/storage';
 import { cn } from '@/lib/cn';
-import { ChildrenQuestion, consentKindFor, saveChildren } from '@/components/app/media-children';
+import { ChildrenQuestion, SavedConfirmation, consentKindFor, saveChildren } from '@/components/app/media-children';
 
 
 const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -173,7 +173,8 @@ function AddMaterial({ classId, className, isOffice, onClose }: {
   const [url, setUrl] = React.useState('');
   const [forStudents, setForStudents] = React.useState(true);
   const [forGuardians, setForGuardians] = React.useState(true);
-  const [done, setDone] = React.useState(false);
+  // What actually happened: shared, or kept for staff until consent (round 2 panel, U14).
+  const [done, setDone] = React.useState<{ id: string; status: H.ChildStatus | null } | null>(null);
   // Media of children (0057): asked for every video or photo upload.
   const [shows, setShows] = React.useState<boolean | null>(null);
   const [children, setChildren] = React.useState<string[]>([]);
@@ -220,10 +221,11 @@ function AddMaterial({ classId, className, isOffice, onClose }: {
           await storage.upload(file!, { q, resourceId: created.id, studioId: created.studio_id });
         }
         await q(H.ASSIGN_RESOURCE_TO_CLASS, [classId, created.id]);
-        return created.id;
+        const [status] = showsAnswer ? await q<H.ChildStatus>(H.RESOURCE_CHILD_STATUS, [created.id]) : [];
+        return { id: created.id, status: status ?? null };
       });
     },
-    onSuccess: () => { setDone(true); qc.invalidateQueries({ queryKey: ['db'] }); },
+    onSuccess: r => { setDone(r); qc.invalidateQueries({ queryKey: ['db'] }); },
   });
 
   const tooBig = !!file && file.size > storage.maxBytes;
@@ -239,9 +241,7 @@ function AddMaterial({ classId, className, isOffice, onClose }: {
         {done ? (
           <>
             <div className="px-5 py-6">
-              <h2 id="add-material-t" className="sr-only">Shared with {className}</h2>
-              <Notice word="Shared" tone="positive" title={`Shared with ${className}`}
-                detail="Everyone in the class finds it when they open this class from their timetable." />
+              <SavedConfirmation resourceId={done.id} status={done.status} className={className} titleId="add-material-t" />
             </div>
             <div className="flex border-t border-line px-5 py-3 pb-safe sm:justify-end">
               <Button className="w-full sm:w-auto" variant="primary" onClick={onClose}>Done</Button>
