@@ -74,7 +74,7 @@ export default function TeachToday() {
   const later = all.filter(s => !sameDay(s.starts_at, now) && s.id !== next?.id);
   // The most recent class of today that has finished: feedback while it's fresh.
   const finished = [...all].reverse().find(s => mine(s) && sameDay(s.starts_at, now) && new Date(s.ends_at) <= now) ?? null;
-  const shownIds = new Set(all.filter(mine).map(s => s.id));
+  const shownIds = new Set(all.filter(s => mine(s) && (!regOnly || sameDay(s.starts_at, now))).map(s => s.id));
   const clashing = (clashRows.data ?? []).filter(c => shownIds.has(c.session_id));
   const pairs = clashPairs(clashing);
   const firstClash = clashing[0];
@@ -392,17 +392,21 @@ function ReadyOffline({ today }: { today: T.TeachSession[] }) {
 function RegisterOnlySetting({ on }: { on: boolean }) {
   const { session } = useSession();
   const qc = useQueryClient();
+  // Shown at once; the database confirms (and the tab bar follows) a moment later.
+  const [value, setValue] = React.useState(on);
+  React.useEffect(() => setValue(on), [on]);
   const set = useMutation({
     mutationFn: (v: boolean) => runAs(session, q => q(T.SET_REGISTER_ONLY, [v])),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['db'] }),
+    onError: () => setValue(on),
   });
   if (session?.role !== 'teacher') return null;
   return (
     <section aria-labelledby="simple-h" className="border-t border-line pt-5">
       <h2 id="simple-h" className="section-title">Just registers</h2>
       <label className="mt-2 flex min-h-11 cursor-pointer items-start gap-3 text-[0.9062rem]">
-        <input type="checkbox" className="mt-1 size-[18px] accent-[var(--color-accent)]" checked={on}
-          disabled={set.isPending} onChange={e => set.mutate(e.target.checked)} />
+        <input type="checkbox" className="mt-1 size-[18px] accent-[var(--color-accent)]" checked={value}
+          disabled={set.isPending} onChange={e => { setValue(e.target.checked); set.mutate(e.target.checked); }} />
         <span>
           <span className="block font-medium">Show only today’s classes and their registers</span>
           <span className="block text-[0.8125rem] text-ink-3">Students, Messages, Material and Reports move under More. Only you see this choice.</span>

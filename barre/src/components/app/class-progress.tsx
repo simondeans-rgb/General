@@ -74,7 +74,7 @@ export function ClassProgress() {
               <caption className="sr-only">Skills for {chosen?.name}: children down the side, skills across</caption>
               <thead>
                 <tr>
-                  <th scope="col" className="sticky left-0 z-10 min-w-36 border-b-2 border-ink bg-surface pb-2 pr-3 text-left align-bottom"><span className="label">Child</span></th>
+                  <th scope="col" className="sticky left-0 z-10 min-w-36 border-b-2 border-ink bg-canvas pb-2 pr-3 text-left align-bottom"><span className="label">Child</span></th>
                   {m.skills.map(s => (
                     <th key={s.id} scope="col" className="min-w-24 max-w-32 border-b-2 border-ink px-2 pb-2 text-left align-bottom font-semibold leading-tight text-ink-2">{s.name}</th>
                   ))}
@@ -83,7 +83,7 @@ export function ClassProgress() {
               <tbody>
                 {m.kids.map(k => (
                   <tr key={k.id}>
-                    <th scope="row" className="sticky left-0 z-10 border-b border-line bg-surface py-2.5 pr-3 text-left font-semibold">{k.name}</th>
+                    <th scope="row" className="sticky left-0 z-10 border-b border-line bg-canvas py-2.5 pr-3 text-left font-semibold">{k.name}</th>
                     {m.skills.map(s => {
                       const c = m.cell(k.id, s.id);
                       const draft = !!c?.level && !c.published;
