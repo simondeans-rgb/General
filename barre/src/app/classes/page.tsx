@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { ChevronRight, Plus, Pencil, UserMinus, Copy, CalendarPlus, ArrowRightLeft } from 'lucide-react';
+import { ChevronRight, Plus, Pencil, UserMinus, Copy, CalendarPlus, ArrowRightLeft, ArrowUpRight } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection, KeyValue } from '@/components/app/detail-panel';
 import { useRows } from '@/lib/query';
@@ -59,6 +59,9 @@ function Classes() {
         {term && <Button size="sm" aria-label="Start next term" onClick={() => setRolling(true)}>
           <CalendarPlus className="size-4" aria-hidden /> <span className="hidden sm:inline">Start next term</span>
         </Button>}
+        {term && <Link href="/reenrolment" aria-label="Re-enrol and move up" className="inline-flex"><Button size="sm" tabIndex={-1}>
+          <ArrowUpRight className="size-4" aria-hidden /> <span className="hidden sm:inline">Re-enrol and move up</span>
+        </Button></Link>}
         <Button size="sm" variant="primary" onClick={() => setAdding(true)}>
           <Plus className="size-4" aria-hidden /> New class
         </Button>
