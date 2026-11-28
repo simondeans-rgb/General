@@ -215,7 +215,7 @@ export const MY_COMING_UP = `select * from app.my_coming_up()`;
 /** Two things booked at overlapping times for the same child (U8). */
 export type Clash = { student_id: string; child: string; a_title: string; a_kind: string; a_starts: string;
   b_title: string; b_kind: string; b_starts: string };
-export const MY_CLASHES = `select * from app.my_clashes($1::timestamptz, $2::timestamptz)`;
+export const MY_CLASHES = `select * from app.my_family_clashes($1::timestamptz, $2::timestamptz)`;
 
 /** What this guardian pays when the family splits its fees (UR-17). */
 export type BillingShare = { mode: 'one' | 'percent' | 'per_child'; my_pct: number | null; other_pct: number | null;

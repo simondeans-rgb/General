@@ -568,7 +568,7 @@ grant execute on function app.my_coming_up() to authenticated;
 -- Two things for the same child at overlapping times (a private lesson over
 -- a class, two schools' classes), within the window. Exams are a whole day
 -- and are not counted; nor is anything cancelled.
-create or replace function app.my_clashes(p_from timestamptz, p_to timestamptz)
+create or replace function app.my_family_clashes(p_from timestamptz, p_to timestamptz)
   returns table (student_id uuid, child text, a_title text, a_kind text, a_starts timestamptz,
                  b_title text, b_kind text, b_starts timestamptz)
   language sql stable security definer set search_path = public, app, pg_temp as $$
@@ -585,5 +585,5 @@ create or replace function app.my_clashes(p_from timestamptz, p_to timestamptz)
            or (b.item_kind = 'rehearsal' and a.item_kind in ('show', 'competition')))
    order by a.starts_at
 $$;
-revoke all on function app.my_clashes(timestamptz, timestamptz) from public;
-grant execute on function app.my_clashes(timestamptz, timestamptz) to authenticated;
+revoke all on function app.my_family_clashes(timestamptz, timestamptz) from public;
+grant execute on function app.my_family_clashes(timestamptz, timestamptz) to authenticated;
