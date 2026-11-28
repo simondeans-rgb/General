@@ -3,7 +3,6 @@
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { RecordSheet } from '@/components/app/record-sheet';
-import { FamilyConsents } from '@/components/app/consents';
 import { Button, Field, Input, Select, ErrorState } from '@/components/ui';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
@@ -18,14 +17,13 @@ type ChildLike = {
 /**
  * A parent keeps their child's details current from one place:
  *  · the name they go by, pronouns and school — changed straight away (0056);
- *  · photo and video consent — the same controls as on the page (UR-08);
+ *  · photo and video consent stays in one place, on the child's page (U4);
  *  · legal name, date of birth and medical details — asked of the office,
  *    because classes, exams, billing and the teacher's safety brief rely on them.
  */
 export function ChildDetailsSheet({ child, onClose }: { child: ChildLike; onClose: () => void }) {
   const { session } = useSession();
   const qc = useQueryClient();
-  const who = child.is_me ? 'you' : child.first_name;
   const [preferred, setPreferred] = React.useState(child.preferred_name ?? '');
   const [pronouns, setPronouns] = React.useState(child.pronouns ?? '');
   const [school, setSchool] = React.useState(child.school ?? '');
@@ -56,13 +54,9 @@ export function ChildDetailsSheet({ child, onClose }: { child: ChildLike; onClos
         )}
       </div>
 
-      <section aria-labelledby="cd-consent-h" className="mt-8">
-        <h3 id="cd-consent-h" className="section-title border-b-2 border-ink pb-2">Photos and video</h3>
-        <p className="pt-2 text-[0.8125rem] text-ink-3">Changes apply straight away, including on the teacher’s register.</p>
-        <dl className="divide-y divide-line text-[0.9062rem]">
-          <FamilyConsents studentId={child.id} name={who} />
-        </dl>
-      </section>
+      <p className="mt-6 text-[0.8125rem] text-ink-3">
+        Photo and video consent {child.is_me ? 'for you' : `for ${child.first_name}`} is under Consent on {child.is_me ? 'your' : 'their'} page. Changes there apply straight away.
+      </p>
 
       <AskOffice child={child} />
     </RecordSheet>

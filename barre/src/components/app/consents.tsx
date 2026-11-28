@@ -58,19 +58,34 @@ function History({ studentId }: { studentId: string }) {
   );
 }
 
-/** Parent: a row in the child's details with a choice per kind. Changes save at once. */
-export function FamilyConsents({ studentId, name }: { studentId: string; name: string }) {
+/** Parent: a row in the child's details with a choice per kind. Changes save at once.
+ *  `summary`: one line ("Photos: allowed · Video: not recorded") that opens
+ *  to the choices, so a page with several children is not a wall of buttons. */
+export function FamilyConsents({ studentId, name, summary = false }: { studentId: string; name: string; summary?: boolean }) {
   const rows = useRows<C.ConsentState>(['consents', studentId], C.CONSENTS, [studentId]);
   const [saved, setSaved] = React.useState<string | null>(null);
   const [history, setHistory] = React.useState(false);
+  const [open, setOpen] = React.useState(!summary);
   const set = useSetConsent(studentId);
   const L = useConsentLabels(studentId);
+  const word = (g: boolean | null) => (g === true ? 'allowed' : g === false ? 'not allowed' : 'not recorded');
+  const panel = React.useId();
   return (
     <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-4 py-3">
       <dt className="text-ink-3">Consent</dt>
       <dd className="min-w-0">
         {rows.isLoading && <Skeleton className="h-16" />}
-        <ul className="space-y-3">
+        {summary && rows.data && (
+          <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span className="min-w-0">{rows.data.map(c => `${L.label(c.kind)}: ${word(c.granted)}`).join(' · ')}</span>
+            <button type="button" aria-expanded={open} aria-controls={panel} onClick={() => setOpen(o => !o)}
+              className="min-h-[32px] text-[0.8125rem] font-semibold text-accent-text underline">
+              {open ? 'Done' : 'Change'}
+            </button>
+          </p>
+        )}
+        {open && <div id={panel}>
+        <ul className={cn('space-y-3', summary && 'mt-3 border-l-2 border-line pl-3')}>
           {rows.data?.map(c => (
             <li key={c.kind}>
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
@@ -106,6 +121,8 @@ export function FamilyConsents({ studentId, name }: { studentId: string; name: s
           {history ? 'Hide changes' : 'See changes'}
         </button>
         {history && <div className="mt-1"><History studentId={studentId} /></div>}
+        </div>}
+        {!open && saved && <p role="status" className="mt-1 text-[0.8125rem] text-positive">{saved}</p>}
       </dd>
     </div>
   );
