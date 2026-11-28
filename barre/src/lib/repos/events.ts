@@ -84,25 +84,27 @@ export const MY_TICKETS = `select b.id, t.event_id, t.name, b.quantity from tick
 
 /* ── Exams (migration 0042) ──────────────────────────────────────────────── */
 export type ExamSession = { id: string; board: string; title: string; exam_on: string; venue: string | null; entries_close_on: string | null;
-  entries: number; results: number; unbilled: number };
+  entries: number; results: number; unbilled: number; fee_minor?: number; event_id?: string | null };
 export const EXAM_SESSIONS = `
-select x.id, x.board, x.title, x.exam_on, x.venue, x.entries_close_on,
+select x.id, x.board, x.title, x.exam_on, x.venue, x.entries_close_on, x.fee_minor, x.event_id,
        count(e.*) filter (where e.status <> 'withdrawn')::int as entries,
        count(e.*) filter (where e.result is not null)::int as results,
        count(e.*) filter (where e.status <> 'withdrawn' and e.invoice_id is null and e.fee_minor > 0)::int as unbilled
   from exam_session x left join exam_entry e on e.session_id = x.id
  where x.deleted_at is null group by x.id order by (x.exam_on < current_date), x.exam_on`;
 export const ADD_EXAM_SESSION = `
-insert into exam_session (studio_id, board, title, exam_on, venue, entries_close_on)
-select m.studio_id, btrim($1), btrim($2), $3::date, nullif(btrim($4), ''), $5::date
+insert into exam_session (studio_id, board, title, exam_on, venue, entries_close_on, fee_minor)
+select m.studio_id, btrim($1), btrim($2), $3::date, nullif(btrim($4), ''), $5::date, coalesce($6::int, 0)
   from membership m where m.user_id = auth.uid() and m.role in ('owner','admin') and m.deleted_at is null and app.in_scope(m.studio_id) limit 1 returning id`;
 export type ExamEntry = { id: string; session_id: string; student_id: string; student: string; grade: string; fee_minor: number; status: string;
-  result: string | null; mark: number | null; board: string; exam_title: string; exam_on: string };
+  result: string | null; mark: number | null; board: string; exam_title: string; exam_on: string;
+  /* 0066: one exam model — entered → confirmed → sat → result. */
+  confirmed_at: string | null; sits_at: string | null; certificate_received: boolean; invoice_id: string | null; venue: string | null };
 const ENTRY_COLS = `e.id, e.session_id, e.student_id, s.first_name || ' ' || s.last_name as student, e.grade, e.fee_minor, e.status, e.result, e.mark,
-       x.board, x.title as exam_title, x.exam_on`;
+       x.board, x.title as exam_title, x.exam_on, e.confirmed_at, e.sits_at, e.certificate_received, e.invoice_id, x.venue`;
 export const EXAM_ENTRIES = `
 select ${ENTRY_COLS} from exam_entry e join exam_session x on x.id = e.session_id join student s on s.id = e.student_id
- where e.session_id = $1 order by e.grade, s.first_name`;
+ where e.session_id = $1 order by e.sits_at nulls last, e.grade, s.first_name`;
 export const STUDENT_EXAMS = `
 select ${ENTRY_COLS} from exam_entry e join exam_session x on x.id = e.session_id join student s on s.id = e.student_id
  where e.student_id = $1 and e.status <> 'withdrawn' order by x.exam_on desc`;
@@ -110,7 +112,7 @@ export const MY_EXAMS = `
 select ${ENTRY_COLS} from exam_entry e join exam_session x on x.id = e.session_id join student s on s.id = e.student_id
  where e.status <> 'withdrawn' order by x.exam_on desc`;
 export const UPCOMING_EXAMS = `select id, board, title, exam_on from exam_session where deleted_at is null and exam_on >= current_date order by exam_on`;
-export const ENTER_EXAM = `select app.enter_exam($1, $2, $3, $4) as id`;
+export const ENTER_EXAM = `select app.enter_exam($1, $2, $3, $4::int) as id`;
 export const EXAM_RESULT = `select app.exam_result($1, $2, $3)`;
 export const WITHDRAW_EXAM = `select app.withdraw_exam($1)`;
 export const BILL_EXAM = `select app.bill_exam($1) as n`;
