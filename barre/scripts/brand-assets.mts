@@ -11,7 +11,7 @@ import { createRequire } from 'node:module';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  BAR_W, LOCKUP, MARK_BARS, MARK_VIEWBOX, SMALL_MARK_BARS, SWAYVO, WORD_PATHS, WORD_STROKE, WORD_TRANSFORM,
+  BAR_W, ICON_BARS, ICON_BAR_W, ICON_MARK_SIZE, LOCKUP, MARK_BARS, MARK_VIEWBOX, SMALL_MARK_BARS, SWAYVO, WORD_PATHS, WORD_STROKE, WORD_TRANSFORM,
   logoColours, type LogoTone,
 } from '../src/lib/swayvo-logo';
 
@@ -28,8 +28,11 @@ const svg = (vb: string, body: string, title = 'Swayvo') =>
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}"><title>${title}</title>${body}</svg>\n`;
 const lockup = (tone: LogoTone, mono = false, bg?: string) => svg(`0 0 ${LOCKUP.width} ${LOCKUP.height}`,
   `${bg ? `<rect width="${LOCKUP.width}" height="${LOCKUP.height}" fill="${bg}"/>` : ''}<g transform="translate(${LOCKUP.markX} ${LOCKUP.markY}) scale(${LOCKUP.markScale})">${bars(tone, mono)}</g><g transform="translate(${LOCKUP.wordX} ${LOCKUP.wordY})">${word(tone)}</g>`);
+// The icon draws its own, more open count (ICON_BARS) so the bars stay apart at 180px.
+const iconBars = () => ICON_BARS.map(b =>
+  `<rect x="${b.x}" y="${b.y}" width="${ICON_BAR_W}" height="${b.h}" rx="0.8" fill="${b.downbeat ? SWAYVO.peach : SWAYVO.white}"/>`).join('');
 const icon = (radius: number, inset = 1) => svg('0 0 100 100',
-  `<rect width="100" height="100" rx="${radius}" fill="${SWAYVO.blue}"/><g transform="translate(${50 - 35 * 0.886 * inset} ${50 - 32 * 0.886 * inset}) scale(${0.886 * inset})">${bars('white')}</g>`, 'Swayvo app icon');
+  `<rect width="100" height="100" rx="${radius}" fill="${SWAYVO.blue}"/><g transform="translate(${50 - ICON_MARK_SIZE.width / 2 * 0.886 * inset} ${50 - ICON_MARK_SIZE.height / 2 * 0.886 * inset}) scale(${0.886 * inset})">${iconBars()}</g>`, 'Swayvo app icon');
 const favicon = svg('0 0 16 16', `<rect width="16" height="16" rx="3.5" fill="${SWAYVO.blue}"/>${SMALL_MARK_BARS.map(b =>
   `<rect x="${b.x + 0}" y="${b.y}" width="${b.w}" height="${b.h - 0}" fill="${b.downbeat ? SWAYVO.peach : SWAYVO.white}" transform="translate(0 0) scale(1)"/>`).join('')}`, 'Swayvo');
 

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Providers } from './providers';
+import { THEME_COLOR } from '@/lib/swayvo-logo';
 
 export const metadata: Metadata = {
   title: 'Swayvo',
@@ -17,7 +18,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#ffffff',
+  themeColor: THEME_COLOR,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
