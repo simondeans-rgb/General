@@ -7,18 +7,7 @@ import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import * as P from '@/lib/repos/progress';
 
-/**
- * Why a student may need support (UR-45), as plain words. Facts, not labels:
- * a run of absences, skills not started, medical notes, the office's note.
- */
-export function supportReasons(r: P.SupportRow | undefined, s: { has_medical_need?: boolean | null }): string[] {
-  const out: string[] = [];
-  if (r && r.absence_streak >= 2) out.push(`Absent the last ${r.absence_streak} classes`);
-  if (r && r.not_yet > 0) out.push(`${r.not_yet} skill${r.not_yet === 1 ? '' : 's'} not started`);
-  if (s.has_medical_need) out.push('Medical notes');
-  if (r?.support_note) out.push('Support note');
-  return out;
-}
+export { LOW_ATTENDANCE, supportReasons } from '@/lib/support';
 
 /** The office writes it; teachers read it. Families never see it. */
 export function SupportNote({ studentId, note, editable }: { studentId: string; note: string | null; editable: boolean }) {
