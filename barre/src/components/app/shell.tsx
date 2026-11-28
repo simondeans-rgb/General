@@ -275,11 +275,12 @@ export function Shell({
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 border-b border-line bg-surface">
-          <div className={cn('relative flex flex-wrap items-center gap-x-2 gap-y-2 px-4 lg:min-h-[68px] lg:flex-nowrap lg:gap-x-3 lg:px-8 lg:py-2.5',
-            compact ? 'py-1' : 'min-h-14 py-2.5')}>
-            {branded
-              ? <SchoolMark name={studio!.name} logo={logoFor(studio!)} className={cn('shrink-0 lg:hidden', compact ? 'size-[28px]' : 'size-8')} />
-              : <SwayvoIcon className={cn('shrink-0 lg:hidden', compact ? 'size-[28px]' : 'size-8')} />}
+          <div className={cn('relative flex flex-wrap items-center gap-y-2 lg:min-h-[68px] lg:flex-nowrap lg:gap-x-3 lg:px-8 lg:py-2.5',
+            compact ? 'gap-x-1 py-1 pl-4 pr-2 [&>button]:size-[44px]' : 'min-h-14 gap-x-2 px-4 py-2.5')}>
+            {/* At large text the title needs the room: the school's name stays at the foot of the page. */}
+            {!compact && (branded
+              ? <SchoolMark name={studio!.name} logo={logoFor(studio!)} className="size-8 shrink-0 lg:hidden" />
+              : <SwayvoIcon className="size-8 shrink-0 lg:hidden" />)}
             {/* At least 7rem for the title: with large text the buttons wrap to a second row instead. */}
             <div className={cn('min-w-0 flex-1', !compact && 'min-w-[min(100%,7rem)]')}>
               <h1 className="page-title line-clamp-2 break-words tracking-tight [hyphens:auto]">
@@ -331,7 +332,7 @@ export function Shell({
                     <CircleHelp className="size-[1.125rem]" aria-hidden /> About this screen
                   </button>
                 )}
-                {office && <AssistantLauncher />}
+                {office && <span className="[&_.hidden.sm\:flex]:flex [&_.sm\:hidden]:hidden"><AssistantLauncher /></span>}
                 {!office && <span className="inline-flex min-h-11 items-center gap-2"><PersonSwitcher /> <PersonSwitcher label="Switch person" /></span>}
               </div>
               {!noSchoolSwitch && <SchoolSwitcher className="-mx-3" />}
