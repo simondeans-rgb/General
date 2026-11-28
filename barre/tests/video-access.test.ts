@@ -197,7 +197,7 @@ describe('media showing named children reaches families only with consent', () =
 
   it('a teacher names only children they teach, on their own material, and cannot take back "shows children"', async () => {
     await asUser(USERS.teacherTap, async q => {
-      const [r] = await q(H.CREATE_RESOURCE, [SENIOR_TAP, 'video', 'Pairs', null, null, 'https://example.com/p', null, true, true, true, false]);
+      const [r] = await q(H.CREATE_RESOURCE, [SENIOR_TAP, 'video', 'Pairs', null, null, null, null, true, true, true, false]);
       await q(H.ASSIGN_RESOURCE_TO_CLASS, [SENIOR_TAP, r.id]);
       await q(H.ADD_RESOURCE_CHILDREN, [r.id, [IDRIS]]);
       expect(await q(`select student_id from resource_child where resource_id = $1`, [r.id])).toEqual([{ student_id: IDRIS }]);
