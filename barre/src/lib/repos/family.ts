@@ -232,7 +232,7 @@ export type MyPayment = { id: string; amount_minor: string; refunded_minor: stri
   succeeded_at: string; invoice_number: string | null; reference: string };
 export const MY_PAYMENTS = `
 select p.id, p.amount_minor, p.refunded_minor, p.method, p.succeeded_at, i.number as invoice_number,
-       'RCPT-' || upper(left(replace(p.id::text, '-', ''), 8)) as reference
+       'RCPT-' || upper(left(md5(p.id::text), 8)) as reference
   from payment p left join invoice i on i.id = p.invoice_id
  where p.deleted_at is null and p.succeeded_at is not null and p.amount_minor > 0
  order by p.succeeded_at desc`;
@@ -245,7 +245,7 @@ export type Receipt = { id: string; reference: string; amount_minor: string; ref
   succeeded_at: string; studio_name: string; family_name: string; payer: string | null;
   invoice_id: string | null; invoice_number: string | null; invoice_total: string | null; invoice_paid: string | null };
 export const MY_RECEIPT = `
-select p.id, 'RCPT-' || upper(left(replace(p.id::text, '-', ''), 8)) as reference,
+select p.id, 'RCPT-' || upper(left(md5(p.id::text), 8)) as reference,
        p.amount_minor, p.refunded_minor, p.method, p.succeeded_at,
        st.name as studio_name, regexp_replace(f.name, '\\s*\\(adult\\)\\s*$', '') as family_name,
        (select g.full_name from guardian g where g.user_id = auth.uid() and g.family_id = f.id and g.deleted_at is null limit 1) as payer,

@@ -518,7 +518,7 @@ begin
                  where s.deleted_at is null and s.id in (select app.guardian_student_ids())),
   ev as (
     select distinct on (k.id) k.id sid, k.first_name, 'show'::text kd, e.title, (e.starts_at at time zone st.timezone)::date d,
-           nullif(concat_ws(' · ', initcap(replace(e.kind::text, '_', ' ')), e.venue), '') det, null::text stt
+           e.venue det, e.kind::text stt
       from kids k join event_participant p on p.student_id = k.id and p.status = 'confirmed' and p.deleted_at is null
       join studio_event e on e.id = p.event_id and e.deleted_at is null and e.status = 'published'
            and e.parent_event_id is null and e.kind in ('show', 'competition', 'workshop') and e.starts_at >= now()
@@ -526,11 +526,19 @@ begin
      order by k.id, e.starts_at
   ),
   ex as (
-    select distinct on (k.id) k.id sid, k.first_name, 'exam'::text kd, x.board || ' ' || en.grade, x.exam_on,
-           x.venue, null::text
-      from kids k join exam_entry en on en.student_id = k.id and en.status = 'entered'
-      join exam_session x on x.id = en.session_id and x.deleted_at is null and x.exam_on >= current_date
-     order by k.id, x.exam_on
+    -- An exam entry, or an exam day the child has a confirmed place on.
+    select distinct on (y.sid) y.* from (
+      select k.id sid, k.first_name, 'exam'::text kd, x.board || ' ' || en.grade title, x.exam_on d,
+             x.venue det, null::text stt
+        from kids k join exam_entry en on en.student_id = k.id and en.status = 'entered'
+        join exam_session x on x.id = en.session_id and x.deleted_at is null and x.exam_on >= current_date
+      union all
+      select k.id, k.first_name, 'exam', e.title, (e.starts_at at time zone st.timezone)::date, e.venue, null
+        from kids k join event_participant p on p.student_id = k.id and p.status = 'confirmed' and p.deleted_at is null
+        join studio_event e on e.id = p.event_id and e.deleted_at is null and e.status = 'published'
+             and e.kind = 'exam' and e.starts_at >= now()
+        join studio st on st.id = e.studio_id) y
+     order by y.sid, y.d
   ),
   co as (
     select distinct on (k.id) k.id sid, k.first_name, 'costume'::text kd, ci.name || ' for ' || e.title,
@@ -569,7 +577,7 @@ create or replace function app.my_clashes(p_from timestamptz, p_to timestamptz)
      where x.status <> 'cancelled' and x.item_kind <> 'exam'
   )
   select a.student_id, a.child, a.title, a.item_kind, a.starts_at, b.title, b.item_kind, b.starts_at
-    from d a join d b on b.student_id = a.student_id and a.uid < b.uid
+    from d a join d b on b.student_id = a.student_id and (a.starts_at, a.uid) < (b.starts_at, b.uid)
      and a.starts_at < coalesce(b.ends_at, b.starts_at + interval '1 hour')
      and b.starts_at < coalesce(a.ends_at, a.starts_at + interval '1 hour')
      -- A show and its own rehearsal are one thing, not a clash.

@@ -266,6 +266,9 @@ describe('Home: Coming up per child, and clashes (U7, U8)', () => {
       const keys = rows.map((r: any) => `${r.student_id}|${r.kind}`);
       expect(new Set(keys).size).toBe(keys.length);
       expect(rows.some((r: any) => r.kind === 'fee')).toBe(true);
+      // An exam day Nia has a confirmed place on is her next exam; a competition is her next show.
+      expect(rows.find((r: any) => r.student_id === NIA && r.kind === 'exam')?.title).toMatch(/Grade 3 Ballet exam/i);
+      expect(rows.find((r: any) => r.student_id === NIA && r.kind === 'show')?.state).toBe('competition');
     });
     await asUser(null, async (q) => { expect(await q(F.MY_COMING_UP)).toHaveLength(0); });
   });
