@@ -10,9 +10,8 @@ import { useRows } from '@/lib/query';
 import { SectionHead } from '@/components/ui';
 import { Diary, MY_DIARY, diaryToCalendar, type DiaryItem } from '@/components/app/diary';
 import * as E from '@/lib/repos/events';
+import { examStatusText } from '@/components/app/exams';
 import { dateLong } from '@/lib/format';
-
-const RESULT: Record<string, string> = Object.fromEntries(E.RESULTS);
 
 /** A student's own diary (UR-26), with their exam entries and results. */
 export default function StudentTimetable() {
@@ -38,11 +37,10 @@ function MyExams() {
           <li key={e.id} className="flex flex-wrap items-baseline gap-x-3 py-3">
             <span className="min-w-0 flex-1">
               <span className="block font-semibold">{e.grade} · {e.board}</span>
-              <span className="block text-[0.8125rem] text-ink-3">{e.exam_title} · {dateLong(e.exam_on)}</span>
+              <span className="block text-[0.8125rem] text-ink-3">{e.exam_title} · {dateLong(e.exam_on)}{e.venue ? ` · ${e.venue}` : ''}</span>
             </span>
-            <span className="text-[0.875rem] font-semibold">
-              {e.result ? `${RESULT[e.result] ?? e.result}${e.mark != null ? ` · ${e.mark}` : ''}` : new Date(e.exam_on) >= new Date(new Date().toDateString()) ? 'Entered' : 'Result to come'}
-            </span>
+            {/* The same words as the family's child card (round 2 F2). */}
+            <span className="text-[0.875rem] font-semibold">{examStatusText(e)}</span>
           </li>
         ))}
       </ul>
