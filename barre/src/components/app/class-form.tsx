@@ -169,7 +169,7 @@ export function ClassForm({ classId, onClose }: { classId?: string; onClose: () 
           <>
             <div className="flex items-start gap-3 border-b border-line px-5 pb-3 pt-4">
               <div className="min-w-0 flex-1">
-                <h2 id="class-form-t" className="font-display text-[1.25rem] leading-tight">
+                <h2 id="class-form-t" className="text-[1.0625rem] font-semibold leading-tight tracking-[-0.01em]">
                   {editing ? 'Edit class' : 'New class'}
                 </h2>
                 <p className="mt-1 text-[0.8438rem] text-ink-3">
