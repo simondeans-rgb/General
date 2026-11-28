@@ -98,7 +98,7 @@ describe('the once-per-query policies (0068) show everyone exactly what the orig
         const differ = names.filter(t => now[t] !== before[t]).map(t => `${t}: now ${now[t]} / before ${before[t]}`);
         expect(differ).toEqual([]);
         // Sanity: the comparison is not vacuous.
-        if (who.name === 'owner') expect(Number(now.attendance_record.split(':')[0])).toBeGreaterThan(100);
+        if (who.name === 'owner') expect(Number(now.attendance_record!.split(':')[0])).toBeGreaterThan(100);
         if (who.name === 'public' || who.name === 'stranger') expect(now.attendance_record).toMatch(/^0:|^error: permission denied/);
       } finally {
         await c.query('rollback');
@@ -223,13 +223,13 @@ describe('My students and the register give the same rows and values as the per-
   it('the list functions tell nobody about a child they cannot see', async () => {
     const all = (await commitService(`select array_agg(id) as ids from student where studio_id = $1`, [STUDIO_ID]))[0].ids as string[];
     const familyA = (await commitService(`select array_agg(id) as ids from student where family_id = $1`, [uid(NS.family, 1)]))[0].ids as string[];
-    const fns = (ids: string[]) => [
+    const fns = (ids: string[]): [string, string, unknown[]][] => ([
       ['visible_student_ids', `select * from app.visible_student_ids($1::uuid[])`],
       ['term_attendance_pcts', `select * from app.term_attendance_pcts($1::uuid[])`],
       ['collection_briefs', `select * from app.collection_briefs($1::uuid[]) where brief <> '[]'::jsonb`],
       ['consents_now', `select * from app.consents_now($1::uuid[], 'photography')`],
       ['my_class_names', `select * from app.my_class_names($1::uuid[])`],
-    ].map(([n, sql]) => [n, sql, [ids]] as const);
+    ] as [string, string][]).map(([n, sql]) => [n, sql, [ids]]);
 
     // Another family's guardian learns nothing about family A's children.
     await asReader(USERS.guardianB, async q => {

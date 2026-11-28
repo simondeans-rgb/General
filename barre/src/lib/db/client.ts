@@ -369,3 +369,7 @@ async function readAsNow<T>(db: PGlite, session: Session, sql: string, params?: 
     return rows;
   });
 }
+
+/** The browser's build, read and write paths against a PGlite you supply:
+ *  for tests/demo-db.test.ts, which runs them in Node. */
+export const forTests = { install, readAsNow, runAsNow };
