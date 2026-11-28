@@ -12,6 +12,7 @@ import { Button, ErrorState, Input, Select, type Tone } from '@/components/ui';
 import * as E from '@/lib/repos/events';
 import { dateLong, money, time } from '@/lib/format';
 import { cn } from '@/lib/cn';
+import { documentFontFaces, programmeHtml, type BrandSchool } from '@/lib/branded-print';
 
 function useWrite() {
   const { session } = useSession();
@@ -137,22 +138,33 @@ function RehearsalRegister({ rehearsal, onClose }: { rehearsal: E.Rehearsal; onC
   );
 }
 
-/** A printable programme. Children without photography consent are counted, not named. */
+/**
+ * A printable programme, in the school's identity: its name, logo and colour,
+ * Archivo running order and Inter details, "powered by swayvo" at the foot
+ * (round-2 review, F7). Children without photography consent are counted, not named.
+ */
 export function ProgrammeButton({ event }: { event: { id: string; title: string; starts_at: string; venue: string | null } }) {
   const { session } = useSession();
   const print = async () => {
-    const rows = await readAs<E.ProgrammeRow>(session, E.PROGRAMME, [event.id]);
-    const esc = (s: string) => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
+    // Open the window first, inside the click, so a pop-up blocker allows it.
     const w = window.open('', '_blank');
     if (!w) return;
-    w.document.write(`<!doctype html><meta charset="utf-8"><title>${esc(event.title)} — programme</title>
-<style>body{font:15px/1.5 Georgia,serif;max-width:640px;margin:40px auto;padding:0 16px;color:#14211e}h1{font-weight:400;font-size:32px;margin:0}
-.sub{color:#5b645e;margin-bottom:28px}ol{padding:0;list-style:none}li{border-top:1px solid #e4dbcc;padding:12px 0}
-.n{display:inline-block;width:2em;color:#5b645e}.d{color:#4e5a55;font-size:14px;margin-left:2em}</style>
-<h1>${esc(event.title)}</h1><p class="sub">${esc(dateLong(event.starts_at))} · ${esc(time(event.starts_at))}${event.venue ? ' · ' + esc(event.venue) : ''}</p>
-<ol>${rows.map((r, i) => `<li><span class="n">${i + 1}.</span><b>${esc(r.routine)}</b>${r.class_name ? ' — ' + esc(r.class_name) : ''}
-<div class="d">${[r.dancers ? esc(r.dancers) : '', r.unnamed ? `${r.dancers ? 'and ' : ''}${r.unnamed} dancer${r.unnamed === 1 ? '' : 's'}` : ''].filter(Boolean).join(' ')}</div></li>`).join('')}</ol>
-<script>window.print()</script>`);
+    let rows: E.ProgrammeRow[], school: BrandSchool[];
+    try {
+      [rows, school] = await Promise.all([
+        readAs<E.ProgrammeRow>(session, E.PROGRAMME, [event.id]),
+        readAs<BrandSchool>(session, `select name, brand_colour, logo_url from studio order by created_at limit 1`),
+      ]);
+    } catch {
+      w.document.write('<!doctype html><meta charset="utf-8"><title>Programme</title><p style="font:16px sans-serif;padding:24px">The programme could not be loaded. Close this window and try again.</p>');
+      w.document.close();
+      return;
+    }
+    w.document.write(programmeHtml({
+      school: school[0] ?? { name: 'Programme' },
+      event: { title: event.title, when: `${dateLong(event.starts_at)} · ${time(event.starts_at)}`, venue: event.venue },
+      rows, fontFaces: documentFontFaces(),
+    }));
     w.document.close();
   };
   return <Button size="sm" variant="ghost" onClick={print}><Printer className="size-4" aria-hidden /> Print programme</Button>;
