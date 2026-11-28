@@ -69,7 +69,7 @@ export function ClassProgress() {
             Each level is a count of eight: Developing three, Secure six, Mastered all eight. Read only; change a level from the child.
             {drafts > 0 && ` ${drafts} level${drafts === 1 ? ' is' : 's are'} not shared with families yet, shown faded.`}
           </p>
-          <div className="-mx-4 overflow-x-auto px-4 lg:mx-0 lg:px-0">
+          <div className="-mx-4 overflow-x-auto px-4 lg:mx-0 lg:px-0" tabIndex={0} role="region" aria-label={`Skills for ${chosen?.name ?? 'the class'}, scrolls sideways`}>
             <table className="border-collapse text-[0.8125rem]">
               <caption className="sr-only">Skills for {chosen?.name}: children down the side, skills across</caption>
               <thead>
