@@ -1,11 +1,16 @@
 /* Safeguarding, staff checks and retention (migration 0030). */
 export type Concern = { id: string; student_name: string | null; category: string; summary: string; immediate_risk: boolean;
   status: 'open' | 'monitoring' | 'referred' | 'closed'; raised_by: string; created_at: string; actions: number;
-  subject_kind: 'child' | 'adult' | 'staff'; subject_name: string; allegation: boolean; student_id: string | null };
+  subject_kind: 'child' | 'adult' | 'staff'; subject_name: string; allegation: boolean; student_id: string | null;
+  /** Children involved in a concern about an adult or staff (0065). */
+  children: string | null; routing_note: string | null };
 export const CATEGORIES: [string, string][] = [['wellbeing', 'Wellbeing'], ['injury', 'Injury or mark'], ['disclosure', 'Something they told me'],
   ['behaviour', 'Behaviour'], ['attendance', 'Attendance pattern'], ['online', 'Online'], ['allegation', 'Allegation about an adult'], ['other', 'Other']];
-export const MY_STUDIO = `select s.id, s.dsl_user_id, app.is_safeguarding_lead(s.id) as can_read from studio s
+export const MY_STUDIO = `select s.id, s.dsl_user_id, s.dsl_deputy_user_id, s.safeguarding_outside_route, s.block_child_media_links,
+  app.is_safeguarding_lead(s.id) as can_read from studio s
   where s.id in (select app.studio_ids()) and s.deleted_at is null limit 1`;
+export type MyStudio = { id: string; dsl_user_id: string | null; dsl_deputy_user_id: string | null;
+  safeguarding_outside_route: string | null; block_child_media_links: boolean; can_read: boolean };
 export const RAISE = `select app.raise_concern($1, $2, $3, $4) as id`;
 /** $1 studio, $2 the page opening — re-reading after an action is not a new look (UR-28). */
 export const LOG = `select * from app.safeguarding_log($1, $2)`;
@@ -14,7 +19,59 @@ export const ACTIONS = `select * from app.safeguarding_actions($1, $2)`;
 /** Office and lead raise about a child, an adult or a member of staff (UR-09).
  *  $1 studio, $2 subject kind, $3 student, $4 staff member, $5 who (free text), $6 category, $7 summary, $8 urgent. */
 export const RAISE_ABOUT = `select app.raise_concern_about($1, $2, $3, $4, $5, $6, $7, $8) as id`;
-export const STAFF_PICK = `select id, display_name from staff_member where deleted_at is null order by display_name`;
+/** Everyone on the staff, office and owners included (0065). */
+export type StaffPerson = { staff_id: string | null; user_id: string | null; name: string; role: string };
+export const STAFF_PICK = `select * from app.safeguarding_staff($1)`;
+
+/* Routing and the receipt (0065) */
+export type Person = { user_id: string; name: string };
+export type Routing = { lead: Person | null; deputy: Person | null; owners: Person[]; outside_route: string | null };
+export const ROUTING = `select app.concern_routing($1) as r`;
+export type Receipt = { id: string; told: { name: string; part: 'lead' | 'deputy' | 'owner' }[];
+  not_told: { name: string; part: string; why: string }[]; no_lead: boolean; nobody: boolean; outside_route: string | null };
+/** $1 studio, $2 subject kind, $3 student, $4 staff record, $5 staff login, $6 who (free text), $7 category, $8 summary,
+ *  $9 urgent, $10 children involved (uuid[]). */
+export const RECORD = `select app.record_concern($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::uuid[]) as r`;
+export const SET_DEPUTY = `select app.set_safeguarding_deputy($1)`;
+export const SET_OUTSIDE_ROUTE = `select app.set_safeguarding_outside_route($1, $2)`;
+/** When nobody can be told, or as a second route: always shown with the school's own contact. */
+export const NATIONAL_ROUTE = 'If you cannot reach your local authority designated officer (LADO), the NSPCC whistleblowing advice line is 0800 028 0285. If a child is in immediate danger, call 999.';
+
+/* Children involved (0065) */
+export type ChildConcern = { concern_id: string; created_at: string; subject_kind: string; subject_name: string;
+  category: string; status: string; allegation: boolean; linked: boolean };
+export const CHILD_CONCERNS = `select * from app.child_concerns($1)`;
+export const LINK_CHILD = `select app.link_concern_child($1, $2, $3)`;
+
+/* Referrals and the chronology (F13) */
+export type Action = { note: string; status_to: string | null; by_name: string; at: string;
+  referred_to: string | null; referred_on: string | null; referral_ref: string | null; outcome: string | null };
+/** $1 concern, $2 note, $3 status, $4 referred to, $5 date, $6 their reference, $7 outcome. */
+export const RECORD_ACTION = `select app.record_concern_action($1, $2, $3, $4, $5::date, $6, $7)`;
+export type Chronology = { id: string; reference: string; school: string; prepared_at: string; prepared_by: string;
+  created_at: string; status: string; category: string; immediate_risk: boolean; allegation: boolean; subject_kind: string;
+  subject: string; children: string[]; raised_by: string | null; summary: string; routing_note: string | null;
+  hold: { reason: string; set_at: string; review_on: string } | null;
+  actions: { at: string; by: string | null; note: string; status_to: string | null; referred_to: string | null;
+    referred_on: string | null; referral_ref: string | null; outcome: string | null }[] };
+/** $1 concern, $2 'view' | 'print' | 'export'. Logged every time. */
+export const CHRONOLOGY = `select app.concern_chronology($1, $2) as c`;
+
+/* Hold reviews (0065) */
+export type HoldReview = { hold_kind: 'child' | 'concern'; id: string; name: string; reason: string; set_at: string; review_on: string; due: boolean };
+export const HOLD_REVIEWS = `select * from app.hold_reviews($1)`;
+export const REVIEW_HOLD = `select app.review_hold($1, $2, $3::date)`;
+
+/* Media of children on outside links (0065) */
+export type ChildMediaLink = { id: string; title: string; kind: string; url: string; added_by: string; created_at: string; hidden: boolean };
+export const CHILD_MEDIA_LINKS = `select * from app.child_media_links($1)`;
+export const SET_BLOCK_LINKS = `select app.set_block_child_media_links($1, $2)`;
+/** For Today: what the safeguarding setup still needs, for the owner, the lead and the office. */
+export const SAFEGUARDING_TODAY = `select s.id,
+  app.is_admin(s.id) and (app.concern_routing(s.id) ->> 'lead') is null as no_lead,
+  (select count(*)::int from app.child_media_links(s.id)) as media_links,
+  (select count(*)::int from app.hold_reviews(s.id) h where h.due) as holds_due
+  from studio s where s.id in (select app.studio_ids()) and s.deleted_at is null limit 1`;
 export const CHILD_PICK = `select id, first_name || ' ' || last_name as name from student where deleted_at is null order by last_name, first_name`;
 export const LEAD_CHILDREN = `select * from app.safeguarding_students($1)`;
 
@@ -39,7 +96,7 @@ export const STREAK_ALERT = 3;
 export const EXPORT = `select app.safeguarding_export($1) as data`;
 
 /* Staff check gaps (UR-41): owner, admin and lead. */
-export type CheckGap = { staff_id: string; name: string; dbs_expires: string | null; issue: string | null; due: string | null };
+export type CheckGap = { staff_id: string | null; name: string; dbs_expires: string | null; issue: string | null; due: string | null; user_id: string | null };
 export const CHECK_SUMMARY = `select * from app.staff_check_summary($1)`;
 export const CHECK_GAPS_TODAY = `select g.* from studio s, app.staff_check_summary(s.id) g
   where s.id in (select app.studio_ids()) and s.deleted_at is null and app.is_safeguarding_lead(s.id) and g.issue is not null`;
@@ -50,8 +107,12 @@ export const STAFF_LOGINS = `select m.user_id, u.full_name, m.role::text as role
 export const SET_LEAD = `select app.set_safeguarding_lead($1)`;
 
 export type Check = { id: string; staff_id: string; kind: string; reference: string | null; checked_on: string; expires_on: string | null };
-export const CHECKS = `select id, staff_id, kind, reference, checked_on, expires_on from staff_check where staff_id = $1 order by checked_on desc`;
-export const ADD_CHECK = `insert into staff_check (staff_id, kind, reference, checked_on, expires_on) values ($1, $2, nullif(btrim($3), ''), $4::date, $5::date) returning id`;
+/** $1 staff record (may be null), $2 login (may be null): checks under either (0065). */
+export const CHECKS = `select id, staff_id, kind, reference, checked_on, expires_on from staff_check
+  where deleted_at is null and (staff_id = $1::uuid or ($2::uuid is not null and user_id = $2::uuid)) order by checked_on desc`;
+/** $1 staff record or null, $2 login or null, $3 school (needed for a login-only person), then kind, reference, dates. */
+export const ADD_CHECK = `insert into staff_check (staff_id, user_id, studio_id, kind, reference, checked_on, expires_on)
+  values ($1::uuid, case when $1::uuid is null then $2::uuid end, $3::uuid, $4, nullif(btrim($5), ''), $6::date, $7::date) returning id`;
 export const CHECK_LABEL: Record<string, string> = { dbs: 'DBS', safeguarding_training: 'Safeguarding training', first_aid: 'First aid', other: 'Other' };
 
 export type Retention = { medical_months: number; personal_months: number; financial_months: number; prospect_days: number; concern_months: number | null;

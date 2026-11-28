@@ -1,9 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import Link from 'next/link';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { X } from 'lucide-react';
 import { RecordSheet } from '@/components/app/record-sheet';
-import { Button, ErrorState, Field, Input, Select, Skeleton } from '@/components/ui';
+import { Button, ErrorState, Field, Input, Notice, Select, Skeleton } from '@/components/ui';
+import { cn } from '@/lib/cn';
 import { SettingsSection as Card, SettingsHead as CardHeader } from './progress-settings';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
@@ -11,47 +14,103 @@ import { useSession } from '@/lib/auth/session';
 import * as G from '@/lib/repos/safeguarding';
 import { dateShort, time } from '@/lib/format';
 
+/** The school's route outside the app, and the national line, in plain words (F1). */
+export function OutsideRoute({ route, className }: { route: string | null | undefined; className?: string }) {
+  return (
+    <div className={cn('text-[0.875rem]', className)}>
+      {route
+        ? <p className="whitespace-pre-wrap"><span className="font-semibold">Outside the school: </span>{route}</p>
+        : <p><span className="font-semibold">Outside the school: </span>your local authority designated officer (LADO). Search your council’s website for “LADO”. The school has not recorded the contact yet.</p>}
+      <p className="mt-1 text-[0.8125rem] text-ink-3">{G.NATIONAL_ROUTE}</p>
+    </div>
+  );
+}
+
+const PART: Record<string, string> = { lead: 'safeguarding lead', deputy: 'deputy safeguarding lead', owner: 'owner' };
+
+/** The receipt says exactly who was told, from what the database did (N-01, N-03). */
+function ConcernReceipt({ r, at, onClose }: { r: G.Receipt; at: Date; onClose: () => void }) {
+  return (
+    <RecordSheet title="Concern recorded" onClose={onClose} onSave={onClose} saveLabel="Done">
+      {r.nobody ? (
+        <Notice word="Act today" tone="critical" title="Nobody in the school has been told"
+          detail="It is about the only person who could read it here, and no other safeguarding lead is named. It is saved, and a lead named later will be told. Report it outside the app today." />
+      ) : (
+        <p className="text-sm">
+          <span className="font-semibold">Told: </span>{r.told.map(t => `${t.name} (${PART[t.part] ?? t.part})`).join(', ')}.
+          {r.no_lead && ' Your school has not named a safeguarding lead, so it went to the owner.'}
+        </p>
+      )}
+      {r.not_told.length > 0 && (
+        <p className="text-sm"><span className="font-semibold">Not told, because it is about them: </span>{r.not_told.map(t => `${t.name} (${PART[t.part] ?? t.part})`).join(', ')}.</p>
+      )}
+      <p className="text-[0.875rem] text-ink-2">You will not see it in the app again. That is deliberate. If you are worried it has not been acted on, contact the LADO directly.</p>
+      <OutsideRoute route={r.outside_route} className="border-l-2 border-ink py-1 pl-3" />
+      <p className="text-[0.8438rem] text-ink-3">Reference {r.id.slice(0, 8).toUpperCase()} · {dateShort(at)} {time(at)}</p>
+    </RecordSheet>
+  );
+}
+
 /**
  * Any member of staff raises a concern (R-033), from the teacher's student
  * list, the office student sheet, the staff record or /safeguarding (UR-09).
  * The subject can be fixed by the caller (a child or a member of staff) or
- * chosen here: a child, another adult, or a member of staff.
+ * chosen here: a child, another adult, or anyone on the staff (N-02). The
+ * form says before sending who will read it, and the outside route (F1).
  */
 export function RaiseConcernSheet({ student, staff, onClose }: {
   student?: { id: string; first_name: string }; staff?: { id: string; name: string }; onClose: () => void;
 }) {
   const { session } = useSession();
+  const qc = useQueryClient();
   const fixed = student ? 'child' : staff ? 'staff' : null;
   const [kind, setKind] = React.useState<'child' | 'adult' | 'staff'>(fixed ?? 'child');
   const [childId, setChildId] = React.useState(student?.id ?? '');
-  const [staffId, setStaffId] = React.useState(staff?.id ?? '');
+  // A staff record id, or "u:" + a login for office staff and owners with no record.
+  const [staffKey, setStaffKey] = React.useState(staff?.id ?? '');
   const [who, setWho] = React.useState('');
   const [category, setCategory] = React.useState(staff ? 'allegation' : 'wellbeing');
   const [summary, setSummary] = React.useState('');
   const [urgent, setUrgent] = React.useState(false);
-  const [sent, setSent] = React.useState<{ id: string; at: Date } | null>(null);
-  const me = useRows<{ id: string }>(['sg-me'], G.MY_STUDIO).data?.[0];
-  const children = useRows<{ id: string; name: string }>(['sg-child-pick'], G.CHILD_PICK, [], { enabled: !fixed && kind === 'child' });
-  const staffList = useRows<{ id: string; display_name: string }>(['sg-staff-pick'], G.STAFF_PICK, [], { enabled: !fixed && kind === 'staff' });
+  const [involved, setInvolved] = React.useState<string[]>([]);
+  const [sent, setSent] = React.useState<{ r: G.Receipt; at: Date } | null>(null);
+  const me = useRows<G.MyStudio>(['sg-me'], G.MY_STUDIO).data?.[0];
+  const routing = useRows<{ r: G.Routing | null }>(['sg-routing', me?.id], G.ROUTING, [me?.id], { enabled: !!me }).data?.[0]?.r ?? null;
+  const children = useRows<{ id: string; name: string }>(['sg-child-pick'], G.CHILD_PICK, [], { enabled: kind !== 'child' || !fixed });
+  const staffList = useRows<G.StaffPerson>(['sg-staff-pick', me?.id], G.STAFF_PICK, [me?.id], { enabled: !!me && (kind === 'staff') });
+  const keyOf = (p: G.StaffPerson) => p.staff_id ?? `u:${p.user_id}`;
+  const subject = staffList.data?.find(p => keyOf(p) === staffKey) ?? null;
   const raise = useMutation({
-    mutationFn: async () => (await runAs(session, q => q<{ id: string }>(G.RAISE_ABOUT,
-      [me?.id ?? null, kind, kind === 'child' ? childId : null, kind === 'staff' ? staffId : null, kind === 'adult' ? who : null,
-       category, summary, urgent])))[0]!.id,
-    onSuccess: id => setSent({ id, at: new Date() }),
+    mutationFn: async () => (await runAs(session, q => q<{ r: G.Receipt }>(G.RECORD,
+      [me?.id ?? null, kind, kind === 'child' ? childId : null,
+       kind === 'staff' && !staffKey.startsWith('u:') ? staffKey : null,
+       kind === 'staff' && staffKey.startsWith('u:') ? staffKey.slice(2) : null,
+       kind === 'adult' ? who : null, category, summary, urgent, kind === 'child' ? null : involved])))[0]!.r,
+    // A reader raising from the log sees it there (same opening: not a new look).
+    onSuccess: r => { setSent({ r, at: new Date() }); qc.invalidateQueries({ queryKey: ['sg-log'] }); },
   });
-  if (sent) return <RecordSheet title="Concern recorded" onClose={onClose} onSave={onClose} saveLabel="Done">
-    <p className="text-sm text-ink-2">The safeguarding lead and the owner have been told. You will not see it in the app again — that is deliberate. If a child is in immediate danger, call 999.</p>
-    <p className="text-[0.8438rem] text-ink-3">Reference {sent.id.slice(0, 8).toUpperCase()} · {dateShort(sent.at)} {time(sent.at)}</p>
-  </RecordSheet>;
-  const subjectOk = kind === 'child' ? !!childId : kind === 'staff' ? !!staffId : who.trim().length >= 2;
+  if (sent) return <ConcernReceipt r={sent.r} at={sent.at} onClose={onClose} />;
+
+  // Who will read it, worked out the same way the database does.
+  const subjectUser = kind === 'staff' ? subject?.user_id ?? null : null;
+  const readers = routing ? [routing.lead, routing.deputy, ...routing.owners].filter((p): p is G.Person => !!p && p.user_id !== subjectUser) : [];
+  const readerNames = [...new Map(readers.map(p => [p.user_id, p.name])).values()];
+  const noLead = !!routing && !routing.lead && !routing.deputy;
+  const nobody = !!routing && readerNames.length === 0;
+  const subjectOk = kind === 'child' ? !!childId : kind === 'staff' ? !!staffKey : who.trim().length >= 2;
   const about = student ? `About ${student.first_name}` : staff ? `About ${staff.name}` : undefined;
   return (
     <RecordSheet title="Raise a safeguarding concern" subtitle={about} onClose={onClose}
-      saving={raise.isPending} error={raise.error} canSave={subjectOk && summary.trim().length >= 10} saveLabel="Send to the safeguarding lead"
+      saving={raise.isPending} error={raise.error} canSave={!!me && subjectOk && summary.trim().length >= 10}
+      saveLabel={nobody ? 'Save the record' : noLead ? 'Send to the owner' : 'Send to the safeguarding lead'}
       onSave={() => raise.mutate()}>
       <p className="border-l-2 border-critical py-1 pl-3 text-[0.875rem]">
         <strong className="font-semibold text-critical">If a child is in immediate danger, call 999 first.</strong> Write what you saw or were told, in their words where you can. Do not investigate.
       </p>
+      {noLead && !nobody && (
+        <Notice word="No lead" tone="caution" title="Your school has not named a safeguarding lead"
+          detail={<>This goes to {readerNames.join(' and ')} (owner). If it is about them, or you are worried it will not be acted on, report it outside the school as well.</>} />
+      )}
       {!fixed && (
         <fieldset>
           <legend className="mb-1.5 text-sm font-medium">Who is it about</legend>
@@ -75,10 +134,10 @@ export function RaiseConcernSheet({ student, staff, onClose }: {
         </Field>
       )}
       {!fixed && kind === 'staff' && (
-        <Field label="Member of staff" htmlFor="rc-staff" required>
-          <Select id="rc-staff" value={staffId} onChange={e => setStaffId(e.target.value)}>
+        <Field label="Member of staff" htmlFor="rc-staff" required hint="Anyone on the staff: teachers, the office and the owner.">
+          <Select id="rc-staff" value={staffKey} onChange={e => setStaffKey(e.target.value)}>
             <option value="">Choose</option>
-            {staffList.data?.map(c => <option key={c.id} value={c.id}>{c.display_name}</option>)}
+            {staffList.data?.map(p => <option key={keyOf(p)} value={keyOf(p)}>{p.name}{p.role === 'owner' ? ' (owner)' : p.role === 'admin' ? ' (office)' : ''}</option>)}
           </Select>
         </Field>
       )}
@@ -87,18 +146,29 @@ export function RaiseConcernSheet({ student, staff, onClose }: {
           <Input id="rc-who" value={who} onChange={e => setWho(e.target.value)} />
         </Field>
       )}
-      {kind === 'staff' && (
+      {kind === 'staff' && !nobody && (
         <p className="text-[0.8438rem] text-ink-2">
-          This is an allegation. Only the safeguarding lead and the owner see it, never the person it is about. The lead follows the
-          local authority designated officer (LADO) process.
+          This is an allegation. {readerNames.length ? `${readerNames.join(', ')} will read it` : 'The safeguarding lead and the owner read it'}, never the person it is about.
+          The lead follows the local authority designated officer (LADO) process.
         </p>
+      )}
+      {nobody && (
+        <div className="space-y-2">
+          <Notice word="Act today" tone="critical" title="Nobody in the school can be told about this"
+            detail="It is about the only person who reads concerns here. It will be saved, and a lead named later will be told, but you must report it outside the school today." />
+          <OutsideRoute route={routing?.outside_route} className="border-l-2 border-critical py-1 pl-3" />
+        </div>
+      )}
+      {noLead && !nobody && <OutsideRoute route={routing?.outside_route} className="border-l-2 border-line-strong py-1 pl-3" />}
+      {kind !== 'child' && (
+        <ChildrenInvolved options={children.data ?? []} value={involved} onChange={setInvolved} />
       )}
       <Field label="What kind of concern" htmlFor="rc-c">
         <Select id="rc-c" value={category} onChange={e => setCategory(e.target.value)}>
           {G.CATEGORIES.filter(([k]) => kind === 'staff' || k !== 'allegation').map(([k, l]) => <option key={k} value={k}>{l}</option>)}
         </Select>
       </Field>
-      <Field label="What happened" htmlFor="rc-s" required hint="Facts, dates and times. Only the lead and the owner will read this.">
+      <Field label="What happened" htmlFor="rc-s" required hint={`Facts, dates and times. Only ${readerNames.length ? readerNames.join(', ') : 'the lead and the owner'} will read this.`}>
         <textarea id="rc-s" rows={6} value={summary} onChange={e => setSummary(e.target.value)}
           className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
       </Field>
@@ -110,14 +180,102 @@ export function RaiseConcernSheet({ student, staff, onClose }: {
   );
 }
 
-/** Staff checks (R-035). The owner records them; the office and the lead read them (UR-41). */
-export function StaffChecks({ staffId, readOnly = false }: { staffId: string; readOnly?: boolean }) {
+/** Children involved in a concern about an adult or a member of staff (N-04). */
+function ChildrenInvolved({ options, value, onChange }: { options: { id: string; name: string }[]; value: string[]; onChange: (v: string[]) => void }) {
+  return (
+    <div>
+      <Field label="Children involved" htmlFor="rc-kids" hint="Optional. Only the lead and the owner see the link, on each child’s record.">
+        <Select id="rc-kids" value="" onChange={e => { if (e.target.value && !value.includes(e.target.value)) onChange([...value, e.target.value]); }}>
+          <option value="">Add a child</option>
+          {options.filter(o => !value.includes(o.id)).map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+        </Select>
+      </Field>
+      {value.length > 0 && (
+        <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[0.875rem]">
+          {value.map(id => (
+            <li key={id} className="flex items-center gap-1">
+              {options.find(o => o.id === id)?.name ?? 'Child'}
+              <Button size="sm" variant="ghost" aria-label={`Remove ${options.find(o => o.id === id)?.name ?? 'child'}`} onClick={() => onChange(value.filter(v => v !== id))}>
+                <X className="size-3.5" aria-hidden />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** On a child's record: the concerns they are part of, for the lead and the owner only (N-04).
+ *  Renders nothing for anyone else; each look is logged. */
+export function ChildConcernLinks({ studentId }: { studentId: string }) {
+  const { session } = useSession();
+  const me = useRows<G.MyStudio>(['sg-me'], G.MY_STUDIO).data?.[0];
+  const rows = useQuery({ queryKey: ['sg-child-concerns', studentId], enabled: !!me?.can_read, staleTime: Infinity,
+    queryFn: () => runAs(session, q => q<G.ChildConcern>(G.CHILD_CONCERNS, [studentId])) });
+  if (!me?.can_read || !rows.data?.length) return null;
+  return (
+    <div className="border-l-2 border-critical py-1 pl-3 text-[0.875rem]">
+      <p className="font-semibold">Safeguarding: {rows.data.length} concern{rows.data.length === 1 ? '' : 's'}</p>
+      <ul className="mt-0.5 text-[0.8125rem] text-ink-2">
+        {rows.data.map(c => (
+          <li key={c.concern_id}>
+            {dateShort(c.created_at)} · {c.linked ? `named in a concern about ${c.subject_name}` : 'about this child'} · {c.status}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-0.5 text-[0.75rem] text-ink-3">Only you and the {me.dsl_user_id ? 'lead or owner' : 'owner'} see this. <Link href="/safeguarding" className="font-semibold text-accent-text hover:underline">Open the log</Link></p>
+    </div>
+  );
+}
+
+/** Open a self-contained page for printing (chronology, consent list). */
+export function printPage(title: string, body: string) {
+  const w = window.open('', '_blank');
+  if (!w) return false;
+  w.document.write(`<!doctype html><meta charset="utf-8"><title>${esc(title)}</title>
+<style>body{font:14px/1.5 Inter,Arial,sans-serif;max-width:720px;margin:32px auto;padding:0 16px;color:#111}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:15px;margin:24px 0 6px;border-bottom:2px solid #111;padding-bottom:4px}
+.mark{border:2px solid #b00020;color:#b00020;font-weight:700;padding:6px 10px;margin:0 0 16px;text-transform:uppercase;letter-spacing:.02em}
+.sub{color:#555}table{border-collapse:collapse;width:100%}td,th{border-top:1px solid #ccc;padding:6px 4px;text-align:left;vertical-align:top}
+th{font-size:12px;color:#555}.no{font-weight:700}ol{padding-left:20px}li{margin:0 0 10px}@page{margin:16mm}</style>
+${body}<script>window.print()</script>`);
+  w.document.close();
+  return true;
+}
+export const esc = (s: unknown) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
+
+/** The chronology of one concern as printable HTML (F13). */
+export function chronologyHtml(c: G.Chronology, purpose: 'print' | 'export') {
+  const when = (v: string) => `${dateShort(v)} ${time(v)}`;
+  return `<p class="mark">Confidential · safeguarding record · ${purpose === 'print' ? 'printed' : 'exported'} by ${esc(c.prepared_by)} on ${esc(when(c.prepared_at))} · logged</p>
+<h1>Chronology: ${esc(c.subject)}</h1>
+<p class="sub">${esc(c.school)} · Reference ${esc(c.reference)} · Status: ${esc(c.status)}${c.allegation ? ' · Allegation about a member of staff (LADO)' : ''}</p>
+<table><tr><th>Raised</th><td>${esc(when(c.created_at))} by ${esc(c.raised_by ?? 'Unknown')}</td></tr>
+<tr><th>Kind</th><td>${esc(G.CATEGORIES.find(x => x[0] === c.category)?.[1] ?? c.category)}${c.immediate_risk ? ' · at risk that day' : ''}</td></tr>
+${c.children.length ? `<tr><th>Children involved</th><td>${c.children.map(esc).join(', ')}</td></tr>` : ''}
+${c.routing_note ? `<tr><th>Who was told</th><td>${esc(c.routing_note)}</td></tr>` : ''}
+${c.hold ? `<tr><th>Legal hold</th><td>${esc(c.hold.reason)} · review by ${esc(dateShort(c.hold.review_on))}</td></tr>` : ''}</table>
+<h2>What was reported</h2><p style="white-space:pre-wrap">${esc(c.summary)}</p>
+<h2>What was done</h2>${c.actions.length ? `<ol>${c.actions.map(a => `<li><b>${esc(when(a.at))}</b> · ${esc(a.by ?? 'Unknown')}${a.status_to ? ` · now ${esc(a.status_to)}` : ''}
+<div style="white-space:pre-wrap">${esc(a.note)}</div>
+${a.referred_to ? `<div>Referred to ${esc(a.referred_to)}${a.referred_on ? ` on ${esc(dateShort(a.referred_on))}` : ''}${a.referral_ref ? ` · their reference ${esc(a.referral_ref)}` : ''}</div>` : ''}
+${a.outcome ? `<div>Outcome: ${esc(a.outcome)}</div>` : ''}</li>`).join('')}</ol>` : '<p>No actions recorded yet.</p>'}
+<p class="sub">Keep this copy locked away and destroy it when it is no longer needed. The safeguarding log is the record.</p>`;
+}
+
+/** Staff checks (R-035). The owner records them; the office and the lead read them (UR-41).
+ *  For a teacher, by their staff record; for office staff and owners with none, by their login (N-02). */
+export function StaffChecks({ staffId, userId = null, studioId = null, readOnly = false }: {
+  staffId: string | null; userId?: string | null; studioId?: string | null; readOnly?: boolean;
+}) {
   const { session } = useSession();
   const qc = useQueryClient();
-  const rows = useRows<G.Check>(['staff-checks', staffId], G.CHECKS, [staffId]);
+  const key = staffId ?? userId ?? '';
+  const rows = useRows<G.Check>(['staff-checks', key], G.CHECKS, [staffId, userId]);
   const [f, setF] = React.useState({ kind: 'dbs', reference: '', checked: '', expires: '' });
   const add = useMutation({
-    mutationFn: () => runAs(session, q => q(G.ADD_CHECK, [staffId, f.kind, f.reference, f.checked, f.expires || null])),
+    mutationFn: () => runAs(session, q => q(G.ADD_CHECK, [staffId, userId, studioId, f.kind, f.reference, f.checked, f.expires || null])),
     onSuccess: () => { setF({ kind: 'dbs', reference: '', checked: '', expires: '' }); qc.invalidateQueries({ queryKey: ['db'] }); },
   });
   const soon = (d: string | null) => d && new Date(d).getTime() < Date.now() + 30 * 86400_000;
@@ -138,8 +296,8 @@ export function StaffChecks({ staffId, readOnly = false }: { staffId: string; re
           {Object.entries(G.CHECK_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
         </Select>
         <Input aria-label="Certificate number" placeholder="Certificate no." value={f.reference} onChange={e => setF({ ...f, reference: e.target.value })} />
-        <Field label="Checked on" htmlFor={`ck-d-${staffId}`}><Input id={`ck-d-${staffId}`} type="date" value={f.checked} onChange={e => setF({ ...f, checked: e.target.value })} /></Field>
-        <Field label="Expires" htmlFor={`ck-e-${staffId}`}><Input id={`ck-e-${staffId}`} type="date" value={f.expires} onChange={e => setF({ ...f, expires: e.target.value })} /></Field>
+        <Field label="Checked on" htmlFor={`ck-d-${key}`}><Input id={`ck-d-${key}`} type="date" value={f.checked} onChange={e => setF({ ...f, checked: e.target.value })} /></Field>
+        <Field label="Expires" htmlFor={`ck-e-${key}`}><Input id={`ck-e-${key}`} type="date" value={f.expires} onChange={e => setF({ ...f, expires: e.target.value })} /></Field>
       </div>
       {add.error != null && <ErrorState error={add.error} />}
       <Button size="sm" disabled={!f.checked} loading={add.isPending} onClick={() => add.mutate()}>Add check</Button>
