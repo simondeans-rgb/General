@@ -61,7 +61,7 @@ function ExamRegister() {
                   : 'The office follows up fees. Marked here so you know on the day.'}
                 action={office && unbilled > 0 ? (
                   <Button size="sm" loading={write.isPending} onClick={() => write.mutate({ sql: E.BILL_EXAM, params: [id] })}>
-                    <Receipt className="size-4" aria-hidden /> Bill {unbilled}
+                    <Receipt className="size-4" aria-hidden /> Bill {unbilled} fee{unbilled === 1 ? '' : 's'}
                   </Button>) : undefined} />
             : <Notice word="Paid" tone="positive" title="Every exam fee is paid" />
         )}
