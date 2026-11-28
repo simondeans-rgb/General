@@ -132,7 +132,7 @@ function Billing() {
         {/* The ledger's four figures. Two of them lead to the invoices that need action. */}
         <section aria-label={loc.current ? `Money at ${loc.current}` : 'Money at a glance'}>
           {loc.current && <p className="label mb-3">{loc.current} only</p>}
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-6 border-b border-line pb-6 lg:grid-cols-4 lg:gap-x-0 lg:divide-x lg:divide-line">
+          <dl className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,10rem),1fr))] gap-x-6 gap-y-6 border-b border-line pb-6 lg:grid-cols-4 lg:gap-x-0 lg:divide-x lg:divide-line">
             <Stat label="Outstanding" loading={summary.isLoading}
               value={s && money(s.outstanding_minor)}
               note={s && `Owed by ${s.owing_families} famil${s.owing_families === 1 ? 'y' : 'ies'}`} />
@@ -310,7 +310,7 @@ function Stat({ label, value, note, tone, loading, onClick, action }: {
     <div className="min-w-0 lg:px-6 lg:first:pl-0 lg:last:pr-0">
       <dt className="label">{label}</dt>
       {loading ? <dd><Skeleton className="mt-2 h-8 w-28" /></dd> : (
-        <dd className={cn('stat-number mt-1.5 text-[1.75rem] leading-none lg:text-[2rem]',
+        <dd className={cn('stat-number mt-1.5 break-words text-[1.75rem] leading-none lg:text-[2rem]',
           tone === 'caution' && 'text-caution', tone === 'critical' && 'text-critical')}>{value}</dd>
       )}
       {note && <dd className="mt-1.5 text-[0.8125rem] text-ink-3">{note}</dd>}

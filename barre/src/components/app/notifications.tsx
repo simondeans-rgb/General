@@ -13,7 +13,7 @@ import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import { Button, EmptyState, Skeleton } from '@/components/ui';
 import * as I from '@/lib/repos/inbox';
-import { relativeDay, time } from '@/lib/format';
+import { relativeDay, time, dayDateTime } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 /** What kind of thing happened, in a word. Urgent kinds carry colour as well. */
@@ -85,11 +85,11 @@ export function NotificationBell() {
     <>
       <button ref={button} onClick={() => setOpen(o => !o)} aria-haspopup="dialog" aria-expanded={open}
         aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'}
-        className="relative grid size-10 shrink-0 place-items-center rounded-full text-ink-2 hover:bg-surface-2 hover:text-ink">
-        <Bell className="size-[18px]" aria-hidden />
+        className="relative grid size-[max(44px,1.5rem)] shrink-0 place-items-center rounded-full text-ink-2 hover:bg-surface-2 hover:text-ink">
+        <Bell className="size-[1.125rem]" aria-hidden />
         {unread > 0 && (
-          <span aria-hidden className="tnum absolute right-1 top-1 grid h-[17px] min-w-[17px] place-items-center rounded-full
-                                       bg-critical px-1 text-[0.6562rem] font-semibold leading-none text-ink-invert ring-2 ring-surface">
+          <span aria-hidden className="tnum absolute right-1 top-1 grid h-[min(1.0625rem,22px)] min-w-[min(1.0625rem,22px)] place-items-center rounded-full
+                                       bg-critical px-1 text-[min(0.6562rem,13px)] font-semibold leading-none text-ink-invert ring-2 ring-surface">
             {unread > 9 ? '9+' : unread}
           </span>
         )}
@@ -136,7 +136,7 @@ export function NotificationBell() {
                       {!n.read_at && <span aria-hidden className="absolute bottom-3 left-0 top-3 w-[3px] rounded-r-[2px] bg-accent" />}
                       <span className="flex items-baseline gap-2 text-[0.7812rem]">
                         <span className={cn('font-semibold uppercase tracking-[0.05em]', URGENT[n.kind] ?? 'text-ink-3')}>{KIND[n.kind] ?? 'Update'}</span>
-                        <span className="ml-auto shrink-0 text-ink-3">{relativeDay(n.created_at)}, {time(n.created_at)}</span>
+                        <span className="ml-auto shrink-0 text-ink-3">{dayDateTime(n.created_at)}</span>
                       </span>
                       <span className={cn('mt-0.5 block text-[0.9062rem] leading-snug', !n.read_at ? 'font-semibold text-ink' : 'text-ink-2')}>
                         {n.title}{!n.read_at && <span className="sr-only"> (unread)</span>}

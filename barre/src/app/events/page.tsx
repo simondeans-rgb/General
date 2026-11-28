@@ -48,7 +48,7 @@ function Events() {
   const current = rows.data?.find(e => e.id === selected);
   return (
     <Shell title="Events" help={<>Shows, competitions, workshops and exam sessions. Invite whole classes, and families accept in their app. Within a show: running order, costumes and sizes, rehearsals with registers, chaperones, a printable programme (children are named only with photo consent), tickets, and fees billed in one step.</>} subtitle="Shows, exams, competitions and workshops" allow={['owner', 'admin']}
-      actions={<Button size="sm" variant="primary" onClick={() => setEditing('new')}><Plus className="size-4" aria-hidden /> New event</Button>}>
+      actions={<Button size="sm" variant="primary" aria-label="New event" onClick={() => setEditing('new')}><Plus className="size-4" aria-hidden /> <span className="hidden sm:inline">New event</span></Button>}>
       <div className="mx-auto max-w-[1240px]">
         <div className={cn('grid gap-x-12 gap-y-10', selected ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)] lg:items-start' : 'lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]')}>
           <div className="min-w-0 space-y-10">

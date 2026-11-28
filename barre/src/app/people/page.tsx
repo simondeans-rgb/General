@@ -59,8 +59,8 @@ function People() {
         {tab !== 'staff' && <Button size="sm" aria-label="Import" onClick={() => setImporting(true)}>
           <Upload className="size-4" aria-hidden /> <span className="hidden sm:inline">Import</span>
         </Button>}
-        <Button size="sm" variant="primary" onClick={() => setAdding(true)}>
-          <Plus className="size-4" aria-hidden /> {ADD_LABEL[tab]}
+        <Button size="sm" variant="primary" aria-label={ADD_LABEL[tab]} onClick={() => setAdding(true)}>
+          <Plus className="size-4" aria-hidden /> <span className="hidden sm:inline">{ADD_LABEL[tab]}</span>
         </Button>
       </div>}>
       {importing && <ImportWizard onClose={() => setImporting(false)} />}

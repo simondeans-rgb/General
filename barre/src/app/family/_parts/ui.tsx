@@ -22,10 +22,8 @@ export function dayShort(v: string | Date) {
   return new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', timeZone: 'Europe/London' }).format(new Date(v));
 }
 
-/** "Tue 1 Dec" — for notices. */
-export function dayDate(v: string | Date) {
-  return new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Europe/London' }).format(new Date(v));
-}
+/** "Tue 1 Dec": the one date rule, from lib/format. */
+export { dayDate } from '@/lib/format';
 
 /** "10 DEC" style date for DUE notices. */
 export function dueWord(v: string | Date) {

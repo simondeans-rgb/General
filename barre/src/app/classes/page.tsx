@@ -62,8 +62,8 @@ function Classes() {
         {term && <Link href="/reenrolment" aria-label="Re-enrol and move up" className="inline-flex"><Button size="sm" tabIndex={-1}>
           <ArrowUpRight className="size-4" aria-hidden /> <span className="hidden sm:inline">Re-enrol and move up</span>
         </Button></Link>}
-        <Button size="sm" variant="primary" onClick={() => setAdding(true)}>
-          <Plus className="size-4" aria-hidden /> New class
+        <Button size="sm" variant="primary" aria-label="New class" onClick={() => setAdding(true)}>
+          <Plus className="size-4" aria-hidden /> <span className="hidden sm:inline">New class</span>
         </Button>
       </div>}>
       <div className="mx-auto max-w-[1240px]">

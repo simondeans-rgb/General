@@ -119,8 +119,8 @@ export default function EnrolmentPage() {
 
   return (
     <Shell title="Enrolment" help={<>Everyone who might join: enquiries, trial classes and waiting lists, by stage. Share your public booking link so families can book a trial themselves; you’re told when they do.</>} subtitle="From first enquiry to a place in a class" allow={['owner', 'admin']}
-      actions={<Button size="sm" variant="primary" onClick={() => setNewEnquiry(true)}>
-        <Plus className="size-4" aria-hidden /> New enquiry
+      actions={<Button size="sm" variant="primary" aria-label="New enquiry" onClick={() => setNewEnquiry(true)}>
+        <Plus className="size-4" aria-hidden /> <span className="hidden sm:inline">New enquiry</span>
       </Button>}>
       {newEnquiry && <NewEnquirySheet onClose={() => setNewEnquiry(false)}
         onBook={id => { setNewEnquiry(false); setAsked({ id, booking: true }); }} />}

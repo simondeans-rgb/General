@@ -9,7 +9,7 @@ import { Beats, Button, EmptyState, ErrorState, Skeleton, SectionHead } from '@/
 import * as Q from '@/lib/repos/dashboard';
 import { CHECK_GAPS_TODAY, SAFEGUARDING_TODAY, type CheckGap } from '@/lib/repos/safeguarding';
 import { SUMMARY, type BillingSummary } from '@/lib/repos/billing';
-import { money, time, dayRange, dateLong, relativeDay } from '@/lib/format';
+import { money, time, dayRange, dateLong, relativeDay, dayDateTime } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { cardPaymentsEnabled } from '@/lib/payments/invoice-status';
 import { groupAttention } from '@/lib/office-words';
@@ -256,7 +256,7 @@ function UpcomingTrials() {
   return <MiniList title="Trials coming up" rows={rows} href="/enrolment" link="Enrolment" empty="No trials booked." render={r => (
     <div className="flex items-baseline justify-between gap-3"><span className="min-w-0"><span className="font-medium">{r.who}</span>
       <span className="block truncate text-[0.8125rem] text-ink-3">{r.class_name}</span></span>
-      <span className="shrink-0 text-[0.7812rem] text-ink-3">{r.starts_at ? `${relativeDay(r.starts_at)} ${time(r.starts_at)}` : 'Not booked'}</span></div>)} />;
+      <span className="shrink-0 text-[0.7812rem] text-ink-3">{r.starts_at ? dayDateTime(r.starts_at) : 'Not booked'}</span></div>)} />;
 }
 
 function RecentMessages() {

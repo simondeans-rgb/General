@@ -1,7 +1,7 @@
 'use client';
 
 import { useRows } from '@/lib/query';
-import { dateShort, dayName, time } from '@/lib/format';
+import { dateShort, dayName, time, dayDate } from '@/lib/format';
 
 type R = { id: string; title: string; show_title: string; starts_at: string; venue: string | null; child: string | null };
 
@@ -21,7 +21,7 @@ export function RehearsalList({ days = 42 }: { days?: number }) {
         {rows.data.map(r => (
           <li key={r.id} className="grid grid-cols-[4.25rem_minmax(0,1fr)] gap-x-3 py-3">
             <span className="leading-tight">
-              <span className="block text-[0.7812rem] text-ink-3">{dayName(r.starts_at).slice(0, 3)} {dateShort(r.starts_at)}</span>
+              <span className="block text-[0.7812rem] text-ink-3">{dayDate(r.starts_at)}</span>
               <span className="font-display text-[1.1875rem] tnum">{time(r.starts_at)}</span>
             </span>
             <span className="min-w-0">

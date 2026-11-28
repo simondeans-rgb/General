@@ -20,7 +20,7 @@ import {
 import { SettingsSection as Card, SettingsHead as CardHeader } from '@/components/app/progress-settings';
 import * as A from '@/lib/repos/account';
 import { inviteLink } from '@/lib/repos/platform';
-import { money, dateShort, relativeDay, time } from '@/lib/format';
+import { money, dateShort, relativeDay, time, dayDateTime } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { pickerLabels } from '@/lib/office-words';
 
@@ -431,7 +431,7 @@ function SupportCard({ studioId }: { studioId: string }) {
           <div>
             <h3 className="border-b border-line pb-1.5 text-[0.875rem] font-semibold">When support looked</h3>
             <ul className="divide-y divide-line text-[0.875rem] text-ink-2">
-              {visits.data.map((v, n) => <li key={n} className="py-2">{relativeDay(v.at)} {time(v.at)} — {v.summary}</li>)}
+              {visits.data.map((v, n) => <li key={n} className="py-2">{dayDateTime(v.at)} — {v.summary}</li>)}
             </ul>
           </div>
         )}

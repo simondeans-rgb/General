@@ -14,7 +14,7 @@ import { Goals, Milestones } from '@/components/app/progress';
 import { EmptyState, Skeleton, ErrorState } from '@/components/ui';
 import * as H from '@/lib/repos/hub';
 import * as P from '@/lib/repos/progress';
-import { time, relativeDay, dateLong, dayRange } from '@/lib/format';
+import { time, relativeDay, dateLong, dayRange, dayDateTime } from '@/lib/format';
 import { SectionHead, dayDate } from '@/app/family/_parts/ui';
 
 const KIND_LABEL: Record<string, string> = {
@@ -72,7 +72,7 @@ export default function LearnHome() {
                   {after.map((s, i) => (
                     <li key={`${s.id}-${i}`} className="grid grid-cols-[4.75rem_minmax(0,1fr)] items-baseline gap-x-4 py-2.5">
                       <span>
-                        <span className="block text-[0.7812rem] text-ink-3">{relativeDay(s.starts_at).length > 9 ? dayDate(s.starts_at) : relativeDay(s.starts_at)}</span>
+                        <span className="block text-[0.7812rem] text-ink-3">{relativeDay(s.starts_at)}</span>
                         <span className="block font-display text-[1.0625rem] tnum">{time(s.starts_at)}</span>
                       </span>
                       <span className="min-w-0">
@@ -140,7 +140,7 @@ export default function LearnHome() {
                   <li key={e.id} className="py-3">
                     <p className="font-semibold leading-snug">{e.title}</p>
                     <p className="mt-0.5 text-[0.8125rem] text-ink-3">
-                      {[KIND_LABEL[e.kind] ?? e.kind, `${relativeDay(e.starts_at)} ${time(e.starts_at)}`, e.venue].filter(Boolean).join(' · ')}
+                      {[KIND_LABEL[e.kind] ?? e.kind, dayDateTime(e.starts_at), e.venue].filter(Boolean).join(' · ')}
                     </p>
                   </li>
                 ))}

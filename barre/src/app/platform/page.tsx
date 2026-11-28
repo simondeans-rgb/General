@@ -18,7 +18,7 @@ import {
   FilterTabs,
 } from '@/components/ui';
 import * as P from '@/lib/repos/platform';
-import { money, dateShort, relativeDay, time } from '@/lib/format';
+import { money, dateShort, relativeDay, time, dayDateTime } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 const STATUS: Record<string, { label: string; tone: Tone }> = {
@@ -293,7 +293,7 @@ function SchoolPanel({ id, school: s, onClose }: { id: string; school?: P.School
           {events.data?.map((e, n) => (
             <li key={n} className="py-2 text-sm">
               <span className="block">{e.summary ?? e.action}</span>
-              <span className="block text-[0.8125rem] text-ink-3">{e.actor ?? 'System'} · {relativeDay(e.at)} {time(e.at)}</span>
+              <span className="block text-[0.8125rem] text-ink-3">{e.actor ?? 'System'} · {dayDateTime(e.at)}</span>
             </li>
           ))}
         </ol>

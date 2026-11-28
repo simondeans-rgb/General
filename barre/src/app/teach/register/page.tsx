@@ -16,7 +16,7 @@ import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import { Beats, Button, EmptyState, Input, Notice, Skeleton, ErrorState, StatusLine } from '@/components/ui';
 import * as T from '@/lib/repos/teaching';
-import { time, ageFrom, dateLong, dateShort, dayName } from '@/lib/format';
+import { time, ageFrom, dateLong, dateShort, dayName, dayDate } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 type Status = 'present' | 'absent' | 'late' | 'excused' | 'trial';
@@ -206,7 +206,7 @@ function Register() {
       // The day and time in full, short enough never to be cut off on a phone; the
       // place goes under the header there, and stays in it on a wide screen (U14).
       subtitle={m ? <>
-        <span className="block whitespace-normal">{dayName(m.starts_at).slice(0, 3)} {dateShort(m.starts_at)} · {time(m.starts_at)}–{time(m.ends_at)}</span>
+        <span className="block whitespace-normal">{dayDate(m.starts_at)} · {time(m.starts_at)}–{time(m.ends_at)}</span>
         {(m.location || m.room) && <span className="hidden whitespace-normal lg:block">{[m.location, m.room].filter(Boolean).join(' · ')}</span>}
       </> : undefined}
       allow={['owner','admin','teacher']}

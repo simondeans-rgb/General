@@ -20,7 +20,7 @@ import {
 import { SectionHead, ViewTabs, Word } from '@/components/app/session-row';
 import * as I from '@/lib/repos/inbox';
 import * as H from '@/lib/repos/hub';
-import { relativeDay, time } from '@/lib/format';
+import { relativeDay, time, dayDateTime } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 type Tab = 'families' | 'broadcasts' | 'templates' | 'automations';
@@ -256,7 +256,7 @@ function BroadcastList() {
            <button className="block w-full px-1 py-3 text-left hover:bg-surface-2/60" onClick={() => setOpen(b)}>
             <div className="flex flex-wrap items-baseline gap-x-2">
               <span className="text-[0.8125rem] font-semibold text-ink-2">{b.kind === 'studio_announcement' ? 'Whole studio' : b.class_name}</span>
-              {b.scheduled && <><Word tone="caution">Scheduled</Word><span className="text-[0.8125rem] text-caution">{relativeDay(b.sent_at)} {time(b.sent_at)}</span></>}
+              {b.scheduled && <><Word tone="caution">Scheduled</Word><span className="text-[0.8125rem] text-caution">{dayDateTime(b.sent_at)}</span></>}
               <span className="ml-auto text-[0.7812rem] text-ink-3">{relativeDay(b.sent_at)}</span>
             </div>
             {b.subject && <p className="mt-1 font-semibold">{b.subject}</p>}

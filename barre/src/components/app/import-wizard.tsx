@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Download, FileSpreadsheet, X } from 'lucide-react';
-import { Notice, Button, ErrorState, Input, Select, ViewTabs, StatusLine } from '@/components/ui';
+import { Notice, Button, ErrorState, Input, Select, ViewTabs, StatusLine, FileField } from '@/components/ui';
 import { useRows } from '@/lib/query';
 import { money, dateShort } from '@/lib/format';
 import { inviteLink } from '@/lib/repos/platform';
@@ -257,12 +257,10 @@ export function ImportWizard({ onClose, initial: asked }: { onClose: () => void;
                 </div>
               )}
               <div className="flex flex-wrap items-center gap-2">
-                <label className="inline-flex min-h-[40px] cursor-pointer items-center gap-2 rounded-[var(--radius-md)] border border-line-strong bg-surface px-4 text-sm font-semibold hover:bg-surface-2 focus-within:ring-4 focus-within:ring-accent-line/12">
-                  <FileSpreadsheet className="size-4" aria-hidden /> {file ? 'Choose another file' : 'Choose a CSV file'}
-                  <input type="file" accept=".csv,text/csv" className="sr-only" onChange={e => e.target.files?.[0] && read(e.target.files[0])} />
-                </label>
+                <FileField className="w-full" label={file ? 'Choose another file' : 'Choose a CSV file'} accept=".csv,text/csv"
+                  onFiles={f => f[0] && read(f[0])} chosen={file ? `${file} · ${plural(body.length, 'row')}` : undefined}
+                  hint="A spreadsheet saved as CSV. Drop it here or choose it." />
                 <Button size="sm" variant="ghost" onClick={template}><Download className="size-4" aria-hidden /> Template</Button>
-                {file && <span className="text-[0.8125rem] text-ink-3">{file} · {plural(body.length, 'row')}</span>}
               </div>
             </section>
 

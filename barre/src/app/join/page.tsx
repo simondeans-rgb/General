@@ -9,7 +9,7 @@ import { SchoolMark, PoweredBy, useSchoolTheme, logoFor, SchoolHero } from '@/co
 import { Button, EmptyState, ErrorState, Field, Input, Notice, Skeleton, Choice } from '@/components/ui';
 import { CalendarPlus, Copy } from 'lucide-react';
 import { addBookingToCalendar } from '@/components/app/bookings';
-import { money, dateLong, time } from '@/lib/format';
+import { money, dateLong, time, dayDate } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 type School = { name: string; brand_colour: string | null; logo_url: string | null; open: boolean; theme: string; brand_secondary: string | null; privacy_notice_url: string | null; hero_url: string | null; logo_light_url: string | null };
@@ -165,8 +165,8 @@ function Join() {
                 <div className="space-y-6">
                   {visible.map(([k, xs]) => (
                     <div key={k}>
-                      <h3 className="label pb-1">{new Date(xs[0]!.starts_at).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
-                      <ul className="divide-y divide-line border-t border-line" aria-label={`Trial classes, ${new Date(xs[0]!.starts_at).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}`}>
+                      <h3 className="label pb-1">{dateLong(xs[0]!.starts_at)}</h3>
+                      <ul className="divide-y divide-line border-t border-line" aria-label={`Trial classes, ${dateLong(xs[0]!.starts_at)}`}>
                         {xs.map(x => {
                           const on = pick?.session_id === x.session_id;
                 return (
@@ -287,7 +287,7 @@ function AdultDropIn({ slug, school, about, info }: { slug: string; school: Scho
               className={cn('grid w-full grid-cols-[4.25rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1 py-3.5 text-left hover:bg-surface-2/60 @xs:grid-cols-[4.25rem_minmax(0,1fr)_auto]', pick?.session_id === x.session_id && 'bg-accent-soft hover:bg-accent-soft')}>
               <span className="pl-1">
                 <span className="block font-display text-[1.25rem] leading-none tnum">{time(x.starts_at)}</span>
-                <span className="mt-1 block text-[0.7812rem] text-ink-3">{new Date(x.starts_at).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                <span className="mt-1 block text-[0.7812rem] text-ink-3">{dayDate(x.starts_at)}</span>
               </span>
               <span className="min-w-0"><span className="block font-semibold">{x.class_name}</span>
                 <span className="block text-[0.8125rem] text-ink-3">{[about.get(x.class_name)?.level_note, `${x.places_left} place${x.places_left === 1 ? '' : 's'} left`].filter(Boolean).join(' · ')}</span>
