@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { ChevronRight, Plus, Pencil, UserMinus, Copy, CalendarPlus, ArrowRightLeft, ArrowUpRight } from 'lucide-react';
+import { TimetableAdd, useAddParam } from '@/components/app/timetable-add';
 import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection, KeyValue } from '@/components/app/detail-panel';
 import { useRows } from '@/lib/query';
@@ -31,6 +32,7 @@ function Classes() {
   const terms = useRows<C.TermRow>(['term-tabs'], C.TERM_TABS);
   const { selected, select } = useSelection();
   const [adding, setAdding] = React.useState(false);
+  useAddParam(k => { if (k === 'class') setAdding(true); });
   const [rolling, setRolling] = React.useState(false);
   const [termPick, setTermPick] = React.useState('');
   const termList = (terms.data ?? []).filter(t => t.classes > 0 || t.current);
@@ -62,9 +64,7 @@ function Classes() {
         {term && <Link href="/reenrolment" aria-label="Re-enrol and move up" className="inline-flex"><Button size="sm" tabIndex={-1} aria-label="Re-enrol and move up">
           <ArrowUpRight className="size-4" aria-hidden /> <span className="hidden sm:inline">Re-enrol and move up</span>
         </Button></Link>}
-        <Button size="sm" variant="primary" aria-label="New class" onClick={() => setAdding(true)}>
-          <Plus className="size-4" aria-hidden /> <span className="hidden sm:inline">New class</span>
-        </Button>
+        <TimetableAdd here="classes" onAdd={() => setAdding(true)} />
       </div>}>
       <div className="mx-auto max-w-[1240px]">
         {(termList.length > 1 || place.control) && (

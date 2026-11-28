@@ -156,4 +156,24 @@ describe('exam fees (0072)', () => {
       expect(((await svc(`select app.tick() r`))[0].r as any)).toHaveProperty('exam_fee_reminders');
     });
   });
+
+  it('an exam made from the event form keeps its examining body and invoicing choice (0073)', async () => {
+    await asUser(USERS.admin, async (q, svc) => {
+      const [{ id: ev }] = await q(E.CREATE_EVENT, ['exam', 'published', 'Grade 3 Ballet examinations', null,
+        new Date(Date.now() + 20 * 86400000).toISOString(), null, 'Main Hall', 6200, null, null, false]);
+      const before = (await svc(`select board, bill_on_entry, fee_minor from exam_session where event_id = $1`, [ev]))[0];
+      expect(before.board).toBe('Board to set');
+      await q(E.SET_EXAM_DETAILS, [ev, ' RAD ', true]);
+      const after = (await svc(`select board, bill_on_entry, fee_minor from exam_session where event_id = $1`, [ev]))[0];
+      expect(after).toEqual({ board: 'RAD', bill_on_entry: true, fee_minor: 6200 });
+      const row = (await q(E.EVENTS)).find((e: any) => e.id === ev);
+      expect(row.exam_board).toBe('RAD');
+      expect(row.exam_bill_on_entry).toBe(true);
+      // Blank keeps what was there; only the office can change it.
+      await q(E.SET_EXAM_DETAILS, [ev, '', null]);
+      expect((await svc(`select board from exam_session where event_id = $1`, [ev]))[0].board).toBe('RAD');
+      await as(svc, USERS.teacherTap);
+      expect(await expectRejected(() => q(E.SET_EXAM_DETAILS, [ev, 'ISTD', false]))).toMatch(/FORBIDDEN/);
+    });
+  });
 });

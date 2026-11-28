@@ -284,19 +284,11 @@ export function Shell({
             {/* At least 7rem for the title: with large text the buttons wrap to a second row instead. */}
             <div className={cn('min-w-0 flex-1', !compact && 'min-w-[min(100%,7rem)]')}>
               <h1 className="page-title line-clamp-2 break-words tracking-tight [hyphens:auto]">
-                {area && !desktop && !compact ? (
-                  /* On a phone the area's other screens sit under the title, not in a second tab row (U10). */
-                  <button onClick={() => setMenu(m => m === 'area' ? null : 'area')} aria-expanded={menu === 'area'} aria-controls="area-menu"
-                    className="inline-flex max-w-full items-center gap-1 text-left">
-                    <span className="line-clamp-2 min-w-0 break-words">{title}</span>
-                    <ChevronDown aria-hidden className={cn('size-[0.8em] shrink-0 text-ink-3 transition-transform', menu === 'area' && 'rotate-180')} />
-                    <span className="sr-only">, {area.label}: other screens</span>
-                  </button>
-                ) : title}
+                {title}
               </h1>
               {subtitle && !compact && <div className="mt-0.5 line-clamp-2 text-[0.8125rem] text-ink-3">{subtitle}</div>}
             </div>
-            {help && !compact && !(area && !desktop) && (
+            {help && !compact && (
               <button onClick={() => setHelpOpen(o => !o)} aria-expanded={helpOpen} aria-controls="page-help"
                 aria-label={`About ${title}`} className={HEADER_ICON}>
                 <CircleHelp className="size-[1.125rem]" aria-hidden />
@@ -338,7 +330,8 @@ export function Shell({
               {!noSchoolSwitch && <SchoolSwitcher className="-mx-3" />}
             </div>
           )}
-          {area && !desktop && (
+          {/* At large text the area's screens are in the More menu; otherwise they are tabs (below). */}
+          {area && compact && (
             <nav id="area-menu" aria-label={area.label} hidden={menu !== (compact ? 'more' : 'area')} className="border-t border-line px-2 py-2">
               <ul className="grid gap-0.5 sm:grid-cols-2">
                 {area.sub!.map(x => {
@@ -365,7 +358,8 @@ export function Shell({
             </nav>
           )}
           {!noSchoolSwitch && !compact && <SchoolSwitcher className="border-t border-line lg:hidden" />}
-          {desktop && <SubTabs nav={nav} pathname={pathname} />}
+          {/* The area's screens as a row of tabs, on a phone as on a computer: easier to find than a menu. */}
+          {!compact && <SubTabs nav={nav} pathname={pathname} />}
         </header>
 
         {help && helpOpen && (

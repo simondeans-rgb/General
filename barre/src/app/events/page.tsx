@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Suspense } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Receipt, Trash2, Users } from 'lucide-react';
+import { TimetableAdd, useAddParam, type AddKind } from '@/components/app/timetable-add';
 import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection } from '@/components/app/detail-panel';
 import { RecordSheet } from '@/components/app/record-sheet';
@@ -17,7 +18,7 @@ import * as E from '@/lib/repos/events';
 import * as C from '@/lib/repos/classes';
 import { ProgrammeButton, RehearsalRegisterButton, TicketSection } from '@/components/app/show-tools';
 import { ConsentSnapshotButton } from '@/components/app/consent-snapshot';
-import { ExamEventPanel, ExamsCard } from '@/components/app/exams';
+import { BillOnEntry, ExamEventPanel, ExamsCard } from '@/components/app/exams';
 import { CostumePlan, LicenceTracker, RunningOrder } from '@/components/app/production';
 import { dateLong, money, time } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -45,17 +46,20 @@ function Events() {
   const rows = useRows<E.OfficeEvent>(['office-events'], E.EVENTS);
   const { selected, select } = useSelection();
   const [editing, setEditing] = React.useState<E.OfficeEvent | 'new' | null>(null);
+  const [newKind, setNewKind] = React.useState<string | undefined>(undefined);
+  const addNew = (k: AddKind) => { setNewKind(k === 'exam' ? 'exam' : undefined); setEditing('new'); };
+  useAddParam(k => { if (k !== 'class') addNew(k); });
   const current = rows.data?.find(e => e.id === selected);
   return (
     <Shell title="Events" help={<>Shows, competitions, workshops and exam sessions. Invite whole classes, and families accept in their app. Within a show: running order, costumes and sizes, rehearsals with registers, chaperones, a printable programme (children are named only with photo consent), tickets, and fees billed in one step.</>} subtitle="Shows, exams, competitions and workshops" allow={['owner', 'admin']}
-      actions={<Button size="sm" variant="primary" aria-label="New event" onClick={() => setEditing('new')}><Plus className="size-4" aria-hidden /> <span className="hidden sm:inline">New event</span></Button>}>
+      actions={<TimetableAdd here="events" onAdd={addNew} />}>
       <div className="mx-auto max-w-[1240px]">
         <div className={cn('grid gap-x-12 gap-y-10', selected ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)] lg:items-start' : 'lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]')}>
           <div className="min-w-0 space-y-10">
             {rows.isLoading && <Skeleton className="h-24" />}
             {rows.error && <ErrorState error={rows.error} onRetry={() => rows.refetch()} />}
             {rows.data?.length === 0 && <EmptyState title="No events yet" body="Add your end-of-term show or an exam session."
-              action={<Button variant="primary" onClick={() => setEditing('new')}>New event</Button>} />}
+              action={<Button variant="primary" onClick={() => addNew('event')}>New event</Button>} />}
             {rows.data && rows.data.length > 0 && (() => {
               const now = new Date();
               const upcoming = rows.data.filter(e => new Date(e.ends_at ?? e.starts_at) >= now);
@@ -74,7 +78,7 @@ function Events() {
           {selected && current && <EventDetail e={current} onEdit={() => setEditing(current)} onClose={() => select(null)} />}
         </div>
       </div>
-      {editing && <EventSheet row={editing === 'new' ? null : editing} onClose={() => setEditing(null)} onCreated={id => { setEditing(null); select(id); }} />}
+      {editing && <EventSheet row={editing === 'new' ? null : editing} kind={newKind} onClose={() => setEditing(null)} onCreated={id => { setEditing(null); select(id); }} />}
     </Shell>
   );
 }
@@ -109,37 +113,52 @@ function EventLine({ e, active, past, onSelect }: { e: E.OfficeEvent; active: bo
   );
 }
 
-function EventSheet({ row, onClose, onCreated }: { row: E.OfficeEvent | null; onClose: () => void; onCreated: (id: string) => void }) {
+function EventSheet({ row, kind, onClose, onCreated }: { row: E.OfficeEvent | null; kind?: string; onClose: () => void; onCreated: (id: string) => void }) {
   const [f, setF] = React.useState({
-    kind: row?.kind ?? 'show', status: row?.status ?? 'published', title: row?.title ?? '', description: row?.description ?? '',
+    kind: row?.kind ?? kind ?? 'show', status: row?.status ?? 'published', title: row?.title ?? '', description: row?.description ?? '',
     starts: local(row?.starts_at), ends: local(row?.ends_at), venue: row?.venue ?? '',
     cost: row?.cost_minor != null ? String(row.cost_minor / 100) : '', capacity: row?.capacity != null ? String(row.capacity) : '',
     closes: row?.entries_close_on ?? '', requests: row?.requests_open ?? false,
+    board: row?.exam_board && row.exam_board !== 'Board to set' ? row.exam_board : '', billOnEntry: row?.exam_bill_on_entry ?? true,
   });
+  const exam = f.kind === 'exam';
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setF(x => ({ ...x, [k]: e.target.value }));
-  const save = useWrite(r => row ? onClose() : onCreated((r as { id: string }).id));
+  const { session } = useSession();
+  const qc = useQueryClient();
+  // An exam's examining body and invoicing live on its exam session (0073), saved with the event.
+  const save = useMutation({
+    mutationFn: (v: { sql: string; params: unknown[] }) => runAs(session, async q => {
+      const r = (await q(v.sql, v.params))[0] as { id: string };
+      if (exam) await q(E.SET_EXAM_DETAILS, [r.id, f.board, f.billOnEntry]);
+      return r;
+    }),
+    onSuccess: r => { qc.invalidateQueries({ queryKey: ['db'] }); if (row) onClose(); else onCreated(r.id); },
+  });
   const iso = (v: string) => v ? new Date(v).toISOString() : null;
   const args = [f.kind, f.status, f.title, f.description, iso(f.starts), iso(f.ends), f.venue,
     f.cost ? Math.round(Number(f.cost) * 100) : null, f.capacity ? Number(f.capacity) : null, f.closes || null, f.requests];
   return (
-    <RecordSheet title={row ? 'Edit event' : 'New event'} onClose={onClose} saving={save.isPending} error={save.error}
-      canSave={f.title.trim().length > 2 && !!f.starts} onSave={() => save.mutate({ sql: row ? E.UPDATE_EVENT : E.CREATE_EVENT, params: row ? [row.id, ...args] : args })}>
+    <RecordSheet title={row ? (exam ? 'Edit exam' : 'Edit event') : exam ? 'New exam' : 'New event'} onClose={onClose} saving={save.isPending} error={save.error}
+      canSave={f.title.trim().length > 2 && !!f.starts && (!exam || f.board.trim().length > 0)} onSave={() => save.mutate({ sql: row ? E.UPDATE_EVENT : E.CREATE_EVENT, params: row ? [row.id, ...args] : args })}>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Kind" htmlFor="ev-k"><Select id="ev-k" value={f.kind} onChange={set('kind')}>{KINDS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</Select></Field>
         <Field label="Visible to families" htmlFor="ev-s"><Select id="ev-s" value={f.status} onChange={set('status')}>
           <option value="published">Yes</option><option value="draft">Not yet (draft)</option></Select></Field>
       </div>
-      <Field label="Title" htmlFor="ev-t" required><Input id="ev-t" value={f.title} onChange={set('title')} placeholder="Summer Showcase" /></Field>
+      {exam && <Field label="Examining body" htmlFor="ev-b" required hint="For example RAD, ISTD or IDTA, or your own">
+        <Input id="ev-b" value={f.board} onChange={set('board')} placeholder="RAD" /></Field>}
+      <Field label="Title" htmlFor="ev-t" required><Input id="ev-t" value={f.title} onChange={set('title')} placeholder={exam ? 'Grade 3 Ballet examinations' : 'Summer Showcase'} /></Field>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Starts" htmlFor="ev-st" required><Input id="ev-st" type="datetime-local" value={f.starts} onChange={set('starts')} /></Field>
         <Field label="Ends" htmlFor="ev-en"><Input id="ev-en" type="datetime-local" value={f.ends} onChange={set('ends')} /></Field>
       </div>
       <Field label="Venue" htmlFor="ev-v"><Input id="ev-v" value={f.venue} onChange={set('venue')} /></Field>
       <div className="grid grid-cols-3 gap-3">
-        <Field label="Fee (£)" htmlFor="ev-c" hint="Per dancer"><Input id="ev-c" type="number" min={0} step={0.5} value={f.cost} onChange={set('cost')} /></Field>
+        <Field label={exam ? 'Fee per entry (£)' : 'Fee (£)'} htmlFor="ev-c" hint={exam ? 'Change it per child later' : 'Per dancer'}><Input id="ev-c" type="number" min={0} step={0.5} value={f.cost} onChange={set('cost')} /></Field>
         <Field label="Places" htmlFor="ev-cap"><Input id="ev-cap" type="number" min={1} value={f.capacity} onChange={set('capacity')} /></Field>
         <Field label="Entries close" htmlFor="ev-cl"><Input id="ev-cl" type="date" value={f.closes} onChange={set('closes')} /></Field>
       </div>
+      {exam && <BillOnEntry id="ev-boe" checked={f.billOnEntry} onChange={v => setF(x => ({ ...x, billOnEntry: v }))} />}
       <label className="flex min-h-[44px] items-center gap-3 text-[0.875rem]"><input type="checkbox" className="size-[18px] accent-[var(--color-accent)]" checked={f.requests}
         onChange={e => setF(x => ({ ...x, requests: e.target.checked }))} /> Families may ask to take part (you still confirm)</label>
       <Field label="Details for families" htmlFor="ev-d">

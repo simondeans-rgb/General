@@ -2,10 +2,14 @@
 export type OfficeEvent = { id: string; kind: string; status: string; title: string; description: string | null;
   starts_at: string; ends_at: string | null; venue: string | null; cost_minor: number | null; capacity: number | null;
   entries_close_on: string | null; requests_open: boolean;
+  /** For an exam: the session's examining body and invoice-on-entry (0073). */
+  exam_board?: string | null; exam_bill_on_entry?: boolean | null;
   invited: number; confirmed: number; requested: number; declined: number; billed: number };
 export const EVENTS = `
 select e.id, e.kind::text as kind, e.status::text as status, e.title, e.description, e.starts_at, e.ends_at, e.venue,
        e.cost_minor, e.capacity, e.entries_close_on, e.requests_open,
+       (select xs.board from exam_session xs where xs.event_id = e.id and xs.deleted_at is null) as exam_board,
+       (select xs.bill_on_entry from exam_session xs where xs.event_id = e.id and xs.deleted_at is null) as exam_bill_on_entry,
        count(p.*) filter (where p.status = 'invited')::int as invited,
        count(p.*) filter (where p.status = 'confirmed')::int as confirmed,
        count(p.*) filter (where p.status = 'requested')::int as requested,
@@ -116,6 +120,7 @@ export const ENTER_EXAM = `select app.enter_exam($1, $2, $3, $4::int) as id`;
 export const EXAM_RESULT = `select app.exam_result($1, $2, $3)`;
 export const WITHDRAW_EXAM = `select app.withdraw_exam($1)`;
 export const BILL_EXAM = `select app.bill_exam($1) as n`;
+export const SET_EXAM_DETAILS = `select app.set_exam_details($1, $2, $3)`;
 
 /* ── Exam fees and the exam-day register (0072) ─────────────────────────── */
 export type ExamFeeState = 'none' | 'unbilled' | 'unpaid' | 'part_paid' | 'paid';

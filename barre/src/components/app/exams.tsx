@@ -187,7 +187,7 @@ function Entries({ session: x }: { session: E.ExamSession }) {
 }
 
 /** Whether entering a child invoices the family at once (0072). */
-function BillOnEntry({ id, checked, onChange, className }: { id: string; checked: boolean; onChange: (v: boolean) => void; className?: string }) {
+export function BillOnEntry({ id, checked, onChange, className }: { id: string; checked: boolean; onChange: (v: boolean) => void; className?: string }) {
   return (
     <label htmlFor={id} className={cn('flex min-h-11 items-start gap-2.5 text-[0.875rem]', className)}>
       <input id={id} type="checkbox" className="mt-0.5 size-[18px] shrink-0 accent-[var(--color-accent)]" checked={checked} onChange={e => onChange(e.target.checked)} />

@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { TimetableAdd, useAddParam } from '@/components/app/timetable-add';
 import { Shell } from '@/components/app/shell';
 import { SessionRow, SectionHead, ViewTabs } from '@/components/app/session-row';
 import { SessionSheet } from '@/components/app/session-sheet';
@@ -18,6 +19,7 @@ type View = 'grid' | 'week' | 'day' | 'teacher' | 'room';
 export default function SchedulePage() {
   const [anchor, setAnchor] = React.useState(() => new Date());
   const [adding, setAdding] = React.useState(false);
+  useAddParam(k => { if (k === 'class') setAdding(true); });
   const [view, setView] = React.useState<View>('grid');
   const [open, setOpen] = React.useState<Q.SessionRow | null>(null);
   // The grid needs width; a phone starts on the list.
@@ -50,9 +52,7 @@ export default function SchedulePage() {
           <Button size="sm" variant="ghost" onClick={() => shift(1)} aria-label="Next week">
             <ChevronRight className="size-4" aria-hidden />
           </Button>
-          <Button size="sm" variant="primary" aria-label="New class" onClick={() => setAdding(true)}>
-            <Plus className="size-4" aria-hidden /> <span className="hidden sm:inline">New class</span>
-          </Button>
+          <TimetableAdd here="schedule" onAdd={() => setAdding(true)} />
         </div>
       }
     >
