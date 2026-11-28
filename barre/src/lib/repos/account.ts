@@ -4,12 +4,15 @@ export type AccountRow = {
   id: string; name: string; status: string; status_reason: string | null; trial_ends_on: string | null;
   data_deletion_due_on: string | null; plan_name: string | null; price_minor: number | null;
   max_students: number | null; max_locations: number | null; max_staff: number | null;
-  students: number; locations: number; staff: number;
+  students: number; locations: number; staff: number; leavers: number;
 };
 export const ACCOUNT = `
 select s.id, s.name, s.status, s.status_reason, s.trial_ends_on, s.data_deletion_due_on,
        p.name as plan_name, p.price_minor, p.max_students, p.max_locations, p.max_staff,
-       (select count(*)::int from student x where x.studio_id = s.id and x.deleted_at is null) as students,
+       -- Leavers are not on the plan (0062): only children in a class, trial or
+       -- waiting list, or just added.
+       app.plan_student_count(s.id) as students,
+       (select count(*)::int from student x where x.studio_id = s.id and x.deleted_at is null) - app.plan_student_count(s.id) as leavers,
        (select count(*)::int from location x where x.studio_id = s.id and x.deleted_at is null) as locations,
        (select count(*)::int from staff_member x where x.studio_id = s.id and x.deleted_at is null) as staff
   from studio s left join plan p on p.id = s.plan_id
