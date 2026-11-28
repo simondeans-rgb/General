@@ -172,7 +172,7 @@ function Join() {
                 return (
                             <li key={x.session_id} className="@container">
                               <button onClick={() => setPick(x)} aria-pressed={on}
-                                className={cn('grid w-full grid-cols-[4.25rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1 py-3.5 text-left hover:bg-surface-2/60 @xs:grid-cols-[4.25rem_minmax(0,1fr)_auto]',
+                                className={cn('grid w-full grid-cols-1 items-start gap-x-3 gap-y-1 py-3.5 text-left hover:bg-surface-2/60 @xs:grid-cols-[4.25rem_minmax(0,1fr)_auto] @xs:items-center',
                                   on && 'bg-accent-soft hover:bg-accent-soft')}>
                                 <span className="pl-1">
                                   <span className="block font-display text-[1.25rem] leading-none tnum">{time(x.starts_at)}</span>
@@ -187,7 +187,7 @@ function Join() {
                                   )}
                                   {on && <span className="block text-[0.8125rem] font-semibold text-accent-text">Chosen — add your details below</span>}
                                 </span>
-                                <span className="col-start-2 shrink-0 pr-1 text-[0.8438rem] @xs:col-start-auto @xs:text-right">
+                                <span className="shrink-0 pr-1 text-[0.8438rem] @xs:text-right">
                                   <span className="block font-semibold">{x.trial_price_minor ? `Trial ${money(x.trial_price_minor)}` : 'Free trial'}</span>
                                   {ongoing(about.get(x.class_name)) && <span className="block text-ink-2">then {ongoing(about.get(x.class_name))}</span>}
                                   <span className={cn('block', x.places_left <= 2 ? 'font-semibold text-caution' : 'text-ink-3')}>{x.places_left} place{x.places_left === 1 ? '' : 's'} left</span>
@@ -200,7 +200,7 @@ function Join() {
                     </div>
                   ))}
                   {!allDates && visible.length < list.length && list.length > 0 && (
-                    <Button onClick={() => setAllDates(true)}>Show later dates ({list.length - visible.length} more day{list.length - visible.length === 1 ? '' : 's'})</Button>
+                    <Button className="h-auto min-h-10 whitespace-normal py-2 [@media(pointer:coarse)]:h-auto" onClick={() => setAllDates(true)}>Show later dates ({list.length - visible.length} more day{list.length - visible.length === 1 ? '' : 's'})</Button>
                   )}
                 </div>
               );
@@ -284,7 +284,7 @@ function AdultDropIn({ slug, school, about, info }: { slug: string; school: Scho
         {rows.data.map(x => (
           <li key={x.session_id} className="@container">
             <button onClick={() => setPick(x)} aria-pressed={pick?.session_id === x.session_id}
-              className={cn('grid w-full grid-cols-[4.25rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1 py-3.5 text-left hover:bg-surface-2/60 @xs:grid-cols-[4.25rem_minmax(0,1fr)_auto]', pick?.session_id === x.session_id && 'bg-accent-soft hover:bg-accent-soft')}>
+              className={cn('grid w-full grid-cols-1 items-start gap-x-3 gap-y-1 py-3.5 text-left hover:bg-surface-2/60 @xs:grid-cols-[4.25rem_minmax(0,1fr)_auto] @xs:items-center', pick?.session_id === x.session_id && 'bg-accent-soft hover:bg-accent-soft')}>
               <span className="pl-1">
                 <span className="block font-display text-[1.25rem] leading-none tnum">{time(x.starts_at)}</span>
                 <span className="mt-1 block text-[0.7812rem] text-ink-3">{dayDate(x.starts_at)}</span>
@@ -292,7 +292,7 @@ function AdultDropIn({ slug, school, about, info }: { slug: string; school: Scho
               <span className="min-w-0"><span className="block font-semibold">{x.class_name}</span>
                 <span className="block text-[0.8125rem] text-ink-3">{[about.get(x.class_name)?.level_note, `${x.places_left} place${x.places_left === 1 ? '' : 's'} left`].filter(Boolean).join(' · ')}</span>
                 {about.get(x.class_name)?.description && <span className="mt-0.5 line-clamp-2 block text-[0.8125rem] text-ink-2">{about.get(x.class_name)!.description}</span>}</span>
-              <span className="col-start-2 pr-1 text-[0.8438rem] font-semibold @xs:col-start-auto">{money(x.price_minor)}</span>
+              <span className="pr-1 text-[0.8438rem] font-semibold">{money(x.price_minor)}</span>
             </button>
           </li>
         ))}
