@@ -15,6 +15,7 @@ import {
   Beats, Button, EmptyState, ErrorState, Field, Input, Notice, Select, Skeleton, Spinner,
 } from '@/components/ui';
 import { SectionHead, StyleMark, ViewTabs } from '@/components/app/session-row';
+import { ClassUniform } from '@/components/app/uniform';
 import * as H from '@/lib/repos/hub';
 import { storage, formatBytes, kindForFile, probeDuration } from '@/lib/storage';
 import { cn } from '@/lib/cn';
@@ -65,6 +66,7 @@ function ClassView() {
         )}
 
         {c && <Summary c={c} />}
+        {c && <ClassUniform classId={id} canEdit={isOffice} />}
         {c && <ClassNotices classId={id} className={c.name} canPost={canAdd} />}
         {c && <Material classId={id} canAdd={canAdd} isOffice={isOffice} />}
       </div>

@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { StudentExams } from '@/components/app/exams';
+import { ChildUniform } from '@/components/app/uniform';
 import { PracticeLog } from '@/components/app/practice';
 import Link from 'next/link';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -87,6 +88,7 @@ export default function FamilyChildren() {
                   </p>
                 </Row>
               )}
+              <ChildUniform studentId={c.id} wrap={x => <Row label="Uniform">{x}</Row>} />
               <Row label="Exams"><StudentExams studentId={c.id} /></Row>
               <EmergencyContacts studentId={c.id} name={c.first_name} />
               {!c.is_adult && <CollectionList studentId={c.id} name={c.first_name} />}
