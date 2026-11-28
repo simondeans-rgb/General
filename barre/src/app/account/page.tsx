@@ -21,6 +21,7 @@ import * as A from '@/lib/repos/account';
 import { inviteLink } from '@/lib/repos/platform';
 import { money, dateShort, relativeDay, time } from '@/lib/format';
 import { cn } from '@/lib/cn';
+import { pickerLabels } from '@/lib/office-words';
 
 const ROLE: Record<string, { label: string; plural: string; tone: Tone; does: string }> = {
   owner:    { label: 'Owner', plural: 'Owners', tone: 'accent', does: 'Everything, including the account, billing and who has access' },
@@ -51,7 +52,7 @@ export default function AccountPage() {
         <ImagerySettings canEdit={isOwner && !session?.platform} />
         <PlanCard acct={acct} />
         <Team isOwner={isOwner} studioId={acct?.id} />
-        {isOwner && !session?.platform && <HistoryCard />}
+        {!session?.platform && <HistoryCard isOwner={isOwner} />}
         {isOwner && !session?.platform && acct && <SupportCard studioId={acct.id} />}
         {isOwner && !session?.platform && acct && <RetentionCard studioId={acct.id} />}
         {isOwner && !session?.platform && <ExportCard name={acct?.name} />}
@@ -229,7 +230,8 @@ function Team({ isOwner, studioId }: { isOwner: boolean; studioId?: string }) {
 function InviteSheet({ studioId, isOwner, onClose }: { studioId: string; isOwner: boolean; onClose: () => void }) {
   const { session } = useSession();
   const qc = useQueryClient();
-  const families = useRows<{ id: string; name: string }>(['invite-families'], A.FAMILIES);
+  const families = useRows<{ id: string; name: string; guardian: string | null; children: string | null; postcode: string | null }>(['invite-families'], A.FAMILIES);
+  const famLabels = React.useMemo(() => pickerLabels(families.data ?? []), [families.data]);
   const students = useRows<{ id: string; name: string; family_name: string }>(['invite-students'], A.STUDENTS);
   const roles: Role[] = isOwner ? ['owner', 'admin', 'teacher', 'guardian', 'student'] : ['teacher', 'guardian', 'student'];
   const [role, setRole] = React.useState<Role>('teacher');
@@ -283,7 +285,7 @@ function InviteSheet({ studioId, isOwner, onClose }: { studioId: string; isOwner
         <Field label="Family" htmlFor="in-f" required hint="They will see this family’s children and nobody else’s.">
           <Select id="in-f" value={family} onChange={e => setFamily(e.target.value)}>
             <option value="">Choose a family…</option>
-            {families.data?.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+            {families.data?.map(f => <option key={f.id} value={f.id}>{famLabels.get(f.id) ?? f.name}</option>)}
           </Select>
         </Field>
       )}

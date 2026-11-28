@@ -4,10 +4,12 @@ import * as React from 'react';
 import { CalendarPlus } from 'lucide-react';
 import { RecordSheet } from '@/components/app/record-sheet';
 import { BookTrialSheet, usePipeline } from '@/components/app/enrolment-actions';
-import { Button, Field, Input } from '@/components/ui';
+import { Button, ErrorState, Field, Input, Skeleton } from '@/components/ui';
+import { useRows } from '@/lib/query';
+import { useWrite } from '@/lib/write';
 import { Word } from '@/components/app/session-row';
 import * as C from '@/lib/repos/classes';
-import { ageFrom, dateShort, time } from '@/lib/format';
+import { ageFrom, dateShort, time, toDateInput } from '@/lib/format';
 
 export const STAGE_LABEL: Record<string, string> = {
   enquiry: 'Enquiry', trial_requested: 'Trial requested', trial_booked: 'Trial booked',
@@ -54,15 +56,16 @@ export function EnquirySheet({ enquiry: e, onClose, startClosing = false, startB
         <dt className="text-ink-3">Contact</dt>
         <dd className="min-w-0">
           <span className="block font-medium">{e.contact_name}</span>
-          {e.contact_phone && <a href={`tel:${e.contact_phone}`} className="block tnum text-accent-text hover:underline">{e.contact_phone}</a>}
-          {e.contact_email && <a href={`mailto:${e.contact_email}`} className="block truncate text-accent-text hover:underline">{e.contact_email}</a>}
+          {e.contact_phone && <a href={`tel:${e.contact_phone}`} className="block min-h-[24px] tnum text-accent-text hover:underline">{e.contact_phone}</a>}
+          {e.contact_email && <a href={`mailto:${e.contact_email}`} className="block min-h-[24px] truncate text-accent-text hover:underline">{e.contact_email}</a>}
         </dd>
         {e.source && <><dt className="text-ink-3">Came via</dt><dd>{e.source}</dd></>}
         <dt className="text-ink-3">Received</dt><dd>{dateShort(e.created_at)}</dd>
         {e.trial_starts_at && <><dt className="text-ink-3">Trial</dt>
           <dd>{dateShort(e.trial_starts_at)} at {time(e.trial_starts_at)}</dd></>}
-        {open && e.next_action_on && <><dt className="text-ink-3">Follow up by</dt><dd>{dateShort(e.next_action_on)}</dd></>}
       </dl>
+
+      {open && !closing && <FollowUpAndNotes e={e} />}
 
       {e.live_trial && open && (
         <p className="text-[0.8125rem] text-ink-3">
@@ -88,5 +91,55 @@ export function EnquirySheet({ enquiry: e, onClose, startClosing = false, startB
         </Field>
       )}
     </RecordSheet>
+  );
+}
+
+/**
+ * Reception's call log for one enquiry (F10): what was said, by whom and
+ * when, and the date to follow up, which Today reminds about.
+ */
+function FollowUpAndNotes({ e }: { e: C.EnquiryRow }) {
+  const notes = useRows<C.EnquiryNote>(['enquiry-notes', e.id], C.ENQUIRY_NOTES, [e.id]);
+  const [body, setBody] = React.useState('');
+  const [on, setOn] = React.useState(toDateInput(e.next_action_on));
+  // The enquiry passed in is the row as opened; what was saved since lives here.
+  const [savedOn, setSavedOn] = React.useState(toDateInput(e.next_action_on));
+  const who = e.child_name ?? e.contact_name;
+  const add = useWrite(C.ADD_ENQUIRY_NOTE, { onDone: () => { setBody(''); if (on) setSavedOn(on); }, saved: `Note added to ${who}’s enquiry` });
+  const date = useWrite(C.SET_ENQUIRY_FOLLOW_UP, { onDone: () => setSavedOn(on), saved: () => on ? `Follow up with ${who} on ${dateShort(on)}` : `Follow-up date cleared` });
+  const dateChanged = on !== savedOn;
+  return (
+    <section aria-labelledby={`enq-notes-${e.id}`} className="space-y-3 border-t border-line pt-3">
+      <h3 id={`enq-notes-${e.id}`} className="text-[0.875rem] font-semibold">Follow-up and notes</h3>
+      <div className="flex flex-wrap items-end gap-2">
+        <Field label="Follow up by" htmlFor="enq-on" hint="Today reminds you on the day.">
+          <Input id="enq-on" type="date" value={on} onChange={x => setOn(x.target.value)} className="w-44" />
+        </Field>
+        {dateChanged && (
+          <Button size="sm" loading={date.isPending} onClick={() => date.mutate([e.id, on || null])} className="mb-6">
+            {on ? 'Save date' : 'Clear date'}
+          </Button>
+        )}
+      </div>
+      <Field label="Add a note" htmlFor="enq-note" hint="For example: called back, wants Saturdays. Families never see notes.">
+        <textarea id="enq-note" rows={2} value={body} onChange={x => setBody(x.target.value)} maxLength={2000}
+          className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
+      </Field>
+      <Button size="sm" disabled={!body.trim()} loading={add.isPending}
+              onClick={() => add.mutate([e.id, body.trim(), dateChanged && on ? on : null])}>Add note</Button>
+      {(add.error ?? date.error) != null && <ErrorState error={add.error ?? date.error} />}
+      {notes.isPending && <Skeleton className="h-10" />}
+      {notes.data?.length === 0 && <p className="text-[0.8125rem] text-ink-3">No notes yet.</p>}
+      {!!notes.data?.length && (
+        <ol className="divide-y divide-line border-y border-line">
+          {notes.data.map(n => (
+            <li key={n.id} className="py-2 text-[0.875rem]">
+              <p className="whitespace-pre-line">{n.body}</p>
+              <p className="mt-0.5 text-[0.7812rem] text-ink-3">{n.author ?? 'Former staff'} · {dateShort(n.created_at)} {time(n.created_at)}</p>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
   );
 }
