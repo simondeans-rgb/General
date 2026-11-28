@@ -2,10 +2,11 @@
 
 import * as React from 'react';
 import { useRows } from '@/lib/query';
-import { EmptyState, Skeleton, ErrorState, ViewTabs, Word } from '@/components/ui';
+import { EmptyState, Notice, Skeleton, ErrorState, ViewTabs, Word } from '@/components/ui';
+import { diaryClashes, diaryClashLine } from '@/lib/clash';
 import { SectionHead, SessionRow, useSessionChanges } from '@/app/family/_parts/ui';
 import type { CalEvent } from '@/lib/ics';
-import { time, relativeDay, dateLong, isoDate, dayRange } from '@/lib/format';
+import { time, relativeDay, dateLong, dateShort, dayName, isoDate, dayRange } from '@/lib/format';
 
 /** One line in a family's or a student's diary (app.my_diary, UR-26). */
 export type DiaryItem = {
@@ -58,6 +59,10 @@ export function Diary({ days = 28, family = false, empty }: { days?: number; fam
   }, [shown]);
   const changes = useSessionChanges((rows.data ?? []).filter(r => r.item_kind === 'class').map(r => r.ref_id));
   const named = several && child === 'all';
+  // Someone booked into two things at once (U6): flagged on both rows, in words.
+  const clashes = React.useMemo(() => diaryClashes(rows.data ?? []), [rows.data]);
+  const clashed = shown.filter(r => clashes.has(`${r.uid}|${r.student_id}`));
+  const firstClash = clashed[0];
 
   return (
     <div className="space-y-10">
@@ -68,6 +73,14 @@ export function Diary({ days = 28, family = false, empty }: { days?: number; fam
       {rows.isLoading && <div className="space-y-3">{[0, 1, 2].map(i => <Skeleton key={i} className="h-14" />)}</div>}
       {rows.error != null && <ErrorState error={rows.error} onRetry={() => rows.refetch()} />}
       {byDay.length === 0 && !rows.isLoading && <EmptyState title="Nothing scheduled" body={empty} />}
+      {firstClash && (
+        <div role="status" className="border-l-2 border-critical pl-3">
+          <Notice word="Clash" tone="critical"
+            title={`${family ? `${firstClash.child} is` : 'You are'} booked for two things at ${time(firstClash.starts_at)} on ${dayName(firstClash.starts_at).slice(0, 3)} ${dateShort(firstClash.starts_at)}`}
+            detail={`${firstClash.title}: ${diaryClashLine(clashes.get(`${firstClash.uid}|${firstClash.student_id}`)![0]!).replace(/^O/, 'o')}.`
+              + (clashed.length > 2 ? ' More clashes are marked below.' : '') + ' Tell the school if one needs to change.'} />
+        </div>
+      )}
       {byDay.map(([day, list]) => {
         const rel = relativeDay(list[0]!.starts_at);
         const long = dateLong(list[0]!.starts_at);
@@ -82,6 +95,8 @@ export function Diary({ days = 28, family = false, empty }: { days?: number; fam
                 return (
                   <SessionRow key={`${s.uid}-${s.student_id}-${i}`}
                     time={s.item_kind === 'exam' ? 'All day' : time(s.starts_at)}
+                    until={s.item_kind !== 'exam' && s.ends_at ? time(s.ends_at) : null}
+                    clash={(clashes.get(`${s.uid}|${s.student_id}`) ?? []).map(diaryClashLine).join('; ') || null}
                     name={named ? `${s.child} · ${s.title}` : s.title}
                     href={s.class_id ? `/class/?id=${s.class_id}` : undefined}
                     cancelled={s.status === 'cancelled'} reason={c?.cancel_reason}
