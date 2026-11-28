@@ -1,7 +1,11 @@
 'use client';
 
 import * as React from 'react';
-import { Badge, Beats, Button, EmptyState, ErrorState, Field, Input, Notice, Select, Skeleton, Spinner, Choice } from '@/components/ui';
+import {
+  Badge, Beats, Button, EmptyState, ErrorState, Field, Input, Notice, Select, Skeleton, Spinner, Choice,
+  FileField, FilterTabs, LocationSelect, NOTICE_WORDS, StatusLine, ViewTabs, Word,
+} from '@/components/ui';
+import { dateLong, dateShort, dayDate, dayDateTime, dayHeading, relativeDay } from '@/lib/format';
 import { SwayvoIcon, SwayvoLogo, SwayvoMark } from '@/components/app/swayvo';
 import { SWAYVO } from '@/lib/swayvo-logo';
 import { MessagePreview, ProgrammePreview } from '@/components/app/message-preview';
@@ -91,6 +95,34 @@ export default function DesignSystem() {
           <Notice word="Cancelled" tone="critical" title="Street Seniors, Fri 27 Nov" detail="Teacher unwell · credit added" />
           <Notice word="Due 10 Dec" tone="caution" title="Spring term · £186.00" detail="Card, Apple Pay or bank transfer" action={<Button size="sm" variant="primary">Pay</Button>} />
         </div>
+        <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+          <div>
+            <h3 className="mb-2 font-semibold">The words a Notice may use</h3>
+            <p className="mb-3 max-w-prose text-[0.875rem] text-ink-2">
+              Notices are for changes, deadlines and things that need action. The list is typed
+              (<code>NoticeWord</code>), so any other word fails the build. “Due” takes a date: DUE 10 DEC.
+            </p>
+            <ul className="flex flex-wrap gap-x-4 gap-y-2" aria-label="Notice words">
+              {NOTICE_WORDS.map(w => <li key={w}><Word size="md">{w === 'Due' ? 'Due 10 Dec' : w}</Word></li>)}
+            </ul>
+          </div>
+          <div>
+            <h3 className="mb-2 font-semibold">Confirmations are a status line</h3>
+            <p className="mb-3 text-[0.875rem] text-ink-2">“Done”, “Saved”, “Sent” are never a Notice: say what happened, quietly.</p>
+            <div className="space-y-3">
+              <StatusLine live={false} title="Sent to 7 families" detail="They see it in the app; 2 more once email is connected." />
+              <StatusLine live={false} tone="ink" title="Nothing new to send" />
+            </div>
+          </div>
+        </div>
+      </Section>
+
+      <Section title="Tabs, filters and choices">
+        <DemoControls />
+      </Section>
+
+      <Section title="Dates">
+        <DateRule />
       </Section>
 
       <Section title="Status and categories">
@@ -132,6 +164,83 @@ export default function DesignSystem() {
         </div>
       </Section>
     </main>
+  );
+}
+
+/** The shared controls (U9): screens never hand-roll their own. */
+function DemoControls() {
+  const [view, setView] = React.useState<'list' | 'grid'>('list');
+  const [filter, setFilter] = React.useState<'action' | 'open' | 'paid'>('action');
+  const [one, setOne] = React.useState<'yes' | 'no' | null>('no');
+  const [many, setMany] = React.useState<string[]>(['tap']);
+  const [who, setWho] = React.useState<'self' | 'child'>('child');
+  const [file, setFile] = React.useState<string | null>(null);
+  const [place, setPlace] = React.useState('');
+  return (
+    <div className="grid gap-x-12 gap-y-10 lg:grid-cols-2">
+      <div className="space-y-2">
+        <h3 className="font-semibold">ViewTabs — switch views</h3>
+        <ViewTabs label="Show classes as" value={view} onChange={setView} options={[['list', 'List'], ['grid', 'Week grid']]} className="border-b border-line" />
+        <p className="text-[0.8125rem] text-ink-3">The same thing seen another way. A tab list; arrow keys move.</p>
+      </div>
+      <div className="space-y-2">
+        <h3 className="font-semibold">FilterTabs — narrow one list</h3>
+        <FilterTabs label="Show invoices" value={filter} onChange={setFilter} options={[['action', 'Needs action', 8], ['open', 'Open', 12], ['paid', 'Paid', 22]]} className="border-b border-line" />
+        <p className="text-[0.8125rem] text-ink-3">Same look, with a count. Pressed buttons, not tabs.</p>
+      </div>
+      <div className="space-y-2">
+        <h3 className="font-semibold">Choice — one of a few</h3>
+        <Choice label="Photos in class" value={one} onChange={setOne} options={[{ value: 'yes', label: 'Allow' }, { value: 'no', label: 'Don’t allow' }]} />
+        <p className="text-[0.8125rem] text-ink-3">Selected is an ink outline and a tick — never the accent, which belongs to the one primary action.</p>
+      </div>
+      <div className="space-y-2">
+        <h3 className="font-semibold">Choice — several</h3>
+        <Choice multiple label="Classes to invite" size="sm" value={many} onChange={setMany}
+          options={[{ value: 'tap', label: 'Junior Tap' }, { value: 'ballet', label: 'Grade 2 Ballet' }, { value: 'street', label: 'Street Seniors' }]} />
+      </div>
+      <div className="space-y-2">
+        <h3 className="font-semibold">Choice — with a hint</h3>
+        <Choice label="Who is the class for?" layout="grid" className="sm:grid-cols-2" value={who} onChange={setWho}
+          options={[{ value: 'self', label: 'I’m booking for myself', hint: 'Adult classes and drop-ins' }, { value: 'child', label: 'For my child', hint: 'Children’s and teens’ classes' }]} />
+      </div>
+      <div className="space-y-2">
+        <h3 className="font-semibold">FileField and LocationSelect</h3>
+        <FileField label="Choose a video, music or a document" hint="Up to 20 MB. Or drop it here." onFiles={f => setFile(f[0]?.name ?? null)} chosen={file} />
+        <LocationSelect locations={[{ id: '1', name: 'Main studio' }, { id: '2', name: 'Riverside hall' }]} value={place} onChange={setPlace} />
+      </div>
+    </div>
+  );
+}
+
+/** The one date rule, shown with a fixed "today" (Saturday 28 November 2026). */
+function DateRule() {
+  const now = new Date('2026-11-28T10:00:00Z');
+  const at = (iso: string) => new Date(iso);
+  const rows: [string, string, string][] = [
+    ['relativeDay', relativeDay(at('2026-11-28T17:00:00Z'), now), 'Today'],
+    ['relativeDay', relativeDay(at('2026-11-29T17:00:00Z'), now), 'Tomorrow'],
+    ['relativeDay', relativeDay(at('2026-12-03T18:30:00Z'), now), 'Any other day: weekday and date, never a bare “Thursday”'],
+    ['dayDate', dayDate(at('2027-01-08T18:30:00Z'), now), 'Another year adds the year'],
+    ['dayDateTime', dayDateTime(at('2026-12-03T18:30:00Z'), now), 'With a time'],
+    ['dayHeading', dayHeading(at('2026-11-28T18:30:00Z'), now), 'A day as a heading'],
+    ['dateLong', dateLong(at('2026-12-03T18:30:00Z')), 'Sheets, confirmations, anywhere with room'],
+    ['dateShort', dateShort(at('2026-12-10T12:00:00Z')), 'Dense tables and DUE words only'],
+  ];
+  return (
+    <div>
+      <p className="mb-3 max-w-prose text-[0.875rem] text-ink-2">
+        One rule, in <code>lib/format</code>. Times are 24-hour (18:30). Money always has two decimals (£186.00).
+        Say “booked” for children in a class (never “expected”).
+      </p>
+      <table className="w-full max-w-3xl text-[0.875rem]">
+        <thead className="border-b border-line text-left"><tr><th scope="col" className="label py-2 pr-4">Function</th><th scope="col" className="label py-2 pr-4">Gives</th><th scope="col" className="label py-2">When</th></tr></thead>
+        <tbody className="divide-y divide-line">
+          {rows.map(([fn, out, when]) => (
+            <tr key={fn + out}><td className="py-2 pr-4 font-mono text-[0.8125rem]">{fn}</td><td className="py-2 pr-4 font-semibold">{out}</td><td className="py-2 text-ink-2">{when}</td></tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

@@ -14,7 +14,8 @@
     "db:reset": "node scripts/build-migrations.mjs && tsx scripts/db-reset.mts",
     "db:seed": "tsx scripts/db-seed.mts",
     "export:demo": "next build && node scripts/copy-export.mjs",
-    "a11y": "tsx scripts/a11y.mts"
+    "a11y": "tsx scripts/a11y.mts",
+    "lint:design": "node scripts/design-lint.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.7",
