@@ -19,7 +19,8 @@ export type Headline = {
 const headline = (at: boolean) => {
   const inLoc = (col: string) => at ? ` and ${col} in (select id from class where $1::uuid is null or location_id = $1::uuid)` : '';
   return `
-with active_now as (
+with ${at ? `lm as materialized (select outstanding_minor, collected_30d_minor from location_money where $1::uuid is not null and location_id = $1::uuid),
+` : ''}active_now as (
   select distinct student_id from enrolment where status = 'active' and deleted_at is null${inLoc('class_id')}
 ),
 first_start as (
@@ -65,10 +66,10 @@ select
   -- two screens agree: came to a trial = reached "tried a class" or enrolled.
   (select count(*)::int from enquiry where deleted_at is null and stage in ('trial_attended','enrolled')) as trials_attended,
   ${at ? `case when $1::uuid is null then ` : ''}coalesce((select sum(balance_minor) from family where deleted_at is null and balance_minor > 0), 0)::bigint${at ? `
-       else coalesce((select sum(outstanding_minor) from location_money where location_id = $1::uuid), 0)::bigint end` : ''} as outstanding_minor,
+       else coalesce((select sum(outstanding_minor) from lm), 0)::bigint end` : ''} as outstanding_minor,
   ${at ? `case when $1::uuid is null then ` : ''}coalesce((select sum(amount_minor - refunded_minor) from payment where deleted_at is null
      and succeeded_at >= now() - interval '30 days' and method not in ('account','credit')), 0)::bigint${at ? `
-       else coalesce((select sum(collected_30d_minor) from location_money where location_id = $1::uuid), 0)::bigint end` : ''} as collected_30d_minor,
+       else coalesce((select sum(collected_30d_minor) from lm), 0)::bigint end` : ''} as collected_30d_minor,
   coalesce((select sum(total_minor) from invoice where deleted_at is null and status <> 'void' and status <> 'draft'
      and issued_on > current_date - 90), 0)::bigint as issued_90d_minor,
   coalesce((select sum(total_minor - paid_minor) from invoice where deleted_at is null
@@ -157,6 +158,7 @@ export type LocationRow = { id: string; name: string; classes: number; students:
   attended: number; marked: number; billed_30d_minor: string; fees_term_minor: string;
   collected_30d_minor: string; outstanding_minor: string; overdue_minor: string };
 export const BY_LOCATION = `
+with m as materialized (select * from location_money)
 select l.id, l.name,
        (select count(*)::int from class c where c.location_id = l.id and c.deleted_at is null) as classes,
        (select count(distinct e.student_id)::int from enrolment e join class c on c.id = e.class_id
@@ -176,7 +178,7 @@ select l.id, l.name,
        coalesce(m.collected_30d_minor, 0)::bigint as collected_30d_minor,
        coalesce(m.outstanding_minor, 0)::bigint as outstanding_minor,
        coalesce(m.overdue_minor, 0)::bigint as overdue_minor
-  from location l left join location_money m on m.location_id = l.id where l.deleted_at is null and ${IN_MY_SCOPE} order by l.name`;
+  from location l left join m on m.location_id = l.id where l.deleted_at is null and ${IN_MY_SCOPE} order by l.name`;
 
 /** Money no location can be given: invoices with no class lines for a family
  *  in no class now. Shown under the comparison so the columns add up. */

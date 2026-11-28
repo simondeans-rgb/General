@@ -186,7 +186,7 @@ function LocationCompare() {
       {rows.isLoading && <Skeleton className="mt-3 h-24" />}
       {rows.data && (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px] text-sm">
+          <table className="w-full min-w-[820px] text-sm [&_td]:pl-3 [&_th:not(:first-child)]:pl-3">
             <thead className="border-b border-line text-left">
               <tr>{['Location', 'Classes', 'Students', 'Places filled', 'Attendance, 4 weeks', 'Invoiced, 30 days', 'Collected, 30 days', 'Outstanding', 'Term fees, enrolled'].map((t, i) =>
                 <th key={t} scope="col" className={cn('label py-2 font-semibold', i > 0 && 'text-right')}>{t}</th>)}</tr>

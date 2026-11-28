@@ -99,7 +99,7 @@ function Signups({ canChange }: { canChange: boolean }) {
       <div className="flex flex-wrap items-center gap-3 pt-3">
         <p className="min-w-0 flex-1 text-[0.9062rem] text-ink-2">
           {open
-            ? 'Open: anyone can start a school on the free trial from the Start your school page. Each one appears in Schools, marked as started online.'
+            ? 'Open: anyone can start a school on the free trial from the Start your school page. Each one appears in Schools, and its history says it was started online.'
             : 'Closed: the Start your school page asks people to contact Swayvo instead.'}
         </p>
         {canChange && <Button size="sm" loading={set.isPending} onClick={() => set.mutate(!open)}>{open ? 'Close signups' : 'Open signups'}</Button>}

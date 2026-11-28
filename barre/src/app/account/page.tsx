@@ -80,7 +80,8 @@ type PlanRow = { code: string; name: string; price_minor: number; max_students: 
 const PLANS = `select code, name, price_minor, max_students, max_locations, max_staff, is_trial
   from plan where active order by sort, price_minor`;
 const CHANGE_PLAN = `select app.change_plan($1) as name`;
-const capText = (n: number | null, what: string) => (n == null ? `any number of ${what}` : `up to ${n.toLocaleString('en-GB')} ${what}`);
+const capText = (n: number | null, what: string) => (n == null ? `any number of ${what}`
+  : `up to ${n.toLocaleString('en-GB')} ${n === 1 ? ({ students: 'student', locations: 'location' } as Record<string, string>)[what] ?? what : what}`);
 
 function PlanCard({ acct, canChange }: { acct?: A.AccountRow; canChange: boolean }) {
   const plans = useRows<PlanRow>(['plans-on-offer'], PLANS);
