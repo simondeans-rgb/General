@@ -940,6 +940,40 @@ select ev.studio_id, ev.id, ev.student_id, 'confirmed', ${q(uid(NS.user, 1))}, n
  where ev.kind = 'private_lesson' and ev.student_id is not null
 on conflict (event_id, student_id) do nothing;`);
 
+  // ── A winter showcase with its production pack (round 2 F7) ─────────────
+  // Three classes dance; Grade 3 has two items in a row (a quick change).
+  push(`
+insert into studio_event (id, studio_id, kind, status, title, description, starts_at, ends_at, venue, cost_minor, requests_open)
+values (${q(uid(NS.event, 6))}, ${q(STUDIO_ID)}, 'show', 'published', 'Winter Showcase — Blackheath',
+        'An evening showcase for Junior Tap, Grade 3 Ballet and Street Juniors.', ${q(at(33, '18:00'))}, ${q(at(33, '20:00'))},
+        'Blackheath Community Hall', 1200, false);
+insert into event_participant (studio_id, event_id, student_id, status, invited_class_id, decided_by, decided_at)
+select distinct on (e.student_id) e.studio_id, ${q(uid(NS.event, 6))}, e.student_id, 'confirmed', e.class_id, ${q(uid(NS.user, 1))}, now()
+  from enrolment e where e.class_id in (${[3, 4, 8].map(i => q(classIds[i]!)).join(',')}) and e.status = 'active' and e.deleted_at is null
+ order by e.student_id, e.class_id
+on conflict (event_id, student_id) do nothing;
+insert into event_routine (studio_id, event_id, class_id, title, position, music, duration_sec) values
+  (${q(STUDIO_ID)}, ${q(uid(NS.event, 6))}, ${q(classIds[4]!)}, 'Tap Happy', 1, 'Sing, Sing, Sing (edit)', 190),
+  (${q(STUDIO_ID)}, ${q(uid(NS.event, 6))}, ${q(classIds[3]!)}, 'Waltz of the Flowers', 2, 'Tchaikovsky, Waltz of the Flowers', 240),
+  (${q(STUDIO_ID)}, ${q(uid(NS.event, 6))}, ${q(classIds[3]!)}, 'Mazurka', 3, 'Character mazurka', 150),
+  (${q(STUDIO_ID)}, ${q(uid(NS.event, 6))}, ${q(classIds[8]!)}, 'Level Up', 4, 'Clean radio edit', 200);
+insert into costume_item (studio_id, event_id, routine_id, name, price_minor, charge_families)
+select ${q(STUDIO_ID)}, r.event_id, r.id, v.name, v.price, v.charge
+  from event_routine r join (values ('Tap Happy', 'Red waistcoat', 1500, true), ('Waltz of the Flowers', 'Flower dress', 2400, true),
+                                    ('Mazurka', 'Character skirt', 0, false)) v(routine, name, price, charge) on v.routine = r.title
+ where r.event_id = ${q(uid(NS.event, 6))};
+update studio_event set costume_budget_minor = 120000 where id = ${q(uid(NS.event, 6))};
+insert into event_helper_slot (studio_id, event_id, role, needed, routine_id)
+select ${q(STUDIO_ID)}, r.event_id, 'Chaperone, dressing room 2', 2, r.id from event_routine r
+ where r.event_id = ${q(uid(NS.event, 6))} and r.title = 'Waltz of the Flowers';`);
+
+  // ── Uniform per class ────────────────────────────────────────────────────
+  push(`
+update class set uniform = array['Pink leotard', 'Pink ballet socks', 'Pink ballet shoes', 'Hair tied back'] where id = ${q(classIds[1]!)};
+update class set uniform = array['Lilac leotard', 'Pink tights', 'Pink ballet shoes', 'Hair in a bun'], uniform_url = 'https://example.com/shop/ballet' where id = ${q(classIds[2]!)};
+update class set uniform = array['Navy leotard', 'Pink tights', 'Pink ballet shoes', 'Black character shoes and skirt', 'Hair in a bun'], uniform_url = 'https://example.com/shop/ballet' where id = ${q(classIds[3]!)};
+update class set uniform = array['School T-shirt', 'Black shorts or leggings', 'Black tap shoes'] where id = ${q(classIds[4]!)};`);
+
   // ── Requests waiting on the studio ───────────────────────────────────────
   const requests: [number, string, string, string, string, number][] = [
     [1, 'private_lesson', 'open',

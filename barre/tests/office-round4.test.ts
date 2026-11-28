@@ -135,11 +135,10 @@ describe('⌘K ranking (U8)', () => {
 
 /* ── U8 · billing totals follow the location ───────────────────────────── */
 describe('billing summary by location (U8)', () => {
-  it('with no location it matches the whole-school summary; with one it is a part of it', async () => {
+  it('each location is a part of the whole-school summary', async () => {
     await asUser(USERS.owner, async (q, svc) => {
       const [all] = await q(B.SUMMARY);
-      const [none] = await q(B.SUMMARY_AT, [null]);
-      expect(none).toEqual(all);
+      // With no location the page uses the whole-school summary (SUMMARY_AT takes a location, 0062).
       const locs = await svc(`select name from location where deleted_at is null order by name`);
       let sum = 0;
       for (const l of locs) {

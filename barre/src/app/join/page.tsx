@@ -18,7 +18,9 @@ type Slot = { session_id: string; class_name: string; style: string | null; star
 /** What a prospect needs to choose a class (UR-20). */
 type ClassInfo = { class_name: string; style: string | null; description: string | null; level: string | null; level_note: string | null;
   what_to_bring: string | null; age_min: number | null; age_max: number | null; price_minor: number; pricing: string;
-  trial_price_minor: number | null; prerequisites: string | null; location: string | null; address: string | null; postcode: string | null };
+  trial_price_minor: number | null; prerequisites: string | null; location: string | null; address: string | null; postcode: string | null;
+  /** Uniform per class (0066), merged in from app.public_class_uniform. */
+  uniform?: string[]; uniform_url?: string | null };
 type SchoolInfo = { contact_email: string | null; contact_phone: string | null; arrival_note: string; cancellation_note: string };
 
 const PER: Record<string, string> = { term: 'a term', monthly: 'a month', one_off: 'for the course', drop_in: 'a class' };
@@ -32,6 +34,11 @@ const mapLink = (c?: ClassInfo | null) => {
   return q ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}` : null;
 };
 const yes = (v: string) => v === 'yes';
+/** The class uniform, for after the trial (0066). */
+const uniformText = (c?: ClassInfo | null): React.ReactNode => c && (c.uniform?.length || c.uniform_url) ? <>
+  {c.uniform?.join(', ')}{c.uniform_url && <>{c.uniform?.length ? ' · ' : ''}<a href={c.uniform_url} target="_blank" rel="noreferrer" className="font-medium text-accent-text underline">Where to buy it</a></>}
+  {c.what_to_bring && <span className="block text-[0.8125rem] text-ink-3">For once you join. For a first class, “Wear or bring” is enough.</span>}
+</> : null;
 
 export default function JoinPage() {
   return <Suspense fallback={<div className="min-h-dvh" />}><Join /></Suspense>;
@@ -53,7 +60,12 @@ function Join() {
     queryFn: () => readAs<ClassInfo>(null, `select * from app.public_class_info($1)`, [slug]) });
   const sinfo = useQuery({ queryKey: ['public-school-info', slug], enabled: !!school.data?.open,
     queryFn: async () => (await readAs<SchoolInfo>(null, `select * from app.public_school_info($1)`, [slug]))[0] ?? null });
-  const about = React.useMemo(() => new Map((info.data ?? []).map(c => [c.class_name, c])), [info.data]);
+  const uniform = useQuery({ queryKey: ['public-uniform', slug], enabled: !!school.data?.open,
+    queryFn: () => readAs<{ class_name: string; uniform: string[]; uniform_url: string | null }>(null, `select * from app.public_class_uniform($1)`, [slug]) });
+  const about = React.useMemo(() => {
+    const u = new Map((uniform.data ?? []).map(x => [x.class_name, x]));
+    return new Map((info.data ?? []).map(c => [c.class_name, { ...c, uniform: u.get(c.class_name)?.uniform, uniform_url: u.get(c.class_name)?.uniform_url }]));
+  }, [info.data, uniform.data]);
   useSchoolTheme(school.data ?? null);
 
   // Who the class is for comes first: an adult is never asked their child's age.
@@ -356,6 +368,7 @@ function ClassFacts({ c }: { c: ClassInfo }) {
     ['Ages', ages(c.age_min, c.age_max)],
     ['Before joining', c.prerequisites],
     ['Wear or bring', c.what_to_bring],
+    ['Uniform', uniformText(c)],
     ['Price', [c.trial_price_minor != null ? (c.trial_price_minor ? `Trial ${money(c.trial_price_minor)}` : 'Free trial') : null, ongoing(c) ? `then ${ongoing(c)}` : null].filter(Boolean).join(', ') || null],
   ] as [string, React.ReactNode][]).filter(([, v]) => v);
   return (
@@ -392,6 +405,7 @@ function Confirmation({ when, until, cls, school, schoolName, next, booked, clas
     ['When', `${dateLong(when)}, ${time(when)}${until ? `–${time(until)}` : ''}`],
     ['Where', where ? <>{where}{map && <> · <a href={map} target="_blank" rel="noreferrer" className="font-medium text-accent-text underline">Open in maps</a></>}</> : null],
     ['Wear or bring', cls?.what_to_bring],
+    ['Uniform', uniformText(cls)],
     ['Arriving', school?.arrival_note],
     ['If you can’t come', school ? <>{school.cancellation_note.replace(/^If you can[’']t come,?\s*/i, '').replace(/^./, c => c.toUpperCase())}{contact ? <> Contact {schoolName}: {contact}.</> : null}</> : null],
     ['What happens next', next],

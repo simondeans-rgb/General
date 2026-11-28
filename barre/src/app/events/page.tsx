@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { Suspense } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowDown, ArrowUp, Plus, Receipt, Trash2, Users } from 'lucide-react';
+import { Plus, Receipt, Trash2, Users } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection } from '@/components/app/detail-panel';
 import { RecordSheet } from '@/components/app/record-sheet';
@@ -15,9 +15,10 @@ import { useSession } from '@/lib/auth/session';
 import { useSelection } from '@/lib/use-selection';
 import * as E from '@/lib/repos/events';
 import * as C from '@/lib/repos/classes';
-import { CostumeSection, ProgrammeButton, RehearsalRegisterButton, TicketSection } from '@/components/app/show-tools';
+import { ProgrammeButton, RehearsalRegisterButton, TicketSection } from '@/components/app/show-tools';
 import { ConsentSnapshotButton } from '@/components/app/consent-snapshot';
-import { ExamsCard } from '@/components/app/exams';
+import { ExamEventPanel, ExamsCard } from '@/components/app/exams';
+import { CostumePlan, LicenceTracker, RunningOrder } from '@/components/app/production';
 import { dateLong, money, time } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
@@ -168,7 +169,6 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
   const [done, setDone] = React.useState<string | null>(null);
   const write = useWrite();
   const [pick, setPick] = React.useState<string[]>([]);
-  const [rt, setRt] = React.useState({ title: '', cls: '', costume: '' });
   const [rh, setRh] = React.useState({ title: 'Rehearsal', starts: '', ends: '' });
   const [ch, setCh] = React.useState({ name: '', phone: '', checked: false });
   const go = (sql: string, params: unknown[], msg?: (r: any) => string) =>
@@ -200,6 +200,7 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
         </Button>
       </DetailSection>
 
+      {e.kind === 'exam' ? <DetailSection title="Exam entries"><ExamEventPanel eventId={e.id} /></DetailSection> : (
       <DetailSection title={`Dancers (${people.data?.length ?? 0})`}>
         <ul className="max-h-64 divide-y divide-line overflow-y-auto text-[0.875rem]">
           {people.data?.map(p => (
@@ -217,37 +218,19 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
           </Button>
         )}
       </DetailSection>
+      )}
       </>}
 
       {tab === 'details' && <>
-      <DetailSection title="Running order">
-        <ol className="divide-y divide-line text-[0.875rem]">
-          {routines.data?.map((r, i) => (
-            <li key={r.id} className="flex items-start gap-1.5 py-1.5">
-              <span className="w-6 shrink-0 font-display text-[0.9375rem] tnum text-ink-3">{i + 1}</span>
-              <span className="min-w-0 flex-1"><b>{r.title}</b>{r.class_name ? ` · ${r.class_name}` : ''}{r.costume && <span className="block text-[0.7812rem] text-ink-2">Costume: {r.costume}</span>}</span>
-              <button aria-label={`Move ${r.title} up`} disabled={i === 0} onClick={() => go(E.MOVE_ROUTINE, [r.id, -1])} className="grid size-9 place-items-center rounded-[var(--radius-sm)] text-ink-3 hover:bg-surface-2 hover:text-ink disabled:opacity-30"><ArrowUp className="size-4" aria-hidden /></button>
-              <button aria-label={`Move ${r.title} down`} disabled={i === (routines.data!.length - 1)} onClick={() => go(E.MOVE_ROUTINE, [r.id, 1])} className="grid size-9 place-items-center rounded-[var(--radius-sm)] text-ink-3 hover:bg-surface-2 hover:text-ink disabled:opacity-30"><ArrowDown className="size-4" aria-hidden /></button>
-              <button aria-label={`Remove ${r.title}`} onClick={() => go(E.REMOVE_ROUTINE, [r.id])} className="grid size-9 place-items-center rounded-[var(--radius-sm)] text-ink-3 hover:bg-surface-2 hover:text-critical"><Trash2 className="size-4" aria-hidden /></button>
-            </li>
-          ))}
-        </ol>
-        <div className="mt-2 grid gap-1.5">
-          <Input aria-label="Routine name" placeholder="Routine name" value={rt.title} onChange={x => setRt({ ...rt, title: x.target.value })} />
-          <div className="grid grid-cols-2 gap-1.5">
-            <Select aria-label="Class dancing it" value={rt.cls} onChange={x => setRt({ ...rt, cls: x.target.value })}>
-              <option value="">Class…</option>{classes.data?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </Select>
-            <Input aria-label="Costume" placeholder="Costume" value={rt.costume} onChange={x => setRt({ ...rt, costume: x.target.value })} />
-          </div>
-          <Button size="sm" disabled={!rt.title.trim()} onClick={() => { go(E.ADD_ROUTINE, [e.id, rt.cls || null, rt.title, rt.costume]); setRt({ title: '', cls: '', costume: '' }); }}>Add routine</Button>
-        </div>
-      </DetailSection>
+      {e.kind !== 'exam' && <RunningOrder event={e} />}
 
       {routines.data && routines.data.length > 0 && <ProgrammeButton event={e} />}
       </>}
 
-      {tab === 'costumes' && <CostumeSection eventId={e.id} routines={routines.data ?? []} />}
+      {tab === 'costumes' && <>
+      {e.kind !== 'exam' && <CostumePlan event={e} />}
+      {(e.kind === 'show' || e.kind === 'competition') && <LicenceTracker event={e} />}
+      </>}
 
       {tab === 'rehearsals' && <>
       <DetailSection title="Rehearsals">

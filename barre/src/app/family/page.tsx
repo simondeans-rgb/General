@@ -5,6 +5,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
+import { FamilyReenrolment } from '@/components/app/family-reenrolment';
 import { MakeUpOffers } from '@/components/app/absence-report';
 import { useRows, useRow } from '@/lib/query';
 import { Button, EmptyState, Skeleton, ErrorState, Notice } from '@/components/ui';
@@ -178,6 +179,9 @@ export default function FamilyHome() {
 
           {/* The next show, exam, costume and fee for each child (U7). */}
           <ComingUpStrip nameOf={voice.name} solo={voice.solo} />
+
+          {/* Next term's classes to confirm (round 2 F3); shows only during re-enrolment. */}
+          <FamilyReenrolment />
 
           {/* Each child's week, and the adult's own. */}
           {loading && <div className="space-y-3">{[0, 1, 2].map(i => <Skeleton key={i} className="h-14" />)}</div>}

@@ -466,6 +466,8 @@ begin
       left join lateral (select s.status, s.number, s.due_on from inv_state s where s.event_id = ev.id and s.student_id = k.id
                           order by s.status = 'paid' desc limit 1) x on true
      where coalesce(ev.cost_minor, 0) > 0 and ev.kind <> 'private_lesson'
+       -- An exam's fee is its entry's (below), not the event's (0066).
+       and not exists (select 1 from exam_session xs where xs.event_id = ev.id and xs.deleted_at is null)
        and (ev.starts_at >= current_date or (x.status is not null and x.status <> 'paid'))
     union all
     select k.family_id, k.id, k.first_name, 'private_lesson', 'Private lesson', coalesce(x.due_on, ev.starts_at::date),
@@ -484,11 +486,14 @@ begin
       left join invoice i on i.id = en.invoice_id and i.deleted_at is null and i.status <> 'void' and not (i.id = any(hidden))
      where x0.exam_on >= current_date or (i.status is not null and i.status <> 'paid')
     union all
-    select k.family_id, k.id, k.first_name, 'costume', ci.name || ' — ' || ev.title, ev.starts_at::date,
-           ci.price_minor::bigint, null, null, 100
+    -- Costumes charged to families; billed ones show as invoiced (0066).
+    select k.family_id, k.id, k.first_name, 'costume', ci.name || ' — ' || ev.title, coalesce(i.due_on, ev.starts_at::date),
+           ci.price_minor::bigint, i.status, i.number, 100
       from kids k join costume_order co on co.student_id = k.id and co.status <> 'returned'
-      join costume_item ci on ci.id = co.item_id and ci.deleted_at is null and ci.price_minor > 0
-      join studio_event ev on ev.id = ci.event_id and ev.deleted_at is null and ev.starts_at >= current_date
+      join costume_item ci on ci.id = co.item_id and ci.deleted_at is null and ci.price_minor > 0 and ci.charge_families
+      join studio_event ev on ev.id = ci.event_id and ev.deleted_at is null
+      left join invoice i on i.id = co.invoice_id and i.deleted_at is null and i.status <> 'void'
+     where ev.starts_at >= current_date or (i.status is not null and i.status <> 'paid')
   )
   select r.family_id, r.sid, r.first_name, r.kd,
          r.title || case when r.kd in ('term', 'month') and r.pct between 1 and 99 then ' (your ' || r.pct || '%)' else '' end,
