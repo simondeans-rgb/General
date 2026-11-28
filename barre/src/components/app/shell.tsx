@@ -93,7 +93,7 @@ const ROLE_HOME: Record<Role, string> = {
 };
 
 export function Shell({
-  title, subtitle, actions, children, allow, help, actionsInline,
+  title, subtitle, actions, children, allow, help, actionsInline, noSchoolSwitch,
 }: {
   title: string;
   subtitle?: React.ReactNode;
@@ -104,6 +104,8 @@ export function Shell({
   help?: React.ReactNode;
   /** Icon-only actions stay in the top row on a phone instead of taking a row of their own. */
   actionsInline?: boolean;
+  /** Inside a register, switching school is never right: no switcher row on a phone. */
+  noSchoolSwitch?: boolean;
 }) {
   const [helpOpen, setHelpOpen] = React.useState(false);
   const { session, signOut, loaded } = useSession();
@@ -125,6 +127,9 @@ export function Shell({
   // An adult student with no children: their tab is about them, not a family (UR-21).
   const people = useRows<{ is_me: boolean }>(['my-children'], MY_CHILDREN, [], { enabled: session?.role === 'guardian' });
   const adultAlone = !!people.data?.length && people.data.every(p => p.is_me);
+  // A teacher's "just registers" setting (F14): Today alone in the tab bar, the rest under More.
+  const regOnly = useRows<{ on: boolean }>(['register-only'], `select app.my_register_only() as on`, [],
+    { enabled: session?.role === 'teacher' }).data?.[0]?.on === true;
 
   React.useEffect(() => {
     if (loaded && !session) router.replace('/');
@@ -168,7 +173,9 @@ export function Shell({
 
   const nav = adultAlone
     ? NAV[session.role].map(n => n.href === '/family/children' ? { ...n, label: 'You', icon: User } : n)
-    : NAV[session.role];
+    : regOnly && session.role === 'teacher'
+      ? NAV.teacher.map(n => n.href === '/teach' ? { ...n, primary: true } : n)
+      : NAV[session.role];
 
   return (
     <div className="min-h-dvh lg:flex">
@@ -232,7 +239,7 @@ export function Shell({
             <NotificationBell />
             <PersonSwitcher className="lg:hidden" />
           </div>
-          <SchoolSwitcher className="border-t border-line lg:hidden" />
+          {!noSchoolSwitch && <SchoolSwitcher className="border-t border-line lg:hidden" />}
           <SubTabs nav={nav} pathname={pathname} />
         </header>
 
@@ -318,7 +325,7 @@ function RailLink({ item, pathname }: { item: NavItem; pathname: string }) {
 function MobileTabs({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
   const [open, setOpen] = React.useState(false);
   const marked = nav.filter(i => i.primary);
-  const shown = nav.length <= 5 ? nav : (marked.length ? marked : nav.slice(0, 4));
+  const shown = marked.length ? marked : nav.length <= 5 ? nav : nav.slice(0, 4);
   const rest = nav.filter(i => !shown.includes(i));
 
   React.useEffect(() => {
