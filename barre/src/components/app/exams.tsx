@@ -180,7 +180,7 @@ function EntryDetails({ e, onWrite }: { e: E.ExamEntry; onWrite: (sql: string, p
   const [f, setF] = React.useState({ grade: e.grade, fee: e.fee_minor ? String(e.fee_minor / 100) : '', at: localInput(e.sits_at) });
   const [mark, setMark] = React.useState(e.mark != null ? String(e.mark) : '');
   return (
-    <div className="mt-2 grid gap-2 border-l-2 border-line pl-3 sm:grid-cols-2">
+    <div className="mt-2 grid grid-cols-2 gap-2 border-l-2 border-line pl-3 [&>*]:min-w-0">
       <Field label="Grade" htmlFor={`eg-${e.id}`}><Input id={`eg-${e.id}`} value={f.grade} onChange={x => setF({ ...f, grade: x.target.value })} /></Field>
       <Field label="Candidate time" htmlFor={`et-${e.id}`} hint="The examiner’s timetable"><Input id={`et-${e.id}`} type="datetime-local" value={f.at} onChange={x => setF({ ...f, at: x.target.value })} /></Field>
       <Field label="Fee (£)" htmlFor={`ef-${e.id}`} hint={e.invoice_id ? 'Already billed' : undefined}>
@@ -190,7 +190,7 @@ function EntryDetails({ e, onWrite }: { e: E.ExamEntry; onWrite: (sql: string, p
         <Button size="sm" disabled={!f.grade.trim()} onClick={() => onWrite(S.UPDATE_EXAM_ENTRY,
           [e.id, f.grade, f.fee ? Math.round(Number(f.fee) * 100) : 0, f.at ? new Date(f.at).toISOString() : null])}>Save details</Button>
       </div>
-      <div className="flex flex-wrap items-center gap-1.5 sm:col-span-2">
+      <div className="col-span-2 flex flex-wrap items-center gap-1.5">
         <Select aria-label={`Result for ${e.student}`} className="h-9 w-40 text-[0.8125rem]" value={e.result ?? ''}
           onChange={x => onWrite(E.EXAM_RESULT, [e.id, x.target.value || null, mark ? Number(mark) : null])}>
           <option value="">{e.status === 'sat' ? 'Sat, no result yet' : 'No result yet'}</option>

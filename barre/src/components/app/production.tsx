@@ -12,7 +12,7 @@ import { Button, ErrorState, Field, Input, Notice, Select, Word } from '@/compon
 import * as E from '@/lib/repos/events';
 import * as C from '@/lib/repos/classes';
 import * as S from '@/lib/repos/seasons';
-import { dateShort, money, time } from '@/lib/format';
+import { dateShort, money, time, toDateInput } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 /*
@@ -110,9 +110,9 @@ function ItemDetail({ event, item, classes }: { event: EventLike; item: S.Runnin
   const others = (dancers.data ?? []).filter(d => !d.in_item);
   const [add, setAdd] = React.useState('');
   return (
-    <div className="mt-2 ml-7 space-y-3 border-l-2 border-line pl-3">
+    <div className="mt-2 min-w-0 space-y-3 border-l-2 border-line pl-3">
       {write.error != null && <ErrorState error={write.error} />}
-      <div className="grid gap-1.5 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-1.5 [&>*]:min-w-0">
         <Field label="Name" htmlFor={`it-${item.id}`}><Input id={`it-${item.id}`} value={f.title} onChange={x => setF({ ...f, title: x.target.value })} /></Field>
         <Field label="Class" htmlFor={`ic-${item.id}`}><Select id={`ic-${item.id}`} value={f.cls} onChange={x => setF({ ...f, cls: x.target.value })}>
           <option value="">No class</option>{classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</Select></Field>
@@ -173,7 +173,7 @@ export function CostumePlan({ event }: { event: EventLike }) {
       <DetailSection title="Costume budget">
         {done && <div role="status" className="mb-2"><Notice word="Done" tone="positive" title={done} /></div>}
         {write.error != null && <div className="mb-2"><ErrorState error={write.error} /></div>}
-        <dl className="grid grid-cols-2 gap-3 text-[0.875rem] sm:grid-cols-4">
+        <dl className="grid grid-cols-2 gap-3 text-[0.875rem]">
           <div><dt className="label">Costumes cost</dt><dd className={cn('stat-number mt-1 text-[1.25rem]', over && 'text-caution')}>{money(total)}</dd></div>
           <div><dt className="label">Budget</dt><dd className="stat-number mt-1 text-[1.25rem]">{bd?.budget_minor != null ? money(bd.budget_minor) : '—'}</dd></div>
           <div><dt className="label">Families pay</dt><dd className="stat-number mt-1 text-[1.25rem]">{money(bd?.families_minor ?? 0)}</dd></div>
@@ -280,11 +280,11 @@ export function LicenceTracker({ event }: { event: EventLike }) {
 
 function LicenceForm({ event, row, onSave }: { event: EventLike; row: S.LicenceRow; onSave: (params: unknown[]) => void }) {
   const [f, setF] = React.useState({ needed: row.needed, status: row.status, authority: row.authority ?? '', reference: row.reference ?? '',
-    issued: row.issued_on?.slice(0, 10) ?? '', expires: row.expires_on?.slice(0, 10) ?? '', days: row.performance_days != null ? String(row.performance_days) : '', note: row.note ?? '' });
+    issued: toDateInput(row.issued_on), expires: toDateInput(row.expires_on), days: row.performance_days != null ? String(row.performance_days) : '', note: row.note ?? '' });
   const set = (k: keyof typeof f) => (x: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: x.target.value });
   const id = `lic-${row.student_id}`;
   return (
-    <div className="mt-1 grid gap-2 border-l-2 border-line pb-2 pl-3 sm:grid-cols-2">
+    <div className="mt-1 grid grid-cols-2 gap-2 border-l-2 border-line pb-2 pl-3 [&>*]:min-w-0">
       <Field label="Licence needed?" htmlFor={`${id}-n`}><Select id={`${id}-n`} value={f.needed} onChange={set('needed')}>
         <option value="unknown">Not decided</option><option value="needed">Needed</option><option value="not_needed">Not needed</option></Select></Field>
       <Field label="Status" htmlFor={`${id}-s`}><Select id={`${id}-s`} value={f.status} onChange={set('status')} disabled={f.needed !== 'needed'}>
@@ -297,7 +297,7 @@ function LicenceForm({ event, row, onSave }: { event: EventLike; row: S.LicenceR
         <Field label="Performance days" htmlFor={`${id}-d`}><Input id={`${id}-d`} type="number" min={0} max={366} value={f.days} onChange={set('days')} /></Field>
       </>}
       <Field label="Note" htmlFor={`${id}-t`}><Input id={`${id}-t`} value={f.note} onChange={set('note')} /></Field>
-      <div className="sm:col-span-2">
+      <div className="col-span-2">
         <Button size="sm" onClick={() => onSave([event.id, row.student_id, f.needed, f.needed === 'needed' ? f.status : 'not_applied', f.authority, f.reference,
           f.issued || null, f.expires || null, f.days ? Number(f.days) : null, f.note])}>Save licence</Button>
       </div>

@@ -26,6 +26,7 @@ export function FamilyReenrolment() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['db'] }),
   });
   const [changing, setChanging] = React.useState<string | null>(null);
+  const [all, setAll] = React.useState(false);
   const list = rows.data ?? [];
   if (!list.length) return null;
   const first = list[0]!;
@@ -40,6 +41,14 @@ export function FamilyReenrolment() {
         <p className="py-2 text-[0.875rem] text-ink-2">
           Here is the class we suggest for {waiting === 1 ? 'the next term' : 'each of your children next term'}. Confirm to keep the place; places not confirmed by {dateLong(first.respond_by)} are offered to other families.
         </p>
+      )}
+      {open && !late && waiting > 1 && (
+        <Button variant="primary" className="mb-2" loading={all}
+          onClick={async () => {
+            setAll(true);
+            try { for (const o of list.filter(x => x.status === 'proposed' && x.class_id)) await answer.mutateAsync({ id: o.offer_id, yes: true }); }
+            finally { setAll(false); }
+          }}>Confirm all {waiting} places</Button>
       )}
       {answer.error != null && <ErrorState error={answer.error} />}
       <ul className="divide-y divide-line">
@@ -66,9 +75,9 @@ export function FamilyReenrolment() {
               </div>
               {showButtons && o.class_id && (
                 <div className="mt-2 flex flex-wrap gap-2">
-                  <Button variant="primary" loading={answer.isPending && answer.variables?.id === o.offer_id}
+                  <Button loading={answer.isPending && answer.variables?.id === o.offer_id}
                     onClick={() => answer.mutate({ id: o.offer_id, yes: true }, { onSuccess: () => setChanging(null) })}>Confirm {o.child}’s place</Button>
-                  <Button onClick={() => answer.mutate({ id: o.offer_id, yes: false }, { onSuccess: () => setChanging(null) })}>Not next term</Button>
+                  <Button variant="ghost" onClick={() => answer.mutate({ id: o.offer_id, yes: false }, { onSuccess: () => setChanging(null) })}>Not next term</Button>
                 </div>
               )}
               {canAnswer && !showButtons && (o.status === 'confirmed' || o.status === 'declined') && (

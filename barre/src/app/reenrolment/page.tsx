@@ -10,7 +10,7 @@ import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import * as C from '@/lib/repos/classes';
 import * as S from '@/lib/repos/seasons';
-import { dateLong, dateShort } from '@/lib/format';
+import { dateLong, dateShort, toDateInput } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -75,9 +75,9 @@ export default function ReenrolmentPage() {
 
 function StartRound() {
   const terms = useRows<C.TermRow>(['term-tabs'], C.TERM_TABS);
-  const list = [...(terms.data ?? [])].sort((a, b) => a.starts_on.localeCompare(b.starts_on));
+  const list = [...(terms.data ?? [])].sort((a, b) => toDateInput(a.starts_on).localeCompare(toDateInput(b.starts_on)));
   const from = list.find(t => t.current) ?? list.find(t => t.classes > 0);
-  const later = list.filter(t => from && t.starts_on > from.starts_on);
+  const later = list.filter(t => from && toDateInput(t.starts_on) > toDateInput(from.starts_on));
   const [to, setTo] = React.useState('');
   const target = later.find(t => t.id === to) ?? later[0];
   const [by, setBy] = React.useState(plus(21));
@@ -97,7 +97,7 @@ function StartRound() {
             </Select>
           </Field>
           <Field label="Families reply by" htmlFor="re-by" hint="Unanswered places are released after this date">
-            <Input id="re-by" type="date" value={by} min={plus(0)} max={target?.starts_on} onChange={e => setBy(e.target.value)} />
+            <Input id="re-by" type="date" value={by} min={plus(0)} max={target ? toDateInput(target.starts_on) : undefined} onChange={e => setBy(e.target.value)} />
           </Field>
           <Button variant="primary" loading={start.isPending} disabled={!target || !by}
             onClick={() => start.mutate({ sql: S.START_REENROLMENT, params: [from.id, target!.id, by] })}>Propose next classes</Button>
@@ -160,7 +160,7 @@ function RoundView({ r }: { r: S.Round }) {
               <ul className="divide-y divide-line">
                 {list.map(o => (
                   <li key={o.id} className="grid gap-x-3 gap-y-1 py-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,14rem)_auto] sm:items-center">
-                    <span className="min-w-0 text-[0.875rem]"><b className="font-semibold">{o.student}</b>{o.age != null && <span className="text-ink-3"> · {o.age} next term</span>}
+                    <span className="min-w-0 text-[0.875rem]"><b className="font-semibold">{o.student}</b>{o.age != null && <span className="text-ink-3"> · age {o.age} next term</span>}
                       <span className="block text-[0.7812rem] text-ink-3">{S.REASON[o.reason] ?? o.reason}</span></span>
                     {editable && !['placed', 'waitlisted'].includes(o.status) ? (
                       <Select aria-label={`Next class for ${o.student}`} className="h-9 text-[0.8125rem]" value={o.class_id ?? ''}
