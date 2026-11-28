@@ -143,6 +143,24 @@ flushes them when the connection returns. The demo never goes offline — its
 database is in the tab — but the server deployment will, and the rule that
 makes late syncs safe is already in the SQL and tested.
 
+## The school on the home screen
+
+`app/manifest.ts` is Swayvo's, written once at build time: the demo is a
+static export, so there is no request to vary it by. Signed in to a school,
+`useBrandedInstall` (`components/app/pwa.tsx`, rules in
+`lib/install-identity.ts`) makes that school's version in the browser: icons
+drawn on a canvas (the logo on a white plate on the school's colour, or its
+initials), a manifest served as a `blob:` URL with those icons as `data:`
+URLs, and the iOS pieces Safari reads when "Add to Home Screen" is tapped
+(`apple-touch-icon`, `apple-mobile-web-app-title`). Each school's manifest has
+its own `id`, so a parent at two schools can install both. Signing out puts
+Swayvo's back. `/family` shows an install guide with the steps for the phone
+in hand. A hosted deployment can serve the same thing from a per-school route
+(`/s/<slug>/manifest.webmanifest`) built from the same `installIdentity()`.
+Checked in headless Chromium (the page's manifest link resolves to the
+school's name, colour and icons); not yet checked on real iPhones and Android
+launchers, so treat install on devices as unverified until it is.
+
 ## Seams that are deliberately open
 
 | Seam | What exists | What plugs in |

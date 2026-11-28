@@ -4,6 +4,7 @@ import { ArrowRight } from 'lucide-react';
 import { Beats, Button, Notice } from '@/components/ui';
 import { SwayvoLogo } from '@/components/app/swayvo';
 import { SWAYVO } from '@/lib/swayvo-logo';
+import { CONTACT_EMAIL, DEMO_PLANS } from '@/lib/site';
 import { cn } from '@/lib/cn';
 import { RegisterDemo, SchoolSamples, SwayvoOwnTheme } from './parts';
 import './welcome.css';
@@ -22,7 +23,11 @@ export const metadata: Metadata = {
  * Swayvo's own website (GUIDELINES §8): the hero on Count blue, then the
  * messaging hierarchy from STRATEGY.md in order, each point shown with the
  * product's real components at real size and Northstar's sample content.
- * One call to action: Book a demo.
+ * One main call to action (Book a demo), with "Try the demo" beside it and a
+ * way through for families looking for classes (round-2 review, U2).
+ *
+ * Every claim here must be true of this build: no card payments, no photos
+ * we don't have, nothing absolute about other products.
  */
 export default function Welcome() {
   return (
@@ -35,6 +40,7 @@ export default function Welcome() {
         <Safe />
         <YourSchool />
         <EveryStyle />
+        <Plans />
         <HowItStarts />
         <Contact />
       </main>
@@ -103,18 +109,28 @@ function Hero() {
           <Count />
           <p className="font-display text-[1.625rem] leading-tight lg:text-[2.125rem]">More time for dance.</p>
           <p className="mt-3 max-w-xl text-[1.0625rem] leading-relaxed text-white/90 lg:text-[1.25rem]">
-            Timetable, registers, money and messages for dance schools, kept on the count. And the part nobody
-            else does: each student’s progress, shown to them and their family.
+            Timetable, registers, money and messages for dance schools, kept on the count. And each student’s
+            progress, skill by skill, shown to them and their family.
           </p>
-          <a href="#contact"
-            className="mt-8 inline-flex h-14 items-center gap-2 rounded-[var(--radius-md)] bg-peach px-6 text-[1.0625rem] font-semibold text-ink transition-transform active:translate-y-px">
-            Book a demo <ArrowRight className="size-4" aria-hidden />
-          </a>
+          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+            <a href="#contact"
+              className="inline-flex h-14 items-center gap-2 rounded-[var(--radius-md)] bg-peach px-6 text-[1.0625rem] font-semibold text-ink transition-transform active:translate-y-px">
+              Book a demo <ArrowRight className="size-4" aria-hidden />
+            </a>
+            <Link href="/" className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] text-[1.0625rem] font-semibold underline underline-offset-4">
+              Try the demo <ArrowRight className="size-4" aria-hidden />
+            </Link>
+          </div>
+          <p className="mt-6 text-[0.9375rem] text-white/90">
+            Looking for classes?{' '}
+            <Link href="/join" className="rounded-[var(--radius-sm)] font-semibold underline underline-offset-4">Find your school</Link>
+          </p>
         </div>
         <figure className="min-w-0 justify-self-center lg:justify-self-end">
           <RegisterDemo />
           <figcaption className="mt-3 max-w-[390px] text-[0.8125rem] text-white/85">
-            The register, as a teacher sees it on a phone. Tap Here or Absent: it works.
+            The register, as a teacher sees it on a phone, with sample dancers. Tap Here or Absent: it works.
+            In the app it keeps working with no signal.
           </figcaption>
         </figure>
       </div>
@@ -138,8 +154,8 @@ function Count() {
 /* ── 2 · Everything the school runs on, in one place ────────────────────── */
 const RUNS_ON: [string, string][] = [
   ['Timetable', 'Move or cancel a class and every family in it is told, in words.'],
-  ['Register', 'One tap for each dancer, with medical notes beside the name.'],
-  ['Money', 'Term and monthly fees, discounts, and failed cards you can retry.'],
+  ['Register', 'One tap for each dancer, with medical notes beside the name. It works with no signal: marks wait on the phone and send when it’s back.'],
+  ['Money', 'Term and monthly fees, discounts and credit, with bank details for families and reminders for what’s overdue.'],
   ['Messages', 'Notices to a class, and one inbox for every family’s replies.'],
   ['Enrolment', 'From the first enquiry to a trial class to a place.'],
   ['Shows and exams', 'Entries, rehearsals and events in the same place as the classes.'],
@@ -189,7 +205,7 @@ function RunsOn() {
 function OwnerToday() {
   const items: { n: number; tone: 'critical' | 'ink'; headline: string; detail: string; action: string }[] = [
     { n: 1, tone: 'critical', headline: 'Medical update to acknowledge', detail: 'Teachers see the change once you record it', action: 'Review' },
-    { n: 3, tone: 'critical', headline: 'Card payments failed', detail: '£612.00 outstanding in all', action: 'Retry' },
+    { n: 3, tone: 'critical', headline: 'Invoices overdue', detail: '£486.00 from three families', action: 'Remind' },
     { n: 4, tone: 'ink', headline: 'Families waiting for a reply', detail: 'Doherty family, Osei family, Wright family…', action: 'Reply' },
     { n: 5, tone: 'ink', headline: 'Trials attended, not enrolled', detail: 'Layla Haddad, Ada Okonkwo…', action: 'Follow up' },
   ];
@@ -244,7 +260,7 @@ function ParentNotices() {
         <ul className="divide-y divide-line">
           <li className="py-4"><Notice word="Changed" title="Priya Raman teaches Senior Tap on Thu 26 Nov" detail="Amir · Cover teacher, same time and room" /></li>
           <li className="py-4"><Notice word="Cancelled" tone="critical" title="Street Seniors, Friday 27 November" detail="Amir · Teacher unwell — this week only" /></li>
-          <li className="py-4"><Notice word="Due 4 Dec" tone="caution" title="Spring term fees · £162.00" detail="Pay by card or bank transfer" /></li>
+          <li className="py-4"><Notice word="Due 4 Dec" tone="caution" title="Spring term fees · £162.00" detail="Pay by bank transfer · details on your Payments page" /></li>
         </ul>
         <div className="mt-4">
           <div className="mb-1 flex items-baseline gap-3 border-b-2 border-ink pb-2">
@@ -270,7 +286,6 @@ const SKILLS: { name: string; level: string; beats: number }[] = [
   { name: 'Spirals', level: 'Mastered', beats: 8 },
   { name: 'Floorwork', level: 'Secure', beats: 6 },
   { name: 'Contraction and release', level: 'Developing', beats: 3 },
-  { name: 'Turns in parallel', level: 'Not yet', beats: 0 },
 ];
 
 function Progress() {
@@ -304,13 +319,13 @@ function Progress() {
             </div>
             <div>
               <Head title="Your skills" meta="Developing · secure · mastered" />
-              <p className="pt-3 font-semibold">Contemporary <span className="font-normal text-ink-3">· 3 of 4 assessed</span></p>
+              <p className="pt-3 font-semibold">Contemporary <span className="font-normal text-ink-3">· 3 assessed · 1 more to come</span></p>
               <ul className="mt-1 divide-y divide-line">
                 {SKILLS.map(s => (
                   <li key={s.name} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 py-3">
                     <span className="min-w-0">
                       <span className="block truncate font-semibold">{s.name}</span>
-                      <span className={cn('block text-[0.8125rem]', s.beats ? 'text-ink-2' : 'text-ink-3')}>{s.level}</span>
+                      <span className="block text-[0.8125rem] text-ink-2">{s.level}</span>
                     </span>
                     <Beats value={s.beats} max={8} size="lg" label={`${s.name}: ${s.level}, ${s.beats} of 8`} />
                   </li>
@@ -328,7 +343,7 @@ function Progress() {
 const SAFE: [string, string][] = [
   ['Medical notes where they’re needed.', 'Allergies and conditions sit beside the dancer’s name on the register. When a family updates one, the office records it and every teacher sees the change.'],
   ['No private staff–child messages.', 'Teachers write to a class or a family. Nothing is said to a child that the school can’t see.'],
-  ['A safeguarding log, kept close.', 'Any member of staff can raise a concern. Only the school’s safeguarding lead can read the log, and every look at it is recorded.'],
+  ['A safeguarding log, kept close.', 'Any member of staff can raise a concern. Only the school’s safeguarding lead and its owner can read the log, and every look at it is recorded.'],
   ['Staff checks with dates.', 'DBS, safeguarding training and first aid, each with its expiry, so nothing lapses quietly.'],
   ['Each family sees only its own.', 'Permissions are enforced by the database itself, not just hidden in the screens. Children’s data is kept to what the school needs.'],
 ];
@@ -370,10 +385,13 @@ function YourSchool() {
 
 /* ── 6 · For every style ────────────────────────────────────────────────── */
 const STYLES = ['Ballet', 'Tap', 'Contemporary', 'Jazz', 'Street', 'Commercial', 'Musical theatre', 'Ballroom', 'Breaking'];
-const PHOTOS = [
-  'Photography: street class mid-routine, low side light, motion blur on the hands only. Mixed ages, no posing.',
-  'Photography: pre-school ballet, tight crop on feet and floor, natural light from the studio windows.',
-  'Photography: adult beginners’ tap, shoes and floor mid-shuffle. Faces only with consent.',
+/* Type only: no photographs until the school has real, consented ones
+   (GUIDELINES §5). Each age is a moment in the same school year. */
+const AGES: [string, string][] = [
+  ['3', 'Pre-school ballet, with a parent close by'],
+  ['8', 'Grade exams and the first festival'],
+  ['15', 'Their own login, their own progress'],
+  ['Adult', 'Beginners’ tap, booked for themselves'],
 ];
 
 function EveryStyle() {
@@ -387,11 +405,11 @@ function EveryStyle() {
         <ul aria-label="Styles" className="mt-8 flex flex-wrap gap-x-5 gap-y-1 font-display text-[1.625rem] leading-[1.2] text-ink-2 lg:text-[2.125rem]">
           {STYLES.map(s => <li key={s}>{s}</li>)}
         </ul>
-        <ul className="mt-10 grid gap-4 sm:grid-cols-3">
-          {PHOTOS.map((p, i) => (
-            <li key={p} className={cn('flex aspect-[16/9] items-end sm:aspect-[4/3]', i === 2 && 'hidden sm:flex',
-              'rounded-[var(--radius-lg)] border border-dashed border-line-strong bg-surface-2 p-4')}>
-              <p className="text-[0.8125rem] leading-snug text-ink-2">{p}</p>
+        <ul aria-label="Ages" className="mt-10 grid gap-x-12 border-t-2 border-ink sm:grid-cols-2 lg:grid-cols-4">
+          {AGES.map(([age, line]) => (
+            <li key={age} className="border-b border-line py-5 lg:border-b-0">
+              <p className="display-xl text-[length:min(3rem,22vw)] text-ink">{age}</p>
+              <p className="mt-2 text-[0.9375rem] leading-relaxed text-ink-2">{line}</p>
             </li>
           ))}
         </ul>
@@ -400,7 +418,43 @@ function EveryStyle() {
   );
 }
 
-/* ── 7 · How it starts ──────────────────────────────────────────────────── */
+/* ── 7 · Plans: the demo's own figures, labelled as such ───────────────── */
+const poundsA = (minor: number) => `£${(minor / 100).toFixed(0)}`;
+const limit = (n: number | null, one: string, many: string) => n == null ? `Unlimited ${many}` : `Up to ${n} ${n === 1 ? one : many}`;
+
+function Plans() {
+  return (
+    <section aria-labelledby="plans-h" className="border-t border-line bg-canvas py-16 lg:py-24">
+      <div className={WRAP}>
+        <SectionIntro id="plans-h" title="Plans.">
+          <p>One monthly price for the whole school, set by its size. Every plan has every feature, and teachers and families use the app at no extra cost.</p>
+        </SectionIntro>
+        <ul className="mt-8 grid gap-x-12 border-t-2 border-ink md:grid-cols-3">
+          {DEMO_PLANS.map(p => (
+            <li key={p.code} className="border-b border-line py-5 md:border-b-0">
+              <h3 className="text-[1.0625rem] font-semibold">{p.name}</h3>
+              <p className="mt-2 flex items-baseline gap-2">
+                <span className="display-xl text-[length:min(3rem,22vw)] text-ink">{poundsA(p.price_minor)}</span>
+                <span className="text-[0.9375rem] text-ink-2">a month</span>
+              </p>
+              <ul className="mt-3 space-y-0.5 text-[0.9375rem] text-ink-2">
+                <li>{limit(p.max_students, 'student', 'students')}</li>
+                <li>{limit(p.max_locations, 'location', 'locations')}</li>
+                <li>{limit(p.max_staff, 'member of staff', 'staff')}</li>
+              </ul>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-6 max-w-2xl text-[0.8125rem] text-ink-3">
+          Demo pricing: these are the plans set up in this demo, not a quote. Prices for your school are confirmed
+          when we set you up. Card payments for families are not connected yet; families pay by bank transfer.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/* ── 8 · How it starts ──────────────────────────────────────────────────── */
 const STEPS: [string, string][] = [
   ['We set you up.', 'Your classes, rooms, terms and fees, entered with you on one call.'],
   ['We bring your families across.', 'From a spreadsheet or your old system: families, children and medical notes, checked with you.'],
@@ -426,7 +480,7 @@ function HowItStarts() {
   );
 }
 
-/* ── 8 · Contact: where "Book a demo" lands ─────────────────────────────── */
+/* ── 9 · Contact: where "Book a demo" lands ─────────────────────────────── */
 function Contact() {
   return (
     <section id="contact" aria-labelledby="contact-h" style={{ background: SWAYVO.blue, color: SWAYVO.white }}
@@ -441,7 +495,20 @@ function Contact() {
             about your school.
           </p>
           <p className="mt-8 text-[0.8125rem] font-semibold uppercase tracking-[0.06em] text-white/85">Email</p>
-          <p className="mt-1 select-all break-all font-display text-[1.625rem] leading-tight sm:text-[2.125rem] lg:text-[3rem]">hello@swayvo.example</p>
+          {CONTACT_EMAIL ? (
+            <a href={`mailto:${CONTACT_EMAIL}`}
+              className="mt-1 block break-all rounded-[var(--radius-sm)] font-display text-[1.625rem] leading-tight underline-offset-4 hover:underline sm:text-[2.125rem] lg:text-[3rem]">
+              {CONTACT_EMAIL}
+            </a>
+          ) : (
+            <>
+              {/* Placeholder until the real address is decided (lib/site.ts). */}
+              <p className="mt-1 font-display text-[1.375rem] leading-tight text-white/90 lg:text-[1.625rem]">Address to be confirmed</p>
+              <p className="mt-2 max-w-xl text-[0.9375rem] text-white/85">
+                This preview has no contact address yet. Try the demo in the meantime.
+              </p>
+            </>
+          )}
         </div>
         <div className="min-w-0 border-t border-white/30 pt-6">
           <p className="font-display text-[1.375rem] leading-tight">Can’t wait?</p>
@@ -466,9 +533,12 @@ function Footer() {
           <SwayvoLogo className="h-7" />
           <p className="mt-3 font-display text-[1.0625rem]">More time for dance.</p>
         </div>
-        <p className="max-w-md text-[0.8125rem] text-ink-3 sm:text-right">
-          © 2026 Swayvo. Northstar Dance Academy and the people in it are sample data, made up for the demo.
-        </p>
+        <div className="max-w-md space-y-2 text-[0.8125rem] text-ink-3 sm:text-right">
+          <p>
+            Looking for classes? <Link href="/join" className="font-semibold text-accent-text underline underline-offset-2">Find your school</Link>
+          </p>
+          <p>© 2026 Swayvo. Northstar Dance Academy and the people in it are sample data, made up for the demo.</p>
+        </div>
       </div>
     </footer>
   );

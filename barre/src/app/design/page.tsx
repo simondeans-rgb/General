@@ -4,6 +4,14 @@ import * as React from 'react';
 import { Badge, Beats, Button, EmptyState, ErrorState, Field, Input, Notice, Select, Skeleton, Spinner } from '@/components/ui';
 import { SwayvoIcon, SwayvoLogo, SwayvoMark } from '@/components/app/swayvo';
 import { SWAYVO } from '@/lib/swayvo-logo';
+import { MessagePreview, ProgrammePreview } from '@/components/app/message-preview';
+
+/** Sample schools for the document previews: the same three as /welcome. */
+const DOC_SCHOOLS = [
+  { name: 'Northstar Dance Academy', brand_colour: '#1e3a8a', contact_email: null },
+  { name: 'Hollybrook School of Dance', brand_colour: '#6b2155', contact_email: null },
+  { name: 'Kestrel Ballet School', brand_colour: '#c6f432', contact_email: null },
+];
 
 /**
  * The Swayvo design system, live. Every component here is the real one the
@@ -11,6 +19,7 @@ import { SWAYVO } from '@/lib/swayvo-logo';
  */
 export default function DesignSystem() {
   const [theme, setTheme] = React.useState<'classic' | 'urban'>('classic');
+  const [docSchool, setDocSchool] = React.useState(0);
   React.useEffect(() => { document.documentElement.dataset.theme = theme; return () => { delete document.documentElement.dataset.theme; }; }, [theme]);
   return (
     <main className="mx-auto max-w-[1120px] px-4 pb-24 pt-10 lg:px-8">
@@ -107,6 +116,24 @@ export default function DesignSystem() {
           <div className="card"><EmptyState title="Nothing needs you" body="No failed payments, and everyone is turning up." action={<Button size="sm">View timetable</Button>} /></div>
           <div className="space-y-3"><Skeleton className="h-6 w-1/2" /><Skeleton className="h-12" /><Skeleton className="h-12" /><p className="flex items-center gap-2 text-[0.8125rem] text-ink-3"><Spinner /> Loading</p></div>
           <ErrorState error={new Error('INVALID: that class is full — try another date')} onRetry={() => undefined} />
+        </div>
+      </Section>
+
+      <Section title="School documents">
+        <p className="mb-4 max-w-2xl text-[0.9375rem] text-ink-2">
+          What a school sends and prints, in its own name and colour: white, the school first, Archivo for the
+          word and the numbers, Inter for the text, and Swayvo signing off. Rendered from data by lib/branded-print.
+        </p>
+        <div className="mb-6 max-w-xs">
+          <Field label="School" htmlFor="ds-doc-school">
+            <Select id="ds-doc-school" value={docSchool} onChange={e => setDocSchool(Number(e.target.value))}>
+              {DOC_SCHOOLS.map((s, i) => <option key={s.name} value={i}>{s.name}</option>)}
+            </Select>
+          </Field>
+        </div>
+        <div className="grid gap-10 lg:grid-cols-2">
+          <div><h3 className="mb-3 font-semibold">Emails and notices</h3><MessagePreview school={DOC_SCHOOLS[docSchool]!} idPrefix="ds-mp" /></div>
+          <div><h3 className="mb-3 font-semibold">Printed show programme</h3><ProgrammePreview school={DOC_SCHOOLS[docSchool]!} /></div>
         </div>
       </Section>
     </main>

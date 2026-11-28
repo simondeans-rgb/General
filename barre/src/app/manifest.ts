@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { SWAYVO, THEME_COLOR } from '@/lib/swayvo-logo';
 
 export const dynamic = 'force-static';
 const base = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
@@ -13,8 +14,8 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: `${base}/`,
     scope: `${base}/`,
     display: 'standalone',
-    background_color: '#f4f5f8',
-    theme_color: '#2638f0',
+    background_color: SWAYVO.studio,
+    theme_color: THEME_COLOR,
     icons: [
       { src: `${base}/icons/icon-192.png`, sizes: '192x192', type: 'image/png' },
       { src: `${base}/icons/icon-512.png`, sizes: '512x512', type: 'image/png' },

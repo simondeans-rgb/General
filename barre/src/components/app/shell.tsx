@@ -21,7 +21,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { dateShort, time } from '@/lib/format';
 import { PersonSwitcher } from './person-switcher';
 import { SchoolSwitcher } from './school-switcher';
-import { useBrandedManifest } from './pwa';
+import { useBrandedInstall } from './pwa';
 import { NotificationBell } from './notifications';
 import { ScopeNotice } from './role-scope';
 import { useLocationHash, sectionActive, onSectionClick } from './section-hash';
@@ -123,7 +123,7 @@ export function Shell({
     { enabled: !!session && (!session.platform || !!session.support), staleTime: 60_000 }).data?.[0];
   const branded = !!studio && (!session?.platform || !!session?.support);
   useSchoolTheme(branded ? studio! : null);
-  useBrandedManifest(branded ? studio!.name : null, branded ? studio!.brand_colour : null);
+  useBrandedInstall(branded ? studio : null);
   const router = useRouter();
   const pathname = usePathname();
   // A student's access ends the moment a parent switches their login off, or
