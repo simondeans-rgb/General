@@ -26,7 +26,7 @@ const COSTUME_STATUS: [string, string, Tone][] = [['needed', 'Needed', 'caution'
   ['given', 'With dancer', 'positive'], ['returned', 'Returned', 'neutral']];
 
 /** Costumes per routine, each dancer's size and where the costume is (R-057). */
-export function CostumeSection({ eventId, routines }: { eventId: string; routines: E.Routine[] }) {
+export function CostumeSection({ eventId, routines, hideAdd }: { eventId: string; routines: E.Routine[]; /** CostumePlan (0066) adds items with a price. */ hideAdd?: boolean }) {
   const rows = useRows<E.CostumeLine>(['costumes', eventId], E.COSTUME_LIST, [eventId]);
   const write = useWrite();
   const [f, setF] = React.useState({ name: '', routine: '', price: '' });
@@ -62,6 +62,7 @@ export function CostumeSection({ eventId, routines }: { eventId: string; routine
         );
       })}
       <p className="mt-2 text-[0.8125rem] text-ink-3">Families give sizes from their app. Status here is for the office.</p>
+      {!hideAdd && <>
       <div className="mt-3 grid grid-cols-2 gap-2">
         <Input aria-label="Costume item" placeholder="Item, e.g. Red waistcoat" value={f.name} onChange={e => setF({ ...f, name: e.target.value })} />
         <Select aria-label="For routine" value={f.routine} onChange={e => setF({ ...f, routine: e.target.value })}>
@@ -73,6 +74,7 @@ export function CostumeSection({ eventId, routines }: { eventId: string; routine
         onClick={() => { write.mutate({ sql: E.ADD_COSTUME, params: [eventId, f.routine || null, f.name, Math.round(Number(f.price || 0) * 100)] }); setF({ name: '', routine: '', price: '' }); }}>
         Add costume item
       </Button>
+      </>}
     </DetailSection>
   );
 }
