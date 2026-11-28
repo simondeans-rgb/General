@@ -74,11 +74,8 @@ const BRIEF_COLUMNS = `coalesce(b.requires_alert, false) as requires_alert,
 
 /** Attendance this term (UR-54): sessions since the current term began, up
  *  to now. */
-const TERM_ATTENDANCE = (student: string) => `(select round(100.0 * count(*) filter (where a2.status in ('present','late'))
-                     / nullif(count(*),0))::int
-          from attendance_record a2 join class_session s2 on s2.id = a2.session_id
-         where a2.student_id = ${student} and a2.deleted_at is null and s2.starts_at <= now()
-           and s2.starts_at >= app.current_term_start(s2.studio_id))`;
+/** Attendance this term: one security check per child, then a plain count (0067). */
+const TERM_ATTENDANCE = (student: string) => `app.term_attendance_pct(${student})`;
 
 /**
  * The register for one session: everyone enrolled, plus anyone trialling.
@@ -159,10 +156,7 @@ export const SESSION_ACCESS = `select app.session_access($1) as access`;
 export const MY_STUDENTS = `
 select s.id, s.first_name, s.last_name, s.preferred_name, s.date_of_birth,
        ${BRIEF_COLUMNS},
-       (select string_agg(distinct c.name, ', ') from enrolment e
-          join class c on c.id = e.class_id
-         where e.student_id = s.id and e.status = 'active' and e.deleted_at is null
-           and c.id in (select app.teacher_class_ids())) as class_names,
+       app.my_class_names_for(s.id) as class_names,
        ${TERM_ATTENDANCE('s.id')} as attendance_pct
   from student s
   left join student_safety_brief b on b.student_id = s.id
