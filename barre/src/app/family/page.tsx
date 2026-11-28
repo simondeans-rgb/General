@@ -18,6 +18,7 @@ import { SectionHead, StyleMark, dayDate, dueWord, useSessionChanges, type Sessi
 import { cardPaymentsEnabled } from '@/lib/payments/invoice-status';
 import { useDueReminders } from '@/components/app/family-money';
 import { useFamilyVoice } from '@/components/app/adult-self';
+import { InstallGuide } from '@/components/app/install-guide';
 
 type Child = { id: string; first_name: string; last_name: string; date_of_birth: string; class_names: string | null; is_me?: boolean };
 type Invoice = { id: string; number: string; status: string; issued_on: string; due_on: string; total_minor: number; paid_minor: number };
@@ -225,6 +226,9 @@ export default function FamilyHome() {
               ))}
             </ul>
           </section>
+
+          {/* The school on the parent's home screen (round-2 review, F4). */}
+          <InstallGuide />
 
           {/* Events and requests have no tab of their own (five is the most a
               bottom bar carries), so they get a way in from here. */}
