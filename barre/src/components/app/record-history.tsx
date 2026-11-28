@@ -27,7 +27,29 @@ export function RecordHistory({ entity, id }: { entity: 'family' | 'student'; id
   if (rows.isPending) return <Skeleton className="h-16" />;
   if (rows.error) return <ErrorState error={rows.error} />;
   if (!rows.data?.length) return <p className="text-[0.875rem] text-ink-3">Nothing recorded yet.</p>;
-  return <HistoryList rows={rows.data} showRecord />;
+  return <FoldedHistory rows={rows.data} />;
+}
+
+/** Rows written by Swayvo itself (starting data, imports, scheduled jobs). */
+export const isAutomatic = (r: H.HistoryRow) => r.automatic ?? r.actor === AUTOMATIC;
+const AUTOMATIC = 'Swayvo (automatic)';
+
+/** People's changes first; automatic rows folded away behind a toggle (F10). */
+function FoldedHistory({ rows }: { rows: H.HistoryRow[] }) {
+  const [all, setAll] = React.useState(false);
+  const auto = rows.filter(isAutomatic).length;
+  const shown = all ? rows : rows.filter(r => !isAutomatic(r));
+  return (
+    <div>
+      {shown.length > 0 ? <HistoryList rows={shown} showRecord />
+        : <p className="text-[0.875rem] text-ink-3">No changes by people yet.</p>}
+      {auto > 0 && (
+        <Button size="sm" variant="ghost" className="-ml-2 mt-1" aria-pressed={all} onClick={() => setAll(a => !a)}>
+          {all ? 'Hide automatic changes' : `Show ${auto} automatic change${auto === 1 ? '' : 's'}`}
+        </Button>
+      )}
+    </div>
+  );
 }
 
 export function HistoryList({ rows, showRecord }: { rows: H.HistoryRow[]; showRecord?: boolean }) {

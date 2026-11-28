@@ -7,12 +7,18 @@
 export type HistoryRow = {
   id: string; at: string | Date; actor_id?: string | null; actor: string; action: string;
   entity: string; entity_id?: string | null; record_label: string | null; summary: string | null;
+  /** Written by Swayvo itself (seed, import, a scheduled job), not a person (F10). */
+  automatic?: boolean;
 };
 
 /** The school's history, owner only. $1 person, $2 kind of record, $3 words
  *  in the record's name, $4 from, $5 to (dates), $6 how many. */
 export const AUDIT_HISTORY = `select * from app.audit_history($1::uuid, $2, $3, $4::date, $5::date, $6)`;
 export const AUDIT_ACTORS = `select * from app.audit_actors()`;
+/** The school's history for the owner and administrators (F10): administrators
+ *  see the office's records only; $7 true leaves out automatic rows. */
+export const OFFICE_HISTORY = `select * from app.office_history($1::uuid, $2, $3, $4::date, $5::date, $6, $7)`;
+export const OFFICE_HISTORY_ACTORS = `select * from app.office_history_actors()`;
 /** One family's or one child's history, for the office. */
 export const RECORD_HISTORY = `select * from app.record_history($1, $2::uuid)`;
 /** Silent: opening a child's full medical record, as the office. */

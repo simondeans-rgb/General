@@ -292,6 +292,18 @@ export const CLASS_FREE = `
 select app.class_free_places($1) as free, app.class_live_offers($1) as offers,
        (select waitlist_offer_days from studio s join class c on c.studio_id = s.id where c.id = $1) as offer_days`;
 
+/** An enquiry's notes, newest first: the reception call log (F10). */
+export type EnquiryNote = { id: string; body: string; created_at: string; author: string | null };
+export const ENQUIRY_NOTES = `
+select n.id, n.body, n.created_at, u.full_name as author
+  from enquiry_note n left join user_account u on u.id = n.created_by
+ where n.enquiry_id = $1 and n.deleted_at is null
+ order by n.created_at desc, n.id`;
+/** A note, and optionally the next follow-up date (null leaves the date as it is). */
+export const ADD_ENQUIRY_NOTE = `select app.add_enquiry_note($1, $2, $3::date) as id`;
+/** Set, or clear with null, when to follow up. Today reminds on the day. */
+export const SET_ENQUIRY_FOLLOW_UP = `select app.set_enquiry_follow_up($1, $2::date) as ok`;
+
 /** Closing an enquiry as lost, with the reason (UR-18). */
 export const CLOSE_ENQUIRY = `select app.close_enquiry($1, $2) as ok`;
 

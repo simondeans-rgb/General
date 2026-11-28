@@ -12,6 +12,7 @@ import { SUMMARY, type BillingSummary } from '@/lib/repos/billing';
 import { money, time, dayRange, dateLong, relativeDay } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { cardPaymentsEnabled } from '@/lib/payments/invoice-status';
+import { groupAttention } from '@/lib/office-words';
 
 /**
  * The owner's Today (reference screen for docs/brand/DESIGN-SYSTEM.md).
@@ -117,8 +118,10 @@ function TodaysClasses({ rows, loading, error, retry }: { rows?: Q.SessionRow[];
 }
 
 /* ── Needs attention: a number, what it means, one action ─────────────────
-   Only genuine problems. When nothing is wrong the section says so. */
-type Item = { key: string; n: number; tone: 'critical' | 'caution' | 'ink'; headline: string; detail: string; href: string; action: string };
+   Only genuine problems, under Today and This week (round 2, U13). Red marks
+   what is urgent; everything else is ink. When nothing is wrong the section
+   says so. */
+type Item = { key: string; n: number; when: 'today' | 'week'; urgent?: boolean; headline: string; detail: string; href: string; action: string };
 
 function NeedsAttention() {
   const pay = useRow<{ failed: number; failed_minor: string; outstanding_minor: string; unpaid_invoices: number }>(['att-pay'], Q.ATTENTION_PAYMENTS);
@@ -127,59 +130,83 @@ function NeedsAttention() {
   const lapsed = useRows<{ id: string; first_name: string; last_name: string; class_name: string }>(['att-lapsed'], Q.ATTENTION_LAPSED);
   const reqs = useRow<{ open_requests: number; pending_entries: number; medical_updates: number }>(['att-requests'], Q.ATTENTION_REQUESTS);
   const msgs = useRow<{ awaiting: number; names: string | null }>(['att-messages'], Q.ATTENTION_MESSAGES);
+  const follow = useRows<Q.FollowUp>(['att-follow-ups'], Q.ATTENTION_FOLLOW_UPS);
   // Staff checks missing or running out (UR-41): shown to the owner and the safeguarding lead only.
   const checks = useRows<CheckGap>(['att-checks'], CHECK_GAPS_TODAY);
   // Safeguarding setup (F1, N-06): until a lead is named, and anything to review.
   const sg = useRow<{ no_lead: boolean; media_links: number; holds_due: number }>(['att-safeguarding'], SAFEGUARDING_TODAY);
-  const loading = sg.isLoading || checks.isLoading || pay.isLoading || cap.isLoading || trials.isLoading || lapsed.isLoading || reqs.isLoading || msgs.isLoading;
+  const [all, setAll] = React.useState(false);
+  const loading = sg.isLoading || checks.isLoading || pay.isLoading || cap.isLoading || trials.isLoading || lapsed.isLoading || reqs.isLoading || msgs.isLoading || follow.isLoading;
+  const names = (list: string[], max = 3) => list.slice(0, max).join(', ') + (list.length > max ? '…' : '');
 
   const items: Item[] = [];
   const r = reqs.data;
-  if (r && r.medical_updates > 0) items.push({ key: 'med', n: r.medical_updates, tone: 'critical', href: '/requests', action: 'Review',
+  if (r && r.medical_updates > 0) items.push({ key: 'med', n: r.medical_updates, when: 'today', urgent: true, href: '/requests', action: 'Review',
     headline: `Medical update${r.medical_updates === 1 ? '' : 's'} to acknowledge`, detail: 'Teachers see the change once you record it' });
-  if (sg.data?.no_lead) items.push({ key: 'dsl', n: 1, tone: 'critical', href: '/safeguarding', action: 'Name your lead',
+  if (sg.data?.no_lead) items.push({ key: 'dsl', n: 1, when: 'today', urgent: true, href: '/safeguarding', action: 'Name your lead',
     headline: 'No safeguarding lead named', detail: 'Concerns come only to the owner, and one about the owner reaches nobody' });
-  if (sg.data && sg.data.media_links > 0) items.push({ key: 'media-links', n: sg.data.media_links, tone: 'caution', href: '/safeguarding', action: 'See which',
+  if (sg.data && sg.data.media_links > 0) items.push({ key: 'media-links', n: sg.data.media_links, when: 'week', href: '/safeguarding', action: 'See which',
     headline: `Link${sg.data.media_links === 1 ? '' : 's'} to another site showing children`, detail: 'Hidden from families. Upload the file instead' });
-  if (sg.data && sg.data.holds_due > 0) items.push({ key: 'holds', n: sg.data.holds_due, tone: 'caution', href: '/safeguarding', action: 'Review',
+  if (sg.data && sg.data.holds_due > 0) items.push({ key: 'holds', n: sg.data.holds_due, when: 'week', href: '/safeguarding', action: 'Review',
     headline: `Legal hold${sg.data.holds_due === 1 ? '' : 's'} to review`, detail: 'Keep a hold only while it is still needed' });
-  if (checks.data?.length) items.push({ key: 'checks', n: checks.data.length, tone: 'critical', href: '/safeguarding', action: 'See who',
+  if (checks.data?.length) items.push({ key: 'checks', n: checks.data.length, when: 'today', urgent: true, href: '/safeguarding', action: 'See who',
     headline: 'Staff checks to sort', detail: checks.data.slice(0, 2).map(c => `${c.name}: ${c.issue}`).join(' · ') + (checks.data.length > 2 ? '…' : '') });
-  // Cards cannot be retried until a payment provider is connected, so the
-  // action opens the invoices rather than promising a retry (UR-11).
-  if (pay.data && pay.data.failed > 0) items.push({ key: 'pay', n: pay.data.failed, tone: 'critical', href: '/billing',
-    action: cardPaymentsEnabled() ? 'Retry' : 'See invoices',
-    headline: `Card payment${pay.data.failed === 1 ? '' : 's'} failed`, detail: `${money(pay.data.failed_minor)} declined` });
-  if (msgs.data && msgs.data.awaiting > 0) items.push({ key: 'msg', n: msgs.data.awaiting, tone: 'ink', href: '/inbox', action: 'Reply',
+  // Card payments are not connected in this build, so a declined card cannot
+  // happen for real: the demo's sample failures are not shown as live work (U3).
+  if (cardPaymentsEnabled() && pay.data && pay.data.failed > 0) items.push({ key: 'pay', n: pay.data.failed, when: 'today', urgent: true, href: '/billing',
+    action: 'Retry', headline: `Card payment${pay.data.failed === 1 ? '' : 's'} failed`, detail: `${money(pay.data.failed_minor)} declined` });
+  const due = (follow.data ?? []).filter(f => f.due_now);
+  const soon = (follow.data ?? []).filter(f => !f.due_now);
+  if (due.length) items.push({ key: 'follow-now', n: due.length, when: 'today', href: '/enrolment', action: 'Follow up',
+    headline: `Enquir${due.length === 1 ? 'y' : 'ies'} to follow up`, detail: names(due.map(f => f.child_name ?? f.contact_name)) });
+  if (msgs.data && msgs.data.awaiting > 0) items.push({ key: 'msg', n: msgs.data.awaiting, when: 'today', href: '/inbox', action: 'Reply',
     headline: `Famil${msgs.data.awaiting === 1 ? 'y' : 'ies'} waiting for a reply`, detail: (msgs.data.names ?? '') + (msgs.data.awaiting > 3 ? '…' : '') });
-  if (r && (r.open_requests > 0 || r.pending_entries > 0)) items.push({ key: 'req', n: r.open_requests + r.pending_entries, tone: 'ink', href: '/requests', action: 'Open',
+  if (r && (r.open_requests > 0 || r.pending_entries > 0)) items.push({ key: 'req', n: r.open_requests + r.pending_entries, when: 'today', href: '/requests', action: 'Open',
     headline: 'Requests to answer', detail: [r.pending_entries ? `${r.pending_entries} event entr${r.pending_entries === 1 ? 'y' : 'ies'}` : '', r.open_requests ? `${r.open_requests} question${r.open_requests === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ') });
-  if (trials.data?.length) items.push({ key: 'trial', n: trials.data.length, tone: 'ink', href: '/enrolment', action: 'Follow up',
-    headline: 'Trials attended, not enrolled', detail: trials.data.slice(0, 3).map(t => t.child_name).join(', ') + (trials.data.length > 3 ? '…' : '') });
-  cap.data?.filter(c => c.waiting > 0).forEach(c => items.push({ key: c.id, n: c.waiting, tone: 'caution', href: '/classes', action: 'Waiting list',
+  if (soon.length) items.push({ key: 'follow-soon', n: soon.length, when: 'week', href: '/enrolment', action: 'See who',
+    headline: `Enquiry follow-up${soon.length === 1 ? '' : 's'} later this week`, detail: soon.slice(0, 3).map(f => `${f.child_name ?? f.contact_name} (${relativeDay(f.next_action_on)})`).join(', ') + (soon.length > 3 ? '…' : '') });
+  if (trials.data?.length) items.push({ key: 'trial', n: trials.data.length, when: 'week', href: '/enrolment', action: 'Follow up',
+    headline: 'Trials attended, not enrolled', detail: names(trials.data.map(t => t.child_name)) });
+  cap.data?.filter(c => c.waiting > 0).forEach(c => items.push({ key: c.id, n: c.waiting, when: 'week', href: '/classes', action: 'Waiting list',
     headline: `Waiting for ${c.name}`, detail: `Class full · ${c.enrolled} of ${c.capacity}` }));
-  if (lapsed.data?.length) { const n = new Set(lapsed.data.map(l => l.id)).size; items.push({ key: 'lapsed', n, tone: 'caution', href: '/people?filter=lapsed', action: 'See who',
+  if (lapsed.data?.length) { const n = new Set(lapsed.data.map(l => l.id)).size; items.push({ key: 'lapsed', n, when: 'week', href: '/people?filter=lapsed', action: 'See who',
     headline: `Missed three classes in a row`, detail: lapsed.data.slice(0, 3).map(l => `${l.first_name} ${l.last_name}`).join(', ') + (n > 3 ? '…' : '') }); }
+
+  const g = groupAttention(items, 5, all);
+  const anyUrgent = items.some(i => i.urgent);
+  const row = (i: Item) => (
+    <li key={i.key}>
+      <Link href={i.href} className="group grid grid-cols-[2.75rem_minmax(0,1fr)_auto] items-start gap-x-3 py-3">
+        <span className={cn('font-display text-[1.75rem] leading-none tnum', i.urgent ? 'text-critical' : 'text-ink')}>{i.n}</span>
+        <span className="min-w-0">
+          <span className="block font-semibold leading-snug">{i.headline}{i.urgent && <span className="sr-only"> (urgent)</span>}</span>
+          {i.detail && <span className="line-clamp-2 text-[0.8125rem] text-ink-3">{i.detail}</span>}
+        </span>
+        <span className="flex items-center gap-1 pt-0.5 text-[0.8125rem] font-semibold text-accent-text group-hover:underline">{i.action}<ArrowRight className="size-3.5" aria-hidden /></span>
+      </Link>
+    </li>
+  );
+  const group = (label: string, list: Item[]) => list.length > 0 && (
+    <div>
+      <h3 className="label pt-3">{label}</h3>
+      <ul className="on-count divide-y divide-line">{list.map(row)}</ul>
+    </div>
+  );
 
   return (
     <section>
       <SectionHead title="Needs attention" meta={loading ? undefined : items.length ? `${items.length} thing${items.length === 1 ? '' : 's'}` : undefined} />
       {loading && <div className="space-y-3 pt-3">{[0, 1, 2].map(i => <Skeleton key={i} className="h-12" />)}</div>}
-      {!loading && items.length === 0 && <EmptyState title="Nothing needs you" body="No failed payments, no one waiting for a reply, and everyone is turning up." />}
-      <ul className="on-count divide-y divide-line">
-        {items.map(i => (
-          <li key={i.key}>
-            <Link href={i.href} className="group grid grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-x-3 py-3">
-              <span className={cn('font-display text-[1.75rem] leading-none tnum', i.tone === 'critical' ? 'text-critical' : i.tone === 'caution' ? 'text-caution' : 'text-ink')}>{i.n}</span>
-              <span className="min-w-0">
-                <span className="block font-semibold leading-snug">{i.headline}{i.tone === 'critical' && <span className="sr-only"> (urgent)</span>}</span>
-                {i.detail && <span className="block truncate text-[0.8125rem] text-ink-3">{i.detail}</span>}
-              </span>
-              <span className="flex items-center gap-1 text-[0.8125rem] font-semibold text-accent-text group-hover:underline">{i.action}<ArrowRight className="size-3.5" aria-hidden /></span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      {!loading && items.length === 0 && <EmptyState title="Nothing needs you" body="No one waiting for a reply, no follow-ups due, and everyone is turning up." />}
+      {group('Today', g.today)}
+      {group('This week', g.week)}
+      {!loading && anyUrgent && <p className="pt-2 text-[0.7812rem] text-ink-3">Red numbers are urgent: deal with them first.</p>}
+      {g.hidden > 0 && (
+        <Button size="sm" variant="ghost" className="-ml-2 mt-1" onClick={() => setAll(true)}>{g.hidden} more</Button>
+      )}
+      {all && items.length > 5 && (
+        <Button size="sm" variant="ghost" className="-ml-2 mt-1" onClick={() => setAll(false)}>Show fewer</Button>
+      )}
     </section>
   );
 }

@@ -11,12 +11,18 @@ import { downloadCsv } from '@/lib/csv';
 import { isoDate } from '@/lib/format';
 
 /**
- * The school's history, for the owner (UR-35): every recorded change to
+ * The school's history, for the owner and administrators (UR-35, round 2 F10): every recorded change to
  * families, students, health records, places, payments, roles and settings,
  * and every time the office opened a child's medical record. Filter by who,
  * by kind of record, by name and by date; export what is shown.
  */
-export function HistoryCard() {
+// Kinds of record only the owner's history holds (see app.can_read_history).
+const OWNER_ONLY = new Set(['medical_record', 'membership', 'staff_check', 'safeguarding_concern', 'retention_policy']);
+
+export function HistoryCard({ isOwner = true }: { isOwner?: boolean }) {
+  // Rows Swayvo wrote itself (the starting data, imports, scheduled jobs) are
+  // folded away unless asked for: they drowned out people's changes.
+  const [automatic, setAutomatic] = React.useState(false);
   const [actor, setActor] = React.useState('');
   const [entity, setEntity] = React.useState('');
   const [text, setText] = React.useState('');
@@ -26,9 +32,9 @@ export function HistoryCard() {
   const [limit, setLimit] = React.useState(50);
   React.useEffect(() => { const t = setTimeout(() => setTyped(text.trim()), 250); return () => clearTimeout(t); }, [text]);
 
-  const actors = useRows<{ id: string; name: string }>(['audit-actors'], H.AUDIT_ACTORS);
-  const params = [actor || null, entity || null, typed || null, from || null, to || null, limit];
-  const rows = useRows<H.HistoryRow>(['audit-history', ...params], H.AUDIT_HISTORY, params);
+  const actors = useRows<{ id: string; name: string }>(['office-history-actors'], H.OFFICE_HISTORY_ACTORS);
+  const params = [actor || null, entity || null, typed || null, from || null, to || null, limit, !automatic];
+  const rows = useRows<H.HistoryRow>(['office-history', ...params], H.OFFICE_HISTORY, params);
 
   const exportCsv = () => downloadCsv(`history-${isoDate(new Date())}.csv`, (rows.data ?? []).map(r => ({
     when: new Date(r.at).toISOString(), who: r.actor, did: H.ACTION_WORD[r.action] ?? r.action,
@@ -37,7 +43,9 @@ export function HistoryCard() {
 
   return (
     <Card id="history">
-      <CardHeader title="History" subtitle="Who changed or opened what, and when. Only owners see this."
+      <CardHeader title="History" subtitle={isOwner
+          ? 'Who changed or opened what, and when. Owners see everything; administrators see the office’s records.'
+          : 'Who changed what in the office’s records, and when. Medical, safeguarding and access changes stay with the owner.'}
         action={rows.data?.length ? <Button size="sm" onClick={exportCsv}><Download className="size-4" aria-hidden /> Export</Button> : undefined} />
       <div className="grid grid-cols-2 gap-3 pt-3 sm:grid-cols-3">
         <Field label="Person" htmlFor="h-actor">
@@ -49,7 +57,7 @@ export function HistoryCard() {
         <Field label="Record" htmlFor="h-entity">
           <Select id="h-entity" value={entity} onChange={e => setEntity(e.target.value)}>
             <option value="">All kinds</option>
-            {Object.entries(H.ENTITY_WORD).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            {Object.entries(H.ENTITY_WORD).filter(([k]) => isOwner || !OWNER_ONLY.has(k)).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </Select>
         </Field>
         <Field label="Name contains" htmlFor="h-text">
@@ -58,10 +66,16 @@ export function HistoryCard() {
         <Field label="From" htmlFor="h-from"><Input id="h-from" type="date" value={from} onChange={e => setFrom(e.target.value)} /></Field>
         <Field label="To" htmlFor="h-to"><Input id="h-to" type="date" value={to} onChange={e => setTo(e.target.value)} /></Field>
       </div>
-      <div className="pt-4">
+      <label className="mt-3 flex min-h-[44px] items-center gap-3 text-[0.875rem]">
+        <input type="checkbox" checked={automatic} onChange={e => setAutomatic(e.target.checked)} className="size-[18px] accent-[var(--color-accent)]" />
+        Include automatic changes (starting data, imports and scheduled jobs)
+      </label>
+      <div className="pt-2">
         {rows.isPending && <Skeleton className="h-24" />}
         {rows.error && <ErrorState error={rows.error} onRetry={() => rows.refetch()} />}
-        {rows.data?.length === 0 && <EmptyState title="Nothing matches" body="Try fewer filters or a wider date range." />}
+        {rows.data?.length === 0 && (!automatic && !actor && !entity && !typed && !from && !to
+          ? <EmptyState title="No changes by people yet" body="Only automatic changes so far. Tick “Include automatic changes” to see them." />
+          : <EmptyState title="Nothing matches" body="Try fewer filters or a wider date range." />)}
         {!!rows.data?.length && <HistoryList rows={rows.data} showRecord />}
         {rows.data?.length === limit && (limit < 1000
           ? <Button size="sm" variant="ghost" className="-ml-2 mt-2" onClick={() => setLimit(l => Math.min(1000, l * 4))}>Show more</Button>

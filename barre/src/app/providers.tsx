@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionProvider } from '@/lib/auth/session';
 import { DatabaseGate } from '@/components/app/database-gate';
 import { UndoToaster } from '@/components/app/undo';
+import { SavedStatus } from '@/components/app/saved-status';
 import { PwaSetup } from '@/components/app/pwa';
 import { FocusManager } from '@/components/app/focus-manager';
 import { RegisterSync } from '@/lib/offline/register-sync';
@@ -26,7 +27,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={client}>
       <SessionProvider>
         <FocusManager />
-        {marketing ? children : <DatabaseGate>{children}<UndoToaster /><PwaSetup /><RegisterSync /></DatabaseGate>}
+        {marketing ? children : <DatabaseGate>{children}<UndoToaster /><SavedStatus /><PwaSetup /><RegisterSync /></DatabaseGate>}
       </SessionProvider>
     </QueryClientProvider>
   );

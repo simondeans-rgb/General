@@ -9,6 +9,7 @@ import { money, dateShort } from '@/lib/format';
 import { inviteLink } from '@/lib/repos/platform';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
+import { plural, pastTense } from '@/lib/office-words';
 import { downloadCsv, parseCsv } from '@/lib/csv';
 
 /** Our fields, and the column headings schools tend to use for each. */
@@ -93,25 +94,25 @@ const FN: Record<Exclude<Kind, 'balances'>, string> = {
   families: 'import_families', classes: 'import_classes', invoices: 'import_invoice_history',
   attendance: 'import_attendance_history', exams: 'import_exam_results',
 };
-const KINDS: Record<Kind, { title: string; sub: string; fields: typeof FIELDS; unit: string; template: Record<string, string> }> = {
-  families: { title: 'Import families', sub: 'One row per child, from a CSV file.', fields: FIELDS, unit: 'children', template: {
+const KINDS: Record<Kind, { title: string; sub: string; fields: typeof FIELDS; unit: [string, string]; template: Record<string, string> }> = {
+  families: { title: 'Import families', sub: 'One row per child, from a CSV file.', fields: FIELDS, unit: ['child', 'children'], template: {
     'Parent name': 'Ruth Okafor', 'Parent email': 'ruth@example.com', 'Parent phone': '07700 900400',
     'Second parent name': '', 'Second parent email': '', 'Second parent phone': '',
     'Child first name': 'Ada', 'Child last name': 'Okafor', 'Date of birth': '14/03/2018',
     'Emergency contact name': 'Grace Okafor', 'Emergency contact phone': '07700 900401',
     'Allergies': 'Peanuts', 'Medical notes': '', 'Photo consent': 'Yes', 'Classes': 'Pre-School Ballet; Junior Tap' } },
-  classes: { title: 'Import your timetable', sub: 'One row per weekly class. Each class gets its sessions for the term.', fields: CLASS_FIELDS, unit: 'classes', template: {
+  classes: { title: 'Import your timetable', sub: 'One row per weekly class. Each class gets its sessions for the term.', fields: CLASS_FIELDS, unit: ['class', 'classes'], template: {
     'Class name': 'Junior Jazz', 'Style': 'Jazz', 'Level': 'Grade 1', 'Day': 'Wednesday', 'Time': '17:30', 'Minutes': '45',
     'Location': '', 'Room': 'Studio 1', 'Teacher': '', 'Places': '16', 'Age min': '7', 'Age max': '10', 'Price': '54.00', 'Pricing': 'term', 'Term': '' } },
-  balances: { title: 'Import opening balances', sub: 'One row per family: what they owe, or credit they hold, on a date.', fields: BALANCE_FIELDS, unit: 'families', template: {
+  balances: { title: 'Import opening balances', sub: 'One row per family: what they owe, or credit they hold, on a date.', fields: BALANCE_FIELDS, unit: ['family', 'families'], template: {
     'Parent email': 'ruth@example.com', 'Family': 'Okafor', 'Balance': '45.00', 'Credit': '' } },
-  invoices: { title: 'Import past invoices', sub: 'One row per invoice from your previous system, kept as history.', fields: INVOICE_FIELDS, unit: 'invoices', template: {
+  invoices: { title: 'Import past invoices', sub: 'One row per invoice from your previous system, kept as history.', fields: INVOICE_FIELDS, unit: ['invoice', 'invoices'], template: {
     'Parent email': 'ruth@example.com', 'Family': 'Okafor', 'Invoice number': 'INV-1042', 'Invoice date': '01/09/2025', 'Due date': '15/09/2025',
     'Description': 'Autumn term fees', 'Total': '120.00', 'Paid': '120.00' } },
-  attendance: { title: 'Import attendance history', sub: 'One row per child, term and class: how many classes they came to.', fields: ATTENDANCE_FIELDS, unit: 'rows', template: {
+  attendance: { title: 'Import attendance history', sub: 'One row per child, term and class: how many classes they came to.', fields: ATTENDANCE_FIELDS, unit: ['row', 'rows'], template: {
     'Child first name': 'Ada', 'Child last name': 'Okafor', 'Date of birth': '14/03/2018', 'Parent email': 'ruth@example.com',
     'Term': 'Autumn 2025', 'Class': 'Pre-School Ballet', 'Attended': '11', 'Absent': '1' } },
-  exams: { title: 'Import exam results', sub: 'One row per child and exam already taken.', fields: EXAM_FIELDS, unit: 'results', template: {
+  exams: { title: 'Import exam results', sub: 'One row per child and exam already taken.', fields: EXAM_FIELDS, unit: ['result', 'results'], template: {
     'Child first name': 'Ada', 'Child last name': 'Okafor', 'Date of birth': '14/03/2018', 'Parent email': 'ruth@example.com',
     'Exam board': 'RAD', 'Grade': 'Primary', 'Exam date': '20/06/2025', 'Result': 'Merit', 'Mark': '72', 'Exam session': 'RAD summer exams' } },
 };
@@ -126,7 +127,8 @@ type Check = { ok: boolean; rows: number; families?: number; children?: number; 
  * its columns, see every problem before anything is written, then import it all
  * in one go — or nothing at all.
  */
-export function ImportWizard({ onClose, initial = 'families' }: { onClose: () => void; initial?: Kind | 'invites' }) {
+export function ImportWizard({ onClose, initial: asked }: { onClose: () => void; initial?: Kind | 'invites' }) {
+  const initial = asked ?? 'families';
   const { session } = useSession();
   const qc = useQueryClient();
   const [kind, setKind] = React.useState<Kind>(initial === 'invites' ? 'families' : initial);
@@ -156,6 +158,14 @@ export function ImportWizard({ onClose, initial = 'families' }: { onClose: () =>
     && body.some(r => (r[c.i] ?? '').trim() !== ''));
   const switchKind = (k: Kind) => { setKind(k); setFile(null); setTable([]); setMap({}); setCheck(null); setDone(null); setAckUnmapped(false); };
   const switchTab = (t: Tab) => { setTab(t); if (t !== 'invites') switchKind(t === 'history' ? 'invoices' : t); };
+  // A school with no classes yet starts at step 1, the timetable (owners U11).
+  const classCount = useRows<{ n: number }>(['import-class-count'], `select count(*)::int n from class where deleted_at is null`, [], { enabled: !asked });
+  const opened = React.useRef(false);
+  React.useEffect(() => {
+    if (asked || opened.current || !classCount.data) return;
+    opened.current = true;
+    if (classCount.data[0]?.n === 0) switchTab('classes');
+  }, [asked, classCount.data]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const read = async (f: File) => {
     const t = parseCsv(await f.text());
@@ -197,18 +207,18 @@ export function ImportWizard({ onClose, initial = 'families' }: { onClose: () =>
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
         {done ? (
           <div className="space-y-3 text-[0.875rem]">
-            {kind === 'families' && <Notice word="Imported" tone="positive" title={`${done.families} new families and ${done.children} children`}
-              detail={`${done.enrolled} class places taken${done.medical ? `; ${done.medical} medical notes added to records` : ''}.${done.skipped ? ` ${done.skipped} children were already here and were left alone.` : ''}`} />}
-            {kind === 'classes' && <Notice word="Imported" tone="positive" title={`${done.classes} classes with ${done.sessions} sessions`}
-              detail={done.skipped ? `${done.skipped} classes were already here and were left alone.` : 'They are on Classes and the Schedule now.'} />}
+            {kind === 'families' && <Notice word="Imported" tone="positive" title={`${plural(done.families, 'new family', 'new families')} and ${plural(done.children, 'child', 'children')}`}
+              detail={`${plural(done.enrolled, 'class place')} taken${done.medical ? `; ${plural(done.medical, 'medical note')} added to records` : ''}.${done.skipped ? ` ${plural(done.skipped, 'child was', 'children were')} already here and left alone.` : ''}`} />}
+            {kind === 'classes' && <Notice word="Imported" tone="positive" title={`${plural(done.classes, 'class', 'classes')} with ${plural(done.sessions, 'session')}`}
+              detail={done.skipped ? `${plural(done.skipped, 'class was', 'classes were')} already here and left alone.` : 'They are on Classes and the Schedule now.'} />}
             {kind === 'balances' && <Notice word="Imported" tone="positive"
-              title={`${done.invoices} opening-balance invoices (${money(done.owed_minor ?? 0)}) and ${done.credits} credits (${money(done.credit_minor ?? 0)})`}
-              detail={`Each is labelled “Opening balance as at …” on the family’s account.${done.skipped ? ` ${done.skipped} families already had an opening balance and were left alone.` : ''}`} />}
+              title={`${plural(done.invoices, 'opening-balance invoice')} (${money(done.owed_minor ?? 0)}) and ${plural(done.credits, 'credit')} (${money(done.credit_minor ?? 0)})`}
+              detail={`Each is labelled “Opening balance as at …” on the family’s account.${done.skipped ? ` ${plural(done.skipped, 'family', 'families')} already had an opening balance and ${done.skipped === 1 ? 'was' : 'were'} left alone.` : ''}`} />}
             {HISTORY.includes(kind) && <Notice word="Imported" tone="positive"
-              title={kind === 'invoices' ? `${done.invoices} past invoices` : kind === 'attendance' ? `${done.records} attendance records` : `${done.results} exam results`}
+              title={kind === 'invoices' ? plural(done.invoices, 'past invoice') : kind === 'attendance' ? plural(done.records, 'attendance record') : plural(done.results, 'exam result')}
               detail={`${kind === 'invoices' ? 'They are on each family’s record, marked “Imported”. They are history only: balances, aged debt and billing runs do not use them.'
-                : kind === 'attendance' ? 'They are on each child’s record, under earlier attendance.' : 'They are with each child’s exams and on their timetable.'}${done.skipped ? ` ${done.skipped} were already here and were left alone.` : ''}`} />}
-            {done.warnings.map((w, i) => <p key={i} className="text-caution">{w.message}.</p>)}
+                : kind === 'attendance' ? 'They are on each child’s record, under earlier attendance.' : 'They are with each child’s exams and on their timetable.'}${done.skipped ? ` ${done.skipped} ${done.skipped === 1 ? 'was' : 'were'} already here and left alone.` : ''}`} />}
+            {done.warnings.map((w, i) => <p key={i} className="text-caution">{pastTense(w.message)}.</p>)}
             <p className="text-ink-2">{kind === 'families' ? 'Next: import opening balances, then make invitation links so parents can sign in.'
               : kind === 'classes' ? 'Next: import your families, then their opening balances.' : 'Next: make invitation links so parents can sign in.'}</p>
             {kind !== 'classes' && <Button size="sm" onClick={() => { setDone(null); setTab('invites'); }}>Make invitation links</Button>}
@@ -252,7 +262,7 @@ export function ImportWizard({ onClose, initial = 'families' }: { onClose: () =>
                   <input type="file" accept=".csv,text/csv" className="sr-only" onChange={e => e.target.files?.[0] && read(e.target.files[0])} />
                 </label>
                 <Button size="sm" variant="ghost" onClick={template}><Download className="size-4" aria-hidden /> Template</Button>
-                {file && <span className="text-[0.8125rem] text-ink-3">{file} · {body.length} rows</span>}
+                {file && <span className="text-[0.8125rem] text-ink-3">{file} · {plural(body.length, 'row')}</span>}
               </div>
             </section>
 
@@ -287,7 +297,7 @@ export function ImportWizard({ onClose, initial = 'families' }: { onClose: () =>
             {check && (
               <section className="space-y-2" aria-live="polite">
                 {check.ok
-                  ? <Notice word="Ready" tone="positive" title={`All ${check.rows} rows are fine`} detail={kind === 'families' ? `About ${check.families} families.` : undefined} />
+                  ? <Notice word="Ready" tone="positive" title={check.rows === 1 ? 'The row is fine' : `All ${plural(check.rows, 'row')} are fine`} detail={kind === 'families' ? `They make ${plural(check.families, 'family', 'families')}.` : undefined} />
                   : <Notice word="Fix first" tone="critical" title={`${check.errors.length} problem${check.errors.length === 1 ? '' : 's'} to fix in the file`} detail="Nothing has been imported." />}
                 {check.errors.length > 0 && (
                   <ul className="max-h-48 divide-y divide-line overflow-y-auto border-y border-line text-[0.8438rem]">
@@ -316,7 +326,7 @@ export function ImportWizard({ onClose, initial = 'families' }: { onClose: () =>
               </Button>
               <Button className="flex-1 sm:flex-none" variant="primary" disabled={!check?.ok || (unmapped.length > 0 && !ackUnmapped)} loading={call.isPending && call.variables === true}
                 onClick={() => call.mutate(true)}>
-                Import {body.length} {K.unit}
+                Import {plural(body.length, K.unit[0], K.unit[1])}
               </Button>
             </>}
           </div>

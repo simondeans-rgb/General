@@ -31,6 +31,7 @@ import { ArrowRightLeft, MessageSquare } from 'lucide-react';
 import { BulkMessageSheet, DuplicatesSheet } from '@/components/app/family-tools';
 import * as H from '@/lib/repos/office';
 import { cn } from '@/lib/cn';
+import { dateWithYear } from '@/lib/office-words';
 
 type Tab = 'families' | 'students' | 'staff';
 
@@ -376,7 +377,7 @@ function StudentDetail({ id, onClose }: { id: string; onClose: () => void }) {
         <>
           <DetailSection title="Details">
             <KeyValue rows={[
-              ['Date of birth', dateShort(s.date_of_birth)],
+              ['Date of birth', s.date_of_birth ? `${dateWithYear(s.date_of_birth)} (${ageFrom(s.date_of_birth)})` : '—'],
               ['Family', s.family_name],
               ['Classes', `${s.classes}`],
               ['Attendance', s.attendance_pct != null ? `${s.attendance_pct}%` : '—'],
