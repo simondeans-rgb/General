@@ -71,13 +71,17 @@ const BRIEF_COLUMNS = `coalesce(b.requires_alert, false) as requires_alert,
        coalesce(b.has_medical_need, false) as has_medical_need,
        b.allergies, b.conditions, b.medications, b.action_plan,
        b.emergency_contact_name, b.emergency_contact_phone,
-       coalesce(b.emergency_contacts, '[]'::jsonb) as emergency_contacts, b.photo_consent,
-       app.collection_brief(b.student_id) as collection`;
+       coalesce(b.emergency_contacts, '[]'::jsonb) as emergency_contacts, pc.granted as photo_consent,
+       coalesce(cb.brief, '[]'::jsonb) as collection`;
 
-/** Attendance this term (UR-54): sessions since the current term began, up
- *  to now. */
-/** Attendance this term: one security check per child, then a plain count (0067). */
-const TERM_ATTENDANCE = (student: string) => `app.term_attendance_pct(${student})`;
+/** Who may collect, and attendance this term (UR-54: sessions since the
+ *  current term began, up to now), for a whole list of children at once:
+ *  access is checked once for the list, not once per child (0068).
+ *  `ids` is an expression giving the uuid[] of the children listed. */
+const PER_CHILD = (ids: string, child: string) => `
+  left join app.collection_briefs(${ids}) cb on cb.student_id = b.student_id
+  left join app.consents_now(${ids}, 'photography') pc on pc.student_id = b.student_id
+  left join app.term_attendance_pcts(${ids}) ap on ap.student_id = ${child}`;
 
 /**
  * The register for one session: everyone enrolled, plus anyone trialling.
@@ -112,11 +116,11 @@ select roll.id as student_id, roll.first_name, roll.last_name, roll.preferred_na
        ar.status, ar.reason, ar.mark_kind,
        rep.note as reported_note, rep.reporter as reported_by,
        ${BRIEF_COLUMNS},
-       ${TERM_ATTENDANCE('roll.id')} as attendance_pct
+       ap.pct as attendance_pct
   from roll
   left join attendance_record ar on ar.student_id = roll.id and ar.session_id = $1 and ar.deleted_at is null
   left join absence_report rep on rep.student_id = roll.id and rep.session_id = $1 and rep.status = 'active'
-  left join student_safety_brief b on b.student_id = roll.id
+  left join student_safety_brief b on b.student_id = roll.id${PER_CHILD('array(select id from roll)', 'roll.id')}
   left join trial_feedback tf on tf.trial_id = roll.trial_id
  order by roll.last_name, roll.first_name`;
 
@@ -158,13 +162,14 @@ export const SESSION_ACCESS = `select app.session_access($1) as access`;
 
 /** Everyone a teacher may see, which is everyone in their own classes. */
 export const MY_STUDENTS = `
+with s as materialized (select id, first_name, last_name, preferred_name, date_of_birth from student where deleted_at is null)
 select s.id, s.first_name, s.last_name, s.preferred_name, s.date_of_birth,
        ${BRIEF_COLUMNS},
-       app.my_class_names_for(s.id) as class_names,
-       ${TERM_ATTENDANCE('s.id')} as attendance_pct
-  from student s
-  left join student_safety_brief b on b.student_id = s.id
- where s.deleted_at is null
+       cn.names as class_names,
+       ap.pct as attendance_pct
+  from s
+  left join student_safety_brief b on b.student_id = s.id${PER_CHILD('array(select id from s)', 's.id')}
+  left join app.my_class_names(array(select id from s)) cn on cn.student_id = s.id
  order by s.last_name, s.first_name`;
 
 /* ── Running the room: notes, register close, class notices ─────────────── */
