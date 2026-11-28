@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MapPin } from 'lucide-react';
 import { RecordSheet } from '@/components/app/record-sheet';
-import { Notice } from '@/components/ui';
+import { Notice, Choice } from '@/components/ui';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
@@ -42,7 +42,7 @@ export function effectiveAccess(role: string, places: string[]): string {
   switch (role) {
     case 'owner': return 'Everything, at every location';
     case 'admin': return places.length
-      ? `${at}: sees the families with a child there, their classes, registers, invoices and reports. Read-only — changes, billing, imports and invitations stay with an owner`
+      ? `${at}: runs the families with a child there — their details, places, registers, messages and invoices — and sees reports for there. A family that is also at another location, billing runs, imports and invitations stay with an owner`
       : 'Day-to-day running at every location: people, classes, billing, messages';
     case 'teacher': return places.length
       ? `Their own classes and registers; sees the timetable at ${at}`
@@ -84,16 +84,12 @@ function ScopeSheet({ membershipId, name, role, scope, locations, onClose }: {
     <RecordSheet title={`Where ${name} works`} subtitle={role === 'admin' ? 'Administrator' : 'Teacher'}
       onClose={onClose} onSave={() => save.mutate()} saving={save.isPending} error={save.error}
       canSave={!limited || picked.length > 0} saveHint={limited && !picked.length ? 'Choose at least one location' : null}>
-      <fieldset className="space-y-1.5">
-        <legend className="mb-1.5 text-[0.8125rem] font-medium text-ink-2">Locations</legend>
-        {[[false, 'Every location', 'Including any you add later'], [true, 'Only some locations', 'Choose them below']].map(([v, l, d]) => (
-          <label key={String(v)} className={cn('flex cursor-pointer items-start gap-3 rounded-[var(--radius-md)] border p-2.5',
-            limited === v ? 'border-accent-line bg-accent-soft/50' : 'border-line hover:bg-surface-2')}>
-            <input type="radio" name="scope" checked={limited === v} onChange={() => setLimited(v as boolean)} className="mt-1 accent-[var(--color-accent)]" />
-            <span><span className="block text-sm font-medium">{l as string}</span><span className="block text-[0.7812rem] text-ink-2">{d as string}</span></span>
-          </label>
-        ))}
-      </fieldset>
+      <div className="space-y-1.5">
+        <p aria-hidden className="mb-1.5 text-[0.8125rem] font-medium text-ink-2">Locations</p>
+        <Choice label="Locations" layout="stack" value={limited ? 'some' : 'every'} onChange={v => setLimited(v === 'some')}
+          options={[{ value: 'every', label: 'Every location', hint: 'Including any you add later' },
+                    { value: 'some', label: 'Only some locations', hint: 'Choose them below' }]} />
+      </div>
       {limited && (
         <fieldset className="space-y-1">
           <legend className="sr-only">Which locations</legend>
@@ -125,6 +121,6 @@ export function ScopeNotice() {
   return (
     <Notice word="Limited" tone="accent" className="mx-auto mb-6 max-w-[1240px]"
       title={`You see ${mine.data.map(m => m.name).join(' and ')} only`}
-      detail="Families with a child in a class there, their classes, registers, invoices and reports. Changes, billing, imports and invitations are made by an owner." />
+      detail="You run the families with a child in a class there: their details, places, registers, messages and invoices. A family also at another location, billing runs, imports and invitations are for an owner." />
   );
 }

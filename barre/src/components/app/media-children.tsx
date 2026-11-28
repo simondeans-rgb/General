@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
-import { Button, ErrorState, Notice, Skeleton, Word } from '@/components/ui';
+import { Button, ErrorState, Notice, Skeleton, Word, StatusLine } from '@/components/ui';
 import { useRows } from '@/lib/query';
 import { runAs, type Query } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
@@ -115,7 +115,8 @@ export function ChildrenQuestion({
           )}
           {missing > 0 && (
             <p className="text-[0.8125rem] font-semibold text-caution">
-              Hidden from families: consent not given for {missing} {missing === 1 ? 'child' : 'children'}.
+              Staff only for now: {missing} {missing === 1 ? 'child has' : 'children have'} no {CONSENT_NAME[consentKind]} consent yet.
+              You can ask their families once it is saved.
             </p>
           )}
         </div>
@@ -136,11 +137,11 @@ export function HiddenFromFamilies({ r }: { r: H.Resource }) {
   const n = r.without_consent ?? 0;
   const title = r.needs_names
     ? 'Hidden from families: nobody named yet'
-    : `Hidden from families: consent not given for ${n} ${n === 1 ? 'child' : 'children'}`;
+    : `Hidden from families: no consent yet for ${n} ${n === 1 ? 'child' : 'children'}`;
   const detail = r.needs_names
     ? 'Name the children in it, or the office can confirm none can be identified.'
     : 'It shows again on its own once every named child has consent.';
-  return <Notice className="mt-2" word="Staff only" tone="caution" title={title} detail={detail} />;
+  return <Notice className="mt-2" word="Limited" tone="caution" title={title} detail={detail} />;
 }
 
 /** Edit the children in a piece of material already shared. */
@@ -202,6 +203,63 @@ export function EditChildren({ r, classId, isOffice, onClose }: {
                   disabled={named.isLoading} onClick={() => save.mutate()}>Save</Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * After saving material: say what actually happened (round 2 panel, U14).
+ * Shared with the class, or kept for staff until consent, with a way to ask
+ * the families of the children named, in the app.
+ */
+export function SavedConfirmation({ resourceId, status, className, titleId }: {
+  resourceId: string; status: H.ChildStatus | null; className: string; titleId: string;
+}) {
+  const { session } = useSession();
+  const qc = useQueryClient();
+  const ask = useMutation({
+    mutationFn: () => runAs(session, async q => (await q<H.ConsentAsk>(H.REQUEST_MEDIA_CONSENT, [resourceId]))[0]!),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['db'] }),
+  });
+  if (!status || status.family_visible) {
+    return (
+      <>
+        <h2 id={titleId} className="sr-only">Shared with {className}</h2>
+        <StatusLine title={`Shared with ${className}`}
+          detail="Everyone in the class finds it when they open this class from their timetable." />
+      </>
+    );
+  }
+  const kind = status.consent_kind === 'video' ? 'video' : 'photo';
+  const n = status.without_consent;
+  const kids = (k: number) => `${k} ${k === 1 ? 'child' : 'children'}`;
+  const title = status.needs_names ? 'Saved for staff only' : `Staff only — consent needed for ${kids(n)}`;
+  const detail = status.needs_names
+    ? 'Families see it once you name the children in it, or the office confirms none can be identified.'
+    : `Families in ${className} see it once every child named has ${kind} consent. It shows on its own then.`;
+  const r = ask.data;
+  const fam = (k: number) => `${k} ${k === 1 ? 'family' : 'families'}`;
+  return (
+    <div className="space-y-4">
+      <h2 id={titleId} className="sr-only">{title}</h2>
+      <Notice word="Limited" tone="caution" title={title} detail={detail} />
+      {!status.needs_names && n > 0 && !r && (
+        <div className="space-y-1.5">
+          <Button loading={ask.isPending} onClick={() => ask.mutate()}>Ask families for consent</Button>
+          <p className="text-[0.8125rem] text-ink-3">
+            Sends one message in the app to the families of the children with nothing recorded. Families who said no are not asked.
+          </p>
+        </div>
+      )}
+      {ask.error != null && <ErrorState error={ask.error} />}
+      {r && (
+        <p role="status" className="text-[0.875rem] text-ink-2">
+          {r.asked > 0 ? `Asked ${fam(r.families)} in the app. ` : 'Nobody new to ask. '}
+          {r.already_asked > 0 && `${kids(r.already_asked)} already asked in the last two weeks. `}
+          {r.declined > 0 && `${kids(r.declined)}: the family said no, so they are not asked again. `}
+          {r.unreachable > 0 && `${kids(r.unreachable)} with no one signed in to the app; the office can ask them.`}
+        </p>
+      )}
     </div>
   );
 }

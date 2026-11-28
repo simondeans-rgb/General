@@ -86,6 +86,72 @@ Repository SQL is deliberately *not* filtered by tenant. `MY_INVOICES` is
 security has already limited the rows. Filtering again in the query would hide
 a policy mistake rather than catch it.
 
+## Performance budget
+
+Every main screen's queries must answer in under **500 ms** on the test
+database, each run as the person who uses that screen (owner, administrator,
+location-limited administrator, teacher, cover teacher, guardian, student).
+`tests/perf-budget.test.ts` holds the list, taken from the queries the demo
+actually issues when each screen and tab is opened, uses the exported SQL from
+`src/lib/repos/*.ts` with the parameters the screens pass, and fails the suite
+when one goes over. It prints the slowest, so a creeping query is visible
+before it fails. 500 ms is generous on purpose (a busy CI machine must not
+flake it); typical times are 5–200 ms, so a 10× regression is caught. The
+in-browser demo runs the same SQL roughly 5–10× slower than server Postgres,
+which is the other reason the budget is not looser.
+
+What made screens slow, and the rules that keep them fast:
+
+- **Ask "may the caller…" once per query, not once per row.** A policy such as
+  `app.is_admin(studio_id)` runs a security-definer function for every row it
+  filters (~0.2 ms each: memberships, school status, chosen school, location
+  limits). Migration 0068 rewrote every such call to the set form
+  `coalesce(studio_id in (select app.admin_studio_ids()), false)`, which
+  Postgres evaluates once (a hashed subplan). Write new policies that way, or
+  call `select app.speed_up_policies()` at the end of a migration that adds
+  policies in the old style; it records each original in `app.policy_rewrite`,
+  and `tests/perf-access.test.ts` restores the originals in a transaction and
+  checks every table shows every role exactly the same rows.
+- **No per-child functions in a list.** A function that checks access for one
+  child (`app.can_see_student`, `app.consent_now`, `app.collection_brief`)
+  rebuilds the caller's whole set of visible children each time. For a list,
+  use a whole-list function that checks once and aggregates:
+  `app.visible_student_ids`, `app.term_attendance_pcts`, `app.collection_briefs`,
+  `app.consents_now`, `app.my_class_names` (each takes `uuid[]`; a child the
+  caller cannot see has no row).
+- **JIT is off** (`alter database … set jit = off`, migration 0068). Row-level
+  security inflates cost estimates, so Postgres was compiling 20 ms queries to
+  machine code for 0.4–6 s. On a hosted database where a migration may not
+  change this, set `jit = off` in the service's settings.
+- Index before you trust a sequential scan on a large table; at demo scale the
+  tables are small enough that every remaining plan was dominated by policy
+  work, not scans.
+
+### First load of the demo
+
+The demo downloads Postgres itself and, the first time only, builds the schema
+(one step per migration) and the sample school. So:
+
+- The engine's two big files are also published gzipped by
+  `scripts/copy-pglite.mjs` (10.1 + 6.3 MB become 3.4 + 2.1 MB) and unpacked in
+  the browser with `DecompressionStream`, so even a host that does not compress
+  sends a third of the bytes. Browsers without it fetch the plain files.
+- `public/db-preload.js`, an async script in the head (`app/layout.tsx`),
+  starts those downloads while the page is still being read, in parallel with
+  the app shell's JavaScript. Not on `/welcome`.
+- The loader (`components/app/database-gate.tsx`) shows the real stages from
+  `lib/db/client.ts` (`onBootProgress`): megabytes downloaded, migrations done
+  out of all, and a time left measured from this device's own speed.
+- The database is kept in IndexedDB and only rebuilt when the schema or seed
+  fingerprint changes; a return visit skips the schema and the sample school.
+- Every read and write goes through PGlite's `transaction()`: outside it,
+  PGlite copies the database to IndexedDB after every statement (five times
+  per read, each a walk over ~1,600 files). A write is copied once, after it
+  commits, before `runAs` returns. Building the schema is one `transaction()`
+  that commits after each migration, copied once at the end.
+- `globalThis.__barreBoot` holds the timings of the last boot;
+  `globalThis.__barreQueryLog = []` records every read with its time.
+
 ## Schema decisions worth knowing
 
 **`studio_id` is on every tenant table.** Denormalised on purpose. A policy
@@ -142,6 +208,24 @@ holds marks that could not be sent (one per child, latest tap wins) and
 flushes them when the connection returns. The demo never goes offline — its
 database is in the tab — but the server deployment will, and the rule that
 makes late syncs safe is already in the SQL and tested.
+
+## The school on the home screen
+
+`app/manifest.ts` is Swayvo's, written once at build time: the demo is a
+static export, so there is no request to vary it by. Signed in to a school,
+`useBrandedInstall` (`components/app/pwa.tsx`, rules in
+`lib/install-identity.ts`) makes that school's version in the browser: icons
+drawn on a canvas (the logo on a white plate on the school's colour, or its
+initials), a manifest served as a `blob:` URL with those icons as `data:`
+URLs, and the iOS pieces Safari reads when "Add to Home Screen" is tapped
+(`apple-touch-icon`, `apple-mobile-web-app-title`). Each school's manifest has
+its own `id`, so a parent at two schools can install both. Signing out puts
+Swayvo's back. `/family` shows an install guide with the steps for the phone
+in hand. A hosted deployment can serve the same thing from a per-school route
+(`/s/<slug>/manifest.webmanifest`) built from the same `installIdentity()`.
+Checked in headless Chromium (the page's manifest link resolves to the
+school's name, colour and icons); not yet checked on real iPhones and Android
+launchers, so treat install on devices as unverified until it is.
 
 ## Seams that are deliberately open
 

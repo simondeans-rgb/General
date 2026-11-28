@@ -33,6 +33,9 @@ the geometry there, never the files). In the app use `<SwayvoLogo>`, `<SwayvoMar
 is full height and coloured; beat 5 is lifted. The gap between the groups is what stops it reading as a
 signal-strength icon — never close it. Below 24px use the four-beat favicon form (beats 1, 2, 5, 6).
 
+**Wordmark v2** (28 Nov 2026): y–v respaced, seamless bowls, a more open count on the app icon. See
+`wordmark-v2.md`.
+
 **Clear space:** the height of a short bar (the x-height of the wordmark) on every side.
 **Minimum size:** lockup 96px / 22mm wide; wordmark 64px / 15mm; below that use the mark.
 
@@ -92,12 +95,23 @@ Plain, warm, specific, short. Name real things. Encourage without gushing; never
 Avoid: "Oops", exclamation marks in system text, jargon ("entity", "record", "sync"), blame ("You failed to…").
 
 ## 8. Applications
-- **App store:** blue ground, one big product moment per screenshot (the next class time, the register,
-  the student's count), headline in Archivo: "Register in seconds." "Progress you can see."
+- **App store:** one big product moment per screenshot (the next class time, the register, the
+  student's count), cropped tight so the product is about 70% of the image, headline in Archivo:
+  "Register in seconds." "Progress you can see." Grounds alternate Count blue and studio white, and one
+  image shows a school in the dark Urban style. Phone 1290 × 2796, tablet 2048 × 2732, Google Play
+  feature graphic 1024 × 500, all made by `scripts/store-shots.mts` from the current app with a fixed clock.
+  Never a state the product can't do (no card payments until they exist).
 - **Website:** hero on Count blue: "Five, six, seven, eight." then the proposition; product shown at
-  real size; one call to action ("Book a demo").
+  real size; one call to action ("Book a demo"), with "Try the demo" beside it and a way through for
+  families ("Looking for classes? Find your school"). No photography until there are real, consented
+  photos: type carries those sections. Claims only about Swayvo, true of the current build.
 - **Social:** square posts in blue or white, one idea each, the count as a recurring device.
 - **Email:** white, school name first, Swayvo sign-off; plain text first, no images required.
+  Templates: `src/lib/branded-print.ts`, previewed on `/design`.
+- **Print:** the show programme is the school's: logo, name and colour, Archivo running order, Inter
+  details, "powered by swayvo" at the foot.
+- **Home screen:** signed in to a school, the installed app is the school's (its short name, its logo
+  or initials on its colour). Swayvo's own icon only for Swayvo's own pages.
 
 ## 9. Trademark and naming status
 Preliminary research found no conflicting SWAYVO marks; this is not clearance. Before launch: official

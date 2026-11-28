@@ -27,8 +27,13 @@ export function isOverdue(i: { status: string; due_on?: unknown; total_minor?: u
 }
 
 export function invoiceState(i: { status: string; due_on?: unknown; total_minor?: unknown; paid_minor?: unknown;
-                                  failed?: boolean; overdue?: boolean }, today = new Date()): { label: string; tone: InvoiceTone } {
+                                  credited_minor?: unknown; failed?: boolean; overdue?: boolean }, today = new Date()): { label: string; tone: InvoiceTone } {
   if (i.failed) return { label: 'Card declined', tone: 'critical' };
-  if (i.overdue ?? isOverdue(i, today)) return { label: i.status === 'part_paid' ? 'Overdue · part paid' : 'Overdue', tone: 'caution' };
+  // A credit note lowers what is owed; it is not a payment (round 2, U3). An
+  // invoice only "part paid" by credit is simply due.
+  const creditOnly = i.status === 'part_paid' && i.credited_minor != null && i.paid_minor != null
+    && Number(i.paid_minor) <= Number(i.credited_minor);
+  if (i.overdue ?? isOverdue(i, today)) return { label: i.status === 'part_paid' && !creditOnly ? 'Overdue · part paid' : 'Overdue', tone: 'caution' };
+  if (creditOnly) return LABEL.issued!;
   return LABEL[i.status] ?? LABEL.draft!;
 }

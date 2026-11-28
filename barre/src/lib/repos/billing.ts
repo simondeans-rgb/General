@@ -26,10 +26,40 @@ select
      as collected_30d_minor,
   coalesce((select -sum(balance_minor) from family where deleted_at is null and balance_minor < 0), 0)::bigint as credit_minor`;
 
+/** SUMMARY for one location ($1, its name), so the totals follow the
+ *  location filter (U8). Money comes from location_money (0062): invoices
+ *  split by their class lines, payments following their invoice. Families
+ *  and invoices count at a location when an invoice has a class line there,
+ *  or, with no class lines, when the family has a child in a class there. */
+export const SUMMARY_AT = `
+with loc as (select id from location where name = $1 and deleted_at is null),
+m as (select lm.* from location_money lm where lm.location_id in (select id from loc)),
+fam_here as (select distinct s.family_id from enrolment e join student s on s.id = e.student_id join class c on c.id = e.class_id
+              where e.status = 'active' and e.deleted_at is null and c.location_id in (select id from loc)),
+inv_here as (select i.* from invoice i where i.deleted_at is null and (
+               exists (select 1 from invoice_item ii join class c on c.id = ii.class_id
+                        where ii.invoice_id = i.id and ii.deleted_at is null and c.location_id in (select id from loc))
+               or (not exists (select 1 from invoice_item ii where ii.invoice_id = i.id and ii.deleted_at is null and ii.class_id is not null)
+                   and i.family_id in (select family_id from fam_here))))
+select
+  coalesce((select sum(outstanding_minor) from m), 0)::bigint as outstanding_minor,
+  (select count(distinct family_id)::int from inv_here where status in ('issued','part_paid')) as owing_families,
+  coalesce((select sum(overdue_minor) from m), 0)::bigint as overdue_minor,
+  (select count(*)::int from inv_here where status in ('issued','part_paid','refunded') and due_on < current_date) as overdue_invoices,
+  (select count(*)::int from payment p where p.deleted_at is null and p.failure_code is not null
+     and p.succeeded_at is null and p.invoice_id in (select id from inv_here where status in ('issued','part_paid'))) as failed_payments,
+  coalesce((select sum(p.amount_minor) from payment p where p.deleted_at is null and p.failure_code is not null
+     and p.succeeded_at is null and p.invoice_id in (select id from inv_here where status in ('issued','part_paid'))), 0)::bigint as failed_minor,
+  coalesce((select sum(collected_30d_minor) from m), 0)::bigint as collected_30d_minor,
+  coalesce((select -sum(balance_minor) from family where deleted_at is null and balance_minor < 0
+     and id in (select family_id from fam_here)), 0)::bigint as credit_minor`;
+
 export type InvoiceRow = {
   id: string; number: string; status: string; issued_on: string | null; due_on: string | null;
   total_minor: string; paid_minor: string; family_id: string; family_name: string;
   overdue: boolean; failed: boolean; lines: string | null;
+  /** What credit notes took off, so it is not shown as money paid (U3). */
+  credited_minor?: string;
   /** Where it belongs, for the location filter (UR-33). */
   locations: string[];
   /** The guardian a split family's invoice is addressed to; null is the whole family (UR-17). */
@@ -46,10 +76,13 @@ const INVOICE_LOCATIONS = `coalesce(nullif(array(select distinct l.name from inv
    join class c on c.id = it.class_id join location l on l.id = c.location_id
   where it.invoice_id = i.id and it.deleted_at is null order by l.name), '{}'), ${FAMILY_LOCATIONS('f.id')})`;
 
+
 export const INVOICES = `
 select i.id, i.number, i.status, i.issued_on, i.due_on, i.total_minor, i.paid_minor,
        f.id as family_id, f.name as family_name,
        (select g.full_name from guardian g where g.id = i.billed_guardian_id) as billed_to,
+       (select coalesce(sum(p.amount_minor - p.refunded_minor), 0) from payment p
+         where p.invoice_id = i.id and p.deleted_at is null and p.credit_note_id is not null)::bigint as credited_minor,
        (i.status in ('issued','part_paid','refunded') and i.due_on < current_date) as overdue,
        exists (select 1 from payment p where p.invoice_id = i.id and p.deleted_at is null
                 and p.failure_code is not null and p.succeeded_at is null)
@@ -74,6 +107,8 @@ select i.id, i.number, i.status, i.issued_on, i.due_on, i.total_minor, i.paid_mi
        f.id as family_id, f.name as family_name, f.balance_minor as family_balance_minor,
        (select g.full_name from guardian g where g.id = i.billed_guardian_id) as billed_to,
        app.family_available_credit(f.id) as available_credit_minor,
+       (select coalesce(sum(p.amount_minor - p.refunded_minor), 0) from payment p
+         where p.invoice_id = i.id and p.deleted_at is null and p.credit_note_id is not null)::bigint as credited_minor,
        (i.status in ('issued','part_paid','refunded') and i.due_on < current_date) as overdue
   from invoice i join family f on f.id = i.family_id
  where i.id = $1`;
@@ -97,11 +132,15 @@ select id, amount_minor, refunded_minor, method, provider, failure_code, succeed
   from payment where invoice_id = $1 and deleted_at is null
  order by created_at`;
 
-export type FamilyOption = { id: string; name: string; balance_minor: string; guardian: string | null };
+export type FamilyOption = { id: string; name: string; balance_minor: string; guardian: string | null;
+  children?: string | null; postcode?: string | null };
 export const FAMILY_OPTIONS = `
 select f.id, f.name, f.balance_minor,
        (select g.full_name from guardian g
-         where g.family_id = f.id and g.deleted_at is null order by g.is_primary desc limit 1) as guardian
+         where g.family_id = f.id and g.deleted_at is null order by g.is_primary desc, g.created_at limit 1) as guardian,
+       (select string_agg(s.first_name, ', ' order by s.first_name) from student s
+         where s.family_id = f.id and s.deleted_at is null) as children,
+       f.postcode
   from family f where f.deleted_at is null order by f.name`;
 
 /** What a family is enrolled in, priced — the raw material for a term invoice. */
@@ -281,7 +320,16 @@ values ($1, $2, $3, $4, nullif($5, ''), coalesce($6::date, current_date), $7::da
 /** Through a function: a soft delete with RETURNING was hidden by the row's own
  *  policy, so ending silently failed (UR-10, admins D2). */
 export const END_FAMILY_DISCOUNT = `select app.end_family_discount($1)`;
-export const FAMILY_PICK = `select id, name from family where deleted_at is null and not is_prospect order by name`;
+/** Families for a picker, with what tells two of the same name apart (U8). */
+export type FamilyPick = { id: string; name: string; guardian: string | null; children: string | null; postcode: string | null };
+export const FAMILY_PICK = `
+select f.id, f.name,
+       (select g.full_name from guardian g
+         where g.family_id = f.id and g.deleted_at is null order by g.is_primary desc, g.created_at limit 1) as guardian,
+       (select string_agg(s.first_name, ', ' order by s.first_name) from student s
+         where s.family_id = f.id and s.deleted_at is null) as children,
+       f.postcode
+  from family f where f.deleted_at is null and not f.is_prospect order by f.name`;
 
 export type AgedDebt = { family_id: string; family_name: string; current_minor: string; d31_60: string; d61_90: string; d90_plus: string; total: string };
 const MY_STUDIO = `(select id from studio where app.is_admin(id) order by name limit 1)`;

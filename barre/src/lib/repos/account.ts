@@ -4,12 +4,15 @@ export type AccountRow = {
   id: string; name: string; status: string; status_reason: string | null; trial_ends_on: string | null;
   data_deletion_due_on: string | null; plan_name: string | null; price_minor: number | null;
   max_students: number | null; max_locations: number | null; max_staff: number | null;
-  students: number; locations: number; staff: number;
+  students: number; locations: number; staff: number; leavers: number;
 };
 export const ACCOUNT = `
 select s.id, s.name, s.status, s.status_reason, s.trial_ends_on, s.data_deletion_due_on,
        p.name as plan_name, p.price_minor, p.max_students, p.max_locations, p.max_staff,
-       (select count(*)::int from student x where x.studio_id = s.id and x.deleted_at is null) as students,
+       -- Leavers are not on the plan (0062): only children in a class, trial or
+       -- waiting list, or just added.
+       app.plan_student_count(s.id) as students,
+       (select count(*)::int from student x where x.studio_id = s.id and x.deleted_at is null) - app.plan_student_count(s.id) as leavers,
        (select count(*)::int from location x where x.studio_id = s.id and x.deleted_at is null) as locations,
        (select count(*)::int from staff_member x where x.studio_id = s.id and x.deleted_at is null) as staff
   from studio s left join plan p on p.id = s.plan_id
@@ -41,7 +44,15 @@ select i.id, i.email, i.full_name, i.role, i.created_at, i.expires_at, i.family_
  where i.accepted_at is null and i.revoked_at is null and i.expires_at > now()
  order by i.created_at desc`;
 
-export const FAMILIES = `select id, name from family where deleted_at is null order by name`;
+/** Families to invite a parent into, with what tells two of one name apart (U8). */
+export const FAMILIES = `
+select f.id, f.name,
+       (select g.full_name from guardian g where g.family_id = f.id and g.deleted_at is null
+         order by g.is_primary desc, g.created_at limit 1) as guardian,
+       (select string_agg(s.first_name, ', ' order by s.first_name) from student s
+         where s.family_id = f.id and s.deleted_at is null) as children,
+       f.postcode
+  from family f where f.deleted_at is null order by f.name`;
 export const STUDENTS = `
 select s.id, s.first_name || ' ' || s.last_name as name, f.name as family_name
   from student s join family f on f.id = s.family_id
@@ -72,3 +83,9 @@ export const EXPORT_TABLES = [
   'invoice', 'invoice_item', 'payment', 'communication', 'communication_template',
   'studio_event', 'event_participant', 'studio_request', 'feedback_note', 'skill_assessment',
 ] as const;
+
+/** The school's history (app.audit_history, owners), changes made by people
+ *  only unless $7 asks for automatic ones too (U4): otherwise imports,
+ *  reminders and scheduled jobs flood it. */
+export const PEOPLE_HISTORY = `select * from app.audit_history($1::uuid, $2, $3, $4::date, $5::date, 1000) h
+ where $7::boolean or h.actor_id is not null limit $6`;

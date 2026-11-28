@@ -68,7 +68,7 @@ export function RecordSheet({
                    sm:rounded-[var(--radius-xl)]">
         <div className="flex items-start gap-3 border-b border-line px-5 pb-3 pt-4">
           <div className="min-w-0 flex-1">
-            <h2 id={titleId} className="font-display text-[1.25rem] leading-tight">{title}</h2>
+            <h2 id={titleId} className="text-[1.0625rem] font-semibold leading-tight tracking-[-0.01em]">{title}</h2>
             {subtitle && <p className="mt-1 text-[0.8438rem] text-ink-3">{subtitle}</p>}
           </div>
           <Button size="sm" variant="ghost" aria-label="Close" onClick={onClose} className="-mr-2 -mt-1">

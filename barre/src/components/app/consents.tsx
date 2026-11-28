@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { RecordSheet } from '@/components/app/record-sheet';
-import { Button, ErrorState, Field, Input, Select, Skeleton } from '@/components/ui';
+import { Button, ErrorState, Field, Input, Select, Skeleton, Choice } from '@/components/ui';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
@@ -58,19 +58,34 @@ function History({ studentId }: { studentId: string }) {
   );
 }
 
-/** Parent: a row in the child's details with a choice per kind. Changes save at once. */
-export function FamilyConsents({ studentId, name }: { studentId: string; name: string }) {
+/** Parent: a row in the child's details with a choice per kind. Changes save at once.
+ *  `summary`: one line ("Photos: allowed · Video: not recorded") that opens
+ *  to the choices, so a page with several children is not a wall of buttons. */
+export function FamilyConsents({ studentId, name, summary = false }: { studentId: string; name: string; summary?: boolean }) {
   const rows = useRows<C.ConsentState>(['consents', studentId], C.CONSENTS, [studentId]);
   const [saved, setSaved] = React.useState<string | null>(null);
   const [history, setHistory] = React.useState(false);
+  const [open, setOpen] = React.useState(!summary);
   const set = useSetConsent(studentId);
   const L = useConsentLabels(studentId);
+  const word = (g: boolean | null) => (g === true ? 'allowed' : g === false ? 'not allowed' : 'not recorded');
+  const panel = React.useId();
   return (
     <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-4 py-3">
       <dt className="text-ink-3">Consent</dt>
       <dd className="min-w-0">
         {rows.isLoading && <Skeleton className="h-16" />}
-        <ul className="space-y-3">
+        {summary && rows.data && (
+          <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span className="min-w-0">{rows.data.map(c => `${L.label(c.kind)}: ${word(c.granted)}`).join(' · ')}</span>
+            <button type="button" aria-expanded={open} aria-controls={panel} onClick={() => setOpen(o => !o)}
+              className="min-h-[32px] text-[0.8125rem] font-semibold text-accent-text underline">
+              {open ? 'Done' : 'Change'}
+            </button>
+          </p>
+        )}
+        {open && <div id={panel}>
+        <ul className={cn('space-y-3', summary && 'mt-3 border-l-2 border-line pl-3')}>
           {rows.data?.map(c => (
             <li key={c.kind}>
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
@@ -85,18 +100,12 @@ export function FamilyConsents({ studentId, name }: { studentId: string; name: s
                   Another parent or carer has said no, so the school treats this as not allowed until you agree.
                 </p>
               )}
-              <div role="group" aria-label={`${L.label(c.kind)} for ${name}`} className="mt-1.5 flex gap-2">
-                <Button size="sm" aria-pressed={c.granted === true} variant={c.granted === true ? 'primary' : undefined}
-                  disabled={set.isPending}
-                  onClick={() => set.mutate({ kind: c.kind, granted: true }, { onSuccess: () => setSaved(`${L.label(c.kind)}: allowed.`) })}>
-                  Allow
-                </Button>
-                <Button size="sm" aria-pressed={c.granted === false} variant={c.granted === false ? 'primary' : undefined}
-                  disabled={set.isPending}
-                  onClick={() => set.mutate({ kind: c.kind, granted: false }, { onSuccess: () => setSaved(`${L.label(c.kind)}: not allowed. This applies straight away.`) })}>
-                  Don’t allow
-                </Button>
-              </div>
+              <Choice label={`${L.label(c.kind)} for ${name}`} size="sm" className="mt-1.5" disabled={set.isPending}
+                value={c.granted === true ? 'yes' : c.granted === false ? 'no' : null}
+                onChange={v => v === 'yes'
+                  ? set.mutate({ kind: c.kind, granted: true }, { onSuccess: () => setSaved(`${L.label(c.kind)}: allowed.`) })
+                  : set.mutate({ kind: c.kind, granted: false }, { onSuccess: () => setSaved(`${L.label(c.kind)}: not allowed. This applies straight away.`) })}
+                options={[{ value: 'yes', label: 'Allow' }, { value: 'no', label: 'Don’t allow' }]} />
             </li>
           ))}
         </ul>
@@ -106,6 +115,8 @@ export function FamilyConsents({ studentId, name }: { studentId: string; name: s
           {history ? 'Hide changes' : 'See changes'}
         </button>
         {history && <div className="mt-1"><History studentId={studentId} /></div>}
+        </div>}
+        {!open && saved && <p role="status" className="mt-1 text-[0.8125rem] text-positive">{saved}</p>}
       </dd>
     </div>
   );
@@ -234,14 +245,12 @@ export function StudentConsents() {
       </div>
       <dl className="divide-y divide-line">
         {rows.data.map(c => (
-          <div key={c.kind} className="py-2.5">
-            <div className="flex items-baseline justify-between gap-3">
-              <dt className="font-medium">{c.label}</dt>
-              <dd className={cn('text-right text-[0.875rem]', c.granted === false ? 'font-semibold' : c.granted == null && 'text-ink-3')}>
-                {c.granted === true ? 'Allowed' : c.granted === false ? 'Not allowed' : 'Not recorded, so not allowed'}
-              </dd>
-            </div>
-            <dd className="text-[0.8125rem] text-ink-3">{c.description}</dd>
+          <div key={c.kind} className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 py-2.5">
+            <dt className="font-medium">{c.label}</dt>
+            <dd className={cn('text-right text-[0.875rem]', c.granted === false ? 'font-semibold' : c.granted == null && 'text-ink-3')}>
+              {c.granted === true ? 'Allowed' : c.granted === false ? 'Not allowed' : 'Not recorded, so not allowed'}
+            </dd>
+            <dd className="col-span-2 text-[0.8125rem] text-ink-3">{c.description}</dd>
           </div>
         ))}
       </dl>

@@ -22,10 +22,8 @@ export function dayShort(v: string | Date) {
   return new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', timeZone: 'Europe/London' }).format(new Date(v));
 }
 
-/** "Tue 1 Dec" — for notices. */
-export function dayDate(v: string | Date) {
-  return new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Europe/London' }).format(new Date(v));
-}
+/** "Tue 1 Dec": the one date rule, from lib/format. */
+export { dayDate } from '@/lib/format';
 
 /** "10 DEC" style date for DUE notices. */
 export function dueWord(v: string | Date) {
@@ -60,15 +58,25 @@ export function ChangeWord({ word, tone = 'ink' }: { word: string; tone?: 'ink' 
 }
 
 /** A class or event on a day list: time in a fixed column, then what, who and where. */
-export function SessionRow({ time: t, name, meta, href, cancelled, reason, moved, style, colour, extra }: {
+export function SessionRow({ time: t, until, name, meta, href, cancelled, reason, moved, style, colour, extra, clash }: {
   time: string; name: string; meta: (string | null | undefined)[]; href?: string; cancelled?: boolean;
   reason?: string | null; moved?: boolean; style?: string | null; colour?: string | null; extra?: React.ReactNode;
+  /** The end time, under the start (U6). */
+  until?: string | null;
+  /** Booked into something else at the same time, in words (U6). */
+  clash?: string | null;
 }) {
   const body = (
     <>
-      <span className={cn('font-display text-[1.1875rem] leading-tight tnum', cancelled && 'text-ink-3 line-through')}>{t}</span>
+      <span className={cn('leading-tight tnum', cancelled && 'text-ink-3')}>
+        <span className={cn('block font-display text-[1.1875rem]', cancelled && 'line-through')}>{t}</span>
+        {until && <span className="block text-[0.7812rem] text-ink-3">to {until}</span>}
+      </span>
       <span className="min-w-0">
         <span className={cn('block font-semibold leading-snug', cancelled && 'text-ink-3')}>{name}</span>
+        {clash && !cancelled && (
+          <span className="mt-0.5 block text-[0.8125rem] font-semibold text-critical"><ChangeWord word="Clash" tone="critical" /> {clash}</span>
+        )}
         <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[0.8125rem] text-ink-3">
           {cancelled && <ChangeWord word="Cancelled" tone="critical" />}
           {!cancelled && moved && <ChangeWord word="Moved" />}
@@ -84,7 +92,7 @@ export function SessionRow({ time: t, name, meta, href, cancelled, reason, moved
   return (
     <li>
       {href
-        ? <Link href={href} aria-label={`${name}, ${t}${cancelled ? ', cancelled' : ''}${moved ? ', moved' : ''}`} className={cn(cls, 'hover:bg-surface-2/60')}>{body}</Link>
+        ? <Link href={href} aria-label={`${name}, ${t}${until ? ` to ${until}` : ''}${cancelled ? ', cancelled' : ''}${moved ? ', moved' : ''}${clash && !cancelled ? `, clash: ${clash}` : ''}`} className={cn(cls, 'hover:bg-surface-2/60')}>{body}</Link>
         : <div className={cls}>{body}</div>}
     </li>
   );

@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { Check, Upload } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
 /* ==========================================================================
@@ -230,12 +231,27 @@ export function Beats({ value, max = 1, label, size = 'md', tone = 'accent', cla
 
 // ── Notice: changes set as type, not badges (from the Press direction) ─────
 /**
+ * The words a Notice may use (U9). Notices are for changes, deadlines and
+ * things that need action — never for confirmations ("Done", "Saved",
+ * "Sent"): those are a quiet `StatusLine`. Keep this list short; adding a
+ * word is a design-system change (update /design and DESIGN-SYSTEM.md).
+ */
+export const NOTICE_WORDS = [
+  'Moved', 'Cancelled', 'Changed', 'New', 'Clash', 'Full', 'Due', 'Closed',
+  'Paid', 'Booked', 'Held', 'Offline', 'Not saved', 'Not sent', 'Act now', 'Check', 'Limited',
+] as const;
+/** One of `NOTICE_WORDS`, or a deadline: "Due 10 Dec". */
+export type NoticeWord = (typeof NOTICE_WORDS)[number] | `Due ${string}`;
+export const isNoticeWord = (w: string): w is NoticeWord =>
+  (NOTICE_WORDS as readonly string[]).includes(w) || /^Due \S/.test(w);
+
+/**
  * A change people must not miss — a class moved or cancelled, a date due —
  * set as a short uppercase verb in display type, with the detail beneath.
  * The word carries the meaning; colour only supports it.
  */
 export function Notice({ word, tone = 'ink', title, detail, action, className }: {
-  word: string; tone?: 'ink' | 'critical' | 'caution' | 'accent' | 'positive'; title: React.ReactNode;
+  word: NoticeWord; tone?: 'ink' | 'critical' | 'caution' | 'accent' | 'positive'; title: React.ReactNode;
   detail?: React.ReactNode; action?: React.ReactNode; className?: string;
 }) {
   const colour = { ink: 'text-ink', critical: 'text-critical', caution: 'text-caution', accent: 'text-accent-text', positive: 'text-positive' }[tone];
@@ -245,6 +261,27 @@ export function Notice({ word, tone = 'ink', title, detail, action, className }:
         <p className={cn('font-display text-[1.375rem] uppercase leading-none tracking-[-0.01em] [font-stretch:80%]', colour)}>{word}</p>
         <p className="mt-1.5 text-[0.9375rem] font-semibold leading-snug text-ink">{title}</p>
         {detail && <p className="mt-0.5 text-[0.8438rem] text-ink-3">{detail}</p>}
+      </div>
+      {action}
+    </div>
+  );
+}
+
+/**
+ * A quiet confirmation: what just happened, in a sentence, with a tick
+ * (U9). Use it for "Saved", "Sent", "Imported" — never a Notice. Announced
+ * politely to screen readers.
+ */
+export function StatusLine({ title, detail, tone = 'positive', action, className, live = true }: {
+  title: React.ReactNode; detail?: React.ReactNode; tone?: 'positive' | 'ink' | 'critical';
+  action?: React.ReactNode; className?: string; live?: boolean;
+}) {
+  return (
+    <div role={live ? 'status' : undefined} className={cn('flex items-start gap-2 text-[0.875rem]', className)}>
+      {tone === 'positive' && <Check aria-hidden className="mt-[0.2em] size-[1em] shrink-0 text-positive" strokeWidth={2.4} />}
+      <div className="min-w-0 flex-1">
+        <p className={cn('font-medium leading-snug', tone === 'critical' ? 'text-critical' : 'text-ink')}>{title}</p>
+        {detail && <p className="mt-0.5 text-[0.8125rem] text-ink-3">{detail}</p>}
       </div>
       {action}
     </div>
@@ -299,19 +336,189 @@ export function Word({ children, tone = 'ink', size = 'sm', className }: {
   return <span className={cn('font-display uppercase leading-none', size === 'md' ? 'text-[0.9375rem] tracking-[-0.01em] [font-stretch:80%]' : 'text-[0.75rem] tracking-[0.02em] [font-stretch:85%]', c, className)}>{children}</span>;
 }
 
-/** Quiet text tabs with an ink rule under the current one. */
+/** [value, label, count?] — the count may be a node, e.g. a number with hidden words ("3 unread"). */
+type TabOption<T extends string> = [T, React.ReactNode] | [T, React.ReactNode, React.ReactNode];
+
+function TabText({ text, count, on }: { text: React.ReactNode; count?: React.ReactNode; on: boolean }) {
+  return (
+    <>
+      {text}
+      {count != null && count !== false && <span className={cn('ml-1.5 tnum text-[0.8125rem]', on ? 'text-ink-2' : 'text-ink-3')}>{count}</span>}
+    </>
+  );
+}
+
+const tabClass = (on: boolean) => cn('min-h-[44px] shrink-0 border-b-2 px-2 text-[0.875rem] transition-colors',
+  on ? 'border-ink font-semibold text-ink' : 'border-transparent text-ink-3 hover:text-ink');
+
+/**
+ * Quiet text tabs with an ink rule under the current one: switching between
+ * views of the same thing (List / Week grid, Families / Students). The only
+ * tab list in the app — screens never hand-roll their own (U9).
+ */
 export function ViewTabs<T extends string>({ value, onChange, options, label, className }: {
-  value: T; onChange: (v: T) => void; options: [T, string][]; label: string; className?: string;
+  value: T; onChange: (v: T) => void; options: TabOption<T>[]; label: string; className?: string;
 }) {
+  const refs = React.useRef<(HTMLButtonElement | null)[]>([]);
+  const onKey = (e: React.KeyboardEvent, i: number) => {
+    const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+    if (!step) return;
+    e.preventDefault();
+    const n = (i + step + options.length) % options.length;
+    onChange(options[n]![0]);
+    refs.current[n]?.focus();
+  };
   return (
     <div role="tablist" aria-label={label} className={cn('-mx-1 flex max-w-full gap-1 overflow-x-auto', className)}>
-      {options.map(([v, text]) => (
-        <button key={v} role="tab" aria-selected={value === v} onClick={() => onChange(v)}
-          className={cn('min-h-[40px] shrink-0 border-b-2 px-2 text-[0.875rem] transition-colors',
-            value === v ? 'border-ink font-semibold text-ink' : 'border-transparent text-ink-3 hover:text-ink')}>
-          {text}
+      {options.map(([v, text, count], i) => (
+        <button key={v} ref={el => { refs.current[i] = el; }} type="button" role="tab" aria-selected={value === v}
+          tabIndex={value === v ? 0 : -1} onKeyDown={e => onKey(e, i)} onClick={() => onChange(v)} className={tabClass(value === v)}>
+          <TabText text={text} count={count} on={value === v} />
         </button>
       ))}
     </div>
+  );
+}
+
+/**
+ * Filters within a list (Needs action · Open · Paid), with an optional
+ * count. They look like ViewTabs, but they narrow one list rather than
+ * switching views, so they are pressed buttons, not tabs.
+ */
+export function FilterTabs<T extends string>({ value, onChange, options, label, className }: {
+  value: T; onChange: (v: T) => void; options: TabOption<T>[]; label: string; className?: string;
+}) {
+  return (
+    <div role="group" aria-label={label} className={cn('-mx-1 flex max-w-full gap-1 overflow-x-auto', className)}>
+      {options.map(([v, text, count]) => (
+        <button key={v} type="button" aria-pressed={value === v} onClick={() => onChange(v)} className={tabClass(value === v)}>
+          <TabText text={text} count={count} on={value === v} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export type ChoiceOption<T extends string> = { value: T; label: React.ReactNode; hint?: React.ReactNode; disabled?: boolean; 'aria-label'?: string };
+type ChoiceBase<T extends string> = {
+  label: string; options: ChoiceOption<T>[]; className?: string; size?: 'sm' | 'md';
+  /** `row` wraps chips; `grid` gives equal columns (set them with className); `stack` is one per line. */
+  layout?: 'row' | 'grid' | 'stack'; disabled?: boolean; id?: string;
+  /** `corner` puts the tick in the top corner, for narrow equal-width chips. */
+  tick?: 'inline' | 'corner';
+};
+
+/**
+ * Single or multiple choice as chips (U9). The selected one has an ink
+ * outline and a tick — never the accent fill, which is kept for the one
+ * primary action on a screen. Single choice is a radio group (arrow keys
+ * move); multiple choice is a group of pressed buttons.
+ */
+export function Choice<T extends string>(props: ChoiceBase<T> & (
+  | { multiple?: false; value: T | null | undefined; onChange: (v: T) => void }
+  | { multiple: true; value: T[]; onChange: (v: T[]) => void })) {
+  const { label, options, className, size = 'md', layout = 'row', disabled, id, tick = 'inline' } = props;
+  const refs = React.useRef<(HTMLButtonElement | null)[]>([]);
+  const on = (v: T) => props.multiple ? props.value.includes(v) : props.value === v;
+  const pick = (v: T) => {
+    if (props.multiple) props.onChange(props.value.includes(v) ? props.value.filter(x => x !== v) : [...props.value, v]);
+    else props.onChange(v);
+  };
+  const focusable = props.multiple ? -1 : Math.max(0, options.findIndex(o => on(o.value)));
+  const onKey = (e: React.KeyboardEvent, i: number) => {
+    if (props.multiple) return;
+    const step = ['ArrowRight', 'ArrowDown'].includes(e.key) ? 1 : ['ArrowLeft', 'ArrowUp'].includes(e.key) ? -1 : 0;
+    if (!step) return;
+    e.preventDefault();
+    let n = i;
+    for (let k = 0; k < options.length; k++) {
+      n = (n + step + options.length) % options.length;
+      if (!options[n]!.disabled) break;
+    }
+    pick(options[n]!.value);
+    refs.current[n]?.focus();
+  };
+  return (
+    <div id={id} role={props.multiple ? 'group' : 'radiogroup'} aria-label={label}
+      className={cn(layout === 'row' ? 'flex flex-wrap gap-2' : layout === 'grid' ? 'grid gap-2' : 'grid gap-2', className)}>
+      {options.map((o, i) => {
+        const selected = on(o.value);
+        return (
+          <button key={o.value} ref={el => { refs.current[i] = el; }} type="button"
+            role={props.multiple ? undefined : 'radio'}
+            aria-checked={props.multiple ? undefined : selected}
+            aria-pressed={props.multiple ? selected : undefined}
+            aria-label={o['aria-label']}
+            tabIndex={props.multiple ? undefined : i === focusable ? 0 : -1}
+            disabled={disabled || o.disabled} onClick={() => pick(o.value)} onKeyDown={e => onKey(e, i)}
+            className={cn('relative inline-flex min-w-0 items-start gap-2 rounded-[var(--radius-md)] border bg-surface text-left transition-colors',
+              tick === 'corner' && 'justify-center text-center',
+              'disabled:opacity-50 disabled:pointer-events-none',
+              size === 'sm' ? 'min-h-9 px-2.5 py-1.5 text-[0.8125rem] [@media(pointer:coarse)]:min-h-11' : 'min-h-11 px-3 py-2 text-[0.875rem]',
+              o.hint ? 'items-start' : 'items-center',
+              selected ? 'border-ink font-semibold text-ink shadow-[inset_0_0_0_1px_var(--color-ink)]'
+                : 'border-line-strong text-ink-2 hover:border-ink-3 hover:text-ink')}>
+            {tick === 'corner'
+              ? selected && <Check aria-hidden className="absolute right-1 top-1 size-[0.75em] text-ink" strokeWidth={3} />
+              : <span aria-hidden className={cn('grid shrink-0 place-items-center', o.hint && 'mt-[0.15em]', selected ? 'text-ink' : 'text-transparent')}>
+                  <Check className="size-[1em]" strokeWidth={2.6} />
+                </span>}
+            <span className="min-w-0">
+              <span className="block">{o.label}</span>
+              {o.hint && <span className="mt-0.5 block text-[0.8125rem] font-normal text-ink-3">{o.hint}</span>}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * A file picker as a drop zone: an outlined target with an icon and words,
+ * the native input kept for keyboard and screen readers (U9).
+ */
+export function FileField({ id, label, hint, accept, multiple, onFiles, chosen, disabled, className, inputRef }: {
+  id?: string; label: string; hint?: React.ReactNode; accept?: string; multiple?: boolean;
+  onFiles: (files: File[]) => void; chosen?: React.ReactNode; disabled?: boolean; className?: string;
+  inputRef?: React.Ref<HTMLInputElement>;
+}) {
+  const auto = React.useId();
+  const inputId = id ?? auto;
+  const [over, setOver] = React.useState(false);
+  return (
+    <label htmlFor={inputId}
+      onDragOver={e => { e.preventDefault(); if (!disabled) setOver(true); }}
+      onDragLeave={() => setOver(false)}
+      onDrop={e => { e.preventDefault(); setOver(false); if (!disabled && e.dataTransfer.files.length) onFiles([...e.dataTransfer.files]); }}
+      className={cn('flex min-h-[4.5rem] cursor-pointer items-center gap-3 rounded-[var(--radius-md)] border border-dashed bg-surface px-4 py-3',
+        'focus-within:border-accent-line focus-within:ring-4 focus-within:ring-accent-line/12',
+        over ? 'border-ink bg-surface-2' : 'border-line-strong hover:border-ink-3',
+        disabled && 'pointer-events-none opacity-50', className)}>
+      <Upload aria-hidden className="size-5 shrink-0 text-ink-2" />
+      <span className="min-w-0 flex-1">
+        <span className="block text-[0.875rem] font-semibold text-ink">{label}</span>
+        {chosen ? <span className="block truncate text-[0.8125rem] text-ink-2">{chosen}</span>
+          : hint && <span className="block text-[0.8125rem] text-ink-3">{hint}</span>}
+      </span>
+      <input ref={inputRef} id={inputId} type="file" accept={accept} multiple={multiple} disabled={disabled} className="sr-only"
+        onChange={e => { const f = e.target.files ? [...e.target.files] : []; if (f.length) onFiles(f); e.target.value = ''; }} />
+    </label>
+  );
+}
+
+/**
+ * Which location a list shows, with the label inside the control
+ * ("All locations"). The same on Classes, Schedule and Billing (U9).
+ */
+export function LocationSelect({ locations, value, onChange, className }: {
+  locations: { id: string; name: string }[]; value: string; onChange: (name: string) => void; className?: string;
+}) {
+  return (
+    <Select aria-label="Location" value={value} onChange={e => onChange(e.target.value)}
+      className={cn('w-auto min-w-[10rem] max-w-full font-medium', className)}>
+      <option value="">All locations</option>
+      {locations.map(l => <option key={l.id} value={l.name}>{l.name}</option>)}
+    </Select>
   );
 }

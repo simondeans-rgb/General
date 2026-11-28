@@ -52,16 +52,9 @@ export function DropIns({ children }: { children: { id: string; first_name: stri
               <span className="text-ink-3"> on {p.name} · until {dateShort(p.expires_on)}</span></li>))}</ul>
         )}
         {!!mine.data?.length && (
-          <ul className="divide-y divide-line border-y border-line text-[0.9062rem]">
-            {mine.data.map(b => (
-              <li key={b.id} className="flex items-center gap-2 py-2.5">
-                <span className="min-w-0 flex-1"><span className="font-semibold">{b.first_name} · {b.class_name}</span>
-                  <span className="block text-[0.8125rem] text-ink-3">{dateLong(b.starts_at)} {time(b.starts_at)} · {b.paid_with === 'pack' ? 'from pack' : 'on account'}</span></span>
-                <Button size="sm" variant="ghost" onClick={() => act.mutate({ sql: F.CANCEL_DROP_IN, params: [b.id],
-                  ok: r => r.r === 'refunded' ? 'Cancelled, and you have not been charged.' : 'Cancelled. It was less than 24 hours away, so it is still charged.' })}>Cancel</Button>
-              </li>
-            ))}
-          </ul>
+          <p className="text-[0.875rem] text-ink-2">
+            {mine.data.length} drop-in{mine.data.length === 1 ? '' : 's'} booked. Each one is under the dancer’s name above, with its reference, calendar and Cancel.
+          </p>
         )}
         <ul className="divide-y divide-line text-sm">
           {sessions.data?.slice(0, 8).map(s => (

@@ -11,7 +11,7 @@ import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import {
-  Button, EmptyState, ErrorState, Field, Notice, Select, Skeleton,
+  Button, EmptyState, ErrorState, Field, Notice, Select, Skeleton, StatusLine
 } from '@/components/ui';
 import { SectionHead, Word } from '@/components/app/session-row';
 import * as H from '@/lib/repos/hub';
@@ -91,7 +91,7 @@ export default function RequestsPage() {
           )}
           {acked && (
             <div role="status" className="border-b border-line py-3">
-              <Notice word="Done" tone="positive" title={acked} />
+              <StatusLine title={acked} />
             </div>
           )}
           {ack.error != null && <div className="pt-3"><ErrorState error={ack.error} /></div>}
@@ -219,7 +219,7 @@ function AnswerDialog({ request, onClose }: { request: any; onClose: () => void 
           <>
             <div className="px-5 py-6">
               <h2 id="ans-t" className="sr-only">Replied</h2>
-              <Notice word="Replied" tone="positive" title={request.subject} detail="The family sees your answer in their hub." />
+              <StatusLine title={request.subject} detail="The family sees your answer in their hub." />
             </div>
             <div className="flex border-t border-line px-5 py-3 pb-safe sm:justify-end">
               <Button className="w-full sm:w-auto" variant="primary" onClick={onClose}>Done</Button>

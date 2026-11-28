@@ -369,3 +369,10 @@ select c.id, c.name, ds.name as style, ds.colour,
 export const APPROVE_PLACE = `select app.approve_class_request($1, $2) as outcome`;
 export const APPROVE_CHILD = `select app.approve_new_child($1) as id`;
 export const APPROVE_TRIAL = `select app.approve_trial_request($1) as id`;
+
+/** U14: after saving material, what families can see, in numbers (0057). */
+export type ChildStatus = { named: number; without_consent: number; family_visible: boolean; consent_kind: string; needs_names: boolean };
+export const RESOURCE_CHILD_STATUS = `select * from app.resource_child_status($1)`;
+/** U14: ask the families of named children for consent, in the app (0063). */
+export type ConsentAsk = { asked: number; families: number; already_asked: number; declined: number; unreachable: number };
+export const REQUEST_MEDIA_CONSENT = `select * from app.request_media_consent($1)`;

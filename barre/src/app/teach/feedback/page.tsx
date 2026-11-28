@@ -11,7 +11,7 @@ import { LastFeedback } from '@/components/app/last-feedback';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Beats, Button, EmptyState, ErrorState, Input, Notice, Skeleton } from '@/components/ui';
+import { Beats, Button, EmptyState, ErrorState, Input, Notice, Skeleton, Choice, StatusLine } from '@/components/ui';
 import * as P from '@/lib/repos/progress';
 import * as H from '@/lib/repos/hub';
 import { time, dateLong, dateShort } from '@/lib/format';
@@ -65,13 +65,16 @@ function ClassFeedback() {
   const byId = new Map(list.map(k => [k.student_id, k]));
   const draftOf = (id: string): Draft => drafts[id] ?? (byId.get(id) ? saved(byId.get(id)!) : saved({} as P.FeedbackKid));
   const changed = Object.entries(drafts).filter(([id, d]) => byId.get(id) && !same(d, saved(byId.get(id)!)));
-  const upd = (id: string, f: (d: Draft) => Draft) => setDrafts(x => ({ ...x, [id]: f(x[id] ?? draftOf(id)) }));
+  // While a save or share is on its way, children's feedback is locked.
+  const busy = React.useRef(false);
+  const upd = (id: string, f: (d: Draft) => Draft) => { if (!busy.current) setDrafts(x => ({ ...x, [id]: f(x[id] ?? draftOf(id)) })); };
   const toggle = (id: string, kind: Kind, label: string) =>
     upd(id, d => ({ ...d, [kind]: d[kind].includes(label) ? d[kind].filter(l => l !== label) : [...d[kind], label] }));
 
   // "Apply to selected children": a phrase goes on everyone picked, or comes
   // off everyone if they all have it already.
   const applyToPicked = (kind: Kind, label: string) => {
+    if (busy.current) return;
     const ids = [...picked];
     const all = ids.every(id => draftOf(id)[kind].includes(label));
     setDrafts(x => {
@@ -84,7 +87,7 @@ function ClassFeedback() {
     });
   };
   const lastWeek = (previous.data ?? []).filter(p => byId.has(p.student_id) && ((p.going_well_chips?.length ?? 0) + (p.work_on_chips?.length ?? 0)) > 0);
-  const sameAsLastWeek = () => setDrafts(x => {
+  const sameAsLastWeek = () => !busy.current && setDrafts(x => {
     const next = { ...x };
     lastWeek.forEach(p => {
       const d = next[p.student_id] ?? draftOf(p.student_id);
@@ -102,13 +105,16 @@ function ClassFeedback() {
         work_on_note: d.work_on_note, work_on_resource_id: d.resource, replace: true,
         skills: Object.entries(d.skills).map(([skill_id, level]) => ({ skill_id, level })) }));
       const edits = changed.filter(([id]) => byId.get(id)?.shared).length;
+      // Exactly what is being sent: anything typed after this stays a draft (round 2: an edit was lost once).
+      const sent: Record<string, Draft> = Object.fromEntries(changed);
       return runAs(session, async q => {
         const [r] = await q<{ n: number }>(P.SAVE_CLASS_FEEDBACK, [sessionId, JSON.stringify(items), false]);
         if (share) await q(P.SHARE_SESSION_FEEDBACK, [sessionId]);
-        return { n: r?.n ?? 0, share, edits };
+        return { n: r?.n ?? 0, share, edits, sent };
       });
     },
-    onSuccess: async ({ n, share, edits }) => {
+    onSuccess: async ({ n, share, edits, sent }) => {
+      const drafts = sent;
       // Show the new state at once rather than "0 of 12" until a refetch lands (teachers D9).
       qc.setQueriesData<P.FeedbackKid[]>({ predicate: q => q.queryKey.includes('session-feedback') && q.queryKey.includes(sessionId) },
         old => old?.map(k => {
@@ -118,13 +124,16 @@ function ClassFeedback() {
             work_on_resource_id: d.resource, going_well: has ? (k.going_well ?? '…') : null, work_on: d.work_on.length || d.work_on_note ? (k.work_on ?? '…') : null } : k;
           return share && has ? { ...nk, shared: true } : nk;
         }));
-      setDrafts({}); setOpen(null); setPicked(new Set());
+      // Clear only the drafts that went; a change made meanwhile is kept.
+      setDrafts(x => Object.fromEntries(Object.entries(x).filter(([id, d]) => sent[id] !== d)));
+      setOpen(null); setPicked(new Set());
       setDone(share ? 'Families can see it now, and have been told.'
         : edits && edits === n ? `Saved. Families see the change, marked as edited.`
         : `${n - edits} draft${n - edits === 1 ? '' : 's'} saved. Nothing new is shared yet.${edits ? ` ${edits} shared note${edits === 1 ? '' : 's'} updated, marked as edited.` : ''}`);
       await qc.invalidateQueries({ queryKey: ['db'] });
     },
   });
+  busy.current = save.isPending;
   const drafted = (kids.data ?? []).filter(k => byId.has(k.student_id) && (k.going_well || k.work_on)).length;
   const shared = (kids.data ?? []).filter(k => byId.has(k.student_id) && k.shared).length;
   const unshared = (kids.data ?? []).filter(k => (k.going_well || k.work_on) && !k.shared).length;
@@ -137,7 +146,7 @@ function ClassFeedback() {
       actions={<Link href={`/teach/register/?session=${sessionId}`} aria-label="Back to the register"
         className="grid size-11 place-items-center rounded-full text-ink-2 hover:bg-surface-2"><ArrowLeft className="size-5" aria-hidden /></Link>}>
       <div className="mx-auto max-w-2xl space-y-6">
-        {done && <div role="status"><Notice word={done.startsWith('Families can') ? 'Shared' : 'Saved'} tone="positive" title={done} /></div>}
+        {done && <div role="status"><StatusLine live={false} title={done} /></div>}
         {save.error != null && <ErrorState error={save.error} />}
         {kids.isLoading && <Skeleton className="h-40" />}
         {kids.data && list.length === 0 && <EmptyState title="Nobody to give feedback to" body="Take the register first. Feedback is for the children who were there."
@@ -151,6 +160,13 @@ function ClassFeedback() {
               <Beats value={drafted} max={list.length} label={`${drafted} of ${list.length} have feedback`} />
             </div>
 
+            <fieldset disabled={save.isPending} className="m-0 min-w-0 border-0 p-0">
+            <legend className="sr-only">Feedback for each child</legend>
+            {save.isPending && (
+              <p role="status" className="pt-3 text-[0.8125rem] font-semibold text-ink-2">
+                {save.variables ? 'Sharing with families…' : 'Saving…'} Editing waits until it has gone.
+              </p>
+            )}
             <div className="flex flex-wrap items-center gap-2 py-3">
               <Button size="sm" aria-pressed={allPicked} onClick={() => setPicked(allPicked ? new Set() : new Set(list.map(k => k.student_id)))}>
                 {allPicked ? <><X className="size-4" aria-hidden /> Clear selection</> : <><Check className="size-4" aria-hidden /> Select all {list.length}</>}
@@ -230,6 +246,7 @@ function ClassFeedback() {
                 );
               })}
             </ul>
+            </fieldset>
           </section>
         )}
 
@@ -256,21 +273,11 @@ function ClassFeedback() {
 
 function ChipRow({ kind, chips, on, onTap }: { kind: Kind; chips: P.ClassChip[]; on: (label: string) => boolean; onTap: (label: string) => void }) {
   return (
-    <div role="group" aria-label={kind === 'going_well' ? 'Going well' : 'To work on'}>
-      <p className="mb-1.5 text-[0.8125rem] font-semibold text-ink-2">{kind === 'going_well' ? 'Going well' : 'To work on'}</p>
-      <div className="flex flex-wrap gap-2">
-        {chips.map(c => {
-          const pressed = on(c.label);
-          return (
-            <button key={c.id} aria-pressed={pressed} onClick={() => onTap(c.label)}
-              className={cn('inline-flex min-h-10 items-center rounded-full border px-3.5 text-[0.875rem] font-medium',
-                pressed ? 'border-ink bg-ink text-surface' : 'border-line-strong bg-surface text-ink hover:bg-surface-2')}>
-              {pressed && <Check className="mr-1 size-3.5" aria-hidden />}
-              {c.sticker && <span aria-hidden className="mr-1.5">{c.sticker}</span>}{c.label}
-            </button>
-          );
-        })}
-      </div>
+    <div>
+      <p aria-hidden className="mb-1.5 text-[0.8125rem] font-semibold text-ink-2">{kind === 'going_well' ? 'Going well' : 'To work on'}</p>
+      <Choice multiple label={kind === 'going_well' ? 'Going well' : 'To work on'} value={chips.filter(c => on(c.label)).map(c => c.label)}
+        onChange={next => { const t = chips.find(c => next.includes(c.label) !== on(c.label)); if (t) onTap(t.label); }}
+        options={chips.map(c => ({ value: c.label, label: <>{c.sticker && <span aria-hidden className="mr-1.5">{c.sticker}</span>}{c.label}</> }))} />
     </div>
   );
 }
@@ -288,13 +295,9 @@ function SkillPicker({ studentId, value, onChange }: { studentId: string; value:
         <option value="">Move a skill on…</option>
         {skills.data.map(s => <option key={s.skill_id} value={s.skill_id}>{s.skill}{s.level ? ` (${P.LEVELS.find(l => l.key === s.level)?.label})` : ''}</option>)}
       </select>
-      {cur && P.LEVELS.slice(1).map(l => (
-        <button key={l.key} aria-pressed={value[cur.skill_id] === l.key}
-          onClick={() => onChange({ ...value, [cur.skill_id]: l.key })}
-          className={cn('inline-flex min-h-10 items-center rounded-full border px-3.5 text-[0.875rem] font-medium', value[cur.skill_id] === l.key ? 'border-ink bg-ink text-surface' : 'border-line-strong bg-surface')}>
-          {l.label}
-        </button>
-      ))}
+      {cur && <Choice label={`${cur.skill}: new level`} value={value[cur.skill_id] ?? null}
+        onChange={v => onChange({ ...value, [cur.skill_id]: v })}
+        options={P.LEVELS.slice(1).map(l => ({ value: l.key, label: l.label }))} />}
     </div>
   );
 }

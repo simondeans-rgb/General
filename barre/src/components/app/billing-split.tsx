@@ -1,11 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { RecordSheet } from '@/components/app/record-sheet';
 import { useRows } from '@/lib/query';
-import { runAs } from '@/lib/db/client';
-import { useSession } from '@/lib/auth/session';
+import { useWrite } from '@/lib/write';
 import { Button, Field, Input, Select } from '@/components/ui';
 import * as B from '@/lib/repos/billing';
 
@@ -46,8 +44,6 @@ export function BillingSplit({ familyId }: { familyId: string }) {
 function SplitSheet({ familyId, split, guardians, onClose }: {
   familyId: string; split: B.FamilyBilling; guardians: { id: string; full_name: string }[]; onClose: () => void;
 }) {
-  const { session } = useSession();
-  const qc = useQueryClient();
   const children = useRows<{ id: string; first_name: string; guardian_id: string | null }>(
     ['family-billing-children', familyId], B.FAMILY_BILLING_CHILDREN, [familyId]);
   const [mode, setMode] = React.useState<Mode>(split.mode);
@@ -59,12 +55,11 @@ function SplitSheet({ familyId, split, guardians, onClose }: {
     if (children.data) setKids(Object.fromEntries(children.data.map(c => [c.id, c.guardian_id ?? ''])));
   }, [children.data]);
 
-  const save = useMutation({
-    mutationFn: () => runAs(session, q => q(B.SET_FAMILY_BILLING,
+  // One save model (U5): the family record shows the new split before this closes.
+  const write = useWrite(B.SET_FAMILY_BILLING, { onDone: onClose, saved: 'Saved who pays' });
+  const save = { ...write, mutate: () => write.mutate(
       [familyId, mode, mode === 'family' ? null : a || null, mode === 'percent' ? b || null : null,
-       mode === 'percent' ? Number(pct) : null, mode === 'per_child' ? JSON.stringify(kids) : null])),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['db'] }); onClose(); },
-  });
+       mode === 'percent' ? Number(pct) : null, mode === 'per_child' ? JSON.stringify(kids) : null]) };
   const n = Number(pct);
   const ok = mode === 'family' || (!!a && (mode !== 'percent' || (!!b && b !== a && n >= 1 && n <= 99)));
 

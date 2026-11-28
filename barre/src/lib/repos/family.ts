@@ -198,3 +198,58 @@ export const MY_PACKS = `select p.id, s.first_name, k.name, p.remaining, p.expir
 
 /** Everyday details a parent changes directly; the office is told (0056). */
 export const UPDATE_CHILD_DETAILS = `select app.guardian_update_child($1, $2, $3, $4)`;
+
+/* ── Round 4 (migration 0060) ───────────────────────────────────────────── */
+/** Trials and drop-ins ahead, each with its booking reference (F5). */
+export type Booking = { kind: 'trial' | 'drop_in'; id: string; reference: string; student_id: string; first_name: string;
+  class_name: string; starts_at: string; ends_at: string | null; location: string | null; status: string;
+  paid_with: string; free_until: string | null };
+export const MY_BOOKINGS = `select * from app.my_bookings()`;
+export const CANCEL_TRIAL = `select app.guardian_cancel_trial($1) as r`;
+
+/** Home's Coming up strip (U7): per child, the next show, exam, costume and fee. */
+export type ComingUpItem = { student_id: string; child: string; kind: 'show' | 'exam' | 'costume' | 'fee';
+  title: string; on_date: string | null; detail: string | null; state: string | null };
+export const MY_COMING_UP = `select * from app.my_coming_up()`;
+
+/** Two things booked at overlapping times for the same child (U8). */
+export type Clash = { student_id: string; child: string; a_title: string; a_kind: string; a_starts: string;
+  b_title: string; b_kind: string; b_starts: string };
+export const MY_CLASHES = `select * from app.my_family_clashes($1::timestamptz, $2::timestamptz)`;
+
+/** What this guardian pays when the family splits its fees (UR-17). */
+export type BillingShare = { mode: 'one' | 'percent' | 'per_child'; my_pct: number | null; other_pct: number | null;
+  other_name: string | null; my_children: string[]; other_children: string[] };
+export const MY_BILLING_SHARE = `select * from app.my_billing_share()`;
+
+/* Full payment history and receipts (F8). Row level security limits every
+   one of these to what this guardian may see, split billing included. */
+export const MY_ALL_INVOICES = `
+select i.id, i.number, i.status, i.issued_on, i.due_on, i.total_minor, i.paid_minor
+  from invoice i where i.deleted_at is null and i.status <> 'draft'
+ order by i.issued_on desc nulls last, i.number desc`;
+export type MyPayment = { id: string; amount_minor: string; refunded_minor: string; method: string;
+  succeeded_at: string; invoice_number: string | null; reference: string };
+export const MY_PAYMENTS = `
+select p.id, p.amount_minor, p.refunded_minor, p.method, p.succeeded_at, i.number as invoice_number,
+       'RCPT-' || upper(left(md5(p.id::text), 8)) as reference
+  from payment p left join invoice i on i.id = p.invoice_id
+ where p.deleted_at is null and p.succeeded_at is not null and p.amount_minor > 0
+ order by p.succeeded_at desc`;
+export type ImportedInvoice = { id: string; number: string; issued_on: string; due_on: string | null;
+  description: string | null; total_minor: string; paid_minor: string };
+export const MY_IMPORTED_INVOICES = `
+select id, number, issued_on, due_on, description, total_minor, paid_minor
+  from imported_invoice order by issued_on desc, number desc`;
+export type Receipt = { id: string; reference: string; amount_minor: string; refunded_minor: string; method: string;
+  succeeded_at: string; studio_name: string; family_name: string; payer: string | null;
+  invoice_id: string | null; invoice_number: string | null; invoice_total: string | null; invoice_paid: string | null };
+export const MY_RECEIPT = `
+select p.id, 'RCPT-' || upper(left(md5(p.id::text), 8)) as reference,
+       p.amount_minor, p.refunded_minor, p.method, p.succeeded_at,
+       st.name as studio_name, regexp_replace(f.name, '\\s*\\(adult\\)\\s*$', '') as family_name,
+       (select g.full_name from guardian g where g.user_id = auth.uid() and g.family_id = f.id and g.deleted_at is null limit 1) as payer,
+       i.id as invoice_id, i.number as invoice_number, i.total_minor as invoice_total, i.paid_minor as invoice_paid
+  from payment p join family f on f.id = p.family_id join studio st on st.id = p.studio_id
+  left join invoice i on i.id = p.invoice_id
+ where p.id = $1 and p.deleted_at is null and p.succeeded_at is not null`;

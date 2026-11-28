@@ -1,12 +1,10 @@
 'use client';
 
 import * as React from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Banknote, ChevronDown, Gift } from 'lucide-react';
 import { RecordSheet } from '@/components/app/record-sheet';
 import { useRow, useRows } from '@/lib/query';
-import { runAs } from '@/lib/db/client';
-import { useSession } from '@/lib/auth/session';
+import { useWrite } from '@/lib/write';
 import { Button, ErrorState, Field, Input, Select, Skeleton } from '@/components/ui';
 import * as B from '@/lib/repos/billing';
 import { money, dateShort, toMinor } from '@/lib/format';
@@ -106,21 +104,13 @@ export function Statement({ familyId }: { familyId: string }) {
   );
 }
 
-function useAccountWrite(sql: string, onDone: () => void) {
-  const { session } = useSession();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (params: unknown[]) => runAs(session, q => q(sql, params)),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['db'] }); onDone(); },
-  });
-}
 
 /** Goodwill credit: held on the account and taken off the next invoices. */
 function AddCreditSheet({ account, onClose }: { account: B.FamilyAccount; onClose: () => void }) {
   const [amount, setAmount] = React.useState('');
   const [reason, setReason] = React.useState('');
   const minor = toMinor(amount);
-  const save = useAccountWrite(B.ADD_FAMILY_CREDIT, onClose);
+  const save = useWrite(B.ADD_FAMILY_CREDIT, { onDone: onClose, saved: () => `Added ${money(minor)} credit for ${account.name}` });
   return (
     <RecordSheet title="Add credit" subtitle={`${account.name}. It comes off what they owe now, then their next invoices.`}
       onClose={onClose} onSave={() => save.mutate([account.id, minor, reason.trim()])} saving={save.isPending} error={save.error}
@@ -142,7 +132,7 @@ function PaymentOnAccountSheet({ account, onClose }: { account: B.FamilyAccount;
   const [method, setMethod] = React.useState('bank_transfer');
   const [note, setNote] = React.useState('');
   const minor = toMinor(amount);
-  const save = useAccountWrite(B.RECORD_PAYMENT, onClose);
+  const save = useWrite(B.RECORD_PAYMENT, { onDone: onClose, saved: () => `Recorded ${money(minor)} from ${account.name}` });
   return (
     <RecordSheet title="Record a payment"
       subtitle={`${account.name}. Applied to their oldest open invoices first; anything over is held as credit.`}

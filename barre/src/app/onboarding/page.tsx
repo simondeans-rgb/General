@@ -8,9 +8,10 @@ import { Shell } from '@/components/app/shell';
 import { useRows, useRow } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Beats, Button, Skeleton, ErrorState } from '@/components/ui';
+import { Button, Skeleton, ErrorState } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import { FirstTimetable } from '@/components/app/first-timetable';
+import { countSummary, setupCount, type Beat } from '@/lib/setup-count';
 
 /**
  * Studio setup.
@@ -39,7 +40,7 @@ const STEPS: Step[] = [
   { key: 'privacy', title: 'Privacy notice', blurb: 'A link to your privacy notice, shown wherever families give their details.',
     count: `select (privacy_notice_url is not null)::int n from studio`,
     href: '/studio', cta: 'Add the link' },
-  { key: 'dsl', title: 'Safeguarding lead', blurb: 'Name who reads safeguarding concerns with you, and record staff DBS checks.',
+  { key: 'dsl', title: 'Safeguarding lead', blurb: 'Name your Designated Safeguarding Lead (and a deputy if you can), record the contact outside the school (your LADO), and record staff DBS checks. Until a lead is named, concerns come only to you.',
     count: `select (dsl_user_id is not null)::int n from studio`,
     href: '/safeguarding', cta: 'Name your lead' },
   { key: 'locations', title: 'Locations and rooms', blurb: 'Where classes happen, and which room each uses.',
@@ -92,7 +93,7 @@ export default function Onboarding() {
               <span className="display-xl text-[length:min(4rem,22vw)]">{rows.data ? done : '–'}</span>
               <span className="text-[0.9375rem] text-ink-2">of {STEPS.length} steps done</span>
             </p>
-            <Beats value={done} max={STEPS.length} size="lg" label={`${done} of ${STEPS.length} steps done`} className="mt-3" />
+            {rows.data && <SetupCount beats={setupCount(doneKeys)} />}
           </div>
           <div className="min-w-0 flex-1 sm:pb-1">
             {next ? (
@@ -178,5 +179,38 @@ export default function Onboarding() {
         )}
       </div></div>
     </Shell>
+  );
+}
+
+/* The mark's rhythm: the downbeat tall, beat five lifted, the rest short. */
+const HEIGHTS = [100, 44, 44, 44, 75, 44, 44, 44];
+
+/**
+ * The setup count (F16): eight beats, each filling as its steps are done.
+ * A beat that fills while you watch (a class added below, say) rises on the
+ * count; with reduced motion it simply appears full.
+ */
+function SetupCount({ beats }: { beats: Beat[] }) {
+  // Start empty on first paint, then rise, so the fill is seen.
+  const [shown, setShown] = React.useState(false);
+  React.useEffect(() => { const t = requestAnimationFrame(() => setShown(true)); return () => cancelAnimationFrame(t); }, []);
+  const summary = countSummary(beats);
+  return (
+    <div className="mt-4">
+      <ol aria-label={`Setup count: ${summary}`} className="flex h-16 items-end gap-1.5">
+        {beats.map((b, i) => (
+          <li key={b.beat} className="flex h-full flex-col justify-end" style={{ marginLeft: i === 4 ? 10 : 0 }}>
+            <span className="sr-only">{`Count ${b.beat}, ${b.label}: ${b.complete ? 'done' : `${b.done} of ${b.total} done`}.`}</span>
+            <span aria-hidden title={`${b.label} · ${b.done} of ${b.total}`}
+              className="relative block w-3 overflow-hidden rounded-[2px] bg-surface-3" style={{ height: `${HEIGHTS[i]}%` }}>
+              <span className="absolute inset-x-0 bottom-0 block bg-accent transition-[height] ease-[var(--ease-out)]"
+                style={{ height: shown ? `${b.fill * 100}%` : 0, transitionDuration: 'calc(var(--beat) * 2)', transitionDelay: `${i * 60}ms`,
+                         background: i === 0 && b.complete ? 'var(--color-secondary, var(--color-accent))' : undefined }} />
+            </span>
+          </li>
+        ))}
+      </ol>
+      <p aria-hidden className="mt-2 text-[0.8125rem] text-ink-3">{summary}</p>
+    </div>
   );
 }

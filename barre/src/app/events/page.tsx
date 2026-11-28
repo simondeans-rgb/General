@@ -3,11 +3,11 @@
 import * as React from 'react';
 import { Suspense } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowDown, ArrowUp, Plus, Receipt, Trash2, Users } from 'lucide-react';
+import { Plus, Receipt, Trash2, Users } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection } from '@/components/app/detail-panel';
 import { RecordSheet } from '@/components/app/record-sheet';
-import { Button, EmptyState, ErrorState, Field, Input, Notice, Select, Skeleton } from '@/components/ui';
+import { Button, EmptyState, ErrorState, Field, Input, Notice, Select, Skeleton, ViewTabs, Choice, StatusLine } from '@/components/ui';
 import { SectionHead, Word } from '@/components/app/session-row';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
@@ -15,8 +15,10 @@ import { useSession } from '@/lib/auth/session';
 import { useSelection } from '@/lib/use-selection';
 import * as E from '@/lib/repos/events';
 import * as C from '@/lib/repos/classes';
-import { CostumeSection, ProgrammeButton, RehearsalRegisterButton, TicketSection } from '@/components/app/show-tools';
-import { ExamsCard } from '@/components/app/exams';
+import { ProgrammeButton, RehearsalRegisterButton, TicketSection } from '@/components/app/show-tools';
+import { ConsentSnapshotButton } from '@/components/app/consent-snapshot';
+import { ExamEventPanel, ExamsCard } from '@/components/app/exams';
+import { CostumePlan, LicenceTracker, RunningOrder } from '@/components/app/production';
 import { dateLong, money, time } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
@@ -46,7 +48,7 @@ function Events() {
   const current = rows.data?.find(e => e.id === selected);
   return (
     <Shell title="Events" help={<>Shows, competitions, workshops and exam sessions. Invite whole classes, and families accept in their app. Within a show: running order, costumes and sizes, rehearsals with registers, chaperones, a printable programme (children are named only with photo consent), tickets, and fees billed in one step.</>} subtitle="Shows, exams, competitions and workshops" allow={['owner', 'admin']}
-      actions={<Button size="sm" variant="primary" onClick={() => setEditing('new')}><Plus className="size-4" aria-hidden /> New event</Button>}>
+      actions={<Button size="sm" variant="primary" aria-label="New event" onClick={() => setEditing('new')}><Plus className="size-4" aria-hidden /> <span className="hidden sm:inline">New event</span></Button>}>
       <div className="mx-auto max-w-[1240px]">
         <div className={cn('grid gap-x-12 gap-y-10', selected ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)] lg:items-start' : 'lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]')}>
           <div className="min-w-0 space-y-10">
@@ -147,7 +149,15 @@ function EventSheet({ row, onClose, onCreated }: { row: E.OfficeEvent | null; on
   );
 }
 
+/** The event panel in tabs, so a big show is not one long scroll (round 2, U13). */
+type EventTab = 'details' | 'participants' | 'rehearsals' | 'costumes' | 'tickets' | 'helpers';
+
 function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => void; onClose: () => void }) {
+  const [tab, setTab] = React.useState<EventTab>('details');
+  React.useEffect(() => setTab('details'), [e.id]);
+  const hasTickets = e.kind === 'show' || e.kind === 'competition';
+  const tabs: [EventTab, string][] = [['details', 'Details'], ['participants', 'Participants'], ['rehearsals', 'Rehearsals'],
+    ['costumes', 'Costumes'], ...(hasTickets ? [['tickets', 'Tickets'] as [EventTab, string]] : []), ['helpers', 'Helpers']];
   const people = useRows<E.Participant>(['event-people', e.id], E.PARTICIPANTS, [e.id]);
   const classes = useRows<{ id: string; name: string }>(['class-options'], C.CLASS_OPTIONS);
   const routines = useRows<E.Routine>(['routines', e.id], E.ROUTINES, [e.id]);
@@ -159,34 +169,34 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
   const [done, setDone] = React.useState<string | null>(null);
   const write = useWrite();
   const [pick, setPick] = React.useState<string[]>([]);
-  const [rt, setRt] = React.useState({ title: '', cls: '', costume: '' });
   const [rh, setRh] = React.useState({ title: 'Rehearsal', starts: '', ends: '' });
   const [ch, setCh] = React.useState({ name: '', phone: '', checked: false });
   const go = (sql: string, params: unknown[], msg?: (r: any) => string) =>
     write.mutate({ sql, params }, { onSuccess: r => msg && setDone(msg(r)) });
   return (
     <DetailPanel open onClose={onClose} title={e.title} subtitle={`${dateLong(e.starts_at)} · ${time(e.starts_at)}${e.venue ? ` · ${e.venue}` : ''}`}>
-      {done && <div role="status" className="mb-5 border-l-2 border-positive pl-3"><Notice word="Done" tone="positive" title={done} /></div>}
+      {done && <StatusLine className="mb-5" title={done} />}
       {write.error != null && <div className="mb-5"><ErrorState error={write.error} /></div>}
+      <ViewTabs label={`${e.title}: sections`} value={tab} onChange={setTab} options={tabs} className="mb-6 border-b border-line" />
+      {tab === 'details' && <>
       <dl className="mb-7 grid grid-cols-3 gap-4">
         <div><dt className="label">Going</dt><dd className="stat-number mt-1 text-[1.625rem] leading-none">{e.confirmed}</dd></div>
         <div><dt className="label">To answer</dt><dd className="stat-number mt-1 text-[1.625rem] leading-none">{e.invited}</dd></div>
         <div><dt className="label">Asking</dt><dd className={cn('stat-number mt-1 text-[1.625rem] leading-none', e.requested ? 'text-caution' : '')}>{e.requested}</dd></div>
       </dl>
       <Button className="mb-7" onClick={onEdit}>Edit details</Button>
+      </>}
 
+      {tab === 'participants' && <>
       <DetailSection title="Invite classes">
-        <div className="flex flex-wrap gap-1.5">
-          {classes.data?.map(c => (
-            <button key={c.id} aria-pressed={pick.includes(c.id)} onClick={() => setPick(p => p.includes(c.id) ? p.filter(x => x !== c.id) : [...p, c.id])}
-              className={cn('min-h-[36px] rounded-[var(--radius-sm)] border px-2.5 text-[0.8125rem]', pick.includes(c.id) ? 'border-ink bg-ink font-semibold text-surface' : 'border-line-strong text-ink-2 hover:border-ink-3')}>{c.name}</button>
-          ))}
-        </div>
+        <Choice multiple label="Classes to invite" size="sm" className="gap-1.5" value={pick} onChange={setPick}
+          options={(classes.data ?? []).map(c => ({ value: c.id, label: c.name }))} />
         <Button size="sm" className="mt-2" disabled={!pick.length} onClick={() => { go(E.INVITE_CLASSES, [e.id, pick], r => `${r.n} dancers invited; their families have been told.`); setPick([]); }}>
           <Users className="size-4" aria-hidden /> Invite {pick.length || ''} class{pick.length === 1 ? '' : 'es'}
         </Button>
       </DetailSection>
 
+      {e.kind === 'exam' ? <DetailSection title="Exam entries"><ExamEventPanel eventId={e.id} /></DetailSection> : (
       <DetailSection title={`Dancers (${people.data?.length ?? 0})`}>
         <ul className="max-h-64 divide-y divide-line overflow-y-auto text-[0.875rem]">
           {people.data?.map(p => (
@@ -197,41 +207,28 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
             </li>
           ))}
         </ul>
+        {!!people.data?.length && <ConsentSnapshotButton event={e} />}
         {!!e.cost_minor && (
           <Button size="sm" className="mt-2" disabled={!e.confirmed} onClick={() => go(E.BILL_EVENT, [e.id], r => r.n ? `${r.n} invoice${r.n === 1 ? '' : 's'} sent for the ${money(e.cost_minor)} fee.` : 'Everyone going has already been billed.')}>
             <Receipt className="size-4" aria-hidden /> Bill the fee to {e.confirmed - e.billed > 0 ? e.confirmed - e.billed : 0} new dancer{e.confirmed - e.billed === 1 ? '' : 's'}
           </Button>
         )}
       </DetailSection>
+      )}
+      </>}
 
-      <DetailSection title="Running order">
-        <ol className="divide-y divide-line text-[0.875rem]">
-          {routines.data?.map((r, i) => (
-            <li key={r.id} className="flex items-start gap-1.5 py-1.5">
-              <span className="w-6 shrink-0 font-display text-[0.9375rem] tnum text-ink-3">{i + 1}</span>
-              <span className="min-w-0 flex-1"><b>{r.title}</b>{r.class_name ? ` · ${r.class_name}` : ''}{r.costume && <span className="block text-[0.7812rem] text-ink-2">Costume: {r.costume}</span>}</span>
-              <button aria-label={`Move ${r.title} up`} disabled={i === 0} onClick={() => go(E.MOVE_ROUTINE, [r.id, -1])} className="grid size-9 place-items-center rounded-[var(--radius-sm)] text-ink-3 hover:bg-surface-2 hover:text-ink disabled:opacity-30"><ArrowUp className="size-4" aria-hidden /></button>
-              <button aria-label={`Move ${r.title} down`} disabled={i === (routines.data!.length - 1)} onClick={() => go(E.MOVE_ROUTINE, [r.id, 1])} className="grid size-9 place-items-center rounded-[var(--radius-sm)] text-ink-3 hover:bg-surface-2 hover:text-ink disabled:opacity-30"><ArrowDown className="size-4" aria-hidden /></button>
-              <button aria-label={`Remove ${r.title}`} onClick={() => go(E.REMOVE_ROUTINE, [r.id])} className="grid size-9 place-items-center rounded-[var(--radius-sm)] text-ink-3 hover:bg-surface-2 hover:text-critical"><Trash2 className="size-4" aria-hidden /></button>
-            </li>
-          ))}
-        </ol>
-        <div className="mt-2 grid gap-1.5">
-          <Input aria-label="Routine name" placeholder="Routine name" value={rt.title} onChange={x => setRt({ ...rt, title: x.target.value })} />
-          <div className="grid grid-cols-2 gap-1.5">
-            <Select aria-label="Class dancing it" value={rt.cls} onChange={x => setRt({ ...rt, cls: x.target.value })}>
-              <option value="">Class…</option>{classes.data?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </Select>
-            <Input aria-label="Costume" placeholder="Costume" value={rt.costume} onChange={x => setRt({ ...rt, costume: x.target.value })} />
-          </div>
-          <Button size="sm" disabled={!rt.title.trim()} onClick={() => { go(E.ADD_ROUTINE, [e.id, rt.cls || null, rt.title, rt.costume]); setRt({ title: '', cls: '', costume: '' }); }}>Add routine</Button>
-        </div>
-      </DetailSection>
+      {tab === 'details' && <>
+      {e.kind !== 'exam' && <RunningOrder event={e} />}
 
       {routines.data && routines.data.length > 0 && <ProgrammeButton event={e} />}
+      </>}
 
-      <CostumeSection eventId={e.id} routines={routines.data ?? []} />
+      {tab === 'costumes' && <>
+      {e.kind !== 'exam' && <CostumePlan event={e} />}
+      {(e.kind === 'show' || e.kind === 'competition') && <LicenceTracker event={e} />}
+      </>}
 
+      {tab === 'rehearsals' && <>
       <DetailSection title="Rehearsals">
         <ul className="divide-y divide-line text-[0.875rem]">{rehearsals.data?.map(r => (
           <li key={r.id} className="flex min-h-[44px] items-center gap-2 py-1"><span className="min-w-0 flex-1"><b>{r.title}</b> · {dateLong(r.starts_at)}, {time(r.starts_at)}</span>
@@ -243,9 +240,11 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
         <Button size="sm" className="mt-1.5" disabled={!rh.starts} onClick={() => { go(E.ADD_REHEARSAL, [e.id, rh.title, new Date(rh.starts).toISOString(), null, null],
           () => 'Rehearsal added to dancers’ and teachers’ diaries.'); setRh({ title: 'Rehearsal', starts: '', ends: '' }); }}>Add rehearsal</Button>
       </DetailSection>
+      </>}
 
-      {(e.kind === 'show' || e.kind === 'competition') && <TicketSection eventId={e.id} />}
+      {tab === 'tickets' && hasTickets && <TicketSection eventId={e.id} />}
 
+      {tab === 'details' && <>
       <DetailSection title="Tell the families">
         <div className="grid gap-1.5">
           <Input aria-label="Notice subject" placeholder="Subject" value={nt.subject} onChange={x => setNt({ ...nt, subject: x.target.value })} />
@@ -255,7 +254,9 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
             r => r.n ? `Notice sent to ${r.n} famil${r.n === 1 ? 'y' : 'ies'}. It shows under this event in their app.` : 'No families are invited or going yet.'); setNt({ subject: '', body: '' }); }}>Send to families invited or going</Button>
         </div>
       </DetailSection>
+      </>}
 
+      {tab === 'helpers' && <>
       <DetailSection title="Helpers">
         <ul className="divide-y divide-line text-[0.875rem]">
           {helpers.data?.map(h => (
@@ -292,6 +293,7 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
           onChange={x => setCh({ ...ch, checked: x.target.checked })} /> DBS or licence seen</label>
         <Button size="sm" className="mt-1.5" disabled={!ch.name.trim()} onClick={() => { go(E.ADD_CHAPERONE, [e.id, ch.name, ch.phone, null, ch.checked]); setCh({ name: '', phone: '', checked: false }); }}>Add chaperone</Button>
       </DetailSection>
+      </>}
     </DetailPanel>
   );
 }

@@ -1,25 +1,24 @@
 'use client';
 
+import { TrialFeedbackView } from '@/components/app/trial-feedback';
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useWrite } from '@/lib/write';
 import { UserPlus, ListPlus, Check, X, Clock } from 'lucide-react';
 import { RecordSheet } from '@/components/app/record-sheet';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Button, Field, Input, Notice, Select, Skeleton, errorText } from '@/components/ui';
+import { Button, Field, Input, Notice, Select, Skeleton, errorText, Choice, StatusLine } from '@/components/ui';
 import { Word } from './session-row';
 import * as C from '@/lib/repos/classes';
 import { SEND_DIRECT } from '@/lib/repos/inbox';
 import { ageFrom, dateLong, dateShort, money, time, toDateInput } from '@/lib/format';
+import { dateWithYear, officeAgeFit } from '@/lib/office-words';
 
+/** The pipeline's writes use the one shared save model (U5): refetch, then report. */
 export function usePipeline(sql: string, onDone?: (rows: any[]) => void) {
-  const { session } = useSession();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (params: unknown[]) => runAs(session, q => q(sql, params)),
-    onSuccess: rows => { qc.invalidateQueries({ queryKey: ['db'] }); onDone?.(rows as any[]); },
-  });
+  return useWrite(sql, onDone);
 }
 
 type Candidate = {
@@ -81,17 +80,8 @@ export function EnrolSheet({ classId, className, full, onClose }: {
           detail="Add them to the waiting list instead. They are offered the next place automatically." />
       )}
 
-      <div role="tablist" aria-label="What to do"
-           className="grid grid-cols-2 gap-1 rounded-[var(--radius-md)] bg-surface-2 p-1">
-        {([['enrol', 'Give a place'], ['wait', 'Waiting list']] as const).map(([m, label]) => (
-          <button key={m} role="tab" aria-selected={mode === m} onClick={() => setMode(m)}
-            className={mode === m
-              ? 'min-h-[40px] rounded-[calc(var(--radius-md)-2px)] border border-line-strong bg-surface px-3 text-[0.875rem] font-semibold text-ink'
-              : 'min-h-[40px] rounded-[calc(var(--radius-md)-2px)] px-3 text-[0.875rem] text-ink-2 hover:text-ink'}>
-            {label}
-          </button>
-        ))}
-      </div>
+      <Choice label="What to do" layout="grid" className="grid-cols-2" value={mode} onChange={setMode}
+        options={[{ value: 'enrol', label: 'Give a place' }, { value: 'wait', label: 'Waiting list' }]} />
 
       <Field label="Search" htmlFor="enrol-search">
         <Input id="enrol-search" type="search" value={q} onChange={e => setQ(e.target.value)}
@@ -108,7 +98,7 @@ export function EnrolSheet({ classId, className, full, onClose }: {
       )}
       {list.length > 0 && (
         <Field label="Child" htmlFor="enrol-student" required
-               hint={chosen ? `${chosen.age} years old · ${chosen.family_name}${chosen.in_range ? '' : ' · outside this class’s age range'}` : undefined}>
+               hint={chosen ? `${chosen.age} years old${chosen.date_of_birth ? ` · born ${dateWithYear(chosen.date_of_birth)}` : ''} · ${chosen.family_name}${chosen.in_range ? '' : ' · outside this class’s age range'}` : undefined}>
           <Select id="enrol-student" value={studentId} onChange={e => setStudentId(e.target.value)}
                   size={Math.min(6, Math.max(3, list.length))}>
             {list.slice(0, 200).map(c => (
@@ -151,7 +141,7 @@ export function WithdrawSheet({ enrolmentId, name, onClose }: {
   if (moved) {
     return (
       <RecordSheet title={name} onClose={onClose} onSave={onClose} saveLabel="Done" canSave>
-        <Notice word="Moved" title={`${name} is now in ${moved}`}
+        <StatusLine title={`${name} is now in ${moved}`}
           detail="Their history comes with them. The place they left goes to the waiting list, if anyone is waiting." />
       </RecordSheet>
     );
@@ -160,7 +150,7 @@ export function WithdrawSheet({ enrolmentId, name, onClose }: {
     return (
       <RecordSheet title={name} onClose={onClose}
         onSave={onClose} saveLabel="Done" canSave>
-        <Notice word="Withdrawn" title="The place is free"
+        <StatusLine title="The place is free"
           detail={offered
             ? 'It has been offered to whoever has waited longest. They show as Offered on the waiting list.'
             : 'Nobody is waiting for this class, so the place is open.'} />
@@ -174,12 +164,8 @@ export function WithdrawSheet({ enrolmentId, name, onClose }: {
       canSave={mode === 'leave' || !!toClass}
       saveLabel={mode === 'move' ? 'Move' : 'Withdraw'}
       onSave={() => mode === 'move' ? transfer.mutate([enrolmentId, toClass, reason || null, null]) : withdraw.mutate([enrolmentId, reason])}>
-      <div role="radiogroup" aria-label="What is happening" className="grid grid-cols-2 gap-1 rounded-[var(--radius-md)] bg-surface-2 p-1">
-        {([['leave', 'Leaving this class'], ['move', 'Moving to another']] as const).map(([k, l]) => (
-          <button key={k} role="radio" aria-checked={mode === k} onClick={() => setMode(k)}
-            className={`min-h-[40px] rounded-[calc(var(--radius-md)-2px)] text-[0.875rem] ${mode === k ? 'border border-line-strong bg-surface font-semibold text-ink' : 'text-ink-2 hover:text-ink'}`}>{l}</button>
-        ))}
-      </div>
+      <Choice label="What is happening" layout="grid" className="grid-cols-2" value={mode} onChange={setMode}
+        options={[{ value: 'leave', label: 'Leaving this class' }, { value: 'move', label: 'Moving to another' }]} />
       {mode === 'move' && (
         <Field label="New class" htmlFor="wd-to" required hint="If it is full, nothing changes.">
           <Select id="wd-to" value={toClass} onChange={e => setToClass(e.target.value)}>
@@ -232,8 +218,11 @@ export function MoveSheet({ enrolmentId, studentName, age, familyId, from, onClo
   const earliest = p ? toDateInput(p.earliest) : undefined;
   const when = on > today ? 'future' : on < today ? 'past' : 'today';
   const onWords = dateLong(on + 'T12:00:00');
-  const outOfRange = !!target && age != null &&
-    ((target.age_min != null && age < target.age_min) || (target.age_max != null && age > target.age_max));
+  // Written from the database's own rule (U3): just outside a children's range
+  // is the teacher's call; an adult class for a child, or the reverse, never.
+  const fit = (o: C.MoveOption) => officeAgeFit(age, o);
+  const outOfRange = !!target && fit(target) === 'teacher';
+  const never = !!target && fit(target) === 'never';
   const ages = (o: C.MoveOption) => o.age_min != null ? (o.age_max != null ? `ages ${o.age_min}–${o.age_max}` : `${o.age_min}+`) : 'any age';
 
   const move = useMutation({
@@ -258,10 +247,10 @@ export function MoveSheet({ enrolmentId, studentName, age, familyId, from, onClo
     return (
       <RecordSheet title="Move to another class" subtitle={studentName} onClose={onClose} onSave={onClose} saveLabel="Done">
         {when === 'future' ? (
-          <Notice word="Planned" tone="positive" title={`${studentName} moves to ${done} on ${onWords}`}
+          <StatusLine title={`${studentName} moves to ${done} on ${onWords}`}
             detail={`Until then they stay on the ${from.name} register. On the day, their place in ${from.name} goes to its waiting list, if anyone is waiting. You can call the move off from their record.${tell ? ' The family has a message in the app.' : ''}`} />
         ) : (
-          <Notice word="Moved" tone="positive" title={`${studentName} is now in ${done}`}
+          <StatusLine title={`${studentName} is now in ${done}`}
             detail={`${when === 'past' ? `From ${onWords}. ` : ''}Their history comes with them. The place in ${from.name} goes to its waiting list, if anyone is waiting.${tell ? ' The family has a message in the app.' : ''}`} />
         )}
         {p?.note && <p className="text-[0.8438rem] text-ink-2">{p.note}</p>}
@@ -277,18 +266,22 @@ export function MoveSheet({ enrolmentId, studentName, age, familyId, from, onClo
 
   return (
     <RecordSheet title="Move to another class" subtitle={`${studentName} · from ${from.name}`} onClose={onClose}
-      error={move.error} saving={move.isPending} canSave={!!to && !!target && target.free > 0 && !!on && (!earliest || on >= earliest)}
-      saveHint={!to ? 'Choose the class they are moving to.' : target && target.free <= 0 ? 'That class has no free place.'
+      error={move.error} saving={move.isPending} canSave={!!to && !!target && !never && target.free > 0 && !!on && (!earliest || on >= earliest)}
+      saveHint={!to ? 'Choose the class they are moving to.' : never ? `${studentName} cannot join ${target!.name}.` : target && target.free <= 0 ? 'That class has no free place.'
         : earliest && on < earliest ? 'A move can be dated back only to the start of this term.' : null}
       saveLabel={when === 'future' ? 'Plan the move' : 'Move'} onSave={() => move.mutate()}>
-      <Field label="New class" htmlFor="mv-to" required hint="Full classes cannot be chosen. Free places count offers already out.">
+      <Field label="New class" htmlFor="mv-to" required
+        hint={`Full classes cannot be chosen. Free places count offers already out.${age != null && age < 18 ? ' Adult classes are not open to under-18s.' : age != null ? ' Children’s classes are not open to adults.' : ''}`}>
         <Select id="mv-to" value={to} onChange={e => setTo(e.target.value)}>
           <option value="">Choose a class…</option>
-          {options.data?.map(o => (
-            <option key={o.id} value={o.id} disabled={o.free <= 0}>
-              {o.name} — {DAYS[o.day_of_week]} {String(o.start_time).slice(0, 5)}, {ages(o)}, {money(o.price_minor)}, {o.free > 0 ? `${o.free} free` : 'full'}
-            </option>
-          ))}
+          {options.data?.map(o => {
+            const no = fit(o) === 'never';
+            return (
+              <option key={o.id} value={o.id} disabled={o.free <= 0 || no}>
+                {o.name} — {DAYS[o.day_of_week]} {String(o.start_time).slice(0, 5)}, {ages(o)}, {money(o.price_minor)}, {no ? (o.age_min != null && o.age_min >= 18 ? '18+ only' : 'children only') : o.free > 0 ? `${o.free} free` : 'full'}
+              </option>
+            );
+          })}
         </Select>
       </Field>
       <Field label="From" htmlFor="mv-on" required
@@ -298,11 +291,15 @@ export function MoveSheet({ enrolmentId, studentName, age, familyId, from, onClo
         <Input id="mv-on" type="date" value={on} min={earliest} onChange={e => setOn(e.target.value)} />
       </Field>
       {outOfRange && (
-        <Notice word="Age" tone="caution" title={`${target!.name} is for ${ages(target!)}`}
-          detail={`${studentName} is ${age}. You can still move them if the teacher agrees.`} />
+        <Notice word="Check" tone="caution" title={`${target!.name} is for ${ages(target!)}`}
+          detail={`${studentName} is ${age}. As this is a children’s class, they can move if the teacher agrees.`} />
+      )}
+      {never && (
+        <Notice word="Check" tone="critical" title={`${target!.name} is for ${ages(target!)}`}
+          detail={`${studentName} is ${age}, so they cannot join it. Choose another class.`} />
       )}
       {target && p?.note && (
-        <Notice word="Billing" title="What the move means for the bill" detail={p.note} />
+        <Notice word="Changed" title="What the move means for the bill" detail={p.note} />
       )}
       {target && diff !== 0 && (
         <p className="text-[0.8438rem] text-ink-2">
@@ -429,7 +426,7 @@ export function BookTrialSheet({ classId: fixedClass, className, enquiry, onClos
   if (booked) {
     return (
       <RecordSheet title="Book a trial" onClose={onClose} onSave={onClose} saveLabel="Done">
-        <Notice word="Booked" tone="positive" title={`${child.first_name || enquiry?.child_name || 'They'} ${chosen ? `on ${dateShort(chosen.starts_at)} at ${time(chosen.starts_at)}` : ''}`}
+        <StatusLine title={`${child.first_name || enquiry?.child_name || 'They'} ${chosen ? `on ${dateShort(chosen.starts_at)} at ${time(chosen.starts_at)}` : ''}`}
           detail="The enquiry has moved to Trial booked. Record how it went after the class, from Trials." />
       </RecordSheet>
     );
@@ -467,12 +464,8 @@ export function BookTrialSheet({ classId: fixedClass, className, enquiry, onClos
           </Select>
         </Field>
       )}
-      <div role="radiogroup" aria-label="Which child" className="grid grid-cols-2 gap-1 rounded-[var(--radius-md)] bg-surface-2 p-1">
-        {([['new', 'A new child'], ['existing', 'Already at the school']] as const).map(([k, l]) => (
-          <button key={k} role="radio" aria-checked={mode === k} onClick={() => setMode(k)}
-            className={`min-h-[40px] rounded-[calc(var(--radius-md)-2px)] text-[0.875rem] ${mode === k ? 'border border-line-strong bg-surface font-semibold text-ink' : 'text-ink-2 hover:text-ink'}`}>{l}</button>
-        ))}
-      </div>
+      <Choice label="Which child" layout="grid" className="grid-cols-2" value={mode} onChange={setMode}
+        options={[{ value: 'new', label: 'A new child' }, { value: 'existing', label: 'Already at the school' }]} />
       {mode === 'existing' ? (
         <Field label="Child" htmlFor="trial-student" required hint="They need an emergency contact on record.">
           <Select id="trial-student" value={studentId} onChange={e => setStudentId(e.target.value)}>
@@ -557,6 +550,7 @@ export function TrialActions({ trial }: { trial: C.TrialRow }) {
           </>
         )}
       </div>
+      {!ahead && trial.status !== 'cancelled' && <TrialFeedbackView trialId={trial.id} />}
       {err != null && (
         <p role="alert" className="mt-1 text-[0.75rem] text-critical">
           {/TOO_EARLY/.test(String((err as Error).message))

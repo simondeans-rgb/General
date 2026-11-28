@@ -8,7 +8,7 @@ import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import { Button, EmptyState, ErrorState, Skeleton } from '@/components/ui';
 import * as I from '@/lib/repos/inbox';
-import { relativeDay, time } from '@/lib/format';
+import { relativeDay, time, dayDateTime } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 /**
@@ -65,7 +65,7 @@ function Thread({ msgs }: { msgs: I.ThreadMsg[] }) {
           <li key={m.id} className={cn('py-3', m.mine && 'pl-6 sm:pl-12')}>
             <p className="text-[0.8125rem] text-ink-3">
               <span className={cn('font-semibold', m.mine ? 'text-ink-2' : 'text-ink')}>{m.mine ? 'You' : m.sender ?? 'Family'}</span>
-              {' · '}{relativeDay(m.sent_at)} {time(m.sent_at)}
+              {' · '}{dayDateTime(m.sent_at)}
             </p>
             <p className="mt-0.5 whitespace-pre-wrap break-words text-[0.9375rem] text-ink">{m.body}</p>
           </li>

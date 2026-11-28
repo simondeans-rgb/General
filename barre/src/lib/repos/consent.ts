@@ -41,3 +41,10 @@ export const SET_CONSENT_LABEL = `select app.set_consent_label($1, $2, $3, $4)`;
 export type MyConsent = { kind: ConsentKind; label: string; description: string; granted: boolean | null;
   disputed: boolean; changed_at: string | null; ask: string };
 export const MY_CONSENTS = `select * from app.my_consents()`;
+
+/* Consent snapshot for an event (0065): everyone invited or going, with
+   photo, video and social media consent as at $2 (null, or a future time,
+   means now). Office, safeguarding lead and the event's own teacher. */
+export type SnapshotRow = { student_id: string; name: string; class_name: string | null; participation: string;
+  photography: boolean | null; video: boolean | null; social_media: boolean | null; disputed: boolean; as_of: string };
+export const CONSENT_SNAPSHOT = `select * from app.event_consent_snapshot($1, $2::timestamptz)`;

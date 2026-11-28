@@ -61,8 +61,8 @@ export function AssistantLauncher() {
         <kbd className="rounded-[var(--radius-sm)] bg-surface-2 px-1.5 text-[0.6875rem] font-semibold text-ink-2">⌘K</kbd>
       </button>
       <button onClick={() => setOpen(true)} aria-label="Ask or jump"
-        className="grid size-10 place-items-center rounded-full text-ink-2 hover:bg-surface-2 sm:hidden">
-        <Search className="size-[18px]" aria-hidden />
+        className="grid size-[max(44px,1.5rem)] shrink-0 place-items-center rounded-full text-ink-2 hover:bg-surface-2 sm:hidden">
+        <Search className="size-[1.125rem]" aria-hidden />
       </button>
 
       {open && createPortal(

@@ -4,6 +4,7 @@ import * as React from 'react';
 import { SwayvoLogo } from './swayvo';
 import { cssVars, monogram, paletteFor } from '@/lib/brand';
 import { schoolColours } from '@/lib/theme';
+import { THEME_COLOR } from '@/lib/swayvo-logo';
 import { cn } from '@/lib/cn';
 
 /** The school's logo, or its monogram on its own colour when it has none. */
@@ -44,7 +45,12 @@ export function useSchoolTheme(school: { theme?: string | null; brand_colour?: s
   React.useEffect(() => {
     const root = document.documentElement;
     const keys = [...Object.keys(cssVars(paletteFor(null))), '--color-secondary'];
-    if (!on) { keys.forEach(k => root.style.removeProperty(k)); delete root.dataset.theme; return; }
+    if (!on) {
+      keys.forEach(k => root.style.removeProperty(k)); delete root.dataset.theme;
+      // Swayvo's own pages: back to the one browser-chrome colour.
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', THEME_COLOR);
+      return;
+    }
     const c = schoolColours(theme, accent, secondary);
     root.dataset.theme = c.theme.id;
     Object.entries(cssVars(paletteFor(c.accent, c.theme.surface))).forEach(([k, v]) => root.style.setProperty(k, v));

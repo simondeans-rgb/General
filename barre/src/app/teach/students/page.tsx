@@ -9,7 +9,8 @@ import { StudentExams } from '@/components/app/exams';
 import { PracticeSummary } from '@/components/app/practice';
 import { SkillsPanel, Goals, Reflections, Milestones, Timeline, ThenAndNow } from '@/components/app/progress';
 import { LastFeedback } from '@/components/app/last-feedback';
-import { SupportNote, supportReasons } from '@/components/app/support-needs';
+import { LOW_ATTENDANCE, SupportNote, supportReasons } from '@/components/app/support-needs';
+import { ClassProgress } from '@/components/app/class-progress';
 import * as P from '@/lib/repos/progress';
 import { useSession } from '@/lib/auth/session';
 import { Shell } from '@/components/app/shell';
@@ -17,7 +18,7 @@ import { DetailPanel, DetailSection, KeyValue } from '@/components/app/detail-pa
 import { MedicalBrief, medicalLine } from '@/components/app/medical-brief';
 import { useRows } from '@/lib/query';
 import { useSelection } from '@/lib/use-selection';
-import { Beats, Button, EmptyState, Input, Skeleton, ErrorState, ViewTabs } from '@/components/ui';
+import { Beats, Button, EmptyState, Input, Skeleton, ErrorState, ViewTabs, Choice } from '@/components/ui';
 import { FeedbackComposer } from '@/components/app/feedback-composer';
 import * as T from '@/lib/repos/teaching';
 import { ageFrom } from '@/lib/format';
@@ -35,7 +36,7 @@ export default function MyStudentsPage() {
 function MyStudents() {
   const [q, setQ] = React.useState('');
   const [onlyNeeds, setOnlyNeeds] = React.useState(false);
-  const [view, setView] = React.useState<'all' | 'support'>('all');
+  const [view, setView] = React.useState<'all' | 'support' | 'progress'>('all');
   const { session } = useSession();
   const office = session?.role === 'owner' || session?.role === 'admin';
   // UR-45: who may need support, from the database's view of the caller's own students.
@@ -61,22 +62,21 @@ function MyStudents() {
       <div className="mx-auto max-w-5xl">
         <div className={cn('gap-5', selected ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,440px)]' : 'block')}>
           <div className="min-w-0 space-y-4">
-            <div className="flex gap-2">
+            <div className={cn('flex gap-2', view === 'progress' && 'hidden')}>
               <Input type="search" value={q} onChange={e => setQ(e.target.value)}
                      placeholder="Search by name" aria-label="Search your students" />
               {withNeeds > 0 && (
-                <Button aria-pressed={onlyNeeds} onClick={() => setOnlyNeeds(v => !v)}
-                        className={cn('shrink-0', onlyNeeds && 'border-ink bg-surface-2')}>
-                  Medical notes <span className="tnum text-ink-3">{withNeeds}</span>
-                </Button>
+                <Choice multiple label="Show only" className="shrink-0 flex-nowrap" value={onlyNeeds ? ['needs'] : []} onChange={v => setOnlyNeeds(v.length > 0)}
+                  options={[{ value: 'needs', label: <span className="whitespace-nowrap">Medical notes <span className="tnum font-normal text-ink-3">{withNeeds}</span></span> }]} />
               )}
             </div>
             <ViewTabs label="Which students" value={view} onChange={setView}
-              options={[['all', 'Everyone'], ['support', `May need support${support.data ? ` · ${needing}` : ''}`]]} />
+              options={[['all', 'Everyone'], ['support', 'May need support', support.data ? needing : null], ['progress', 'Class progress']]} />
+            {view === 'progress' && <ClassProgress />}
             {view === 'support' && (
-              <p className="text-[0.8125rem] text-ink-3">Absent two or more times in a row, skills marked not started, medical notes or a support note from the office. Staff only; families never see this list.</p>
+              <p className="text-[0.8125rem] text-ink-3">Attendance below {LOW_ATTENDANCE}% this term, absent two or more times in a row, skills marked not started, medical notes or a note from the office. Staff only; families never see this list.</p>
             )}
-            <section aria-labelledby="students-h">
+            {view !== 'progress' && <section aria-labelledby="students-h">
               <div className="mb-1 flex items-baseline gap-3 border-b-2 border-ink pb-2">
                 <h2 id="students-h" className="section-title flex-1">{view === 'support' ? 'May need support' : onlyNeeds ? 'With medical notes' : q ? 'Matching' : 'Everyone you teach'}</h2>
                 {rows.data && <span className="text-[0.8125rem] text-ink-3">{list.length} · attendance this term</span>}
@@ -91,7 +91,8 @@ function MyStudents() {
                 {list.map(s => {
                   const med = medicalLine(s);
                   const low = s.attendance_pct != null && s.attendance_pct < 70;
-                  const why = view === 'support' ? supportReasons(supportBy.get(s.id), s).filter(r => r !== 'Medical notes') : [];
+                  // Every reason in words, medical included: the line under the name says what (U11).
+                  const why = view === 'support' ? supportReasons(supportBy.get(s.id), s) : [];
                   return (
                     <li key={s.id}>
                       <button onClick={() => select(s.id)} aria-current={selected === s.id || undefined}
@@ -100,7 +101,7 @@ function MyStudents() {
                         <span className="min-w-0">
                           <span className="block truncate font-semibold">{s.preferred_name ?? s.first_name} {s.last_name}</span>
                           {med && <span className={cn('block truncate text-[0.8438rem] font-semibold', s.requires_alert ? 'text-critical' : 'text-caution')}>{med}</span>}
-                          {why.length > 0 && <span className="block truncate text-[0.8438rem] text-ink-2">{why.join(' · ')}</span>}
+                          {why.length > 0 && <span className="block text-[0.8438rem] text-ink-2"><span className="sr-only">Why: </span>{why.join(' · ')}</span>}
                           <span className="block truncate text-[0.8125rem] text-ink-3">
                             {[ageFrom(s.date_of_birth) != null && `Age ${ageFrom(s.date_of_birth)}`, s.class_names].filter(Boolean).join(' · ')}
                           </span>
@@ -118,7 +119,7 @@ function MyStudents() {
                   );
                 })}
               </ul>
-            </section>
+            </section>}
           </div>
 
           {selected && (

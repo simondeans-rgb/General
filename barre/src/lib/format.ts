@@ -59,17 +59,52 @@ export const dateShort = (v: Stamp | null | undefined) =>
   v ? new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: TZ })
     .format(toDate(v)) : '—';
 
-export function relativeDay(v: Stamp): string {
+/* ── The date rule (U9; DESIGN-SYSTEM.md §8) ───────────────────────────────
+   One way to write a day, everywhere a list shows one:
+   - "Today", "Tomorrow" or "Yesterday" when it is one of those;
+   - otherwise "Thu 3 Dec" — always the weekday AND the date, never a bare
+     weekday ("Thursday" on a Saturday: this week or next?);
+   - the year only when it is not this year ("Sun 3 Jan 2027");
+   - with a time: "Thu 3 Dec, 18:30";
+   - in sheets and headings where there is room, `dateLong` ("Thursday 3 December").
+   Dense tables and DUE words may use `dateShort` ("3 Dec"). */
+
+/** Whole calendar days from today to `v`, in the studio's timezone (0 = today). */
+export function daysFromToday(v: Stamp, now: Date = new Date()): number {
+  const day = (x: Stamp) => Date.parse(isoDate(x) + 'T00:00:00Z');
+  return Math.round((day(v) - day(now)) / 86_400_000);
+}
+
+/** "Thu 3 Dec" ("Sun 3 Jan 2027" in another year). */
+export function dayDate(v: Stamp, now: Date = new Date()): string {
   const d = toDate(v);
-  const today = new Date();
-  const days = Math.round(
-    (Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) -
-     Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())) / 86_400_000);
+  const otherYear = isoDate(d).slice(0, 4) !== isoDate(now).slice(0, 4);
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    weekday: 'short', day: 'numeric', month: 'short', timeZone: TZ, ...(otherYear ? { year: 'numeric' } : {}) })
+    .formatToParts(d);
+  const get = (t: string) => parts.find(p => p.type === t)?.value ?? '';
+  return `${get('weekday')} ${get('day')} ${get('month')}${otherYear ? ` ${get('year')}` : ''}`;
+}
+
+/** "Thu 3 Dec, 18:30" — or "Today, 18:30". */
+export const dayDateTime = (v: Stamp, now: Date = new Date()): string => `${relativeDay(v, now)}, ${time(v)}`;
+
+/** True for the three words `relativeDay` may return instead of a date. */
+export const isRelativeWord = (s: string) => s === 'Today' || s === 'Tomorrow' || s === 'Yesterday';
+
+/** "Today", "Tomorrow", "Yesterday", otherwise "Thu 3 Dec" (the date rule above). */
+export function relativeDay(v: Stamp, now: Date = new Date()): string {
+  const days = daysFromToday(v, now);
   if (days === 0) return 'Today';
   if (days === 1) return 'Tomorrow';
   if (days === -1) return 'Yesterday';
-  if (days > 1 && days < 7) return dayName(d);
-  return dateShort(d);
+  return dayDate(v, now);
+}
+
+/** A day as a heading: "Today · 28 Nov", or "Thu 3 Dec". */
+export function dayHeading(v: Stamp, now: Date = new Date()): string {
+  const r = relativeDay(v, now);
+  return isRelativeWord(r) ? `${r} · ${dateShort(v)}` : r;
 }
 
 /** Two initials: first and last name, whether given as one string or separate parts. */

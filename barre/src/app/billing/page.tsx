@@ -18,10 +18,14 @@ import { AbsenceCredits } from '@/components/app/absence-credit';
 import { PaymentRemindersSheet } from '@/components/app/payment-reminders';
 import { useLocationFilter } from '@/components/app/location-filter';
 import { cardPaymentsEnabled, invoiceState } from '@/lib/payments/invoice-status';
+import { paidAndCredited } from '@/lib/office-words';
+import { refreshAfterWrite } from '@/lib/write';
+import { announceSaved } from '@/lib/saved';
 import { useSession } from '@/lib/auth/session';
 import { useSelection } from '@/lib/use-selection';
 import {
   Button, EmptyState, ErrorState, Field, Input, Select, Skeleton, type Tone,
+  FilterTabs,
 } from '@/components/ui';
 import * as B from '@/lib/repos/billing';
 import { money, dateShort, isoDate, toMinor } from '@/lib/format';
@@ -65,7 +69,9 @@ export default function BillingPage() {
 }
 
 function Billing() {
-  const summary = useRow<B.BillingSummary>(['billing-summary'], B.SUMMARY);
+  // The totals follow the location filter (U8; location_money, 0062).
+  const loc = useLocationFilter();
+  const summary = useRow<B.BillingSummary>(['billing-summary', loc.current], loc.current ? B.SUMMARY_AT : B.SUMMARY, loc.current ? [loc.current] : []);
   const invoices = useRows<B.InvoiceRow>(['invoices'], B.INVOICES);
   const { selected, select } = useSelection();
   const [filter, setFilter] = React.useState<Filter>('attention');
@@ -74,7 +80,6 @@ function Billing() {
   const [running, setRunning] = React.useState(false);
   const [reminding, setReminding] = React.useState(false);
   // Schools with more than one location can narrow every list to one (UR-33).
-  const loc = useLocationFilter();
   const atLoc = React.useMemo(() => (invoices.data ?? []).filter(i => !loc.current || (i.locations ?? []).includes(loc.current)),
     [invoices.data, loc.current]);
 
@@ -113,7 +118,7 @@ function Billing() {
 
   return (
     <Shell title="Billing" help={<>Invoices for every family. Use <b>Billing runs</b> to raise a whole term’s (or month’s) invoices at once: check the drafts, then send them together. Discounts — sibling, multi-class and per-family bursaries — are applied automatically. <b>Export</b> gives your accountant spreadsheets, aged debt and a Xero import file.</>} allow={['owner', 'admin']}
-      subtitle={s ? `${money(s.outstanding_minor)} outstanding across ${s.owing_families} famil${s.owing_families === 1 ? 'y' : 'ies'}` : undefined}
+      subtitle={s ? `${money(s.outstanding_minor)} outstanding across ${s.owing_families} famil${s.owing_families === 1 ? 'y' : 'ies'}${loc.current ? ` at ${loc.current}` : ''}` : undefined}
       actions={<div className="flex gap-2">
         <ExportButton location={loc.current || null} />
         <Button size="sm" aria-label="Billing runs" onClick={() => setRunning(true)}>
@@ -125,8 +130,9 @@ function Billing() {
       </div>}>
       <div className="mx-auto max-w-[1240px] space-y-10">
         {/* The ledger's four figures. Two of them lead to the invoices that need action. */}
-        <section aria-label="Money at a glance">
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-6 border-b border-line pb-6 lg:grid-cols-4 lg:gap-x-0 lg:divide-x lg:divide-line">
+        <section aria-label={loc.current ? `Money at ${loc.current}` : 'Money at a glance'}>
+          {loc.current && <p className="label mb-3">{loc.current} only</p>}
+          <dl className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,10rem),1fr))] gap-x-6 gap-y-6 border-b border-line pb-6 lg:grid-cols-4 lg:gap-x-0 lg:divide-x lg:divide-line">
             <Stat label="Outstanding" loading={summary.isLoading}
               value={s && money(s.outstanding_minor)}
               note={s && `Owed by ${s.owing_families} famil${s.owing_families === 1 ? 'y' : 'ies'}`} />
@@ -135,12 +141,21 @@ function Billing() {
               note={s && (s.overdue_invoices ? `${s.overdue_invoices} invoice${s.overdue_invoices === 1 ? '' : 's'} past due` : 'Nothing past due')}
               action={s && s.overdue_invoices > 0 ? 'Chase' : undefined}
               onClick={() => setFilter('attention')} />
-            <Stat label="Failed payments" loading={summary.isLoading} tone={s && s.failed_payments > 0 ? 'critical' : undefined}
-              value={s && String(s.failed_payments)}
-              note={s && (s.failed_payments ? `${money(s.failed_minor)} declined` : 'None outstanding')}
-              // Cards cannot be retried until a provider is connected (UR-11).
-              action={s && s.failed_payments > 0 ? (cardPaymentsEnabled() ? 'Retry' : 'Show failed') : undefined}
-              onClick={() => setFilter('attention')} />
+            {/* Card payments are not connected in this build, so a failed card
+                cannot happen for real: the demo's sample failures are labelled
+                as such rather than shown as live work (round 2, U3). */}
+            {cardPaymentsEnabled() ? (
+              <Stat label="Failed payments" loading={summary.isLoading} tone={s && s.failed_payments > 0 ? 'critical' : undefined}
+                value={s && String(s.failed_payments)}
+                note={s && (s.failed_payments ? `${money(s.failed_minor)} declined` : 'None outstanding')}
+                action={s && s.failed_payments > 0 ? 'Retry' : undefined}
+                onClick={() => setFilter('attention')} />
+            ) : (
+              <Stat label="Card payments" loading={summary.isLoading} value="Not connected"
+                note={s && (s.failed_payments > 0
+                  ? `Demo: cards not connected. ${s.failed_payments} sample declined card${s.failed_payments === 1 ? '' : 's'} in the demo data.`
+                  : 'Families pay by bank transfer or cash for now.')} />
+            )}
             <Stat label="Collected, 30 days" loading={summary.isLoading}
               value={s && money(s.collected_30d_minor)}
               note={s && (Number(s.credit_minor) > 0 ? `${money(s.credit_minor)} held as credit` : 'Card, transfer and cash')} />
@@ -164,18 +179,8 @@ function Billing() {
                        placeholder="Family or invoice number" className="pl-9" />
               </label>
             </div>
-            <div role="tablist" aria-label="Show invoices" className="-mx-1 flex gap-0.5 overflow-x-auto border-b border-line px-1 py-1.5">
-              {FILTERS.map(f => (
-                <button key={f.key} role="tab" aria-selected={filter === f.key}
-                  onClick={() => setFilter(f.key)}
-                  className={cn('flex h-10 shrink-0 items-center gap-1.5 rounded-[var(--radius-md)] px-3 text-[0.875rem]',
-                    filter === f.key ? 'bg-ink font-semibold text-ink-invert' : 'text-ink-2 hover:bg-surface-2 hover:text-ink')}>
-                  {f.label}
-                  {invoices.data && <span className={cn('tnum text-[0.75rem]',
-                    filter === f.key ? 'opacity-75' : 'text-ink-3')}>{counts[f.key]}</span>}
-                </button>
-              ))}
-            </div>
+            <FilterTabs label="Show invoices" value={filter} onChange={setFilter} className="mx-0 border-b border-line"
+              options={FILTERS.map(f => [f.key, f.label, invoices.data ? counts[f.key] : null])} />
 
             {invoices.isLoading && <div className="space-y-3 pt-3">{[0,1,2,3].map(i => <Skeleton key={i} className="h-12" />)}</div>}
             {invoices.error && <div className="pt-4"><ErrorState error={invoices.error} onRetry={() => invoices.refetch()} /></div>}
@@ -305,7 +310,7 @@ function Stat({ label, value, note, tone, loading, onClick, action }: {
     <div className="min-w-0 lg:px-6 lg:first:pl-0 lg:last:pr-0">
       <dt className="label">{label}</dt>
       {loading ? <dd><Skeleton className="mt-2 h-8 w-28" /></dd> : (
-        <dd className={cn('stat-number mt-1.5 text-[1.75rem] leading-none lg:text-[2rem]',
+        <dd className={cn('stat-number mt-1.5 break-words text-[1.75rem] leading-none lg:text-[2rem]',
           tone === 'caution' && 'text-caution', tone === 'critical' && 'text-critical')}>{value}</dd>
       )}
       {note && <dd className="mt-1.5 text-[0.8125rem] text-ink-3">{note}</dd>}
@@ -321,7 +326,8 @@ function Stat({ label, value, note, tone, loading, onClick, action }: {
 /** Status as a word. Colour backs it up; it never carries it alone. */
 function InvoiceStatus({ i }: { i: B.InvoiceRow }) {
   const s = invoiceState(i);
-  if (i.failed) return <span className="inline-flex items-center gap-1 font-semibold text-critical"><AlertTriangle className="size-3.5" aria-hidden />{s.label}</span>;
+  if (i.failed) return <span className="inline-flex items-center gap-1 font-semibold text-critical"><AlertTriangle className="size-3.5" aria-hidden />{s.label}
+    {!cardPaymentsEnabled() && <span className="font-normal text-ink-3">(demo)</span>}</span>;
   if (i.overdue) return <span className="font-semibold text-caution">{s.label}</span>;
   return <span className={cn(s.tone === 'positive' ? 'text-positive' : s.tone === 'caution' ? 'text-ink' : 'text-ink-3', 'font-medium')}>{s.label}</span>;
 }
@@ -359,18 +365,25 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
           <div className="mb-5">
             <p className="text-[0.8125rem] text-ink-3">
               <span className={cn('font-semibold', i.overdue ? 'text-caution' : (STATUS[i.status] ?? STATUS.draft!).tone === 'positive' ? 'text-positive' : 'text-ink')}>
-                {i.overdue ? 'Overdue' : (STATUS[i.status] ?? STATUS.draft!).label}
+                {invoiceState(i).label}
               </span>
-              {i.overdue && i.status === 'part_paid' && <span className="text-ink"> · part paid</span>}
               {' · '}{i.issued_on ? `Issued ${dateShort(i.issued_on)}, ` : ''}due {dateShort(i.due_on)}
             </p>
             <p className="label mt-4">{isOpen(i.status) ? 'Still to pay' : 'Total'}</p>
             <p className="stat-number mt-1 text-[2.25rem] leading-none">
               {money(isOpen(i.status) ? owed : i.total_minor)}
             </p>
-            {isOpen(i.status) && Number(i.paid_minor) > 0 && (
-              <p className="tnum mt-1.5 text-[0.8125rem] text-ink-2">{money(i.paid_minor)} of {money(i.total_minor)} paid</p>
-            )}
+            {/* A credit note lowers the bill; it is not money received (U3). */}
+            {(() => {
+              const m = paidAndCredited(i);
+              if (!isOpen(i.status) || (m.paid === 0 && m.credited === 0)) return null;
+              return (
+                <p className="tnum mt-1.5 text-[0.8125rem] text-ink-2">
+                  {[money(m.total), m.credited > 0 && `credited ${money(m.credited)}`, m.paid > 0 && `${money(m.paid)} paid`,
+                    `${money(m.toPay)} to pay`].filter(Boolean).join(' · ')}
+                </p>
+              );
+            })()}
             {i.status === 'void' && i.void_reason && <p className="mt-1.5 text-[0.8125rem] text-ink-2">Voided: {i.void_reason}</p>}
           </div>
 
@@ -448,7 +461,7 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-1.5">
                         {METHOD_LABEL[p.method] ?? p.method}
-                        {!ok && p.failure_code && <span className="text-[0.8125rem] font-semibold text-critical">Failed · {p.failure_code.replace(/_/g, ' ')}</span>}
+                        {!ok && p.failure_code && <span className="text-[0.8125rem] font-semibold text-critical">Failed · {p.failure_code.replace(/_/g, ' ')}{!cardPaymentsEnabled() && ' (demo: cards not connected)'}</span>}
                         {refunded > 0 && <span className="text-[0.8125rem] font-medium text-info">{money(refunded)} refunded</span>}
                       </span>
                       <span className="block text-[0.75rem] text-ink-3">
@@ -506,12 +519,14 @@ function InvoicePanel({ id, onClose }: { id: string; onClose: () => void }) {
   );
 }
 
-function useLedgerMutation<T>(fn: (v: T) => (q: any) => Promise<unknown>, onDone: () => void) {
+/** The office's save model (U5): the panel behind shows the new figures
+ *  before the sheet closes, then a one-line "Saved" status says what happened. */
+function useLedgerMutation<T>(fn: (v: T) => (q: any) => Promise<unknown>, onDone: () => void, saved?: () => string) {
   const { session } = useSession();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (v: T) => runAs(session, fn(v)),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['db'] }); onDone(); },
+    mutationFn: async (v: T) => { const r = await runAs(session, fn(v)); await refreshAfterWrite(qc); return r; },
+    onSuccess: () => { const m = saved?.(); if (m) announceSaved(m); onDone(); },
   });
 }
 
@@ -523,7 +538,8 @@ function RecordPaymentSheet({ invoice, onClose }: { invoice: B.InvoiceDetail; on
   const minor = toMinor(amount);
   const tooMuch = minor != null && minor > owed;
   const save = useLedgerMutation(() => (q: any) =>
-    q(B.RECORD_PAYMENT, [invoice.family_id, minor, method, invoice.id, note || null]), onClose);
+    q(B.RECORD_PAYMENT, [invoice.family_id, minor, method, invoice.id, note || null]), onClose,
+    () => `Recorded ${money(minor)} against ${invoice.number}`);
 
   return (
     <RecordSheet title="Record a payment" subtitle={`${invoice.number} · ${money(owed)} still to pay`}
@@ -549,7 +565,7 @@ function RecordPaymentSheet({ invoice, onClose }: { invoice: B.InvoiceDetail; on
 
 function VoidSheet({ invoice, onClose }: { invoice: B.InvoiceDetail; onClose: () => void }) {
   const [reason, setReason] = React.useState('');
-  const save = useLedgerMutation(() => (q: any) => q(B.VOID_INVOICE, [invoice.id, reason]), onClose);
+  const save = useLedgerMutation(() => (q: any) => q(B.VOID_INVOICE, [invoice.id, reason]), onClose, () => `${invoice.number} is void`);
   return (
     <RecordSheet title={`Void ${invoice.number}?`}
       subtitle="The family stops owing it. The invoice stays on record, marked void, and the reason is logged."
@@ -584,7 +600,8 @@ function RefundSheet({ payment, invoice, onClose }: { payment: B.PaymentRow; inv
   const [reason, setReason] = React.useState('');
   const [mode, setMode] = React.useState<'credit_note' | 'mistake'>('credit_note');
   const minor = toMinor(amount);
-  const save = useLedgerMutation(() => (q: any) => q(B.REFUND_PAYMENT, [payment.id, minor, reason, mode]), onClose);
+  const save = useLedgerMutation(() => (q: any) => q(B.REFUND_PAYMENT, [payment.id, minor, reason, mode]), onClose,
+    () => `Refund of ${money(minor)} recorded on ${invoice.number}`);
   return (
     <RecordSheet title="Refund"
       subtitle={`${METHOD_LABEL[payment.method]} of ${money(payment.amount_minor)} on ${invoice.number}. Hand the money back first — this records that you have.`}
@@ -627,7 +644,8 @@ function CreditNoteSheet({ invoice, credited, cashPaid, onClose }: {
   const [reason, setReason] = React.useState('');
   const [settle, setSettle] = React.useState<'account' | 'refund'>('account');
   const minor = toMinor(amount);
-  const save = useLedgerMutation(() => (q: any) => q(B.ISSUE_CREDIT_NOTE, [invoice.id, minor, reason.trim(), settle]), onClose);
+  const save = useLedgerMutation(() => (q: any) => q(B.ISSUE_CREDIT_NOTE, [invoice.id, minor, reason.trim(), settle]), onClose,
+    () => `Credit note issued: ${money(minor)} off ${invoice.number}`);
   const tooMuch = minor != null && minor > max;
   const noCash = settle === 'refund' && minor != null && minor > cashPaid;
   return (
@@ -674,6 +692,11 @@ function ReminderSheet({ invoice, failed, onClose }: {
   const [subject, setSubject] = React.useState<string | null>(null);
   const [body, setBody] = React.useState<string | null>(null);
   const [sent, setSent] = React.useState(false);
+  // Messages land in the app: say so when nobody in the family uses it (U3).
+  const reach = useRow<{ uses_app: boolean }>(['family-uses-app', invoice.family_id],
+    `select exists (select 1 from guardian g where g.family_id = $1 and g.user_id is not null and g.deleted_at is null) as uses_app`,
+    [invoice.family_id]);
+  const offApp = reach.data?.uses_app === false;
 
   const fill = React.useCallback((s: string) => s
     .replaceAll('{{guardian_name}}', guardian.data?.first_name ?? 'there')
@@ -695,15 +718,17 @@ function ReminderSheet({ invoice, failed, onClose }: {
 
   if (sent) {
     return (
-      <RecordSheet title="Reminder sent" onClose={onClose} onSave={onClose} saveLabel="Done">
-        <p className="text-sm text-ink-2">It is in {invoice.family_name}’s messages and their communication history.</p>
+      <RecordSheet title={offApp ? 'Reminder kept, not seen yet' : 'Reminder sent'} onClose={onClose} onSave={onClose} saveLabel="Done">
+        <p className="text-sm text-ink-2">{offApp
+          ? `Nobody in ${invoice.family_name} uses the app yet, so they can’t be reached until email is connected. The reminder is kept in their communication history; contact them another way for now.`
+          : `It is in ${invoice.family_name}’s messages in the app and their communication history.`}</p>
       </RecordSheet>
     );
   }
 
   return (
     <RecordSheet title={failed ? 'Ask for a new card' : 'Send a reminder'}
-      subtitle={`To ${invoice.family_name}, in the app`}
+      subtitle={offApp ? `To ${invoice.family_name}, in the app. Nobody there uses it yet, so they won’t see it until email is connected.` : `To ${invoice.family_name}, in the app`}
       onClose={onClose} onSave={() => send.mutate(undefined)} saving={send.isPending} error={send.error}
       canSave={!!subject?.trim() && (body?.trim().length ?? 0) > 10} saveLabel="Send">
       {body === null ? <Skeleton className="h-40" /> : (
@@ -732,6 +757,10 @@ function NewInvoiceSheet({ onClose, onCreated, familyId }: {
   const { session } = useSession();
   const qc = useQueryClient();
   const families = useRows<B.FamilyOption>(['family-options'], B.FAMILY_OPTIONS);
+  // Two families of one name also show their children (U8).
+  const dupes = React.useMemo(() => { const seen = new Set<string>(), twice = new Set<string>();
+    for (const f of families.data ?? []) { const k = f.name.trim().toLowerCase(); if (seen.has(k)) twice.add(k); seen.add(k); }
+    return twice; }, [families.data]);
   const [family, setFamily] = React.useState(familyId ?? '');
   const billable = useRows<B.BillableRow>(['billable', family], B.FAMILY_BILLABLE, [family],
     { enabled: !!family });
@@ -793,7 +822,7 @@ function NewInvoiceSheet({ onClose, onCreated, familyId }: {
               <option value="">Choose a family…</option>
               {families.data?.map(f => (
                 <option key={f.id} value={f.id}>
-                  {f.name}{f.guardian ? ` — ${f.guardian}` : ''}{Number(f.balance_minor) > 0 ? ` (owes ${money(f.balance_minor)})` : ''}
+                  {f.name}{f.guardian ? ` — ${f.guardian}` : ''}{dupes.has(f.name.trim().toLowerCase()) && f.children ? `; ${f.children}` : ''}{Number(f.balance_minor) > 0 ? ` (owes ${money(f.balance_minor)})` : ''}
                 </option>
               ))}
             </Select>

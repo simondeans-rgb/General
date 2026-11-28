@@ -14,7 +14,7 @@ import { useRows, useRow } from '@/lib/query';
 import { useSelection } from '@/lib/use-selection';
 import { MedicalBrief, MedicalMarker } from '@/components/app/medical-brief';
 import { OfficeConsents } from '@/components/app/consents';
-import { RaiseConcernSheet } from '@/components/app/safeguarding';
+import { ChildConcernLinks, RaiseConcernSheet } from '@/components/app/safeguarding';
 import type { Brief } from '@/lib/repos/teaching';
 import { useSearchParams } from 'next/navigation';
 import { Input, EmptyState, Skeleton, ErrorState, Button, Select } from '@/components/ui';
@@ -31,6 +31,7 @@ import { ArrowRightLeft, MessageSquare } from 'lucide-react';
 import { BulkMessageSheet, DuplicatesSheet } from '@/components/app/family-tools';
 import * as H from '@/lib/repos/office';
 import { cn } from '@/lib/cn';
+import { dateWithYear } from '@/lib/office-words';
 
 type Tab = 'families' | 'students' | 'staff';
 
@@ -58,8 +59,8 @@ function People() {
         {tab !== 'staff' && <Button size="sm" aria-label="Import" onClick={() => setImporting(true)}>
           <Upload className="size-4" aria-hidden /> <span className="hidden sm:inline">Import</span>
         </Button>}
-        <Button size="sm" variant="primary" onClick={() => setAdding(true)}>
-          <Plus className="size-4" aria-hidden /> {ADD_LABEL[tab]}
+        <Button size="sm" variant="primary" aria-label={ADD_LABEL[tab]} onClick={() => setAdding(true)}>
+          <Plus className="size-4" aria-hidden /> <span className="hidden sm:inline">{ADD_LABEL[tab]}</span>
         </Button>
       </div>}>
       {importing && <ImportWizard onClose={() => setImporting(false)} />}
@@ -376,7 +377,7 @@ function StudentDetail({ id, onClose }: { id: string; onClose: () => void }) {
         <>
           <DetailSection title="Details">
             <KeyValue rows={[
-              ['Date of birth', dateShort(s.date_of_birth)],
+              ['Date of birth', s.date_of_birth ? `${dateWithYear(s.date_of_birth)} (${ageFrom(s.date_of_birth)})` : '—'],
               ['Family', s.family_name],
               ['Classes', `${s.classes}`],
               ['Attendance', s.attendance_pct != null ? `${s.attendance_pct}%` : '—'],
@@ -432,7 +433,8 @@ function StudentDetail({ id, onClose }: { id: string; onClose: () => void }) {
           </DetailSection>
 
           <DetailSection title="Safeguarding">
-            <Button onClick={() => setConcern(true)}>
+            <ChildConcernLinks studentId={id} />
+            <Button className="mt-2" onClick={() => setConcern(true)}>
               <ShieldAlert className="size-4" aria-hidden /> Raise a safeguarding concern
             </Button>
             <p className="mt-2 text-[0.8125rem] text-ink-3">For something you saw, or a parent or child told you. It goes only to the safeguarding lead and the owner.</p>

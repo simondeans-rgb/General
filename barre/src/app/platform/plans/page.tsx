@@ -32,7 +32,7 @@ export default function PlansPage() {
               <thead className="border-b-2 border-ink text-left">
                 <tr>
                   <th scope="col" className="label py-2.5 pr-3 font-semibold">Plan</th>
-                  <th scope="col" className="label px-3 py-2.5 text-right font-semibold">A month</th>
+                  <th scope="col" className="label px-3 py-2.5 text-right font-semibold">Price</th>
                   <th scope="col" className="label px-3 py-2.5 text-right font-semibold">Students</th>
                   <th scope="col" className="label px-3 py-2.5 text-right font-semibold">Locations</th>
                   <th scope="col" className="label px-3 py-2.5 text-right font-semibold">Staff</th>
@@ -45,8 +45,15 @@ export default function PlansPage() {
                   const on = schools.data?.filter(s => s.plan_code === p.code && s.status !== 'cancelled').length ?? 0;
                   return (
                     <tr key={p.id}>
-                      <th scope="row" className="py-3 pr-3 text-left font-semibold">{p.name}{p.is_trial && <span className="ml-2 text-[0.8125rem] font-medium text-info">Trial</span>}</th>
-                      <td className="stat-number px-3 py-3 text-right text-[1.25rem]">{p.price_minor ? money(p.price_minor) : 'Free'}</td>
+                      <th scope="row" className="py-3 pr-3 text-left font-semibold">{p.name}
+                        {/* The trial's own name usually says it already; only say so when it doesn't. */}
+                        {p.is_trial && !/trial/i.test(p.name) && <span className="ml-2 text-[0.8125rem] font-medium text-info">Free trial</span>}
+                        <span className="block text-[0.8125rem] font-normal text-ink-3">{p.is_trial ? 'New schools start here' : 'Chosen by the owner, or set here'}</span></th>
+                      <td className="px-3 py-3 text-right">
+                        {p.is_trial
+                          ? <><span className="stat-number text-[1.25rem]">Free</span><span className="block text-[0.8125rem] text-ink-3">30 days</span></>
+                          : <><span className="stat-number text-[1.25rem]">{money(p.price_minor)}</span><span className="block text-[0.8125rem] text-ink-3">a month</span></>}
+                      </td>
                       <td className="tnum px-3 py-3 text-right">{limit(p.max_students)}</td>
                       <td className="tnum px-3 py-3 text-right">{limit(p.max_locations)}</td>
                       <td className="tnum px-3 py-3 text-right">{limit(p.max_staff)}</td>
@@ -64,12 +71,41 @@ export default function PlansPage() {
         )}
         <p className="max-w-2xl text-[0.8125rem] text-ink-3">
           Taking payment from schools (Stripe Billing) is not connected yet: plans set limits and the console’s revenue
-          figure, and you invoice schools yourself for now. Moving a school to a smaller plan never deletes anything — it
-          only stops new additions past the limit.
+          figure, and you invoice schools yourself for now. Owners can move their own school to a paid plan that fits it,
+          from Settings › Plan; every change is in the school’s history. Moving a school to a smaller plan never deletes
+          anything — it only stops new additions past the limit. Children who have left do not count towards the student limit.
+          A trial school started from the console lasts as long as you choose; one started online lasts 30 days.
         </p>
+        <Signups canChange={!!amSuper} />
       </div></div>
       {editing && <PlanSheet plan={editing} onClose={() => setEditing(null)} />}
     </Shell>
+  );
+}
+
+/** Whether schools can start themselves at /start (F11). */
+function Signups({ canChange }: { canChange: boolean }) {
+  const { session } = useSession();
+  const qc = useQueryClient();
+  const open = useRows<{ open: boolean }>(['signups-open'], `select app.signups_open() as open`).data?.[0]?.open;
+  const set = useMutation({
+    mutationFn: (v: boolean) => runAs(session, q => q(`select app.platform_set_signups($1)`, [v])),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['db'] }),
+  });
+  if (open == null) return null;
+  return (
+    <section aria-labelledby="pl-signup" className="max-w-2xl">
+      <h2 id="pl-signup" className="border-b-2 border-ink pb-2 section-title">Schools starting online</h2>
+      <div className="flex flex-wrap items-center gap-3 pt-3">
+        <p className="min-w-0 flex-1 text-[0.9062rem] text-ink-2">
+          {open
+            ? 'Open: anyone can start a school on the free trial from the Start your school page. Each one appears in Schools, and its history says it was started online.'
+            : 'Closed: the Start your school page asks people to contact Swayvo instead.'}
+        </p>
+        {canChange && <Button size="sm" loading={set.isPending} onClick={() => set.mutate(!open)}>{open ? 'Close signups' : 'Open signups'}</Button>}
+      </div>
+      {set.error != null && <ErrorState error={set.error} />}
+    </section>
   );
 }
 

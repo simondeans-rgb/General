@@ -13,7 +13,7 @@ import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import { Button, EmptyState, Skeleton } from '@/components/ui';
 import * as I from '@/lib/repos/inbox';
-import { relativeDay, time } from '@/lib/format';
+import { relativeDay, time, dayDateTime } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 /** What kind of thing happened, in a word. Urgent kinds carry colour as well. */
@@ -21,7 +21,7 @@ const KIND: Record<string, string> = {
   message: 'Message', payment_failed: 'Payment failed', new_enquiry: 'Enquiry', new_trial: 'Trial',
   new_enrolment: 'Enrolment', waitlist: 'Waiting list', waitlist_offer: 'Place offered',
   medical_updated: 'Medical update', request: 'Request', request_answered: 'Answered', teacher_changed: 'Teacher change',
-  schedule_change: 'Class change', cover_assigned: 'Cover', contact_updated: 'Contact details', message_reminder: 'Reminder', safeguarding: 'Safeguarding', staff_check_due: 'Check due', milestone: 'Milestone', feedback_published: 'Feedback', report_shared: 'Report', absence_reported: 'Absence', makeup_offer: 'Make-up',
+  schedule_change: 'Class change', cover_assigned: 'Cover', contact_updated: 'Contact details', message_reminder: 'Reminder', safeguarding: 'Safeguarding', staff_check_due: 'Check due', milestone: 'Milestone', feedback_published: 'Feedback', report_shared: 'Report', absence_reported: 'Absence', makeup_offer: 'Make-up', register_overdue: 'Register', trial_feedback: 'Trial', exam_fee_unpaid: 'Exam fee',
   invoice_issued: 'Invoice', payment_received: 'Payment', event_invite: 'Event',
 };
 const URGENT: Record<string, string> = { payment_failed: 'text-critical', safeguarding: 'text-critical', medical_updated: 'text-caution', schedule_change: 'text-caution', staff_check_due: 'text-caution' };
@@ -85,11 +85,11 @@ export function NotificationBell() {
     <>
       <button ref={button} onClick={() => setOpen(o => !o)} aria-haspopup="dialog" aria-expanded={open}
         aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'}
-        className="relative grid size-10 shrink-0 place-items-center rounded-full text-ink-2 hover:bg-surface-2 hover:text-ink">
-        <Bell className="size-[18px]" aria-hidden />
+        className="relative grid size-[max(44px,1.5rem)] shrink-0 place-items-center rounded-full text-ink-2 hover:bg-surface-2 hover:text-ink">
+        <Bell className="size-[1.125rem]" aria-hidden />
         {unread > 0 && (
-          <span aria-hidden className="tnum absolute right-1 top-1 grid h-[17px] min-w-[17px] place-items-center rounded-full
-                                       bg-critical px-1 text-[0.6562rem] font-semibold leading-none text-ink-invert ring-2 ring-surface">
+          <span aria-hidden className="tnum absolute right-1 top-1 grid h-[min(1.0625rem,22px)] min-w-[min(1.0625rem,22px)] place-items-center rounded-full
+                                       bg-critical px-1 text-[min(0.6562rem,13px)] font-semibold leading-none text-ink-invert ring-2 ring-surface">
             {unread > 9 ? '9+' : unread}
           </span>
         )}
@@ -123,8 +123,11 @@ export function NotificationBell() {
               {list.isLoading && <div className="space-y-2 p-3">{[0,1,2].map(i => <Skeleton key={i} className="h-12" />)}</div>}
               {list.data?.length === 0 && <EmptyState title="Nothing new"
                 body={session?.role === 'guardian'
-                  ? 'Replies from the studio, payment problems and waiting-list places appear here.'
-                  : 'Payments, messages, trials and enrolments appear here as they happen.'} />}
+                  // Read the same by a parent and by an adult who dances (U12).
+                  ? 'Class changes, replies from the studio, invoices and waiting-list places appear here.'
+                  : session?.role === 'student'
+                    ? 'Cancellations, cover teachers and changes to your classes appear here.'
+                    : 'Payments, messages, trials and enrolments appear here as they happen.'} />}
               <ul className="divide-y divide-line">
                 {list.data?.map(n => (
                   <li key={n.id}>
@@ -133,7 +136,7 @@ export function NotificationBell() {
                       {!n.read_at && <span aria-hidden className="absolute bottom-3 left-0 top-3 w-[3px] rounded-r-[2px] bg-accent" />}
                       <span className="flex items-baseline gap-2 text-[0.7812rem]">
                         <span className={cn('font-semibold uppercase tracking-[0.05em]', URGENT[n.kind] ?? 'text-ink-3')}>{KIND[n.kind] ?? 'Update'}</span>
-                        <span className="ml-auto shrink-0 text-ink-3">{relativeDay(n.created_at)}, {time(n.created_at)}</span>
+                        <span className="ml-auto shrink-0 text-ink-3">{dayDateTime(n.created_at)}</span>
                       </span>
                       <span className={cn('mt-0.5 block text-[0.9062rem] leading-snug', !n.read_at ? 'font-semibold text-ink' : 'text-ink-2')}>
                         {n.title}{!n.read_at && <span className="sr-only"> (unread)</span>}

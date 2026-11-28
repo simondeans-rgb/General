@@ -223,3 +223,42 @@ export const TERM_NOW = `
 select t.name, (current_date - t.starts_on) / 7 + 1 as week, (t.ends_on - t.starts_on) / 7 + 1 as weeks
   from term t where t.deleted_at is null and current_date between t.starts_on and t.ends_on
  order by t.starts_on desc limit 1`;
+
+/**
+ * Enquiry follow-ups for Today (F10): open enquiries whose follow-up date is
+ * due within the week. due_now is today or already past.
+ */
+export type FollowUp = { id: string; stage: string; contact_name: string; child_name: string | null;
+  next_action_on: string; due_now: boolean };
+export const ATTENTION_FOLLOW_UPS = `
+select e.id, e.stage::text as stage, e.contact_name, e.child_name, e.next_action_on,
+       e.next_action_on <= current_date as due_now
+  from enquiry e
+ where e.deleted_at is null and e.stage not in ('enrolled', 'closed_lost')
+   and e.next_action_on is not null and e.next_action_on < current_date + 7
+ order by e.next_action_on, e.created_at`;
+
+/** The first class after a moment, and its term: where an empty week's "Go to first week" leads. */
+export const NEXT_CLASS_WEEK = `
+select cs.starts_at, t.name as term_name,
+       not exists (select 1 from class_session e join class ec on ec.id = e.class_id
+                    where ec.term_id = c.term_id and e.deleted_at is null and e.starts_at < cs.starts_at) as term_start
+  from class_session cs join class c on c.id = cs.class_id
+  left join term t on t.id = c.term_id
+ where cs.deleted_at is null and c.deleted_at is null and cs.status <> 'cancelled' and cs.starts_at >= $1::timestamptz
+ order by cs.starts_at limit 1`;
+
+/** Registers still open after the teacher was reminded (0070): the office was told. */
+export type OverdueRegister = { session_id: string; class_name: string; starts_at: string; teacher_name: string | null };
+export const ATTENTION_REGISTERS = `select r.* from app.overdue_registers(
+  (select id from studio where id in (select app.studio_ids()) limit 1)) r`;
+
+/** Trials the teacher has written about, still waiting for the office's decision (0071). */
+export type TrialToDecide = { trial_id: string; child: string; class_name: string; recommendation: string | null; written_by_name: string | null; updated_at: string };
+export const ATTENTION_TRIAL_FEEDBACK = `select * from app.trials_to_decide(
+  (select id from studio where id in (select app.studio_ids()) limit 1))`;
+
+/** Exam fees still owed for exams in the coming week (0072). */
+export type ExamFeesUnpaid = { session_id: string; title: string; exam_on: string; unpaid: number; unbilled: number; owed_minor: number };
+export const ATTENTION_EXAM_FEES = `select * from app.exam_fees_unpaid(
+  (select id from studio where id in (select app.studio_ids()) limit 1))`;

@@ -5,6 +5,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
+import { FamilyReenrolment } from '@/components/app/family-reenrolment';
 import { MakeUpOffers } from '@/components/app/absence-report';
 import { useRows, useRow } from '@/lib/query';
 import { Button, EmptyState, Skeleton, ErrorState, Notice } from '@/components/ui';
@@ -18,6 +19,8 @@ import { SectionHead, StyleMark, dayDate, dueWord, useSessionChanges, type Sessi
 import { cardPaymentsEnabled } from '@/lib/payments/invoice-status';
 import { useDueReminders } from '@/components/app/family-money';
 import { useFamilyVoice } from '@/components/app/adult-self';
+import { ComingUpStrip, ReportAbsence, useClashes, clashTitle, clashDetail } from '@/components/app/family-home';
+import { InstallGuide } from '@/components/app/install-guide';
 
 type Child = { id: string; first_name: string; last_name: string; date_of_birth: string; class_names: string | null; is_me?: boolean };
 type Invoice = { id: string; number: string; status: string; issued_on: string; due_on: string; total_minor: number; paid_minor: number };
@@ -59,6 +62,22 @@ export default function FamilyHome() {
     });
   }, [children.data, rows, weekEnd]);
 
+  // A class cancelled today or in the next seven days is always a notice, and
+  // always first: the most time-critical change there is (U7).
+  const cancelNotices = React.useMemo(() => {
+    const seen = new Map<string, { s: F.NextClass; kids: string[] }>();
+    rows.forEach(s => {
+      if (s.status !== 'cancelled' || new Date(s.starts_at).getTime() >= weekEnd) return;
+      const who = voice.self && s.student_id === voice.self.id ? 'You' : s.child;
+      const e = seen.get(s.id);
+      if (e) { if (!e.kids.includes(who)) e.kids.push(who); } else seen.set(s.id, { s, kids: [who] });
+    });
+    return [...seen.values()];
+  }, [rows, weekEnd, voice.self]);
+  // The same child booked for two things at once (U8).
+  const clashes = useClashes(from, to);
+  const clashList = clashes.data ?? [];
+
   // Changes worth a notice: moves and cover. One notice per session, even
   // when two children are in the same class.
   const changeNotices = React.useMemo(() => {
@@ -79,17 +98,39 @@ export default function FamilyHome() {
   const fresh = (notices.data ?? []).filter(n => !n.read_by_me && !n.scheduled);
   const loading = schedule.isLoading || children.isLoading;
   // Changes and money first; new notices fill what room is left, so the week stays near the top.
-  const newShown = Math.min(2, Math.max(1, 4 - changeNotices.length - (owes ? 1 : 0)));
+  // Cancellations and clashes are never folded away.
+  const newShown = Math.min(2, Math.max(1, 4 - cancelNotices.length - changeNotices.length - (owes ? 1 : 0)));
+  const people = (children.data ?? []).map(c => ({ id: c.id, first_name: c.first_name, is_me: c.is_me }));
 
   return (
     <Shell title="This week" subtitle={dateLong(new Date())} allow={['guardian']}>
       <div className="mx-auto grid max-w-[1080px] gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
         <div className="min-w-0 space-y-10">
           {/* Notices: changes and dates nobody should miss. */}
-          {(changeNotices.length > 0 || owes || fresh.length > 0 || pendingLogins > 0) && (
+          {(cancelNotices.length > 0 || clashList.length > 0 || changeNotices.length > 0 || owes || fresh.length > 0 || pendingLogins > 0) && (
             <section aria-labelledby="notices-h">
               <SectionHead id="notices-h" title="Notices" />
               <ul className="on-count divide-y divide-line">
+                {cancelNotices.map(({ s, kids: who }) => {
+                  const reason = changes.get(s.id)?.cancel_reason;
+                  const day = relativeDay(s.starts_at);
+                  return (
+                    <li key={`x-${s.id}`} className="py-3.5">
+                      <Link href={`/class/?id=${s.class_id}`} className="block rounded-[var(--radius-sm)] hover:bg-surface-2/60">
+                        <Notice word="Cancelled" tone="critical"
+                          title={`${s.name}, ${day === 'Today' || day === 'Tomorrow' ? `${day.toLowerCase()} ` : ''}${dayDate(s.starts_at)} at ${time(s.starts_at)}`}
+                          detail={[voice.solo ? null : who.join(' and '), reason].filter(Boolean).join(' · ') || undefined} />
+                      </Link>
+                    </li>
+                  );
+                })}
+                {clashList.map(c => (
+                  <li key={`c-${c.student_id}-${c.a_starts}-${c.b_starts}`} className="py-3.5">
+                    <Link href="/family/schedule" className="block rounded-[var(--radius-sm)] hover:bg-surface-2/60">
+                      <Notice word="Clash" tone="caution" title={clashTitle(c, voice.name(c.student_id, c.child))} detail={clashDetail(c)} />
+                    </Link>
+                  </li>
+                ))}
                 <PendingLogins />
                 {changeNotices.map(({ s, kids: who, c }) => (
                   <li key={s.id} className="py-3.5">
@@ -128,6 +169,20 @@ export default function FamilyHome() {
               )}
             </section>
           )}
+
+          {/* One tap to the things parents do most from here (U7). */}
+          {people.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              <ReportAbsence people={people} />
+              {owes && <Link href="/family/payments"><Button tabIndex={-1}>See how to pay</Button></Link>}
+            </div>
+          )}
+
+          {/* The next show, exam, costume and fee for each child (U7). */}
+          <ComingUpStrip nameOf={voice.name} solo={voice.solo} />
+
+          {/* Next term's classes to confirm (round 2 F3); shows only during re-enrolment. */}
+          <FamilyReenrolment />
 
           {/* Each child's week, and the adult's own. */}
           {loading && <div className="space-y-3">{[0, 1, 2].map(i => <Skeleton key={i} className="h-14" />)}</div>}
@@ -226,6 +281,9 @@ export default function FamilyHome() {
             </ul>
           </section>
 
+          {/* The school on the parent's home screen (round-2 review, F4). */}
+          <InstallGuide />
+
           {/* Events and requests have no tab of their own (five is the most a
               bottom bar carries), so they get a way in from here. */}
           <nav aria-label="More" className="divide-y divide-line border-t border-line">
@@ -282,7 +340,7 @@ function ClassRow({ s, c, later }: { s: F.NextClass; c?: SessionChange; later?: 
         className="grid min-h-[56px] grid-cols-[4.75rem_minmax(0,1fr)] items-start gap-x-4 py-3 hover:bg-surface-2/60">
         <span>
           <span className={cn('block text-[0.7812rem]', today ? 'font-semibold text-ink' : 'text-ink-3')}>
-            {later ? dayDate(s.starts_at) : day.length > 9 ? day.slice(0, 3) : day}
+            {later ? dayDate(s.starts_at) : day}
           </span>
           <span className={cn('block font-display text-[1.1875rem] leading-tight tnum', cancelled && 'text-ink-3 line-through')}>{time(s.starts_at)}</span>
         </span>

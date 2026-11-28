@@ -18,12 +18,14 @@ export function SwayvoOwnTheme() {
    The real register row (app/teach/register) at real size, with sample
    Northstar dancers. Tapping works; nothing is saved anywhere. */
 type Mark = 'here' | 'absent' | null;
-const DANCERS: { name: string; meta: string; med?: string; trial?: boolean; start: Mark }[] = [
-  { name: 'Nell Ackah', meta: 'Age 5 · 100% attendance', med: 'Mild eczema; Emollient cream', start: 'here' },
+/* No medical notes on a public page, even made-up ones (round-2 review, U2):
+   a parent reads them as "anyone can see this". The real register shows them. */
+const DANCERS: { name: string; meta: string; trial?: boolean; start: Mark }[] = [
+  { name: 'Nell Ackah', meta: 'Age 5 · 100% attendance', start: 'here' },
   { name: 'Elias Bennett', meta: 'Age 8 · 83% attendance', start: 'absent' },
   { name: 'Nia Doherty', meta: 'Age 7 · 100% attendance', start: 'here' },
   { name: 'Zara Ellery', meta: 'Age 7 · 83% attendance', start: null },
-  { name: 'Jonah Grant', meta: 'Age 8 · 100% attendance', med: 'Allergy: Plasters (latex)', start: null },
+  { name: 'Jonah Grant', meta: 'Age 8 · 100% attendance', start: null },
   { name: 'Layla Haddad', meta: 'Age 6 · first class', trial: true, start: null },
 ];
 
@@ -55,7 +57,6 @@ export function RegisterDemo() {
               <li key={d.name} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 py-2.5">
                 <span className="min-w-0">
                   <span className="block truncate text-[1.0625rem] font-semibold leading-tight">{d.name}</span>
-                  {d.med && <span className="mt-0.5 block text-[0.875rem] font-semibold leading-snug text-caution">{d.med}</span>}
                   <span className="mt-0.5 block text-[0.8125rem] text-ink-3">
                     {d.trial && <span className="mr-1.5 rounded-[var(--radius-sm)] bg-peach-soft px-1.5 py-px font-semibold text-ink">Trial</span>}
                     {d.meta}

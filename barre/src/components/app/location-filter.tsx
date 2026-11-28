@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useRows } from '@/lib/query';
-import { Select } from '@/components/ui';
+import { LocationSelect } from '@/components/ui';
 
 // Someone limited to some locations (UR-33) chooses among theirs only.
 const LOCATIONS = `select id, name from location where deleted_at is null
@@ -24,14 +24,6 @@ export function useLocationFilter() {
   const current = multi && list.some(l => l.name === name) ? name : '';
   const choose = (v: string) => { setName(v); try { if (v) localStorage.setItem(KEY, v); else localStorage.removeItem(KEY); } catch { /* ignore */ } };
   const keep = React.useCallback((loc: string | null | undefined) => !current || loc === current, [current]);
-  const control = multi ? (
-    <label className="inline-flex items-center gap-2 text-[0.875rem]">
-      <span className="font-semibold">Location</span>
-      <Select aria-label="Location" value={current} onChange={e => choose(e.target.value)} className="w-auto">
-        <option value="">All locations</option>
-        {list.map(l => <option key={l.id} value={l.name}>{l.name}</option>)}
-      </Select>
-    </label>
-  ) : null;
+  const control = multi ? <LocationSelect locations={list} value={current} onChange={choose} /> : null;
   return { current, keep, control };
 }

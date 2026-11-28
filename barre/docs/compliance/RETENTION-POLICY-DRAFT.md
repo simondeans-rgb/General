@@ -2,7 +2,7 @@
 
 > **DRAFT FOR SPECIALIST REVIEW. NOT AN ADOPTED POLICY.**
 >
-> An engineer prepared this draft from the code on 27 November 2026, and updated it the same day for migration 0058 (`0058_retention_fixes.sql`), which closed several of the gaps the first draft found. It describes what the software **does today** and lists what each school and its adviser, DPO or legal specialist must decide. It is not legal advice.
+> An engineer prepared this draft from the code on 27 November 2026, and updated it for migration 0058 (`0058_retention_fixes.sql`), which closed several of the gaps the first draft found, for migration 0059 (`0059_media_retention.sql`, videos and photos of children) and, on 28 November 2026, for migration 0065 (`0065_safeguarding_round4.sql`: hold review dates, children named in a concern, checks for office staff). It describes what the software **does today** and lists what each school and its adviser, DPO or legal specialist must decide. It is not legal advice.
 >
 > - It does **not** claim compliance with UK GDPR (including the storage limitation principle, Article 5(1)(e)), the Data Protection Act 2018, the ICO Children's Code, KCSIE, HMRC record-keeping rules or any other requirement.
 > - Each dance school is the controller and owns its retention schedule. Swayvo, as processor, provides the tools. The periods below are the software's **defaults**. DECISIONS.md says they are "**To confirm with the school's adviser.**"
@@ -31,6 +31,7 @@ There is one row per school. The row is created automatically when a school is c
 | `staff_check_months` | Clear certificate numbers and notes on a former member of staff's checks after this many months | **12** | 6–120 | 0058 |
 | `staff_months` | Anonymise a former member of staff's record and delete their checks after this many months | **72** | 12–240 | 0058 |
 | `audit_months` | Delete audit-log and safeguarding access-log entries older than this | **72** | 24–240 | 0058 |
+| `media_months` | Delete videos and photos that show children this many months after the last child named in them has left (material naming nobody: after it was added) | **12** | 1–120 | 0059 |
 | `auto_apply` | Apply the monthly preview automatically, 14 days after it is made | **off** | on / off | 0058 |
 | `auto_preview_at`, `auto_preview_count`, `auto_preview_items`, `auto_applied_at` | The latest automatic preview: when, how many items, exactly which items, and when it was applied | | Written by the scheduler | 0058 |
 | `last_run_at` | When retention was last applied | | | 0030 |
@@ -45,7 +46,7 @@ Since 0058, a child the office soft-deleted (`student.deleted_at` set) is always
 
 A member of staff has left when their record is inactive or removed and they no longer have a staff login at the school. The leaving date is `staff_member.left_at`, stamped when the record is made inactive or removed (0058). Existing inactive records were given their last update date.
 
-### 1.3 The run: `app.apply_retention(studio, apply)` (latest version in 0058)
+### 1.3 The run: `app.apply_retention(studio, apply)` (0058; extended by 0059 for media and 0065 for checks recorded by login)
 
 - **Only the owner** can run it. Anyone else gets `FORBIDDEN: only the owner runs data retention`. The work itself is done by the internal `app.retention_run`, which no user can call.
 - `apply = false` gives a **preview**: a list of what would happen, with names and, for anything held, the reason (`PREVIEW_RETENTION`, `src/lib/repos/safeguarding.ts`). Each row now carries an `entity_id`.
@@ -68,12 +69,13 @@ The steps, in order:
 | `dsl_note` | Shared-care notes where every child in the family left more than `dsl_note_months` ago, and none is held | `guardian_access.dsl_note` is **cleared**. The restriction flags stay |
 | `messages` | Messages sent more than `message_months` ago, grouped by family conversation (class notices and announcements together). A family with a held child keeps its messages | The `communication` rows are **deleted**, with their read receipts |
 | `staff_check` | Former staff who left more than `staff_check_months` ago | Certificate numbers (`reference`) and notes on their checks are **cleared**. The kind and dates of each check stay |
-| `staff` | Former staff who left more than `staff_months` ago | Their checks are **deleted**. The record is renamed "Former staff" and email, phone, bio, login link and DBS date are cleared. Anyone a safeguarding concern is about is **held** while that concern is kept |
+| `staff` | Former staff who left more than `staff_months` ago | Their checks are **deleted**. The record is renamed "Former staff" and email, phone, bio, login link and DBS date are cleared. Anyone a safeguarding concern is about is **held** while that concern is kept. Since 0065 the same two steps cover checks recorded against a login (office staff and owners with no staff record), counted from when their last staff role at the school was removed |
+| `media` | Material marked as showing children (`resource.shows_children`, not confirmed as having no identifiable child) whose last named child left more than `media_months` ago, and none of them held; material naming nobody, more than `media_months` after it was added (0059) | The `resource` row is **deleted**, with its files, assignments and named children. In hosted storage the object key is queued in `media_deletion` for the storage worker. If any named child is held, it is listed as `held` |
 | `concern` | Only if `concern_months` is set: closed concerns last updated more than `concern_months` ago, where neither the child nor the concern is under a legal hold | The `safeguarding_concern` row is **deleted**, with its `safeguarding_action` rows. Its `safeguarding_access` rows are **kept**: detached, with the concern's id in `deleted_concern_id` and the note "concern deleted under retention on <date>" |
 | `audit` | `audit_log` entries older than `audit_months`, except entries about a held child, a concern that is still kept or a member of staff a concern is about | **Deleted** (one preview line for the batch) |
 | `access_log` | `safeguarding_access` entries not attached to a live concern, older than `audit_months` (detached rows are counted from when their concern was deleted) | **Deleted** (one preview line for the batch) |
 
-**What a hold keeps (0058).** `app.retention_hold_reason` finds a reason when a child has: a legal hold; a legal hold on any of their concerns; a concern that is not closed; or a closed concern still inside `concern_months` (or kept indefinitely). A held child keeps **everything**: the medical record, support note, attendance, contacts, consents and details. Their family keeps its messages and shared-care note, and audit entries about them are kept. Before 0058 the medical record was deleted before the hold was checked.
+**What a hold keeps (0058).** `app.retention_hold_reason` finds a reason when a child has: a legal hold; a legal hold on any of their concerns; a concern that is not closed; a closed concern still inside `concern_months` (or kept indefinitely); or, since 0065, is named as a child involved in a concern about an adult or a member of staff that is still kept. A held child keeps **everything**: the medical record, support note, attendance, contacts, consents and details. Their family keeps its messages and shared-care note, and audit entries about them are kept. Before 0058 the medical record was deleted before the hold was checked.
 
 ---
 
@@ -138,7 +140,17 @@ The steps, in order:
 - **A hold keeps everything (0058).** A held child's medical record, support note, attendance, messages and shared-care note are kept, as well as their details.
 - **The access log survives deletion (0058).** When a closed concern is deleted under retention, its access-log rows stay, detached, with the concern's id and "concern deleted under retention on <date>". They are deleted after `audit_months`, counted from the deletion.
 
+- **Review dates (0065).** Every legal hold, on a child or on a concern, has a review date (a year after it is placed, by default). Holds due for review are listed on the Safeguarding page and on Today; the lead keeps a hold by setting the next review date (up to five years ahead), which is logged, or releases it. A review date does **not** release anything by itself.
+- **Children involved (0065).** A concern about an adult or a member of staff can name the children involved (`safeguarding_concern_child`). Those children are held while the concern is kept.
+
 **Fixed in 0058** (from the first draft's gap list): staff and adult concerns can now be held; deleting a concern no longer erases its access log; a hold now keeps the medical record and attendance.
+
+**Over-retention: one closed concern keeps a child's whole record.** With `concern_months` empty (the default, "keep"), a single closed concern, however minor (for example, a wellbeing note closed the same week with no further action), keeps **everything** about that child (the medical record, support note, attendance, contacts, consents and the family's messages) for as long as the school has the software. The safeguarding chronology may need to be kept for a long time; the medical record and the rest probably do not need to be kept because of it. The software has not been changed here, because which records a kept concern should protect is a decision for the school's DSL and data protection adviser, and getting it wrong in either direction is harmful (deleting evidence a later investigation needs, or keeping health data for life). Options:
+   - (a) a kept concern holds only the safeguarding record itself (the concern, its actions and the access log) and whatever the DSL explicitly holds, while medical, support and attendance follow their own periods;
+   - (b) as (a), but attendance is kept with the concern, as it is often part of a chronology;
+   - (c) as today, but only open concerns and explicit holds keep everything, and a closed concern keeps everything only until a review date the DSL sets when closing it.
+
+   **DECISION NEEDED:** which of these (or another) applies. Until it is decided, explicit holds at least carry a review date (0065).
 
 **Gaps for the specialist (DECISION NEEDED on each):**
 1. **Periods.** Set periods for concerns about children, and separately for **allegations against staff**. Allegation records are often kept for much longer, under safeguarding guidance. Today there is one period for both.
@@ -178,6 +190,7 @@ The steps, in order:
 ## 6. Staff records and DBS checks
 
 - **Built:** `staff_check` holds the kind of check (DBS, safeguarding training, first aid, other), a reference, the date checked, the expiry date and a note. It does not hold the certificate itself. Reminders go out before expiry (`app.remind_staff_checks`, 0047).
+- **Built (0065):** checks can be recorded for **everyone** on the staff: teachers by their staff record, and office staff and owners, who have no timetable record, by their login. They appear in the Staff checks list on the Safeguarding page with "No DBS on file" until one is recorded, and their reminders reach the owner, the lead and the deputy.
 - **Built (0058):** a leaving date (`staff_member.left_at`) is stamped when a record is made inactive or removed. Once a member of staff has left and has no staff login at the school:
   - after `staff_check_months` (default **12**, range 6–120), certificate numbers and notes on their checks are cleared. The kind and dates of each check stay, as a record that the check was done;
   - after `staff_months` (default **72**, range 12–240), their checks are deleted and the record is anonymised ("Former staff");
@@ -274,6 +287,8 @@ The steps, in order:
 1. Confirm or change the default periods for medical records (12 months), anonymisation (36 months), financial records (72 months) and enquiries (90 days), and the periods added in 0058: support notes (12), attendance (72), messages (36), shared-care notes (72), staff check references (12), staff records (72) and audit and access logs (72 months).
 2. Set safeguarding periods, separately for concerns about children and allegations against staff. (Holds for staff and adult concerns, and keeping the access log, were added in 0058.)
 3. Decide whether recorded injuries or incidents, as well as holds, should keep medical records. (Holds keep them since 0058.)
+3a. Decide what a closed concern that is still kept should protect: today it keeps **all** of the child's records, the medical record included, indefinitely by default (§3, "Over-retention"). Decide too how often holds are reviewed (0065 defaults to yearly).
+3b. Confirm the media period (`media_months`, default 12, 0059), and whether withdrawing consent should delete media rather than hide it.
 4. Add rules for categories that still have none: collection lists, requests, notifications and the outbox, bursaries, skills and progress, accounts, events.
 5. Decide the erasure-request procedure, and add a single-family erasure tool.
 6. Decide whether automatic applying should be turned on, and how often the owner reviews retention.

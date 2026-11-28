@@ -4,11 +4,12 @@ import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { ErrorState, Notice } from '@/components/ui';
+import { Button, ErrorState, Notice } from '@/components/ui';
 import * as Q from '@/lib/repos/dashboard';
 import { isoDate, time, dayName } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { StyleMark, Word, styleColour } from './session-row';
+import { alsoTeaching } from '@/lib/clash';
 
 const overlaps = (a: Q.SessionRow, b: Q.SessionRow) =>
   new Date(a.starts_at) < new Date(b.ends_at) && new Date(b.starts_at) < new Date(a.ends_at);
@@ -19,10 +20,12 @@ const overlaps = (a: Q.SessionRow, b: Q.SessionRow) =>
  * in words, not only in red. Drag a class to another day to move that week's
  * session (families are told). Today's column carries the accent.
  */
-export function WeekGrid({ sessions, from, onOpen, readOnly = false }: {
+export function WeekGrid({ sessions, from, onOpen, readOnly = false, onAskCover }: {
   sessions: Q.SessionRow[]; from: string | Date; onOpen: (s: Q.SessionRow) => void;
   /** A teacher's own week: look and open, but no dragging to move classes. */
   readOnly?: boolean;
+  /** A teacher's view: the clash banner offers to ask the office for cover. */
+  onAskCover?: (s: Q.SessionRow) => void;
 }) {
   const { session } = useSession();
   const qc = useQueryClient();
@@ -39,11 +42,13 @@ export function WeekGrid({ sessions, from, onOpen, readOnly = false }: {
     for (const a of live) for (const b of live) {
       if (a.id >= b.id || !overlaps(a, b)) continue;
       if (a.room_id && a.room_id === b.room_id) { ids.set(a.id, `Same room as ${b.name}`); ids.set(b.id, `Same room as ${a.name}`); }
-      else if (a.teacher && a.teacher === b.teacher) { ids.set(a.id, `${a.teacher.split(' ')[0]} also teaches ${b.name}`); ids.set(b.id, `${b.teacher.split(' ')[0]} also teaches ${a.name}`); }
+      else if (a.teacher && a.teacher === b.teacher) { ids.set(a.id, alsoTeaching(a, b)); ids.set(b.id, alsoTeaching(b, a)); }
     }
     return ids;
   }, [live]);
   const clashing = live.filter(s => clash.has(s.id));
+  // The first clashing class not yet started that is the teacher's own (not a cover).
+  const askable = clashing.find(s => new Date(s.starts_at).getTime() > Date.now() && !s.covered);
   const styles = [...new Map(sessions.filter(s => s.style).map(s => [s.style!, s.colour])).entries()].sort((a, b) => a[0].localeCompare(b[0]));
   const move = useMutation({
     mutationFn: (v: { s: Q.SessionRow; day: Date }) => {
@@ -68,7 +73,9 @@ export function WeekGrid({ sessions, from, onOpen, readOnly = false }: {
         <div role="status" className="border-l-2 border-critical pl-3">
           <Notice word="Clash" tone="critical"
             title={`${clashing.length} class${clashing.length === 1 ? '' : 'es'} clash this week`}
-            detail={clashing.slice(0, 5).map(s => `${dayName(s.starts_at).slice(0, 3)} ${time(s.starts_at)} ${s.name}`).join(' · ') + (clashing.length > 5 ? ' …' : '') + '. Open a class to move it or arrange cover.'} />
+            detail={clashing.slice(0, 5).map(s => `${dayName(s.starts_at).slice(0, 3)} ${time(s.starts_at)} ${s.name}`).join(' · ') + (clashing.length > 5 ? ' …' : '')
+              + (readOnly ? '. Ask the office for cover, or to move one.' : '. Open a class to move it or arrange cover.')}
+            action={readOnly && onAskCover && askable ? <Button size="sm" onClick={() => onAskCover(askable)}>Ask the office for cover</Button> : undefined} />
         </div>
       )}
       {move.error != null && <ErrorState error={move.error} />}
@@ -121,7 +128,7 @@ export function WeekGrid({ sessions, from, onOpen, readOnly = false }: {
                           const isNext = next?.id === s.id;
                           return (
                             <li key={s.id}>
-                              <button draggable={!cancelled && !readOnly} onDragStart={() => { if (!readOnly) setDragging(s); }} onDragEnd={() => setDragging(null)}
+                              <button data-next={isNext || undefined} draggable={!cancelled && !readOnly} onDragStart={() => { if (!readOnly) setDragging(s); }} onDragEnd={() => setDragging(null)}
                                 onClick={() => onOpen(s)} title={clash.get(s.id)}
                                 aria-label={`${s.name}, ${time(s.starts_at)}${s.teacher ? `, ${s.teacher}` : ''}${cancelled ? ', cancelled' : ''}${clashed ? `, clash: ${clash.get(s.id)}` : ''}${isNext ? ', next class' : ''}`}
                                 className={cn('block w-full rounded-[var(--radius-sm)] border border-l-[3px] bg-surface px-2 py-1.5 text-left transition-colors hover:bg-surface-2',

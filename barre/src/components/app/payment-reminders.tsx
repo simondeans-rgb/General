@@ -10,6 +10,7 @@ import { Button, EmptyState, ErrorState, Field, Input, Skeleton } from '@/compon
 import * as B from '@/lib/repos/billing';
 import { useLocationFilter } from '@/components/app/location-filter';
 import { money, dateShort } from '@/lib/format';
+import { plural, reminderReach } from '@/lib/office-words';
 
 const FALLBACK = {
   subject: 'Payment reminder: {{invoice_number}}',
@@ -36,7 +37,9 @@ export function PaymentRemindersSheet({ onClose }: { onClose: () => void }) {
   const [body, setBody] = React.useState<string | null>(null);
   const [picked, setPicked] = React.useState<Set<string> | null>(null);
   const [previewFor, setPreviewFor] = React.useState<string>('');
-  const [sent, setSent] = React.useState<number | null>(null);
+  // What actually happened, said truthfully (round 2, U3): who has it in the
+  // app now, and who cannot be reached until email is connected.
+  const [sent, setSent] = React.useState<{ n: number; reached: string[]; unreached: string[] } | null>(null);
 
   React.useEffect(() => {
     if (subject !== null || tpl.isLoading) return;
@@ -51,13 +54,18 @@ export function PaymentRemindersSheet({ onClose }: { onClose: () => void }) {
 
   const chosen = (fams.data ?? []).filter(f => picked?.has(f.family_id));
   const total = chosen.reduce((n, f) => n + Number(f.overdue_minor), 0);
+  const reach = reminderReach(chosen);
   const who = previewFor && picked?.has(previewFor) ? previewFor : chosen[0]?.family_id ?? '';
   const preview = useRow<{ subject: string; body: string }>(['reminder-preview', who, subject, body],
     B.REMINDER_PREVIEW, [who, subject ?? '', body ?? '']);
 
   const send = useMutation({
     mutationFn: () => runAs(session, q => q<{ sent: number }>(B.SEND_REMINDERS, [chosen.map(f => f.family_id), subject, body])),
-    onSuccess: rows => { setSent(rows[0]?.sent ?? 0); qc.invalidateQueries({ queryKey: ['db'] }); },
+    onSuccess: rows => {
+      const r = reminderReach(chosen);
+      setSent({ n: rows[0]?.sent ?? 0, reached: r.reached.map(f => f.family_name), unreached: r.unreached.map(f => f.family_name) });
+      qc.invalidateQueries({ queryKey: ['db'] });
+    },
   });
   const toggle = (id: string) => setPicked(p => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
@@ -79,10 +87,22 @@ export function PaymentRemindersSheet({ onClose }: { onClose: () => void }) {
 
         {sent !== null ? (
           <div className="space-y-4 p-4">
-            <p role="status" className="flex items-center gap-2 border-l-2 border-positive py-1 pl-3 text-[0.9375rem]">
-              <CheckCircle2 className="size-4 shrink-0 text-positive" aria-hidden />
-              Sent to {sent} famil{sent === 1 ? 'y' : 'ies'}. Each is in their messages and their history.
-            </p>
+            <div role="status" className="space-y-2">
+              {sent.reached.length > 0 ? (
+                <p className="flex items-start gap-2 border-l-2 border-positive py-1 pl-3 text-[0.9375rem]">
+                  <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-positive" aria-hidden />
+                  <span>In the app for {plural(sent.reached.length, 'family', 'families')}: {sent.reached.join(', ')}. They see it in their messages.</span>
+                </p>
+              ) : (
+                <p className="border-l-2 border-caution py-1 pl-3 text-[0.9375rem]">Nobody will see these today: none of these families uses the app yet.</p>
+              )}
+              {sent.unreached.length > 0 && (
+                <p className="border-l-2 border-caution py-1 pl-3 text-[0.875rem] text-ink-2">
+                  {plural(sent.unreached.length, 'family', 'families')} can’t be reached until email is connected: {sent.unreached.join(', ')}.
+                  Their reminder is kept in their history; contact them another way for now.
+                </p>
+              )}
+            </div>
             <Button variant="primary" onClick={onClose}>Done</Button>
           </div>
         ) : (
@@ -95,8 +115,13 @@ export function PaymentRemindersSheet({ onClose }: { onClose: () => void }) {
               {!!fams.data?.length && (
                 <fieldset>
                   <legend className="mb-1.5 text-[0.8125rem] font-medium text-ink-2">
-                    {chosen.length} of {fams.data.length} families · <span className="tnum">{money(total)}</span> overdue
+                    {chosen.length} of {plural(fams.data.length, 'family', 'families')} · <span className="tnum">{money(total)}</span> overdue
                   </legend>
+                  {reach.unreached.length > 0 && (
+                    <p className="mb-2 text-[0.8125rem] text-ink-2">
+                      Reminders go to the app. {plural(reach.unreached.length, 'family', 'families')} chosen {reach.unreached.length === 1 ? 'is' : 'are'} not using it yet and won’t see theirs until email is connected.
+                    </p>
+                  )}
                   <ul className="max-h-60 divide-y divide-line overflow-y-auto border-y border-line">
                     {fams.data.map(f => (
                       <li key={f.family_id} className="flex items-center gap-3 py-2 text-sm">
@@ -156,7 +181,7 @@ export function PaymentRemindersSheet({ onClose }: { onClose: () => void }) {
               <Button className="flex-1" variant="primary" loading={send.isPending}
                 disabled={!chosen.length || !subject?.trim() || (body?.trim().length ?? 0) < 10}
                 onClick={() => send.mutate()}>
-                Send {chosen.length} reminder{chosen.length === 1 ? '' : 's'}
+                Send {plural(chosen.length, 'reminder')} · {reach.reached.length} will see it today
               </Button>
             </div>
           </>

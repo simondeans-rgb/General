@@ -12,13 +12,14 @@ import { useRow, useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import {
-  Beats, Button, EmptyState, ErrorState, Field, Input, Notice, Select, Skeleton, Spinner,
+  Beats, Button, EmptyState, ErrorState, Field, Input, Notice, Select, Skeleton, Spinner, FileField
 } from '@/components/ui';
 import { SectionHead, StyleMark, ViewTabs } from '@/components/app/session-row';
+import { ClassUniform } from '@/components/app/uniform';
 import * as H from '@/lib/repos/hub';
 import { storage, formatBytes, kindForFile, probeDuration } from '@/lib/storage';
 import { cn } from '@/lib/cn';
-import { ChildrenQuestion, consentKindFor, saveChildren } from '@/components/app/media-children';
+import { ChildrenQuestion, SavedConfirmation, consentKindFor, saveChildren } from '@/components/app/media-children';
 
 
 const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -65,6 +66,7 @@ function ClassView() {
         )}
 
         {c && <Summary c={c} />}
+        {c && <ClassUniform classId={id} canEdit={isOffice} />}
         {c && <ClassNotices classId={id} className={c.name} canPost={canAdd} />}
         {c && <Material classId={id} canAdd={canAdd} isOffice={isOffice} />}
       </div>
@@ -173,12 +175,16 @@ function AddMaterial({ classId, className, isOffice, onClose }: {
   const [url, setUrl] = React.useState('');
   const [forStudents, setForStudents] = React.useState(true);
   const [forGuardians, setForGuardians] = React.useState(true);
-  const [done, setDone] = React.useState(false);
+  // What actually happened: shared, or kept for staff until consent (round 2 panel, U14).
+  const [done, setDone] = React.useState<{ id: string; status: H.ChildStatus | null } | null>(null);
   // Media of children (0057): asked for every video or photo upload.
   const [shows, setShows] = React.useState<boolean | null>(null);
   const [children, setChildren] = React.useState<string[]>([]);
   const [noneIdentifiable, setNoneIdentifiable] = React.useState(false);
   const [allStaff, setAllStaff] = React.useState(false);
+  // N-06: with the school's setting on (the default), media of children is uploaded, never linked.
+  const blockLinks = useRow<{ block_child_media_links: boolean }>(['sg-block-links'],
+    `select block_child_media_links from studio where deleted_at is null limit 1`).data?.block_child_media_links ?? true;
 
   const fileKind = file ? kindForFile(file) : null;
   const isPhoto = !!file && (file.type || '').startsWith('image/');
@@ -217,14 +223,16 @@ function AddMaterial({ classId, className, isOffice, onClose }: {
           await storage.upload(file!, { q, resourceId: created.id, studioId: created.studio_id });
         }
         await q(H.ASSIGN_RESOURCE_TO_CLASS, [classId, created.id]);
-        return created.id;
+        const [status] = showsAnswer ? await q<H.ChildStatus>(H.RESOURCE_CHILD_STATUS, [created.id]) : [];
+        return { id: created.id, status: status ?? null };
       });
     },
-    onSuccess: () => { setDone(true); qc.invalidateQueries({ queryKey: ['db'] }); },
+    onSuccess: r => { setDone(r); qc.invalidateQueries({ queryKey: ['db'] }); },
   });
 
   const tooBig = !!file && file.size > storage.maxBytes;
-  const valid = title.trim().length >= 2 && (!isMedia || showsAnswer !== null) && (
+  const linkBlocked = mode === 'link' && isMedia && !!showsAnswer && blockLinks;
+  const valid = !linkBlocked && title.trim().length >= 2 && (!isMedia || showsAnswer !== null) && (
     mode === 'file' ? !!file && !tooBig : /^https?:\/\/\S+$/.test(url.trim()));
 
   return (
@@ -235,9 +243,7 @@ function AddMaterial({ classId, className, isOffice, onClose }: {
         {done ? (
           <>
             <div className="px-5 py-6">
-              <h2 id="add-material-t" className="sr-only">Shared with {className}</h2>
-              <Notice word="Shared" tone="positive" title={`Shared with ${className}`}
-                detail="Everyone in the class finds it when they open this class from their timetable." />
+              <SavedConfirmation resourceId={done.id} status={done.status} className={className} titleId="add-material-t" />
             </div>
             <div className="flex border-t border-line px-5 py-3 pb-safe sm:justify-end">
               <Button className="w-full sm:w-auto" variant="primary" onClick={onClose}>Done</Button>
@@ -259,16 +265,13 @@ function AddMaterial({ classId, className, isOffice, onClose }: {
               <ViewTabs label="Kind of material" value={mode} onChange={setMode}
                 options={[['file', 'Upload a file'], ['link', 'Add a link']]} />
               {mode === 'file' ? (
-                <Field label="File" htmlFor="material-file" required
-                       error={tooBig ? `That file is ${formatBytes(file!.size)} — the limit is ${formatBytes(storage.maxBytes)}.` : undefined}
-                       hint={`Video, music or a document. Stored in ${storage.label}, up to ${formatBytes(storage.maxBytes)}.`}>
-                  <input id="material-file" type="file"
-                         accept="video/*,audio/*,.pdf,.doc,.docx,image/*"
-                         onChange={e => pick(e.target.files?.[0] ?? null)}
-                         className="block w-full text-sm text-ink-2 file:mr-3 file:h-10 file:rounded-[var(--radius-md)]
-                                    file:border file:border-line-strong file:bg-surface file:px-3.5
-                                    file:text-sm file:font-medium file:text-ink hover:file:bg-surface-2" />
-                </Field>
+                <div className="space-y-1.5">
+                  <FileField id="material-file" label={file ? 'Choose another file' : 'Choose a video, music or a document'}
+                    accept="video/*,audio/*,.pdf,.doc,.docx,image/*" onFiles={f => pick(f[0] ?? null)}
+                    chosen={file ? `${file.name} · ${formatBytes(file.size)}` : undefined}
+                    hint={`Up to ${formatBytes(storage.maxBytes)}. Stored in ${storage.label}.`} />
+                  {tooBig && <p role="alert" className="text-[0.7812rem] text-critical">That file is {formatBytes(file!.size)} — the limit is {formatBytes(storage.maxBytes)}.</p>}
+                </div>
               ) : (
                 <>
                   <Field label="What kind of thing is it" htmlFor="material-kind">
@@ -307,7 +310,12 @@ function AddMaterial({ classId, className, isOffice, onClose }: {
                   isOffice={isOffice} noneIdentifiable={noneIdentifiable} onNoneIdentifiable={setNoneIdentifiable}
                   required={mode === 'file'} />
               )}
-              {isMedia && mode === 'link' && showsAnswer && (
+              {linkBlocked && (
+                <Notice word="Limited" tone="caution" title="Your school does not allow links for videos of children"
+                  detail="A link is only as private as the site it points to. Upload the file, and families see it only while every child in it has consent."
+                  action={<Button size="sm" onClick={() => setMode('file')}>Upload a file</Button>} />
+              )}
+              {isMedia && mode === 'link' && showsAnswer && !blockLinks && (
                 <p className="text-[0.8125rem] text-caution">
                   A link is only as private as the site it points to. For a video of children, upload the file instead.
                 </p>

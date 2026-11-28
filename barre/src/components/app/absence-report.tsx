@@ -12,7 +12,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Button, ErrorState, Field, Input, Notice, Skeleton } from '@/components/ui';
+import { Button, ErrorState, Field, Input, Notice, Skeleton, StatusLine } from '@/components/ui';
 import { dateLong, money, time } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
@@ -53,7 +53,7 @@ export function AbsenceForm({ studentId, firstName, self = false, onDone }: {
   if (done != null) {
     return (
       <div className="py-2">
-        <Notice word="Done" tone="positive"
+        <StatusLine
           title={self ? 'Your teacher will see this on the register.' : `${firstName}’s teacher will see this on the register.`}
           detail={`${done.n === 1 ? 'The class is' : `${done.n} classes are`} marked “reported absent”. ${self ? 'Your family and the office have' : 'The office has'} a copy too. You can withdraw it here until the class starts.`} />
         {done.credit > 0 && (

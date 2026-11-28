@@ -49,9 +49,11 @@ Dark style (`data-theme="urban"`) redefines the same tokens; never hard-code a c
 | Display small | `.font-display` | names in heroes, times in lists (17–24px) |
 | Section title | `.section-title` | Inter 650, 15px, sentence case |
 | Body | default | Inter 15px; 14–14.5px in dense lists |
-| Meta | `text-[13px] text-ink-3` | second lines |
+| Meta | `text-[0.8125rem] text-ink-3` | second lines |
 | Label | `.label` | 12px uppercase, tracked — sparingly: column heads, "Next", figure captions |
-Phone minimum 15px body; inputs 16px (enforced globally).
+| Sheet title | `RecordSheet` | Inter 600, 17px — display type is too loud inside a form |
+Phone minimum 15px body; inputs 16px (enforced globally). Every text size is in rem (`text-[0.8125rem]`),
+never px, so it follows the reader's text size; the lint fails on `text-[13px]`.
 
 ## 4. Layout
 - Page content: `mx-auto max-w-[1240px]` for office dashboards; `max-w-2xl`/`max-w-lg` for phone-first roles.
@@ -65,8 +67,13 @@ Phone minimum 15px body; inputs 16px (enforced globally).
 - **Button**: `primary` (one per view), `secondary`, `ghost`, `danger`. Heights 36/40 (44 on touch).
 - **Beats** (`<Beats value max label />`): the eight-count meter for "how full / how far". Always with a
   number or words beside it.
-- **Notice** (`<Notice word="Moved" title detail />`): changes as type. Words: MOVED, CANCELLED, DUE {date},
-  NEW, PAID, CHANGED, FULL. Tone: critical for cancelled/failed, caution for due, ink otherwise.
+- **Notice** (`<Notice word="Moved" title detail />`): changes, deadlines and things that need action, as
+  type. The word is a typed allow-list (`NOTICE_WORDS`, `NoticeWord`): MOVED, CANCELLED, CHANGED, NEW, CLASH,
+  FULL, DUE {date}, CLOSED, PAID, BOOKED, HELD, OFFLINE, NOT SAVED, NOT SENT, ACT NOW, CHECK, LIMITED.
+  Any other word fails the type check and the lint. Tone: critical for cancelled/failed, caution for due, ink
+  otherwise. Adding a word is a design-system change: add it here, in `components/ui` and on `/design`.
+- **StatusLine** (`<StatusLine title detail />`): a quiet confirmation with a tick — "Sent to 7 families",
+  "Saved". Confirmations are never Notices (no DONE, SAVED, SENT, IMPORTED). Announced politely.
 - **Badge**: small status or category marker (4px radius). Use sparingly — at most one per row.
 - **Field / Input / Select**: label above, hint or error below; errors are announced.
 - **EmptyState**: left-aligned, display-type title, one sentence, one action.
@@ -77,7 +84,21 @@ Phone minimum 15px body; inputs 16px (enforced globally).
 - **StyleMark** (`colour`, `name`): a dance style's hue as a small square, always beside its name.
   `styleColour()` gives the hue as a token for bars and borders.
 - **Word** (`size="sm" | "md"`): a status or change set as an uppercase word (CANCELLED, MOVED, CLASH, PAID).
-- **ViewTabs**: quiet text tabs for switching views within a screen.
+- **ViewTabs** (`options={[[value, label, count?]]}`): quiet text tabs with an ink rule, for switching
+  views of the same thing (List / Week grid, Families / Students / Staff, one child at a time). A real tab
+  list (arrow keys move).
+- **FilterTabs**: the same look with a count, for narrowing one list (Needs action 8 · Open · Paid).
+  Pressed buttons, not tabs. No filled pills, no accent.
+- **Choice** (`value`, `onChange`, `options={[{ value, label, hint? }]}`, `multiple?`, `layout`): single or
+  multiple choice as chips. Selected = ink outline + tick + semibold, never an accent fill (the accent is the
+  one primary action). Single choice is a radio group; `layout="grid"` for segmented rows, `"stack"` for
+  choices with a hint, `tick="corner"` for narrow equal chips (D / S / M).
+- **FileField**: a file picker as an outlined drop zone with an icon and words ("Choose a video, music or a
+  document"); the native input stays for keyboard and screen readers. Never the unstyled "Choose File".
+- **LocationSelect**: which location a list shows, label inside the control ("All locations ▾"). The same on
+  Classes, Schedule and Billing (`useLocationFilter().control`).
+- No screen hand-rolls a tab list, segmented control or chip toggle: the lint fails on `role="tablist"`
+  outside `components/ui`. The register's Here / Absent targets are a pattern of their own (§6).
 - **SwayvoLogo / SwayvoMark / SwayvoIcon** (`src/components/app/swayvo.tsx`): never redraw the logo.
 All of the above live in `src/components/ui`; do not copy them into screen files.
 
@@ -103,11 +124,43 @@ Plain, specific, kind. Name real things. Buttons say what happens ("Open registe
 Office: calm and exact. Teacher: brisk. Student: encouraging and specific. Parent: reassuring and complete.
 No exclamation marks in system text. No "Oops". Errors say what happened and what to do.
 
+**Content rules (one style sheet).**
+- **Dates** (`lib/format`): "Today", "Tomorrow" or "Yesterday" when it is one; otherwise always the weekday
+  *and* the date: "Thu 3 Dec" (`relativeDay`, `dayDate`). Never a bare weekday — "Thursday" on a Saturday
+  could be this week or next. With a time: "Thu 3 Dec, 18:30" (`dayDateTime`). The year only when it is not
+  this year: "Fri 8 Jan 2027". In sheets, headings and confirmations where there is room: "Thursday 3
+  December" (`dateLong`). "3 Dec" (`dateShort`) only in dense tables and DUE words.
+- **Times** 24-hour, "18:30"; ranges "18:30–19:15". **Money** always two decimals, "£186.00".
+- **Words**: children in a class are "booked" (not "expected"); "Expected" for costs is said once, in the
+  section head, not on every row.
+- **Notices** only for changes and deadlines (§5); confirmations are a StatusLine.
+- **Big numbers** only where a decision hangs on them: no £0.00 hero — "Paid. Nothing is due." instead.
+
 ## 9. Accessibility
 WCAG 2.2 AA. `npm run a11y` must report no serious or critical issues. Contrast is enforced by tokens and
 `lib/brand.ts` for school colours. Targets ≥44px on touch. Status never by colour alone. Focus visible.
 
-## 10. Do not
+**Large text (200%).** Check phone screens at 390px with the root font at 200%. The Shell keeps chrome to
+about a quarter of the screen: at 150% text and above the phone header is one row — a 28px school mark, the
+title (two lines at most), the bell and "More for this screen" (the page's actions, help, search, person
+switcher); the subtitle moves to the top of the page. Header icons are sized in rem with a 44px floor.
+Bottom tab labels grow to 14px and wrap to two lines rather than truncate. Rows with a price or count on the
+right stack under the name when the row gets narrow (container queries, `@container` / `@xs:`), so nothing
+overlaps.
+
+**Phone office header.** The avatar is in More; the primary action is a "+" in the title row; an area's
+other screens open from the title ("People ▾") rather than a second tab row, so a page has one tab row.
+
+## 10. Governance
+- `/design` shows every component above, the Notice words and the date rule, live. Change it with the code.
+- `node scripts/design-lint.mjs` (`npm run lint:design`, also run by `tests/design-system.test.ts`) fails on:
+  hard-coded hex colours in `src/app` or `src/components` (outside the tokens and a short, reasoned list of
+  files), px font sizes, `role="tablist"` outside `components/ui`, and Notice words not in the list.
+- New UI reuses `components/ui`; if something is missing, add it there (and here, and on `/design`) rather
+  than in a screen.
+
+## 11. Do not
 Rounded-card dashboards; cards inside cards; uppercase micro-labels on every block; gradients; decorative
 illustrations or emoji; icon circles; more than one primary button per view; badges on every row;
-greeting banners; decorative statistics; colour as the only signal; hard-coded colours.
+greeting banners; decorative statistics; colour as the only signal; hard-coded colours; accent-filled
+selected states; hand-rolled tabs or chips; Notices for confirmations; bare weekdays for dates.

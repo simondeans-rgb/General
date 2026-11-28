@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Award, CheckCircle2, ChevronDown, FileText, Flag, MessageSquareHeart, PlayCircle, Sparkles, TrendingUp } from 'lucide-react';
-import { Badge, Beats, Button, EmptyState, ErrorState, Input, Skeleton } from '@/components/ui';
+import { Badge, Beats, Button, EmptyState, ErrorState, Input, Skeleton, Choice } from '@/components/ui';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
@@ -71,16 +71,9 @@ export function SkillsPanel({ studentId, editable, headingLevel = 3 }: { student
                     {demos.get(s.skill_id) ? 'change link' : 'add demo'}
                   </button>
                 </span>
-                <span role="radiogroup" aria-label={`${s.skill} level`} className="inline-flex rounded-[var(--radius-md)] border border-line p-0.5">
-                  {P.LEVELS.slice(1).map(l => (
-                    <button key={l.key} role="radio" aria-checked={s.level === l.key} title={l.label}
-                      onClick={() => write.mutate({ sql: P.RECORD_SKILL, params: [studentId, s.skill_id, l.key, null] })}
-                      className={cn('h-7 min-w-[2rem] rounded-[calc(var(--radius-md)-2px)] px-1.5 text-[0.75rem]',
-                        s.level === l.key ? 'bg-accent font-semibold text-on-accent' : 'text-ink-2 hover:bg-surface-2')}>
-                      {l.short}
-                    </button>
-                  ))}
-                </span>
+                <Choice label={`${s.skill} level`} size="sm" tick="corner" className="flex-nowrap gap-1" value={s.level}
+                  onChange={v => write.mutate({ sql: P.RECORD_SKILL, params: [studentId, s.skill_id, v, null] })}
+                  options={P.LEVELS.slice(1).map(l => ({ value: l.key, label: l.short, 'aria-label': l.label }))} />
               </li>
             ))}
           </ul>
@@ -249,7 +242,9 @@ export function ThenAndNow({ studentId, name }: { studentId: string; name?: stri
           {rows.map(r => (
             <li key={`${r.style}|${r.skill}`} className="flex flex-wrap items-baseline gap-x-3 py-2.5">
               <span className="min-w-0 flex-1"><span className="font-medium">{r.skill}</span> <span className="text-[0.8125rem] text-ink-3">· {r.style}</span></span>
-              <span className="text-[0.875rem]"><span className="text-ink-3">{r.then ? label(r.then) : 'New'}</span> → <span className="font-semibold">{label(r.now)}</span></span>
+              <span className="text-[0.875rem]">{r.then
+                ? <><span className="text-ink-3">{label(r.then)}</span> → <span className="font-semibold">{label(r.now)}</span></>
+                : <><span className="text-ink-3">First assessed:</span> <span className="font-semibold">{label(r.now)}</span></>}</span>
             </li>
           ))}
         </ul>

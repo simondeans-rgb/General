@@ -48,6 +48,8 @@ export type RegisterEntry = {
   student_id: string; first_name: string; last_name: string; preferred_name: string | null;
   date_of_birth: Stamp; status: string | null; reason: string | null;
   is_trial: boolean; attendance_pct: number | null;
+  /** A trial child (0071): the trial, and what the teacher has said about it so far. */
+  trial_id?: string | null; trial_recommendation?: TrialRecommendation | null; trial_comments?: string | null; trial_written_by?: string | null;
   /** explicit | reported | rest — what kind of mark the server holds (0048). */
   mark_kind: string | null;
   /** An advance absence report, if the family or the student made one (UR-07). */
@@ -69,16 +71,17 @@ const BRIEF_COLUMNS = `coalesce(b.requires_alert, false) as requires_alert,
        coalesce(b.has_medical_need, false) as has_medical_need,
        b.allergies, b.conditions, b.medications, b.action_plan,
        b.emergency_contact_name, b.emergency_contact_phone,
-       coalesce(b.emergency_contacts, '[]'::jsonb) as emergency_contacts, b.photo_consent,
-       app.collection_brief(b.student_id) as collection`;
+       coalesce(b.emergency_contacts, '[]'::jsonb) as emergency_contacts, pc.granted as photo_consent,
+       coalesce(cb.brief, '[]'::jsonb) as collection`;
 
-/** Attendance this term (UR-54): sessions since the current term began, up
- *  to now. */
-const TERM_ATTENDANCE = (student: string) => `(select round(100.0 * count(*) filter (where a2.status in ('present','late'))
-                     / nullif(count(*),0))::int
-          from attendance_record a2 join class_session s2 on s2.id = a2.session_id
-         where a2.student_id = ${student} and a2.deleted_at is null and s2.starts_at <= now()
-           and s2.starts_at >= app.current_term_start(s2.studio_id))`;
+/** Who may collect, and attendance this term (UR-54: sessions since the
+ *  current term began, up to now), for a whole list of children at once:
+ *  access is checked once for the list, not once per child (0068).
+ *  `ids` is an expression giving the uuid[] of the children listed. */
+const PER_CHILD = (ids: string, child: string) => `
+  left join app.collection_briefs(${ids}) cb on cb.student_id = b.student_id
+  left join app.consents_now(${ids}, 'photography') pc on pc.student_id = b.student_id
+  left join app.term_attendance_pcts(${ids}) ap on ap.student_id = ${child}`;
 
 /**
  * The register for one session: everyone enrolled, plus anyone trialling.
@@ -87,7 +90,7 @@ const TERM_ATTENDANCE = (student: string) => `(select round(100.0 * count(*) fil
  */
 export const REGISTER = `
 with roll as (
-  select s.id, s.first_name, s.last_name, s.preferred_name, s.date_of_birth, false as is_trial
+  select s.id, s.first_name, s.last_name, s.preferred_name, s.date_of_birth, false as is_trial, null::uuid as trial_id
     from enrolment e
     join student s on s.id = e.student_id
     join class_session cs on cs.id = $1 and cs.class_id = e.class_id
@@ -96,27 +99,29 @@ with roll as (
    where e.deleted_at is null
      and app.enrolment_on(e.status, e.started_on, e.ended_on, e.moved_from, e.moved_to, cs.starts_at::date)
   union all
-  select s.id, s.first_name, s.last_name, s.preferred_name, s.date_of_birth, true
+  select s.id, s.first_name, s.last_name, s.preferred_name, s.date_of_birth, true, t.id
     from trial t
     join student s on s.id = t.student_id
    where t.session_id = $1 and t.status in ('booked','attended') and t.deleted_at is null
   union all
   -- Drop-ins (migration 0033) are marked like anyone in the class.
-  select s.id, s.first_name, s.last_name, s.preferred_name, s.date_of_birth, false
+  select s.id, s.first_name, s.last_name, s.preferred_name, s.date_of_birth, false, null::uuid
     from drop_in_booking d
     join student s on s.id = d.student_id
    where d.session_id = $1 and d.status = 'booked'
 )
 select roll.id as student_id, roll.first_name, roll.last_name, roll.preferred_name,
-       roll.date_of_birth, roll.is_trial,
+       roll.date_of_birth, roll.is_trial, roll.trial_id,
+       tf.recommendation as trial_recommendation, tf.comments as trial_comments, tf.written_by_name as trial_written_by,
        ar.status, ar.reason, ar.mark_kind,
        rep.note as reported_note, rep.reporter as reported_by,
        ${BRIEF_COLUMNS},
-       ${TERM_ATTENDANCE('roll.id')} as attendance_pct
+       ap.pct as attendance_pct
   from roll
   left join attendance_record ar on ar.student_id = roll.id and ar.session_id = $1 and ar.deleted_at is null
   left join absence_report rep on rep.student_id = roll.id and rep.session_id = $1 and rep.status = 'active'
-  left join student_safety_brief b on b.student_id = roll.id
+  left join student_safety_brief b on b.student_id = roll.id${PER_CHILD('array(select id from roll)', 'roll.id')}
+  left join trial_feedback tf on tf.trial_id = roll.trial_id
  order by roll.last_name, roll.first_name`;
 
 /* $5 is when the teacher tapped, by the device's clock; $6 is the kind of
@@ -157,16 +162,14 @@ export const SESSION_ACCESS = `select app.session_access($1) as access`;
 
 /** Everyone a teacher may see, which is everyone in their own classes. */
 export const MY_STUDENTS = `
+with s as materialized (select id, first_name, last_name, preferred_name, date_of_birth from student where deleted_at is null)
 select s.id, s.first_name, s.last_name, s.preferred_name, s.date_of_birth,
        ${BRIEF_COLUMNS},
-       (select string_agg(distinct c.name, ', ') from enrolment e
-          join class c on c.id = e.class_id
-         where e.student_id = s.id and e.status = 'active' and e.deleted_at is null
-           and c.id in (select app.teacher_class_ids())) as class_names,
-       ${TERM_ATTENDANCE('s.id')} as attendance_pct
-  from student s
-  left join student_safety_brief b on b.student_id = s.id
- where s.deleted_at is null
+       cn.names as class_names,
+       ap.pct as attendance_pct
+  from s
+  left join student_safety_brief b on b.student_id = s.id${PER_CHILD('array(select id from s)', 's.id')}
+  left join app.my_class_names(array(select id from s)) cn on cn.student_id = s.id
  order by s.last_name, s.first_name`;
 
 /* ── Running the room: notes, register close, class notices ─────────────── */
@@ -252,3 +255,31 @@ select cs.id, c.name, cs.starts_at from class_session cs join class c on c.id = 
    and cs.starts_at < date_trunc('day', (select starts_at from this)) + interval '1 day'
    and (c.teacher_id in (select id from me) or c.assistant_id in (select id from me) or cs.teacher_id in (select id from me))
  order by cs.starts_at limit 1`;
+
+/** U6: which of my sessions clash with which other one (migration 0063). */
+export type Clash = { session_id: string; other_session_id: string; other_name: string; other_starts_at: Stamp;
+  other_ends_at: Stamp; other_school: string; other_location: string | null; same_school: boolean };
+export const MY_CLASHES = `select * from app.my_clashes($1::timestamptz, $2::timestamptz)`;
+
+/** Round 2 panel: "Working on" under each name on the register, one query for the roll. */
+export type WorkingOn = { student_id: string; work_on: string | null; going_well: string | null; at: Stamp };
+export const REGISTER_WORKING_ON = `
+select distinct on (f.student_id) f.student_id, f.work_on, f.going_well, coalesce(cs.starts_at, f.created_at) as at
+  from feedback_note f
+  left join class_session cs on cs.id = f.session_id
+ where f.student_id = any($2::uuid[]) and f.deleted_at is null
+   and (f.work_on is not null or f.going_well is not null)
+   and f.session_id is distinct from $1::uuid
+ order by f.student_id, coalesce(cs.starts_at, f.created_at) desc`;
+
+/** F14: a teacher who wants just registers (a personal setting). */
+export const MY_REGISTER_ONLY = `select app.my_register_only() as on`;
+export const SET_REGISTER_ONLY = `select app.set_register_only($1) as on`;
+
+/* ── Trials: the teacher's view, for the office's decision (0071) ────────── */
+export type TrialRecommendation = 'ready' | 'other_class' | 'not_ready';
+export const TRIAL_RECOMMENDATIONS: [TrialRecommendation, string][] = [
+  ['ready', 'Ready to join'], ['other_class', 'Better in another class'], ['not_ready', 'Not ready yet'],
+];
+export const SAVE_TRIAL_FEEDBACK = `select app.save_trial_feedback($1, $2, $3)`;
+export const TRIAL_FEEDBACK = `select recommendation, comments, written_by_name, updated_at from trial_feedback where trial_id = $1`;

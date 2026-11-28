@@ -2,11 +2,11 @@
 
 import * as React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ShieldAlert } from 'lucide-react';
+import { Printer, ShieldAlert } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { RecordSheet } from '@/components/app/record-sheet';
-import { RaiseConcernSheet } from '@/components/app/safeguarding';
-import { Button, EmptyState, ErrorState, Field, Input, Select, Skeleton, Word } from '@/components/ui';
+import { OutsideRoute, RaiseConcernSheet, StaffChecks, chronologyHtml, printPage } from '@/components/app/safeguarding';
+import { Button, EmptyState, ErrorState, Field, Input, Notice, Select, Skeleton, Word } from '@/components/ui';
 import { SettingsSection as Card, SettingsHead as CardHeader } from '@/components/app/progress-settings';
 import { cn } from '@/lib/cn';
 import { useRows } from '@/lib/query';
@@ -29,7 +29,7 @@ function newOpening(): string {
 /** The safeguarding log (R-033). The owner and the named lead only; every look is recorded. */
 export default function SafeguardingPage() {
   const { session } = useSession();
-  const meQ = useRows<{ id: string; dsl_user_id: string | null; can_read: boolean }>(['sg-me'], G.MY_STUDIO);
+  const meQ = useRows<G.MyStudio>(['sg-me'], G.MY_STUDIO);
   const me = meQ.data?.[0];
   const opening = React.useMemo(newOpening, []);
   // Reading the log writes to the access log, so it runs as a (logged) write.
@@ -39,6 +39,7 @@ export default function SafeguardingPage() {
   const [open, setOpen] = React.useState<G.Concern | null>(null);
   const [raising, setRaising] = React.useState(false);
   const owner = session?.role === 'owner';
+  const office = owner || session?.role === 'admin';
   return (
     <Shell title="Safeguarding" help={<>Concerns any member of staff raises go only to you and your safeguarding lead, and every time one is opened it is logged. An allegation about a member of staff is never shown to that person. Staff checks (DBS, training, first aid) remind you 30 days before they expire. Retention settings decide how long leavers’ details are kept; a legal hold stops a child’s details being anonymised.</>}
       subtitle="Concerns raised by staff" allow={['owner', 'admin', 'teacher']}
@@ -46,6 +47,10 @@ export default function SafeguardingPage() {
       <div className="mx-auto max-w-[1240px]"><div className="max-w-3xl space-y-10">
         {meQ.isLoading && <div role="status" aria-label="Loading"><Skeleton className="h-24" /></div>}
         {meQ.error != null && <ErrorState error={meQ.error} onRetry={() => meQ.refetch()} />}
+        {owner && me && !me.dsl_user_id && (
+          <Notice word="Act now" tone="critical" title="Name your safeguarding lead"
+            detail="Until you do, every concern comes only to you, and an allegation about you reaches nobody in the school. Staff are shown the contact outside the school below." />
+        )}
         {me && !me.can_read && (
           <EmptyState title="Only the safeguarding lead and the owner read concerns"
             body="To record one — about a child, another adult or a member of staff — choose “Record a concern”. The lead and the owner are told at once."
@@ -73,7 +78,8 @@ export default function SafeguardingPage() {
                       <span className="ml-auto text-[0.8125rem] text-ink-3">{relativeDay(c.created_at)}</span>
                     </div>
                     <p className="mt-1 line-clamp-2 text-[0.9062rem] text-ink-2">{c.summary}</p>
-                    <p className="mt-1 text-[0.8125rem] text-ink-3">{G.CATEGORIES.find(x => x[0] === c.category)?.[1]} · raised by {c.raised_by} · {c.actions} action{c.actions === 1 ? '' : 's'}</p>
+                    <p className="mt-1 text-[0.8125rem] text-ink-3">{G.CATEGORIES.find(x => x[0] === c.category)?.[1]} · raised by {c.raised_by} · {c.actions} action{c.actions === 1 ? '' : 's'}{c.children ? ` · children involved: ${c.children}` : ''}</p>
+                    {c.routing_note && <p className={cn('mt-1 text-[0.8125rem]', c.routing_note.startsWith('Nobody') ? 'font-semibold text-critical' : 'text-ink-3')}>{c.routing_note}</p>}
                   </button>
                 </li>
               ))}
@@ -82,48 +88,87 @@ export default function SafeguardingPage() {
         )}
         {me?.can_read && <WatchCard studioId={me.id} />}
         {me?.can_read && <HoldsCard studioId={me.id} />}
-        {me?.can_read && <StaffChecksCard studioId={me.id} />}
-        {owner && me && <LeadCard studioId={me.id} lead={me.dsl_user_id} />}
+        {me?.can_read && <StaffChecksCard studioId={me.id} owner={owner} />}
+        {me && (owner || me.can_read) && <LeadCard me={me} owner={owner} />}
+        {me && (office || me.can_read) && <MediaLinksCard me={me} canChange={owner || me.can_read} />}
         {me?.can_read && <AccessLog studioId={me.id} />}
         {me?.can_read && <ExportCard studioId={me.id} />}
       </div></div>
-      {open && <ConcernSheet c={open} hold={holds.data?.find(h => h.concern_id === open.id) ?? null} onClose={() => setOpen(null)} />}
+      {open && me && <ConcernSheet c={open} studioId={me.id} hold={holds.data?.find(h => h.concern_id === open.id) ?? null} onClose={() => setOpen(null)} />}
       {raising && <RaiseConcernSheet onClose={() => setRaising(false)} />}
     </Shell>
   );
 }
 
-function ConcernSheet({ c, hold, onClose }: { c: G.Concern; hold: G.ConcernHold | null; onClose: () => void }) {
+function ConcernSheet({ c, hold, studioId, onClose }: { c: G.Concern; hold: G.ConcernHold | null; studioId: string; onClose: () => void }) {
   const { session } = useSession();
   const qc = useQueryClient();
   const opening = React.useMemo(newOpening, []);
   const actions = useQuery({ queryKey: ['sg-actions', c.id, opening], staleTime: Infinity,
-    queryFn: () => runAs(session, q => q<{ note: string; status_to: string | null; by_name: string; at: string }>(G.ACTIONS, [c.id, opening])) });
+    queryFn: () => runAs(session, q => q<G.Action>(G.ACTIONS, [c.id, opening])) });
   const [note, setNote] = React.useState('');
   const [status, setStatus] = React.useState('');
+  const [ref, setRef] = React.useState({ to: '', on: '', ref: '', outcome: '' });
+  const [saved, setSaved] = React.useState(false);
   const act = useMutation({
-    mutationFn: () => runAs(session, q => q(G.ACT, [c.id, note, status || null])),
+    mutationFn: () => runAs(session, q => q(G.RECORD_ACTION, [c.id, note, status || null,
+      status === 'referred' ? ref.to : null, status === 'referred' && ref.on ? ref.on : null, status === 'referred' ? ref.ref : null, ref.outcome || null])),
     // The refresh reuses this opening, so it is not logged as another look.
-    onSuccess: () => { setNote(''); setStatus(''); ['db', 'sg-log', 'sg-actions'].forEach(k => qc.invalidateQueries({ queryKey: [k] })); },
+    // The trail is re-read before "Saved" shows, so the new action is never missing (N-05).
+    onSuccess: async () => {
+      await actions.refetch();
+      setNote(''); setStatus(''); setRef({ to: '', on: '', ref: '', outcome: '' }); setSaved(true);
+      ['db', 'sg-log'].forEach(k => qc.invalidateQueries({ queryKey: [k] }));
+    },
   });
+  const chronology = useMutation({
+    mutationFn: async (purpose: 'print' | 'export') => ({ purpose, c: (await runAs(session, q => q<{ c: G.Chronology }>(G.CHRONOLOGY, [c.id, purpose])))[0]!.c }),
+    onSuccess: ({ purpose, c: ch }) => {
+      const html = chronologyHtml(ch, purpose);
+      if (purpose === 'print') printPage(`Chronology ${ch.reference}`, html);
+      else {
+        const url = URL.createObjectURL(new Blob([`<!doctype html><meta charset="utf-8"><title>Chronology ${ch.reference}</title>${html}`], { type: 'text/html' }));
+        const a = document.createElement('a');
+        a.href = url; a.download = `chronology-${ch.reference}.html`; a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+      qc.invalidateQueries({ queryKey: ['db'] });
+    },
+  });
+  const referring = status === 'referred';
+  const canSave = note.trim().length > 2 && (!referring || ref.to.trim().length >= 2);
   return (
     <RecordSheet title={c.subject_name ?? c.student_name ?? 'Concern'} subtitle={`${dateShort(c.created_at)} · raised by ${c.raised_by}`} onClose={onClose}
-      onSave={() => act.mutate()} saving={act.isPending} error={act.error} canSave={note.trim().length > 2} saveLabel="Record action">
+      onSave={() => act.mutate()} saving={act.isPending} error={act.error ?? chronology.error} canSave={canSave} saveLabel="Record action">
       {c.allegation && (
         <p className="border-l-2 border-critical py-1 pl-3 text-[0.875rem]">
           <strong className="font-semibold text-critical">Allegation about a member of staff.</strong> Follow the LADO process: tell the local authority designated officer within one working day, and do not investigate or tell the person concerned. They cannot see this record.
         </p>
       )}
+      {c.routing_note && <p className={cn('text-[0.8438rem]', c.routing_note.startsWith('Nobody') ? 'font-semibold text-critical' : 'text-ink-3')}>{c.routing_note}</p>}
       <p className="whitespace-pre-wrap border-l-2 border-ink py-1 pl-3 text-[0.9062rem]">{c.summary}</p>
-      <ol className="divide-y divide-line border-y border-line">
+      {c.subject_kind !== 'child' && <ConcernChildren concernId={c.id} names={c.children} studioId={studioId} />}
+      <ol className="divide-y divide-line border-y border-line" aria-busy={actions.isFetching}>
         {actions.data?.map((a, i) => (
           <li key={i} className="py-2 text-[0.875rem]"><span className="text-[0.8125rem] text-ink-3">{dateShort(a.at)} {time(a.at)} · {a.by_name}{a.status_to ? ` · now ${a.status_to}` : ''}</span>
-            <p>{a.note}</p></li>
+            <p>{a.note}</p>
+            {a.referred_to && <p className="text-[0.8125rem] text-ink-2">Referred to {a.referred_to}{a.referred_on ? ` on ${dateShort(a.referred_on)}` : ''}{a.referral_ref ? ` · their reference ${a.referral_ref}` : ''}</p>}
+            {a.outcome && <p className="text-[0.8125rem] text-ink-2">Outcome: {a.outcome}</p>}
+          </li>
         ))}
+        {actions.data?.length === 0 && <li className="py-2 text-[0.8125rem] text-ink-3">No actions yet.</li>}
       </ol>
+      {saved && !act.isPending && <p role="status" className="text-[0.8125rem] font-semibold text-positive">Saved</p>}
+      <div className="flex flex-wrap items-center gap-2">
+        <Button size="sm" variant="ghost" loading={chronology.isPending && chronology.variables === 'print'} onClick={() => chronology.mutate('print')}>
+          <Printer className="size-4" aria-hidden /> Print chronology
+        </Button>
+        <Button size="sm" variant="ghost" loading={chronology.isPending && chronology.variables === 'export'} onClick={() => chronology.mutate('export')}>Download chronology</Button>
+        <span className="text-[0.75rem] text-ink-3">Printing and downloading are recorded in the access log.</span>
+      </div>
       <ConcernHoldRow concernId={c.id} hold={hold} />
       <Field label="What was done" htmlFor="sg-n" required>
-        <textarea id="sg-n" rows={3} value={note} onChange={e => setNote(e.target.value)} className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
+        <textarea id="sg-n" rows={3} value={note} onChange={e => { setNote(e.target.value); setSaved(false); }} className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
       </Field>
       <Field label="Status" htmlFor="sg-s">
         <Select id="sg-s" value={status} onChange={e => setStatus(e.target.value)}>
@@ -131,7 +176,45 @@ function ConcernSheet({ c, hold, onClose }: { c: G.Concern; hold: G.ConcernHold 
           <option value="monitoring">Monitoring</option><option value="referred">Referred</option><option value="closed">Closed</option><option value="open">Open</option>
         </Select>
       </Field>
+      {referring && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Referred to" htmlFor="sg-rt" required hint="The agency, and who you spoke to.">
+            <Input id="sg-rt" value={ref.to} onChange={e => setRef({ ...ref, to: e.target.value })} placeholder="e.g. Children’s services, MASH" />
+          </Field>
+          <Field label="Date referred" htmlFor="sg-ro" hint="Today if empty.">
+            <Input id="sg-ro" type="date" value={ref.on} onChange={e => setRef({ ...ref, on: e.target.value })} />
+          </Field>
+          <Field label="Their reference" htmlFor="sg-rr">
+            <Input id="sg-rr" value={ref.ref} onChange={e => setRef({ ...ref, ref: e.target.value })} />
+          </Field>
+        </div>
+      )}
+      <Field label="Outcome" htmlFor="sg-oc" hint="Optional. What the agency decided, when you hear.">
+        <Input id="sg-oc" value={ref.outcome} onChange={e => setRef({ ...ref, outcome: e.target.value })} />
+      </Field>
     </RecordSheet>
+  );
+}
+
+/** Children involved in a concern about an adult or staff: the lead adds one later (N-04). */
+function ConcernChildren({ concernId, names, studioId }: { concernId: string; names: string | null; studioId: string }) {
+  const kids = useRows<{ id: string; name: string }>(['sg-kids', studioId], G.LEAD_CHILDREN, [studioId]);
+  const link = useLeadWrite(G.LINK_CHILD);
+  const [pick, setPick] = React.useState('');
+  return (
+    <div className="text-[0.875rem]">
+      <p><span className="font-semibold">Children involved: </span>{names ?? 'none named'}</p>
+      <div className="mt-1 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+        <Field label="Add a child involved" htmlFor={`sg-ci-${concernId}`} hint="Shown on the child’s record to you and the owner only. Logged.">
+          <Select id={`sg-ci-${concernId}`} value={pick} onChange={e => setPick(e.target.value)}>
+            <option value="">Choose a child</option>
+            {kids.data?.map(k => <option key={k.id} value={k.id}>{k.name}</option>)}
+          </Select>
+        </Field>
+        <Button size="sm" disabled={!pick} loading={link.isPending} onClick={() => link.mutate([concernId, pick, true], { onSuccess: () => setPick('') })}>Add</Button>
+      </div>
+      {link.error != null && <ErrorState error={link.error} />}
+    </div>
   );
 }
 
@@ -246,26 +329,67 @@ function HoldsCard({ studioId }: { studioId: string }) {
           onClick={() => set.mutate([pick, reason], { onSuccess: () => { setPick(''); setReason(''); } })}>Place hold</Button>
       </div>
       {(set.error ?? release.error) != null && <ErrorState error={set.error ?? release.error} />}
+      <HoldReviews studioId={studioId} />
     </Card>
   );
 }
 
-/** UR-41: who has no DBS on file, or a check running out. */
-function StaffChecksCard({ studioId }: { studioId: string }) {
-  const rows = useRows<G.CheckGap>(['sg-checks', studioId], G.CHECK_SUMMARY, [studioId]);
+/** Each hold has a review date, so it is looked at again rather than kept for ever by default. */
+function HoldReviews({ studioId }: { studioId: string }) {
+  const rows = useRows<G.HoldReview>(['sg-hold-reviews', studioId], G.HOLD_REVIEWS, [studioId]);
+  const review = useLeadWrite(G.REVIEW_HOLD);
+  const nextYear = () => new Date(Date.now() + 365 * 86_400_000).toISOString().slice(0, 10);
+  if (!rows.data?.length) return null;
   return (
-    <Card>
-      <CardHeader title="Staff checks" subtitle="The owner records checks on each person’s staff record." />
-      {rows.isLoading && <div className="pt-3"><Skeleton className="h-16" /></div>}
-      <ul className="divide-y divide-line text-[0.875rem]">
-        {rows.data?.map(r => (
-          <li key={r.staff_id} className="flex flex-wrap justify-between gap-x-3 py-2">
-            <span className="font-medium">{r.name}</span>
-            {r.issue
-              ? <span className="font-semibold text-critical">{r.issue}{r.due ? ` · ${dateShort(r.due)}` : ''}</span>
-              : <span className="text-ink-3">DBS on file{r.dbs_expires ? ` · renew by ${dateShort(r.dbs_expires)}` : ''}</span>}
+    <div className="mt-4 border-t border-line pt-3">
+      <h3 className="text-[0.9062rem] font-semibold">Review dates</h3>
+      <p className="text-[0.8125rem] text-ink-3">A hold keeps everything about that child, the medical record included. Review each one: keep it only while it is still needed.</p>
+      <ul className="mt-1 divide-y divide-line text-[0.875rem]">
+        {rows.data.map(h => (
+          <li key={`${h.hold_kind}-${h.id}`} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-2">
+            <span className="font-medium">{h.name}</span>
+            {h.due ? <Word tone="critical">Review due</Word> : <span className="text-[0.8125rem] text-ink-3">Review by {dateShort(h.review_on)}</span>}
+            <Button size="sm" variant="ghost" className="ml-auto" loading={review.isPending && review.variables?.[1] === h.id}
+              onClick={() => review.mutate([h.hold_kind, h.id, nextYear()])}>Still needed: review in a year</Button>
           </li>
         ))}
+      </ul>
+      {review.error != null && <ErrorState error={review.error} />}
+    </div>
+  );
+}
+
+/** UR-41: who has no DBS on file, or a check running out. Everyone on the staff,
+ *  the office and owners included (N-02); the owner records checks here too. */
+function StaffChecksCard({ studioId, owner }: { studioId: string; owner: boolean }) {
+  const rows = useRows<G.CheckGap>(['sg-checks', studioId], G.CHECK_SUMMARY, [studioId]);
+  const [open, setOpen] = React.useState<string | null>(null);
+  return (
+    <Card>
+      <CardHeader title="Staff checks" subtitle="Everyone on the staff, the office and the owner included." />
+      {rows.isLoading && <div className="pt-3"><Skeleton className="h-16" /></div>}
+      <ul className="divide-y divide-line text-[0.875rem]">
+        {rows.data?.map(r => {
+          const key = r.staff_id ?? r.user_id ?? r.name;
+          return (
+            <li key={key} className="py-2">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                <span className="font-medium">{r.name}</span>
+                {r.issue
+                  ? <span className="font-semibold text-critical">{r.issue}{r.due ? ` · ${dateShort(r.due)}` : ''}</span>
+                  : <span className="text-ink-3">DBS on file{r.dbs_expires ? ` · renew by ${dateShort(r.dbs_expires)}` : ''}</span>}
+                <Button size="sm" variant="ghost" aria-expanded={open === key} onClick={() => setOpen(open === key ? null : key)}>
+                  {open === key ? 'Close' : owner ? 'Checks' : 'See checks'}
+                </Button>
+              </div>
+              {open === key && (
+                <div className="mt-2 pl-0 sm:pl-3">
+                  <StaffChecks staffId={r.staff_id} userId={r.user_id} studioId={studioId} readOnly={!owner} />
+                </div>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </Card>
   );
@@ -300,25 +424,94 @@ function ExportCard({ studioId }: { studioId: string }) {
   );
 }
 
-function LeadCard({ studioId, lead }: { studioId: string; lead: string | null }) {
+/** F1: the lead, the deputy and the route outside the school. The owner names
+ *  the lead and the deputy; the owner or the lead records the outside contact. */
+function LeadCard({ me, owner }: { me: G.MyStudio; owner: boolean }) {
   const { session } = useSession();
   const qc = useQueryClient();
-  const staff = useRows<{ user_id: string; full_name: string; role: string }>(['sg-staff', studioId], G.STAFF_LOGINS, [studioId]);
-  const set = useMutation({
-    mutationFn: (u: string | null) => runAs(session, q => q(G.SET_LEAD, [u])),
+  const staff = useRows<{ user_id: string; full_name: string; role: string }>(['sg-staff', me.id], G.STAFF_LOGINS, [me.id], { enabled: owner });
+  const write = useMutation({
+    mutationFn: ({ sql, params }: { sql: string; params: unknown[] }) => runAs(session, q => q(sql, params)),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['db'] }),
   });
+  const [route, setRoute] = React.useState<string | null>(null);
+  const routeValue = route ?? me.safeguarding_outside_route ?? '';
+  const role = (r: string) => r === 'admin' ? 'office' : r;
   return (
     <Card>
-      <CardHeader title="Safeguarding lead" />
-      <div className="pt-3" />
-      <Field label="Designated Safeguarding Lead" htmlFor="sg-lead" hint="Reads and acts on every concern, alongside you.">
-        <Select id="sg-lead" value={lead ?? ''} onChange={e => set.mutate(e.target.value || null)}>
-          <option value="">Not named — only owners</option>
-          {staff.data?.map(s => <option key={s.user_id} value={s.user_id}>{s.full_name} ({s.role})</option>)}
-        </Select>
-      </Field>
-      {set.error != null && <ErrorState error={set.error} />}
+      <CardHeader title="Safeguarding setup" subtitle="Who reads concerns, and where staff go outside the school." />
+      <div className="space-y-4 pt-3">
+        {owner ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Designated Safeguarding Lead" htmlFor="sg-lead" hint="Reads and acts on every concern, alongside you.">
+              <Select id="sg-lead" value={me.dsl_user_id ?? ''} onChange={e => write.mutate({ sql: G.SET_LEAD, params: [e.target.value || null] })}>
+                <option value="">Not named: only owners</option>
+                {staff.data?.map(s => <option key={s.user_id} value={s.user_id}>{s.full_name} ({role(s.role)})</option>)}
+              </Select>
+            </Field>
+            <Field label="Deputy lead" htmlFor="sg-deputy" hint="Optional. Reads concerns too, so one about the lead still reaches someone.">
+              <Select id="sg-deputy" value={me.dsl_deputy_user_id ?? ''} onChange={e => write.mutate({ sql: G.SET_DEPUTY, params: [e.target.value || null] })}>
+                <option value="">None</option>
+                {staff.data?.filter(s => s.user_id !== me.dsl_user_id).map(s => <option key={s.user_id} value={s.user_id}>{s.full_name} ({role(s.role)})</option>)}
+              </Select>
+            </Field>
+          </div>
+        ) : (
+          <p className="text-[0.875rem] text-ink-2">The owner names the lead and the deputy.</p>
+        )}
+        {owner && !me.dsl_user_id && (
+          <p className="text-[0.8125rem] text-ink-2">If you are the lead yourself, name yourself. An allegation about you then reaches only a deputy, so name one, and record the contact outside the school.</p>
+        )}
+        <div>
+          <Field label="Contact outside the school" htmlFor="sg-route"
+            hint="Your local authority designated officer (LADO) or children’s services: name, phone and email. Every member of staff sees this when they raise a concern.">
+            <textarea id="sg-route" rows={2} value={routeValue} maxLength={600} onChange={e => setRoute(e.target.value)}
+              className="w-full rounded-[var(--radius-md)] border border-line-strong bg-surface p-3 text-sm focus:border-accent-line focus:outline-none focus:ring-4 focus:ring-accent-line/12" />
+          </Field>
+          {route !== null && route !== (me.safeguarding_outside_route ?? '') && (
+            <Button size="sm" className="mt-2" loading={write.isPending}
+              onClick={() => write.mutate({ sql: G.SET_OUTSIDE_ROUTE, params: [me.id, route] }, { onSuccess: () => setRoute(null) })}>Save contact</Button>
+          )}
+        </div>
+        <OutsideRoute route={me.safeguarding_outside_route} className="border-l-2 border-line-strong py-1 pl-3" />
+        {write.error != null && <ErrorState error={write.error} />}
+      </div>
+    </Card>
+  );
+}
+
+/** N-06: material showing children cannot be an outside link while this is on (the default).
+ *  Links already shared are listed here for the office, and hidden from families. */
+function MediaLinksCard({ me, canChange }: { me: G.MyStudio; canChange: boolean }) {
+  const rows = useRows<G.ChildMediaLink>(['sg-media-links', me.id], G.CHILD_MEDIA_LINKS, [me.id]);
+  const set = useLeadWrite(G.SET_BLOCK_LINKS);
+  return (
+    <Card>
+      <CardHeader title="Videos and photos of children" subtitle="A link to another site is only as private as that site. Uploaded files are shown only to families whose children all have consent." />
+      <div className="space-y-3 pt-3">
+        <label className="flex items-start gap-3 text-[0.9062rem]">
+          <input type="checkbox" className="mt-0.5 size-5 accent-[var(--color-accent)]" checked={me.block_child_media_links} disabled={!canChange || set.isPending}
+            onChange={e => set.mutate([me.id, e.target.checked])} />
+          <span><span className="font-medium">Teachers upload material that shows children, never link to it</span>
+            <span className="block text-[0.8125rem] text-ink-3">On by default. While it is on, links already shared that show children are hidden from families.{canChange ? '' : ' The owner or the safeguarding lead changes this.'}</span></span>
+        </label>
+        {set.error != null && <ErrorState error={set.error} />}
+        {rows.data && rows.data.length > 0 && (
+          <div>
+            <p className="text-[0.9062rem]"><b>{rows.data.length}</b> link{rows.data.length === 1 ? '' : 's'} to another site marked as showing children:</p>
+            <ul className="mt-1 divide-y divide-line text-[0.875rem]">
+              {rows.data.map(r => (
+                <li key={r.id} className="flex flex-wrap items-baseline justify-between gap-x-3 py-1.5">
+                  <span className="min-w-0 font-medium">{r.title}</span>
+                  <span className="text-[0.8125rem] text-ink-3">{r.added_by} · {dateShort(r.created_at)} · {r.hidden ? 'hidden from families' : 'families may see it'}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-1 text-[0.8125rem] text-ink-3">Ask whoever added each one to upload the file instead, then remove the link from the class library.</p>
+          </div>
+        )}
+        {rows.data?.length === 0 && <p className="text-[0.875rem] text-ink-3">No links to other sites show children.</p>}
+      </div>
     </Card>
   );
 }

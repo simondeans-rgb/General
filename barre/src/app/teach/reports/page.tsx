@@ -8,7 +8,7 @@ import { ReportCard } from '@/components/app/progress';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Button, EmptyState, ErrorState, Notice, Select, Skeleton } from '@/components/ui';
+import { Button, EmptyState, ErrorState, Notice, Select, Skeleton, StatusLine } from '@/components/ui';
 import * as P from '@/lib/repos/progress';
 import * as H from '@/lib/repos/hub';
 
@@ -49,7 +49,7 @@ export default function ReportsPage() {
             {reports.data?.length ? 'Refresh drafts' : 'Draft reports'}
           </Button>
         </div>
-        {done && <div role="status" className="print:hidden"><Notice word="Done" tone="positive" title={done} /></div>}
+        {done && <div role="status" className="print:hidden"><StatusLine live={false} title={done} /></div>}
         {write.error != null && <ErrorState error={write.error} />}
         {reports.isLoading && <Skeleton className="h-40" />}
         {reports.data?.length === 0 && <EmptyState title="No reports yet"
