@@ -10,6 +10,8 @@ import { Button, EmptyState, ErrorState, Field, Input, Notice, Select, Skeleton 
 import * as B from '@/lib/repos/billing';
 import { useLocationFilter } from '@/components/app/location-filter';
 import { money, dateShort, isoDate } from '@/lib/format';
+import { useWrite } from '@/lib/write';
+import { pickerLabels } from '@/lib/office-words';
 
 const RULE_TEXT = {
   sibling: (n: number) => `${n === 2 ? 'Second' : n === 3 ? 'Third' : `${n}th`} child and after`,
@@ -165,12 +167,16 @@ export function BillingRunPanel({ onClose }: { onClose: () => void }) {
                       <label htmlFor={`skip-${f.family_id}`} className="min-w-0 flex-1">
                         <span className="block font-medium">{f.family_name}</span>
                         <span className="block truncate text-[0.7812rem] text-ink-3">
-                          Billed on {f.invoices} · <span className="tnum">{money(f.billed_minor)}</span>
+                          Already billed <span className="tnum">{money(f.billed_minor)}</span> on {f.invoices}
+                        </span>
+                        {/* Two amounts side by side, each said for what it is (U8). */}
+                        <span className="block text-[0.7812rem] text-ink-3">
+                          This run would charge <span className="tnum text-ink-2">{money(f.would_raise_minor)}</span>
+                          {Number(f.would_raise_minor) !== Number(f.billed_minor) && '. The two differ when classes were added since, for part terms, or with discounts.'}
                         </span>
                       </label>
                       <span className="shrink-0 text-right text-[0.7812rem] text-ink-3">
-                        {include.includes(f.family_id) ? 'Included' : 'Include anyway'}<br />
-                        <span className="tnum text-ink-2">{money(f.would_raise_minor)}</span>
+                        {include.includes(f.family_id) ? 'Included' : 'Include anyway'}
                       </span>
                     </li>
                   ))}
@@ -329,21 +335,20 @@ const REASONS = { bursary: 'Bursary', staff: 'Staff family', loyalty: 'Loyalty',
  * fixed amount off each invoice. Families see "Discount", never the reason.
  */
 function FamilyDiscounts() {
-  const { session } = useSession();
-  const qc = useQueryClient();
   const rows = useRows<B.FamilyDiscount>(['family-discounts'], B.FAMILY_DISCOUNTS);
-  const fams = useRows<{ id: string; name: string }>(['family-pick'], B.FAMILY_PICK);
+  const fams = useRows<B.FamilyPick>(['family-pick'], B.FAMILY_PICK);
+  const labels = React.useMemo(() => pickerLabels(fams.data ?? []), [fams.data]);
   const [adding, setAdding] = React.useState(false);
   const [f, setF] = React.useState({ family: '', kind: 'percent', amount: '', reason: 'bursary', note: '', ends: '' });
-  const save = useMutation({
-    mutationFn: () => runAs(session, q => q(B.ADD_FAMILY_DISCOUNT, [f.family, f.kind,
-      f.kind === 'percent' ? Math.round(Number(f.amount)) : Math.round(Number(f.amount) * 100), f.reason, f.note, null, f.ends || null])),
-    onSuccess: () => { setAdding(false); setF(x => ({ ...x, family: '', amount: '', note: '', ends: '' })); qc.invalidateQueries({ queryKey: ['db'] }); },
+  // One save model (U5): the list shows the new discount before the form closes.
+  const save = useWrite(B.ADD_FAMILY_DISCOUNT, {
+    saved: () => `Discount added for ${labels.get(f.family) ?? 'the family'}`,
+    onDone: () => { setAdding(false); setF(x => ({ ...x, family: '', amount: '', note: '', ends: '' })); },
   });
-  const end = useMutation({
-    mutationFn: (id: string) => runAs(session, q => q(B.END_FAMILY_DISCOUNT, [id])),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['db'] }),
-  });
+  const addIt = () => save.mutate([f.family, f.kind,
+    f.kind === 'percent' ? Math.round(Number(f.amount)) : Math.round(Number(f.amount) * 100), f.reason, f.note, null, f.ends || null]);
+  const endSql = useWrite(B.END_FAMILY_DISCOUNT);
+  const end = { ...endSql, mutate: (id: string, o?: { onSuccess?: () => void }) => endSql.mutate([id], o) };
   const [ended, setEnded] = React.useState<string | null>(null);
   const ok = f.family && Number(f.amount) > 0 && (f.kind !== 'percent' || Number(f.amount) <= 100);
   return (
@@ -378,7 +383,7 @@ function FamilyDiscounts() {
           <Field label="Family" htmlFor="fd-f" required>
             <Select id="fd-f" value={f.family} onChange={e => setF({ ...f, family: e.target.value })}>
               <option value="">Choose…</option>
-              {fams.data?.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
+              {fams.data?.map(x => <option key={x.id} value={x.id}>{labels.get(x.id) ?? x.name}</option>)}
             </Select>
           </Field>
           <Field label="Reason" htmlFor="fd-r">
@@ -400,7 +405,7 @@ function FamilyDiscounts() {
           <Field label="Ends on" htmlFor="fd-e" hint="Leave empty to keep going."><Input id="fd-e" type="date" value={f.ends} onChange={e => setF({ ...f, ends: e.target.value })} /></Field>
           {save.error != null && <div className="sm:col-span-2"><ErrorState error={save.error} /></div>}
           <div className="flex gap-2 sm:col-span-2">
-            <Button variant="primary" disabled={!ok} loading={save.isPending} onClick={() => save.mutate()}>Save discount</Button>
+            <Button variant="primary" disabled={!ok} loading={save.isPending} onClick={addIt}>Save discount</Button>
             <Button variant="ghost" onClick={() => setAdding(false)}>Cancel</Button>
           </div>
         </div>

@@ -600,7 +600,7 @@ function buildMedicalBillingComms(ctx: ActivityCtx): string {
 
   push(`insert into notification (id,studio_id,user_id,kind,title,body,href) values
     ${row([uid(NS.notification, 1), STUDIO_ID, uid(NS.user, 1), 'payment_failed',
-      '3 card payments failed', 'Three families were invoiced but the card was declined.', '/billing'])},
+      'Demo: 3 sample card declines', 'Sample data only. Card payments are not connected, so no card has really been declined.', '/billing'])},
     ${row([uid(NS.notification, 2), STUDIO_ID, uid(NS.user, 1), 'waitlist',
       'Grade 3 Ballet is full', '8 students are waiting for a place.', '/classes'])},
     ${row([uid(NS.notification, 3), STUDIO_ID, uid(NS.user, 1), 'medical_updated',
