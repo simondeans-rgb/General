@@ -337,3 +337,16 @@ describe('retention from imported history (UR-34)', () => {
     });
   });
 });
+
+describe('account history (U4)', () => {
+  it('shows changes made by people unless automatic ones are asked for', async () => {
+    await asUser(USERS.owner, async q => {
+      await q(`update family set notes = 'Owner was here' where id = (select id from family order by id limit 1)`);
+      const people = await q(A.PEOPLE_HISTORY, [null, null, null, null, null, 50, false]);
+      expect(people.length).toBeGreaterThan(0);
+      expect(people.every((r: any) => r.actor_id != null)).toBe(true);
+      const all = await q(A.PEOPLE_HISTORY, [null, null, null, null, null, 200, true]);
+      expect(all.some((r: any) => r.actor_id == null)).toBe(true);
+    });
+  });
+});

@@ -194,7 +194,7 @@ export function RetentionCard({ studioId }: { studioId: string }) {
   const applyOn = pol.auto_preview_at ? new Date(new Date(pol.auto_preview_at).getTime() + 14 * 86_400_000) : null;
   const field = (f: typeof G.RETENTION_FIELDS[number]) => (
     <Field key={f.key} label={f.label} htmlFor={`rt-${f.key}`}
-      hint={`${f.unit}, ${f.min} to ${f.max}${f.adviser ? '. Check with your data protection adviser.' : ''}`}>
+      hint={`${f.unit}, ${f.min} to ${f.max}`}>
       <Input id={`rt-${f.key}`} type="number" min={f.min} max={f.max} value={v[f.key] as number}
         onChange={e => setM(x => ({ ...x, [f.key]: Number(e.target.value) }))} />
     </Field>

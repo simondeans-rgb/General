@@ -75,3 +75,9 @@ export const EXPORT_TABLES = [
   'invoice', 'invoice_item', 'payment', 'communication', 'communication_template',
   'studio_event', 'event_participant', 'studio_request', 'feedback_note', 'skill_assessment',
 ] as const;
+
+/** The school's history (app.audit_history, owners), changes made by people
+ *  only unless $7 asks for automatic ones too (U4): otherwise imports,
+ *  reminders and scheduled jobs flood it. */
+export const PEOPLE_HISTORY = `select * from app.audit_history($1::uuid, $2, $3, $4::date, $5::date, 1000) h
+ where $7::boolean or h.actor_id is not null limit $6`;

@@ -7,6 +7,7 @@ import { Button, EmptyState, ErrorState, Field, Input, Select, Skeleton } from '
 import { SettingsSection as Card, SettingsHead as CardHeader } from '@/components/app/progress-settings';
 import { HistoryList } from '@/components/app/record-history';
 import * as H from '@/lib/repos/office';
+import { PEOPLE_HISTORY } from '@/lib/repos/account';
 import { downloadCsv } from '@/lib/csv';
 import { isoDate } from '@/lib/format';
 
@@ -24,11 +25,12 @@ export function HistoryCard() {
   const [to, setTo] = React.useState('');
   const [typed, setTyped] = React.useState('');
   const [limit, setLimit] = React.useState(50);
+  const [automatic, setAutomatic] = React.useState(false);
   React.useEffect(() => { const t = setTimeout(() => setTyped(text.trim()), 250); return () => clearTimeout(t); }, [text]);
 
   const actors = useRows<{ id: string; name: string }>(['audit-actors'], H.AUDIT_ACTORS);
-  const params = [actor || null, entity || null, typed || null, from || null, to || null, limit];
-  const rows = useRows<H.HistoryRow>(['audit-history', ...params], H.AUDIT_HISTORY, params);
+  const params = [actor || null, entity || null, typed || null, from || null, to || null, limit, automatic];
+  const rows = useRows<H.HistoryRow>(['audit-history', ...params], PEOPLE_HISTORY, params);
 
   const exportCsv = () => downloadCsv(`history-${isoDate(new Date())}.csv`, (rows.data ?? []).map(r => ({
     when: new Date(r.at).toISOString(), who: r.actor, did: H.ACTION_WORD[r.action] ?? r.action,
@@ -57,6 +59,10 @@ export function HistoryCard() {
         </Field>
         <Field label="From" htmlFor="h-from"><Input id="h-from" type="date" value={from} onChange={e => setFrom(e.target.value)} /></Field>
         <Field label="To" htmlFor="h-to"><Input id="h-to" type="date" value={to} onChange={e => setTo(e.target.value)} /></Field>
+        <label className="col-span-2 flex min-h-11 items-center gap-2.5 text-[0.875rem] sm:col-span-3">
+          <input type="checkbox" className="size-[18px] accent-[var(--color-accent)]" checked={automatic} onChange={e => setAutomatic(e.target.checked)} />
+          Include automatic changes <span className="text-ink-3">(imports, reminders and scheduled jobs)</span>
+        </label>
       </div>
       <div className="pt-4">
         {rows.isPending && <Skeleton className="h-24" />}
