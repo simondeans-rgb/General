@@ -7,6 +7,8 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { readAs, runAs } from '@/lib/db/client';
 import { SchoolMark, PoweredBy, useSchoolTheme, logoFor, SchoolHero } from '@/components/app/brand';
 import { Button, EmptyState, ErrorState, Field, Input, Notice, Skeleton } from '@/components/ui';
+import { CalendarPlus, Copy } from 'lucide-react';
+import { addBookingToCalendar } from '@/components/app/bookings';
 import { money, dateLong, time } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
@@ -65,13 +67,14 @@ function Join() {
   const tick = (k: 'privacy_ack' | 'marketing') => (v: boolean) => setForm(f => ({ ...f, [k]: v }));
   const self = who === 'self';
   const book = useMutation({
-    mutationFn: () => runAs(null, q => q(`select app.public_book_trial($1, $2, $3::jsonb)`, [slug, pick!.session_id, JSON.stringify({
+    // The booking's reference and manage link come back with it (F5).
+    mutationFn: async () => (await runAs(null, q => q<{ r: Booked }>(`select app.public_book_trial_ref($1, $2, $3::jsonb) r`, [slug, pick!.session_id, JSON.stringify({
       ...form,
       // Booking for yourself: you are the dancer.
       child_name: self ? form.contact_name : form.child_name,
       allergies: yes(form.has_medical) ? form.allergies : '', medical: yes(form.has_medical) ? form.medical : '',
       emergency_relationship: self ? 'Emergency contact' : '',
-    })])),
+    })])))[0]?.r,
   });
 
   // The list can be long: bring the details form to the person who chose.
@@ -114,6 +117,7 @@ function Join() {
               title={self ? `You’re booked into ${pick!.class_name}` : `${form.child_name.split(' ')[0]} is coming to ${pick!.class_name}`}
               detail={`${s?.name} has your details${form.contact_email ? ` and will write to ${form.contact_email}` : ''}.`} />
             <Confirmation when={pick!.starts_at} until={pick!.ends_at} cls={chosen} school={sinfo.data ?? null} schoolName={s?.name ?? ''}
+              booked={book.data} className={pick!.class_name} kind="trial"
               next={`After the class, ${s?.name ?? 'the school'} will be in touch to offer ${self ? 'you' : form.child_name.split(' ')[0]} a place${ongoing(chosen) ? ` (${ongoing(chosen)})` : ''}. Nothing is booked beyond this class until you say yes.`} />
           </section>
         ) : s?.open && (
@@ -249,17 +253,18 @@ function AdultDropIn({ slug, school, about, info }: { slug: string; school: Scho
   const [f, setF] = React.useState({ name: '', email: '', phone: '', emergency_name: '', emergency_phone: '', website: '', privacy_ack: false, marketing: false, adult_confirm: false });
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF(x => ({ ...x, [k]: e.target.value }));
   const book = useMutation({
-    mutationFn: async () => (await runAs(null, q => q<{ r: string }>(`select app.public_adult_drop_in($1, $2, $3::jsonb) r`, [slug, pick!.session_id, JSON.stringify(f)])))[0]?.r,
+    mutationFn: async () => (await runAs(null, q => q<{ r: Booked }>(`select app.public_adult_drop_in_ref($1, $2, $3::jsonb) r`, [slug, pick!.session_id, JSON.stringify(f)])))[0]?.r,
   });
   if (!rows.data?.length) return null;
   if (book.isSuccess) return (
     <section aria-live="polite" className="space-y-5 border-t-2 border-ink pt-4">
-      <Notice word={book.data === 'held' ? 'Held' : 'Booked'} tone={book.data === 'held' ? 'caution' : 'positive'}
+      <Notice word={book.data?.result === 'held' ? 'Held' : 'Booked'} tone={book.data?.result === 'held' ? 'caution' : 'positive'}
         title={`See you at ${pick!.class_name}`}
-        detail={book.data === 'held'
+        detail={book.data?.result === 'held'
           ? `Your place is held for 30 minutes. The school will send your ${money(pick!.price_minor)} invoice now — the place is confirmed once it is paid.`
           : `${money(pick!.price_minor)} — pay on the night or online once the school sends your invoice.`} />
       <Confirmation when={pick!.starts_at} until={pick!.ends_at} cls={about.get(pick!.class_name) ?? null} school={info} schoolName={school.name}
+        booked={book.data} className={pick!.class_name} kind="drop_in"
         next="Come again whenever you like: book each class here, or ask the school about a class pack." />
     </section>
   );
@@ -363,29 +368,66 @@ function ClassFacts({ c }: { c: ClassInfo }) {
   );
 }
 
-/** After booking: when, where (with a map), what to bring, arriving, cancelling, and what happens next. */
-function Confirmation({ when, until, cls, school, schoolName, next }: {
+/** What a public booking returns (0060): its reference and the manage link's token. */
+type Booked = { result: string; reference?: string | null; token?: string | null };
+
+/** After booking: reference, when, where (with a map), what to bring, arriving, cancelling,
+ *  what happens next, then add to calendar and the link to manage the booking (F5). */
+function Confirmation({ when, until, cls, school, schoolName, next, booked, className, kind }: {
   when: string; until?: string | null; cls: ClassInfo | null; school: SchoolInfo | null; schoolName: string; next: string;
+  booked?: Booked; className: string; kind: 'trial' | 'drop_in';
 }) {
   const map = mapLink(cls);
   const where = [cls?.location, cls?.address, cls?.postcode].filter(Boolean).join(', ');
-  const contact = [school?.contact_phone, school?.contact_email].filter(Boolean).join(' or ');
+  const contact = (school?.contact_phone || school?.contact_email) ? <>
+    {school?.contact_phone && <a className="font-medium text-accent-text underline" href={`tel:${school.contact_phone.replace(/\s/g, '')}`}>{school.contact_phone}</a>}
+    {school?.contact_phone && school?.contact_email ? ' or ' : ''}
+    {school?.contact_email && <a className="font-medium text-accent-text underline" href={`mailto:${school.contact_email}`}>{school.contact_email}</a>}
+  </> : null;
+  const manage = booked?.token
+    ? `${window.location.origin}${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/booking/?token=${booked.token}` : null;
+  const [copied, setCopied] = React.useState(false);
   const rows: [string, React.ReactNode][] = ([
+    ['Reference', booked?.reference ? <span className="tnum font-semibold text-ink">{booked.reference}</span> : null],
     ['When', `${dateLong(when)}, ${time(when)}${until ? `–${time(until)}` : ''}`],
     ['Where', where ? <>{where}{map && <> · <a href={map} target="_blank" rel="noreferrer" className="font-medium text-accent-text underline">Open in maps</a></>}</> : null],
     ['Wear or bring', cls?.what_to_bring],
     ['Arriving', school?.arrival_note],
-    ['If you can’t come', school ? `${school.cancellation_note}${contact ? ` Contact ${schoolName}: ${contact}.` : ''}` : null],
+    ['If you can’t come', school ? <>{school.cancellation_note.replace(/^If you can[’']t come,?\s*/i, '').replace(/^./, c => c.toUpperCase())}{contact ? <> Contact {schoolName}: {contact}.</> : null}</> : null],
     ['What happens next', next],
   ] as [string, React.ReactNode][]).filter(([, v]) => v);
   return (
-    <dl className="divide-y divide-line border-y border-line text-[0.9062rem]">
-      {rows.map(([k, v]) => (
-        <div key={k} className="grid gap-x-4 py-2.5 sm:grid-cols-[10rem_minmax(0,1fr)]">
-          <dt className="font-semibold text-ink">{k}</dt><dd className="text-ink-2">{v}</dd>
-        </div>
-      ))}
-    </dl>
+    <div className="space-y-5">
+      <dl className="divide-y divide-line border-y border-line text-[0.9062rem]">
+        {rows.map(([k, v]) => (
+          <div key={k} className="grid gap-x-4 py-2.5 sm:grid-cols-[10rem_minmax(0,1fr)]">
+            <dt className="font-semibold text-ink">{k}</dt><dd className="text-ink-2">{v}</dd>
+          </div>
+        ))}
+      </dl>
+      <div className="flex flex-wrap gap-2">
+        <Button onClick={() => addBookingToCalendar({ reference: booked?.reference ?? 'booking', class_name: className, starts_at: when,
+          ends_at: until ?? null, location: where || null, kind }, schoolName)}>
+          <CalendarPlus className="size-4" aria-hidden /> Add to calendar
+        </Button>
+      </div>
+      {manage && (
+        <section aria-labelledby="manage-h" className="space-y-2">
+          <h2 id="manage-h" className="section-title">Change or cancel</h2>
+          <p className="text-[0.875rem] text-ink-2">
+            Keep this link: it is how you see or cancel this booking, without an account. Anyone with the link can cancel it, so don’t share it.
+            {' '}The school can’t email it to you yet.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <a href={manage} className="min-w-0 break-all text-[0.875rem] font-semibold text-accent-text underline">Manage this booking</a>
+            <Button size="sm" onClick={() => navigator.clipboard?.writeText(manage).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {})}>
+              <Copy className="size-4" aria-hidden /> {copied ? 'Copied' : 'Copy link'}
+            </Button>
+            <span role="status" className="sr-only">{copied ? 'Link copied' : ''}</span>
+          </div>
+        </section>
+      )}
+    </div>
   );
 }
 
