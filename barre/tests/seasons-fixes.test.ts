@@ -11,7 +11,7 @@ afterAll(async () => { await closeDb(); });
 
 const as = (svc: any, user: string) => svc(`select set_config('request.jwt.claims', $1, true)`, [JSON.stringify({ sub: user, role: 'authenticated' })]);
 const SEED_EXAM = uid(NS.event, 3);
-const SHOW = uid(NS.event, 2);
+const SHOW = uid(NS.event, 6);   // the seeded Winter Showcase
 const kidOf = async (svc: any, cls: string, offset = 0) => (await svc(`select s.id, s.first_name, s.family_id, g.user_id guardian from enrolment e join student s on s.id = e.student_id
   join guardian g on g.family_id = s.family_id and g.user_id is not null where e.class_id = $1 and e.status = 'active' and e.deleted_at is null
   order by s.id offset $2 limit 1`, [cls, offset]))[0];
