@@ -65,10 +65,7 @@ export default function SchedulePage() {
 
         {sessions.isLoading && <div className="space-y-3">{[0,1,2,3].map(i => <Skeleton key={i} className="h-14" />)}</div>}
         {sessions.error && <ErrorState error={sessions.error} onRetry={() => sessions.refetch()} />}
-        {sessions.data && sessions.data.length === 0 && (
-          <EmptyState title="No classes this week"
-            body="The term hasn’t started yet, or this week falls in a break." />
-        )}
+        {sessions.data && sessions.data.length === 0 && <EmptyWeek after={to} onGo={d => setAnchor(d)} />}
         {sessions.data && sessions.data.length > 0 && (view === 'grid'
           ? <WeekGrid sessions={sessions.data} from={from} onOpen={setOpen} />
           : <Grouped sessions={sessions.data} view={view} />)}
@@ -120,5 +117,22 @@ function Grouped({ sessions, view }: { sessions: Q.SessionRow[]; view: View }) {
         );
       })}
     </div>
+  );
+}
+
+/**
+ * An empty week says where the classes are (owners U7): a new school whose
+ * term starts in January lands on a blank week, with one step to its first.
+ */
+function EmptyWeek({ after, onGo }: { after: string | Date; onGo: (d: Date) => void }) {
+  const next = useRows<{ starts_at: string; term_name: string | null; term_start: boolean }>(['next-class-week', String(after)], Q.NEXT_CLASS_WEEK,
+    [toDate(after).toISOString()]).data?.[0];
+  return (
+    <EmptyState title="No classes this week"
+      body={next ? `The next class is on ${dateLong(next.starts_at)}${next.term_name ? `, ${next.term_start ? 'when' : 'in'} ${next.term_name}${next.term_start ? ' starts' : ''}` : ''}.`
+        : 'The term hasn’t started yet, or this week falls in a break.'}
+      action={next && <Button size="sm" onClick={() => onGo(toDate(next.starts_at))}>
+        {next.term_name && next.term_start ? `Go to the first week of ${next.term_name}` : 'Go to the next week with classes'}
+      </Button>} />
   );
 }

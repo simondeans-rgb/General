@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useWrite } from '@/lib/write';
 import { UserPlus, ListPlus, Check, X, Clock } from 'lucide-react';
 import { RecordSheet } from '@/components/app/record-sheet';
 import { useRows } from '@/lib/query';
@@ -12,14 +13,11 @@ import { Word } from './session-row';
 import * as C from '@/lib/repos/classes';
 import { SEND_DIRECT } from '@/lib/repos/inbox';
 import { ageFrom, dateLong, dateShort, money, time, toDateInput } from '@/lib/format';
+import { dateWithYear, officeAgeFit } from '@/lib/office-words';
 
+/** The pipeline's writes use the one shared save model (U5): refetch, then report. */
 export function usePipeline(sql: string, onDone?: (rows: any[]) => void) {
-  const { session } = useSession();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (params: unknown[]) => runAs(session, q => q(sql, params)),
-    onSuccess: rows => { qc.invalidateQueries({ queryKey: ['db'] }); onDone?.(rows as any[]); },
-  });
+  return useWrite(sql, onDone);
 }
 
 type Candidate = {
@@ -108,7 +106,7 @@ export function EnrolSheet({ classId, className, full, onClose }: {
       )}
       {list.length > 0 && (
         <Field label="Child" htmlFor="enrol-student" required
-               hint={chosen ? `${chosen.age} years old · ${chosen.family_name}${chosen.in_range ? '' : ' · outside this class’s age range'}` : undefined}>
+               hint={chosen ? `${chosen.age} years old${chosen.date_of_birth ? ` · born ${dateWithYear(chosen.date_of_birth)}` : ''} · ${chosen.family_name}${chosen.in_range ? '' : ' · outside this class’s age range'}` : undefined}>
           <Select id="enrol-student" value={studentId} onChange={e => setStudentId(e.target.value)}
                   size={Math.min(6, Math.max(3, list.length))}>
             {list.slice(0, 200).map(c => (
@@ -232,8 +230,11 @@ export function MoveSheet({ enrolmentId, studentName, age, familyId, from, onClo
   const earliest = p ? toDateInput(p.earliest) : undefined;
   const when = on > today ? 'future' : on < today ? 'past' : 'today';
   const onWords = dateLong(on + 'T12:00:00');
-  const outOfRange = !!target && age != null &&
-    ((target.age_min != null && age < target.age_min) || (target.age_max != null && age > target.age_max));
+  // Written from the database's own rule (U3): just outside a children's range
+  // is the teacher's call; an adult class for a child, or the reverse, never.
+  const fit = (o: C.MoveOption) => officeAgeFit(age, o);
+  const outOfRange = !!target && fit(target) === 'teacher';
+  const never = !!target && fit(target) === 'never';
   const ages = (o: C.MoveOption) => o.age_min != null ? (o.age_max != null ? `ages ${o.age_min}–${o.age_max}` : `${o.age_min}+`) : 'any age';
 
   const move = useMutation({
@@ -277,18 +278,22 @@ export function MoveSheet({ enrolmentId, studentName, age, familyId, from, onClo
 
   return (
     <RecordSheet title="Move to another class" subtitle={`${studentName} · from ${from.name}`} onClose={onClose}
-      error={move.error} saving={move.isPending} canSave={!!to && !!target && target.free > 0 && !!on && (!earliest || on >= earliest)}
-      saveHint={!to ? 'Choose the class they are moving to.' : target && target.free <= 0 ? 'That class has no free place.'
+      error={move.error} saving={move.isPending} canSave={!!to && !!target && !never && target.free > 0 && !!on && (!earliest || on >= earliest)}
+      saveHint={!to ? 'Choose the class they are moving to.' : never ? `${studentName} cannot join ${target!.name}.` : target && target.free <= 0 ? 'That class has no free place.'
         : earliest && on < earliest ? 'A move can be dated back only to the start of this term.' : null}
       saveLabel={when === 'future' ? 'Plan the move' : 'Move'} onSave={() => move.mutate()}>
-      <Field label="New class" htmlFor="mv-to" required hint="Full classes cannot be chosen. Free places count offers already out.">
+      <Field label="New class" htmlFor="mv-to" required
+        hint={`Full classes cannot be chosen. Free places count offers already out.${age != null && age < 18 ? ' Adult classes are not open to under-18s.' : age != null ? ' Children’s classes are not open to adults.' : ''}`}>
         <Select id="mv-to" value={to} onChange={e => setTo(e.target.value)}>
           <option value="">Choose a class…</option>
-          {options.data?.map(o => (
-            <option key={o.id} value={o.id} disabled={o.free <= 0}>
-              {o.name} — {DAYS[o.day_of_week]} {String(o.start_time).slice(0, 5)}, {ages(o)}, {money(o.price_minor)}, {o.free > 0 ? `${o.free} free` : 'full'}
-            </option>
-          ))}
+          {options.data?.map(o => {
+            const no = fit(o) === 'never';
+            return (
+              <option key={o.id} value={o.id} disabled={o.free <= 0 || no}>
+                {o.name} — {DAYS[o.day_of_week]} {String(o.start_time).slice(0, 5)}, {ages(o)}, {money(o.price_minor)}, {no ? (o.age_min != null && o.age_min >= 18 ? '18+ only' : 'children only') : o.free > 0 ? `${o.free} free` : 'full'}
+              </option>
+            );
+          })}
         </Select>
       </Field>
       <Field label="From" htmlFor="mv-on" required
@@ -299,7 +304,11 @@ export function MoveSheet({ enrolmentId, studentName, age, familyId, from, onClo
       </Field>
       {outOfRange && (
         <Notice word="Age" tone="caution" title={`${target!.name} is for ${ages(target!)}`}
-          detail={`${studentName} is ${age}. You can still move them if the teacher agrees.`} />
+          detail={`${studentName} is ${age}. As this is a children’s class, they can move if the teacher agrees.`} />
+      )}
+      {never && (
+        <Notice word="Age" tone="critical" title={`${target!.name} is for ${ages(target!)}`}
+          detail={`${studentName} is ${age}, so they cannot join it. Choose another class.`} />
       )}
       {target && p?.note && (
         <Notice word="Billing" title="What the move means for the bill" detail={p.note} />
