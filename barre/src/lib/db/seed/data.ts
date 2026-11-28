@@ -569,6 +569,9 @@ function buildMedicalBillingComms(ctx: ActivityCtx): string {
     ${row([uid(NS.comm, 35), STUDIO_ID, 'direct', 'in_app', uid(NS.family, 8), null,
       'Welcome! The church car park on Lee Road is free before 1pm on Saturdays, and only a two-minute walk.',
       OFFICE, false, hoursAgo(47)])};`);
+  // The office's answer is a reply in Hannah's thread, so it stays between
+  // her and the office, like her message (0060).
+  push(`update communication set reply_to = ${row([uid(NS.comm, 3)])} where id = ${row([uid(NS.comm, 30)])};`);
   // The office has already read what it answered.
   push(`insert into communication_read (communication_id, user_id)
         select c.id, u.id from communication c cross join (values (${row([OFFICE])}::uuid), (${row([FREYA])}::uuid)) u(id)

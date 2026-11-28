@@ -30,6 +30,8 @@ export type Message = {
   sender: string | null; read_by_me: boolean; is_request?: boolean;
   /** Only one guardian and the office see it (UR-17). */
   private?: boolean; private_name?: string | null;
+  /** Sent by the signed-in guardian themselves (MY_CONVERSATION). */
+  mine?: boolean | null;
 };
 
 export const CONVERSATION = `
@@ -45,6 +47,7 @@ select c.id, c.subject, c.body, c.sent_at, c.inbound, c.request_id is not null a
 /** The guardian's own conversation: RLS limits it to their family. */
 export const MY_CONVERSATION = `
 select c.id, c.subject, c.body, c.sent_at, c.inbound, c.reply_to, c.request_id is not null as is_request,
+       c.private_to is not null as private, c.sent_by = auth.uid() as mine,
        app.sender_name(c.sent_by, c.studio_id) as sender,
        exists (select 1 from communication_read r where r.communication_id = c.id
                 and r.user_id = auth.uid()) as read_by_me
