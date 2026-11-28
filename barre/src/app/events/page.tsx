@@ -7,7 +7,7 @@ import { ArrowDown, ArrowUp, Plus, Receipt, Trash2, Users } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection } from '@/components/app/detail-panel';
 import { RecordSheet } from '@/components/app/record-sheet';
-import { Button, EmptyState, ErrorState, Field, Input, Notice, Select, Skeleton } from '@/components/ui';
+import { Button, EmptyState, ErrorState, Field, Input, Notice, Select, Skeleton, ViewTabs } from '@/components/ui';
 import { SectionHead, Word } from '@/components/app/session-row';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
@@ -147,7 +147,15 @@ function EventSheet({ row, onClose, onCreated }: { row: E.OfficeEvent | null; on
   );
 }
 
+/** The event panel in tabs, so a big show is not one long scroll (round 2, U13). */
+type EventTab = 'details' | 'participants' | 'rehearsals' | 'costumes' | 'tickets' | 'helpers';
+
 function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => void; onClose: () => void }) {
+  const [tab, setTab] = React.useState<EventTab>('details');
+  React.useEffect(() => setTab('details'), [e.id]);
+  const hasTickets = e.kind === 'show' || e.kind === 'competition';
+  const tabs: [EventTab, string][] = [['details', 'Details'], ['participants', 'Participants'], ['rehearsals', 'Rehearsals'],
+    ['costumes', 'Costumes'], ...(hasTickets ? [['tickets', 'Tickets'] as [EventTab, string]] : []), ['helpers', 'Helpers']];
   const people = useRows<E.Participant>(['event-people', e.id], E.PARTICIPANTS, [e.id]);
   const classes = useRows<{ id: string; name: string }>(['class-options'], C.CLASS_OPTIONS);
   const routines = useRows<E.Routine>(['routines', e.id], E.ROUTINES, [e.id]);
@@ -168,13 +176,17 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
     <DetailPanel open onClose={onClose} title={e.title} subtitle={`${dateLong(e.starts_at)} · ${time(e.starts_at)}${e.venue ? ` · ${e.venue}` : ''}`}>
       {done && <div role="status" className="mb-5 border-l-2 border-positive pl-3"><Notice word="Done" tone="positive" title={done} /></div>}
       {write.error != null && <div className="mb-5"><ErrorState error={write.error} /></div>}
+      <ViewTabs label={`${e.title}: sections`} value={tab} onChange={setTab} options={tabs} className="mb-6 border-b border-line" />
+      {tab === 'details' && <>
       <dl className="mb-7 grid grid-cols-3 gap-4">
         <div><dt className="label">Going</dt><dd className="stat-number mt-1 text-[1.625rem] leading-none">{e.confirmed}</dd></div>
         <div><dt className="label">To answer</dt><dd className="stat-number mt-1 text-[1.625rem] leading-none">{e.invited}</dd></div>
         <div><dt className="label">Asking</dt><dd className={cn('stat-number mt-1 text-[1.625rem] leading-none', e.requested ? 'text-caution' : '')}>{e.requested}</dd></div>
       </dl>
       <Button className="mb-7" onClick={onEdit}>Edit details</Button>
+      </>}
 
+      {tab === 'participants' && <>
       <DetailSection title="Invite classes">
         <div className="flex flex-wrap gap-1.5">
           {classes.data?.map(c => (
@@ -203,7 +215,9 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
           </Button>
         )}
       </DetailSection>
+      </>}
 
+      {tab === 'details' && <>
       <DetailSection title="Running order">
         <ol className="divide-y divide-line text-[0.875rem]">
           {routines.data?.map((r, i) => (
@@ -229,9 +243,11 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
       </DetailSection>
 
       {routines.data && routines.data.length > 0 && <ProgrammeButton event={e} />}
+      </>}
 
-      <CostumeSection eventId={e.id} routines={routines.data ?? []} />
+      {tab === 'costumes' && <CostumeSection eventId={e.id} routines={routines.data ?? []} />}
 
+      {tab === 'rehearsals' && <>
       <DetailSection title="Rehearsals">
         <ul className="divide-y divide-line text-[0.875rem]">{rehearsals.data?.map(r => (
           <li key={r.id} className="flex min-h-[44px] items-center gap-2 py-1"><span className="min-w-0 flex-1"><b>{r.title}</b> · {dateLong(r.starts_at)}, {time(r.starts_at)}</span>
@@ -243,9 +259,11 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
         <Button size="sm" className="mt-1.5" disabled={!rh.starts} onClick={() => { go(E.ADD_REHEARSAL, [e.id, rh.title, new Date(rh.starts).toISOString(), null, null],
           () => 'Rehearsal added to dancers’ and teachers’ diaries.'); setRh({ title: 'Rehearsal', starts: '', ends: '' }); }}>Add rehearsal</Button>
       </DetailSection>
+      </>}
 
-      {(e.kind === 'show' || e.kind === 'competition') && <TicketSection eventId={e.id} />}
+      {tab === 'tickets' && hasTickets && <TicketSection eventId={e.id} />}
 
+      {tab === 'details' && <>
       <DetailSection title="Tell the families">
         <div className="grid gap-1.5">
           <Input aria-label="Notice subject" placeholder="Subject" value={nt.subject} onChange={x => setNt({ ...nt, subject: x.target.value })} />
@@ -255,7 +273,9 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
             r => r.n ? `Notice sent to ${r.n} famil${r.n === 1 ? 'y' : 'ies'}. It shows under this event in their app.` : 'No families are invited or going yet.'); setNt({ subject: '', body: '' }); }}>Send to families invited or going</Button>
         </div>
       </DetailSection>
+      </>}
 
+      {tab === 'helpers' && <>
       <DetailSection title="Helpers">
         <ul className="divide-y divide-line text-[0.875rem]">
           {helpers.data?.map(h => (
@@ -292,6 +312,7 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
           onChange={x => setCh({ ...ch, checked: x.target.checked })} /> DBS or licence seen</label>
         <Button size="sm" className="mt-1.5" disabled={!ch.name.trim()} onClick={() => { go(E.ADD_CHAPERONE, [e.id, ch.name, ch.phone, null, ch.checked]); setCh({ name: '', phone: '', checked: false }); }}>Add chaperone</Button>
       </DetailSection>
+      </>}
     </DetailPanel>
   );
 }
