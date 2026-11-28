@@ -249,7 +249,9 @@ export function ThenAndNow({ studentId, name }: { studentId: string; name?: stri
           {rows.map(r => (
             <li key={`${r.style}|${r.skill}`} className="flex flex-wrap items-baseline gap-x-3 py-2.5">
               <span className="min-w-0 flex-1"><span className="font-medium">{r.skill}</span> <span className="text-[0.8125rem] text-ink-3">· {r.style}</span></span>
-              <span className="text-[0.875rem]"><span className="text-ink-3">{r.then ? label(r.then) : 'New'}</span> → <span className="font-semibold">{label(r.now)}</span></span>
+              <span className="text-[0.875rem]">{r.then
+                ? <><span className="text-ink-3">{label(r.then)}</span> → <span className="font-semibold">{label(r.now)}</span></>
+                : <><span className="text-ink-3">First assessed:</span> <span className="font-semibold">{label(r.now)}</span></>}</span>
             </li>
           ))}
         </ul>

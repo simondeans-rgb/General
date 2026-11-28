@@ -11,7 +11,9 @@ import { useSchoolTheme } from '@/components/app/brand';
 import { Button, ErrorState, Field, Input, Notice, Skeleton } from '@/components/ui';
 
 type Preview = { studio_name: string; role: Role; email: string; full_name: string | null;
-  family_name: string | null; student_name: string | null; state: string };
+  family_name: string | null; student_name: string | null; state: string;
+  /** The family is one adult on their own (U12). */
+  adult_only?: boolean };
 
 const AS: Record<string, string> = {
   owner: 'the owner', admin: 'an administrator', teacher: 'a teacher', guardian: 'a parent', student: 'a student',
@@ -78,8 +80,10 @@ function Invite() {
             <p className="label text-accent-text">Invitation</p>
             <h1 className="mt-1 font-display text-[1.875rem] font-[800] leading-[1.05] [font-stretch:112%]">Join {p.studio_name}</h1>
             <p className="mt-2 text-[0.9375rem] text-ink-2">
-              You have been invited as {AS[p.role] ?? p.role}
-              {p.family_name ? ` in the ${p.family_name}` : ''}{p.student_name ? ` — a login for ${p.student_name}` : ''}.
+              {p.role === 'guardian' && p.adult_only
+                ? `You’ve been invited to manage your own bookings at ${p.studio_name}: your classes, drop-ins and payments.`
+                : <>You have been invited as {AS[p.role] ?? p.role}
+                  {p.family_name ? ` in the ${p.family_name}` : ''}{p.student_name ? ` — a login for ${p.student_name}` : ''}.</>}
             </p>
             <div className="mt-6 space-y-4 border-t-2 border-ink pt-5">
               <Field label="Email" htmlFor="iv-email" hint="The invitation was sent to this address.">

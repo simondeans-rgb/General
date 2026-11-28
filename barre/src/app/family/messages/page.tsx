@@ -82,7 +82,13 @@ export default function FamilyMessages() {
                 const prev = conv.data![n - 1];
                 const newDay = !prev || relativeDay(prev.sent_at) !== relativeDay(m.sent_at);
                 // From the parent's side, their own messages sit on the right.
-                const mine = m.inbound;
+                // A message from the family that this guardian did not send
+                // (an older one, before messages were private) sits on the
+                // left and says who else sees it.
+                const mine = m.inbound && m.mine !== false;
+                const reach = m.private
+                  ? (mine ? 'Only you and the office' : 'To you only')
+                  : m.inbound ? 'Shared with your family' : 'To your family';
                 return (
                   <React.Fragment key={m.id}>
                     {newDay && <p className="pt-1 text-center text-[0.7812rem] font-semibold text-ink-3">{relativeDay(m.sent_at)}</p>}
@@ -92,8 +98,8 @@ export default function FamilyMessages() {
                         {m.subject && <p className="mb-1 font-medium">{m.subject}</p>}
                         <p className="whitespace-pre-wrap break-words">{m.body}</p>
                         <p className={cn('mt-1.5 flex items-center gap-2 text-[0.7188rem]', 'text-ink-3')}>
-                          <span>{mine ? (m.sender ?? 'You') : (m.sender ?? 'The studio')} · {time(m.sent_at)}</span>
-                          {!mine && !m.is_request && (
+                          <span>{mine ? 'You' : (m.sender ?? (m.inbound ? 'Your family' : 'The studio'))} · {time(m.sent_at)} · {reach}</span>
+                          {!m.inbound && !m.is_request && (
                             <button type="button" onClick={() => { setReplyTo(m); box.current?.focus(); }}
                               className="ml-auto inline-flex min-h-[32px] items-center gap-1 rounded-full px-2 font-semibold text-accent-text hover:bg-surface-3"
                               aria-label={`Reply to ${m.sender ?? 'the studio'}`}>

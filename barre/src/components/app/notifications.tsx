@@ -123,8 +123,11 @@ export function NotificationBell() {
               {list.isLoading && <div className="space-y-2 p-3">{[0,1,2].map(i => <Skeleton key={i} className="h-12" />)}</div>}
               {list.data?.length === 0 && <EmptyState title="Nothing new"
                 body={session?.role === 'guardian'
-                  ? 'Replies from the studio, payment problems and waiting-list places appear here.'
-                  : 'Payments, messages, trials and enrolments appear here as they happen.'} />}
+                  // Read the same by a parent and by an adult who dances (U12).
+                  ? 'Class changes, replies from the studio, invoices and waiting-list places appear here.'
+                  : session?.role === 'student'
+                    ? 'Cancellations, cover teachers and changes to your classes appear here.'
+                    : 'Payments, messages, trials and enrolments appear here as they happen.'} />}
               <ul className="divide-y divide-line">
                 {list.data?.map(n => (
                   <li key={n.id}>

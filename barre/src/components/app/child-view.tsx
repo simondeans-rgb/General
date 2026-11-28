@@ -2,10 +2,11 @@
 
 import * as React from 'react';
 import { useRows } from '@/lib/query';
-import { Button } from '@/components/ui';
+import { Button, styleColour } from '@/components/ui';
 import * as P from '@/lib/repos/progress';
 import * as H from '@/lib/repos/hub';
-import { relativeDay } from '@/lib/format';
+import * as F from '@/lib/repos/family';
+import { relativeDay, time, dayRange } from '@/lib/format';
 
 const KID_WORDS: Record<P.Level, string> = {
   not_started: 'Starting out', developing: 'Learning it', secure: 'Getting really good', mastered: 'You’ve got it',
@@ -27,6 +28,13 @@ export function ChildView({ student, notes, onClose }: {
     `select distinct label, sticker from feedback_chip where sticker is not null and deleted_at is null`);
   const sticker = new Map((stickers.data ?? []).map(s => [s.label, s.sticker]));
   const done = (skills.data ?? []).filter(s => s.level && s.level !== 'not_started');
+  // The next class, in its own colour: something to look forward to (U12).
+  const [from] = React.useMemo(() => dayRange(0), []);
+  const to = React.useMemo(() => new Date(new Date(from).getTime() + 21 * 86400_000).toISOString(), [from]);
+  const schedule = useRows<F.NextClass>(['my-schedule-21', from], F.MY_SCHEDULE, [from, to]);
+  const next = (schedule.data ?? []).find(c => c.student_id === student.id && c.status !== 'cancelled'
+    && new Date(c.starts_at).getTime() > Date.now());
+  const colour = styleColour(next?.colour ?? null);
   React.useEffect(() => {
     const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', esc);
@@ -41,12 +49,23 @@ export function ChildView({ student, notes, onClose }: {
     <div role="dialog" aria-modal="true" aria-labelledby="child-view-h"
       className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-canvas px-4 pb-safe pt-6">
       <div className="mx-auto max-w-lg space-y-8 pb-10">
+        <div aria-hidden className="h-2 rounded-full" style={{ background: colour }} />
         <div className="flex items-start gap-3">
           <h2 id="child-view-h" className="min-w-0 flex-1 font-display text-[2.125rem] leading-tight">Well done, {student.first_name}</h2>
           <Button autoFocus onClick={onClose}>Done</Button>
         </div>
+        {next && (
+          <section className="rounded-[var(--radius-xl)] border-2 p-4" style={{ borderColor: colour }}>
+            <p className="text-[1rem] font-semibold">Your next class</p>
+            <p className="mt-1 font-display text-[2rem] leading-tight tnum">{relativeDay(next.starts_at)}, {time(next.starts_at)}</p>
+            <p className="mt-1 flex items-center gap-2 text-[1.25rem]">
+              <span aria-hidden className="size-3 shrink-0 rounded-[3px]" style={{ background: colour }} />
+              {next.name}{next.teacher ? ` with ${next.teacher}` : ''}
+            </p>
+          </section>
+        )}
         {notes.slice(0, 3).map(n => (
-          <section key={n.id} className="space-y-3 border-t-2 border-ink pt-4">
+          <section key={n.id} className="space-y-3 border-t-4 pt-4" style={{ borderColor: colour }}>
             <p className="text-[0.875rem] text-ink-3">{n.class_name ?? 'Class'} · {relativeDay(n.shared_at!)}</p>
             {n.going_well && <p className="text-[1.5rem] font-semibold leading-snug">{decorate(n.going_well)}{n.going_well}</p>}
             {n.work_on && <p className="text-[1.25rem] leading-snug"><span className="font-semibold">Next time, try: </span>{n.work_on}</p>}
