@@ -43,7 +43,7 @@ export default function SchedulePage() {
           <Button size="sm" variant="ghost" onClick={() => shift(-1)} aria-label="Previous week">
             <ChevronLeft className="size-4" aria-hidden />
           </Button>
-          <Button size="sm" variant="secondary" onClick={() => setAnchor(new Date())}
+          <Button size="sm" variant={thisWeek ? "ghost" : "secondary"} onClick={() => setAnchor(new Date())}
                   disabled={thisWeek}>
             {thisWeek ? 'This week' : <><span className="sm:hidden">Today</span><span className="hidden sm:inline">Back to today</span></>}
           </Button>

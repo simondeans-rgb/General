@@ -245,14 +245,12 @@ export function StudentConsents() {
       </div>
       <dl className="divide-y divide-line">
         {rows.data.map(c => (
-          <div key={c.kind} className="py-2.5">
-            <div className="flex items-baseline justify-between gap-3">
-              <dt className="font-medium">{c.label}</dt>
-              <dd className={cn('text-right text-[0.875rem]', c.granted === false ? 'font-semibold' : c.granted == null && 'text-ink-3')}>
-                {c.granted === true ? 'Allowed' : c.granted === false ? 'Not allowed' : 'Not recorded, so not allowed'}
-              </dd>
-            </div>
-            <dd className="text-[0.8125rem] text-ink-3">{c.description}</dd>
+          <div key={c.kind} className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 py-2.5">
+            <dt className="font-medium">{c.label}</dt>
+            <dd className={cn('text-right text-[0.875rem]', c.granted === false ? 'font-semibold' : c.granted == null && 'text-ink-3')}>
+              {c.granted === true ? 'Allowed' : c.granted === false ? 'Not allowed' : 'Not recorded, so not allowed'}
+            </dd>
+            <dd className="col-span-2 text-[0.8125rem] text-ink-3">{c.description}</dd>
           </div>
         ))}
       </dl>
