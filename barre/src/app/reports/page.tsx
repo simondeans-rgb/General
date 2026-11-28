@@ -85,10 +85,13 @@ function Reports() {
           <dl className="mt-6 grid grid-cols-2 border-y border-line sm:grid-cols-4 sm:divide-x sm:divide-line">
             <Small label="New students, 30 days" loading={h.isLoading} value={d?.new_30d} href="/people?tab=students" />
             <Small label="Leavers, 30 days" loading={h.isLoading} value={d?.leavers_30d} />
-            <Small label={loc ? 'Outstanding, whole school' : 'Outstanding'} loading={h.isLoading} value={d && money(d.outstanding_minor)} href="/billing" />
-            <Small label={loc ? 'Collected, 30 days, whole school' : 'Collected, 30 days'} loading={h.isLoading} value={d && money(d.collected_30d_minor)} href="/billing" />
+            <Small label={loc ? `Outstanding, ${locName}` : 'Outstanding'} loading={h.isLoading} value={d && money(d.outstanding_minor)} href="/billing" />
+            <Small label={loc ? `Collected, 30 days, ${locName}` : 'Collected, 30 days'} loading={h.isLoading} value={d && money(d.collected_30d_minor)} href="/billing" />
           </dl>
-          <p className="mt-2 text-[0.8125rem] text-ink-3">Active students are children in at least one class today, each counted once. Your plan’s student count on Account also includes trial children and those who have left.</p>
+          <p className="mt-2 text-[0.8125rem] text-ink-3">
+            Active students are children in at least one class today, each counted once. Your plan’s count on Account also includes trials, waiting lists and new records; leavers are not counted.
+            {loc && ' Money at a location follows the classes on each invoice; an invoice with no class follows the family’s classes.'}
+          </p>
         </section>
 
         {multi && !loc && <LocationCompare />}
@@ -164,7 +167,7 @@ function Reports() {
           </ul>
         </section>
 
-        <Retention />
+        <Retention loc={loc} locName={locName} />
 
         {d && !loc && <Pulse d={d} />}
       </div>
@@ -175,15 +178,17 @@ function Reports() {
 /** One row per location: the same figures side by side (UR-33). */
 function LocationCompare() {
   const rows = useRows<R.LocationRow>(['report-by-location'], R.BY_LOCATION);
+  const unplaced = useRow<{ collected_30d_minor: string; outstanding_minor: string }>(['report-unplaced-money'], R.UNPLACED_MONEY);
+  const u = unplaced.data;
   return (
     <section aria-labelledby="r-locs">
-      <SectionHead id="r-locs" title="By location" meta="Students counted once per location · term fees from current enrolments" />
+      <SectionHead id="r-locs" title="By location" meta="Students counted once per location · money split by the classes on each invoice" />
       {rows.isLoading && <Skeleton className="mt-3 h-24" />}
       {rows.data && (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] text-sm">
+          <table className="w-full min-w-[760px] text-sm">
             <thead className="border-b border-line text-left">
-              <tr>{['Location', 'Classes', 'Students', 'Places filled', 'Attendance, 4 weeks', 'Billed, 30 days', 'Term fees, enrolled'].map((t, i) =>
+              <tr>{['Location', 'Classes', 'Students', 'Places filled', 'Attendance, 4 weeks', 'Invoiced, 30 days', 'Collected, 30 days', 'Outstanding', 'Term fees, enrolled'].map((t, i) =>
                 <th key={t} scope="col" className={cn('label py-2 font-semibold', i > 0 && 'text-right')}>{t}</th>)}</tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -195,11 +200,19 @@ function LocationCompare() {
                   <td className="tnum py-2 text-right">{pct(l.enrolled, l.capacity) ?? 0}% <span className="text-ink-3">({l.enrolled} of {l.capacity})</span></td>
                   <td className="tnum py-2 text-right">{pct(l.attended, l.marked) == null ? <span className="text-ink-3">No registers</span> : `${pct(l.attended, l.marked)}%`}</td>
                   <td className="tnum py-2 text-right">{money(l.billed_30d_minor)}</td>
+                  <td className="tnum py-2 text-right">{money(l.collected_30d_minor)}</td>
+                  <td className={cn('tnum py-2 text-right', Number(l.overdue_minor) > 0 && 'font-semibold text-caution')}>{money(l.outstanding_minor)}
+                    {Number(l.overdue_minor) > 0 && <span className="block text-[0.75rem] font-normal">{money(l.overdue_minor)} overdue</span>}</td>
                   <td className="tnum py-2 text-right">{money(l.fees_term_minor)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+          {u && (Number(u.collected_30d_minor) > 0 || Number(u.outstanding_minor) > 0) && (
+            <p className="pt-2 text-[0.8125rem] text-ink-3">
+              Not tied to a location (invoices with no class, for families in no class now): {money(u.collected_30d_minor)} collected, {money(u.outstanding_minor)} outstanding.
+            </p>
+          )}
         </div>
       )}
     </section>
@@ -207,26 +220,29 @@ function LocationCompare() {
 }
 
 /** Term on term: who carried on, who is new, who did not come back (UR-34). */
-function Retention() {
+function Retention({ loc, locName }: { loc: string | null; locName?: string }) {
   const terms = useRows<{ id: string; name: string; starts_on: string }>(['report-terms'], R.TERMS_LIST);
   const today = isoDate(new Date());
   const [termId, setTermId] = React.useState<string>('');
   const current = termId || terms.data?.find(t => String(t.starts_on).slice(0, 10) <= today)?.id || terms.data?.[0]?.id || '';
   const [by, setBy] = React.useState<'class' | 'style' | 'age'>('class');
-  const sum = useRow<R.RetentionSummary>(['retention', current], R.RETENTION_SUMMARY, [current]);
-  const rows = useRows<R.RetentionRow>(['retention-by', current, by], R.RETENTION_BY, [current, by], { enabled: !!current });
-  const lapsed = useRows<R.LapsedRow>(['lapsed', current], R.LAPSED, [current], { enabled: !!current });
+  // At a location: the classes there, and imported classes matched to them by name.
+  const sum = useRow<R.RetentionSummary>(['retention', current, loc], loc ? R.RETENTION_SUMMARY_AT : R.RETENTION_SUMMARY, loc ? [current, loc] : [current]);
+  const rows = useRows<R.RetentionRow>(['retention-by', current, by, loc], loc ? R.RETENTION_BY_AT : R.RETENTION_BY,
+    loc ? [current, by, loc] : [current, by], { enabled: !!current });
+  const lapsed = useRows<R.LapsedRow>(['lapsed', current, loc], loc ? R.LAPSED_AT : R.LAPSED, loc ? [current, loc] : [current], { enabled: !!current });
   const s = sum.data;
   if (!current) return null;
   return (
     <section aria-labelledby="r-ret">
-      <SectionHead id="r-ret" title="Retention" meta={s?.previous_term ? `${s.previous_term} to ${s.current_term}` : undefined}
+      <SectionHead id="r-ret" title="Retention"
+        meta={s?.previous_term ? `${s.previous_term}${s.imported ? ' (imported records)' : ''} to ${s.current_term}${locName ? ` · ${locName}` : ''}` : undefined}
         action={terms.data && terms.data.length > 1 ? (
           <Select aria-label="Term" value={current} onChange={e => setTermId(e.target.value)} className="w-auto">
             {terms.data.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
           </Select>) : undefined} />
       {sum.isLoading && <Skeleton className="mt-3 h-20" />}
-      {s && !s.previous_term && <p className="py-4 text-[0.875rem] text-ink-3">This is the first term in Swayvo, so there is nothing to compare with yet. Retention appears once a second term starts.</p>}
+      {s && !s.previous_term && <p className="py-4 text-[0.875rem] text-ink-3">This is the first term in Swayvo, so there is nothing to compare with yet. Retention appears once a second term starts, or straight away if you import attendance from your previous system (People › Import, step 4).</p>}
       {s?.previous_term && (
         <>
           <dl className="grid grid-cols-2 gap-x-6 gap-y-4 pt-4 sm:grid-cols-4">
@@ -236,7 +252,10 @@ function Retention() {
             <div><dt className="label">New this term</dt><dd className="stat-number mt-1 text-[1.875rem] leading-none">{s.new}</dd></div>
             <div><dt className="label">In {s.current_term}</dt><dd className="stat-number mt-1 text-[1.875rem] leading-none">{s.current}</dd></div>
           </dl>
-          <p className="mt-2 text-[0.8125rem] text-ink-3">A student counts in a term if they were in any of its classes. Moving class is not leaving.</p>
+          <p className="mt-2 text-[0.8125rem] text-ink-3">
+            A student counts in a term if they were in any of its classes. Moving class is not leaving.
+            {s.imported && ` ${s.previous_term} comes from the attendance you imported: a child counts if they came at least once. Styles and locations are known only where an imported class has the same name as a class here.`}
+          </p>
           <ViewTabs className="mt-5" label="Retention by" value={by} onChange={setBy} options={[['class', 'By class'], ['style', 'By style'], ['age', 'By age']]} />
           <div className="overflow-x-auto">
             <table className="w-full min-w-[480px] text-sm">
