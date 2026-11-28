@@ -76,7 +76,7 @@ export function installIdentity(school: InstallSchool | null | undefined): Insta
  * inside the central 80% circle Android may crop to.
  */
 export function iconLayout(size: number, maskable: boolean) {
-  const safe = maskable ? 0.8 : 1;
+  const safe = maskable ? 0.76 : 1;   // the plate's corners stay inside the 80% circle
   const plate = Math.round(size * 0.74 * safe);
   const logoBox = Math.round(plate * 0.78);
   return {

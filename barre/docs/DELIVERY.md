@@ -47,6 +47,18 @@ Without keys the worker only prints what it would send.
 The demo build has no server, so its office "Run automations" button and the
 office's open app stand in for the scheduler.
 
+## Branded templates (ready, not yet wired)
+
+`src/lib/branded-print.ts` renders each kind of message a school sends (a class
+moves or is cancelled, a cover teacher, a fee due, an invitation, an absence
+received) as `{ subject, text, html }` from data: white, the school's name
+first, its colour on the rule and the button, the Notice word leading the
+subject ("MOVED: Grade 2 Ballet…"), plain text first, Swayvo signing off.
+Every value is escaped. Preview them for the sample schools on `/design`
+("School documents"). Nothing calls them yet: when delivery is decided
+(R-003), the worker passes `html` as Postmark's `HtmlBody` / Resend's `html`
+beside the existing text body.
+
 ## Daily digest and calendar feed
 
 - People who choose **one email a day** get their routine notifications as a single email at 5pm school
