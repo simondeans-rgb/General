@@ -252,3 +252,8 @@ select cs.starts_at, t.name as term_name,
 export type OverdueRegister = { session_id: string; class_name: string; starts_at: string; teacher_name: string | null };
 export const ATTENTION_REGISTERS = `select r.* from app.overdue_registers(
   (select id from studio where id in (select app.studio_ids()) limit 1)) r`;
+
+/** Trials the teacher has written about, still waiting for the office's decision (0071). */
+export type TrialToDecide = { trial_id: string; child: string; class_name: string; recommendation: string | null; written_by_name: string | null; updated_at: string };
+export const ATTENTION_TRIAL_FEEDBACK = `select * from app.trials_to_decide(
+  (select id from studio where id in (select app.studio_ids()) limit 1))`;

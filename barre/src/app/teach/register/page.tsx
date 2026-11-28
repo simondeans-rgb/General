@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MedicalBrief, medicalLine } from '@/components/app/medical-brief';
 import { LastFeedback } from '@/components/app/last-feedback';
+import { TrialFeedbackBox } from '@/components/app/trial-feedback';
 import { mergeView, restTargets } from '@/lib/offline/attendance-queue';
 import { clearRejected, flushRegisterQueue, useOnline, useRegisterQueue, useSyncState } from '@/lib/offline/register-sync';
 import { ArrowLeft, Check, ChevronDown, ChevronRight, X } from 'lucide-react';
@@ -436,7 +437,11 @@ function RegisterLine({ entry: r, onMark, onReason, disabled, big, workingOn }: 
   React.useEffect(() => { if (!editing) setReason(r.reason ?? ''); }, [r.reason, editing]);
 
   return (
-    <div className={big ? 'py-2' : 'py-2.5'}>
+    <div className={cn(big ? 'py-2' : 'py-2.5',
+      r.is_trial && 'border-l-4 border-peach bg-peach-soft/40 pl-3 pr-2')}>
+      {r.is_trial && (
+        <p className="pb-1 text-[0.75rem] font-semibold uppercase tracking-wide text-ink-2">Trial · first class with us</p>
+      )}
       <div className={cn('grid items-center gap-x-3', big ? 'grid-cols-1 gap-y-1.5' : 'grid-cols-[minmax(0,1fr)_auto]')}>
         <button
           onClick={() => setOpen(o => !o)}
@@ -460,8 +465,7 @@ function RegisterLine({ entry: r, onMark, onReason, disabled, big, workingOn }: 
           {workingOn && !big && (
             <span className="mt-0.5 block truncate text-[0.8125rem] text-ink-3"><span className="font-semibold text-ink-2">Working on:</span> {workingOn}</span>
           )}
-          <span className={cn('mt-0.5 block text-[0.8125rem] text-ink-3', big && !r.is_trial && !r.waiting && 'sr-only')}>
-            {r.is_trial && <span className="mr-1.5 rounded-[var(--radius-sm)] bg-peach-soft px-1.5 py-px font-semibold text-ink">Trial</span>}
+          <span className={cn('mt-0.5 block text-[0.8125rem] text-ink-3', big && !r.waiting && 'sr-only')}>
             {[ageFrom(r.date_of_birth) != null && `Age ${ageFrom(r.date_of_birth)}`,
               r.attendance_pct != null && `${r.attendance_pct}% this term`,
               r.waiting && 'Saved on this phone'].filter(Boolean).join(' · ')}
@@ -504,6 +508,11 @@ function RegisterLine({ entry: r, onMark, onReason, disabled, big, workingOn }: 
       )}
       {away && disabled && r.reason && !preMarked && (
         <p className="mt-1 text-[0.8438rem] text-ink-2">{r.reason}</p>
+      )}
+
+      {r.trial_id && !r.waiting && (
+        <TrialFeedbackBox trialId={r.trial_id} name={firstName(r)} recommendation={r.trial_recommendation}
+          comments={r.trial_comments} writtenBy={r.trial_written_by} />
       )}
 
       {open && (

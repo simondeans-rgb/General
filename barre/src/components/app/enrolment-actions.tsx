@@ -1,5 +1,6 @@
 'use client';
 
+import { TrialFeedbackView } from '@/components/app/trial-feedback';
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useWrite } from '@/lib/write';
@@ -566,6 +567,7 @@ export function TrialActions({ trial }: { trial: C.TrialRow }) {
           </>
         )}
       </div>
+      {!ahead && trial.status !== 'cancelled' && <TrialFeedbackView trialId={trial.id} />}
       {err != null && (
         <p role="alert" className="mt-1 text-[0.75rem] text-critical">
           {/TOO_EARLY/.test(String((err as Error).message))

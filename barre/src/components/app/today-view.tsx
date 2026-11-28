@@ -14,6 +14,8 @@ import { cn } from '@/lib/cn';
 import { cardPaymentsEnabled } from '@/lib/payments/invoice-status';
 import { groupAttention } from '@/lib/office-words';
 
+const TRIAL_REC_WORD: Record<string, string> = { ready: 'ready to join', other_class: 'better in another class', not_ready: 'not ready yet' };
+
 /**
  * The owner's Today (reference screen for docs/brand/DESIGN-SYSTEM.md).
  * One hero — the next class — then what needs a decision, ordered by
@@ -134,10 +136,11 @@ function NeedsAttention() {
   // Staff checks missing or running out (UR-41): shown to the owner and the safeguarding lead only.
   const checks = useRows<CheckGap>(['att-checks'], CHECK_GAPS_TODAY);
   const regs = useRows<Q.OverdueRegister>(['att-registers'], Q.ATTENTION_REGISTERS);
+  const tfb = useRows<Q.TrialToDecide>(['att-trial-feedback'], Q.ATTENTION_TRIAL_FEEDBACK);
   // Safeguarding setup (F1, N-06): until a lead is named, and anything to review.
   const sg = useRow<{ no_lead: boolean; media_links: number; holds_due: number }>(['att-safeguarding'], SAFEGUARDING_TODAY);
   const [all, setAll] = React.useState(false);
-  const loading = sg.isLoading || regs.isLoading || checks.isLoading || pay.isLoading || cap.isLoading || trials.isLoading || lapsed.isLoading || reqs.isLoading || msgs.isLoading || follow.isLoading;
+  const loading = sg.isLoading || regs.isLoading || tfb.isLoading || checks.isLoading || pay.isLoading || cap.isLoading || trials.isLoading || lapsed.isLoading || reqs.isLoading || msgs.isLoading || follow.isLoading;
   const names = (list: string[], max = 3) => list.slice(0, max).join(', ') + (list.length > max ? '…' : '');
 
   const items: Item[] = [];
@@ -149,6 +152,10 @@ function NeedsAttention() {
     headline: `Register${regs.data.length === 1 ? '' : 's'} not completed`,
     detail: regs.data.slice(0, 2).map(r => `${r.class_name}, ${dateShort(r.starts_at)}${r.teacher_name ? ` (${r.teacher_name})` : ''}`).join(' · ')
       + (regs.data.length > 2 ? '…' : '') });
+  if (tfb.data?.length) items.push({ key: 'trial-feedback', n: tfb.data.length, when: 'today', href: '/enrolment', action: 'Decide',
+    headline: `Trial${tfb.data.length === 1 ? '' : 's'} to decide`,
+    detail: tfb.data.slice(0, 2).map(t => `${t.child}, ${t.class_name}: ${TRIAL_REC_WORD[t.recommendation ?? ''] ?? 'teacher’s comments in'}`).join(' · ')
+      + (tfb.data.length > 2 ? '…' : '') });
   if (sg.data?.no_lead) items.push({ key: 'dsl', n: 1, when: 'today', urgent: true, href: '/safeguarding', action: 'Name your lead',
     headline: 'No safeguarding lead named', detail: 'Concerns come only to the owner, and one about the owner reaches nobody' });
   if (sg.data && sg.data.media_links > 0) items.push({ key: 'media-links', n: sg.data.media_links, when: 'week', href: '/safeguarding', action: 'See which',

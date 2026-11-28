@@ -48,6 +48,8 @@ export type RegisterEntry = {
   student_id: string; first_name: string; last_name: string; preferred_name: string | null;
   date_of_birth: Stamp; status: string | null; reason: string | null;
   is_trial: boolean; attendance_pct: number | null;
+  /** A trial child (0071): the trial, and what the teacher has said about it so far. */
+  trial_id?: string | null; trial_recommendation?: TrialRecommendation | null; trial_comments?: string | null; trial_written_by?: string | null;
   /** explicit | reported | rest — what kind of mark the server holds (0048). */
   mark_kind: string | null;
   /** An advance absence report, if the family or the student made one (UR-07). */
@@ -84,7 +86,7 @@ const TERM_ATTENDANCE = (student: string) => `app.term_attendance_pct(${student}
  */
 export const REGISTER = `
 with roll as (
-  select s.id, s.first_name, s.last_name, s.preferred_name, s.date_of_birth, false as is_trial
+  select s.id, s.first_name, s.last_name, s.preferred_name, s.date_of_birth, false as is_trial, null::uuid as trial_id
     from enrolment e
     join student s on s.id = e.student_id
     join class_session cs on cs.id = $1 and cs.class_id = e.class_id
@@ -93,19 +95,20 @@ with roll as (
    where e.deleted_at is null
      and app.enrolment_on(e.status, e.started_on, e.ended_on, e.moved_from, e.moved_to, cs.starts_at::date)
   union all
-  select s.id, s.first_name, s.last_name, s.preferred_name, s.date_of_birth, true
+  select s.id, s.first_name, s.last_name, s.preferred_name, s.date_of_birth, true, t.id
     from trial t
     join student s on s.id = t.student_id
    where t.session_id = $1 and t.status in ('booked','attended') and t.deleted_at is null
   union all
   -- Drop-ins (migration 0033) are marked like anyone in the class.
-  select s.id, s.first_name, s.last_name, s.preferred_name, s.date_of_birth, false
+  select s.id, s.first_name, s.last_name, s.preferred_name, s.date_of_birth, false, null::uuid
     from drop_in_booking d
     join student s on s.id = d.student_id
    where d.session_id = $1 and d.status = 'booked'
 )
 select roll.id as student_id, roll.first_name, roll.last_name, roll.preferred_name,
-       roll.date_of_birth, roll.is_trial,
+       roll.date_of_birth, roll.is_trial, roll.trial_id,
+       tf.recommendation as trial_recommendation, tf.comments as trial_comments, tf.written_by_name as trial_written_by,
        ar.status, ar.reason, ar.mark_kind,
        rep.note as reported_note, rep.reporter as reported_by,
        ${BRIEF_COLUMNS},
@@ -114,6 +117,7 @@ select roll.id as student_id, roll.first_name, roll.last_name, roll.preferred_na
   left join attendance_record ar on ar.student_id = roll.id and ar.session_id = $1 and ar.deleted_at is null
   left join absence_report rep on rep.student_id = roll.id and rep.session_id = $1 and rep.status = 'active'
   left join student_safety_brief b on b.student_id = roll.id
+  left join trial_feedback tf on tf.trial_id = roll.trial_id
  order by roll.last_name, roll.first_name`;
 
 /* $5 is when the teacher tapped, by the device's clock; $6 is the kind of
@@ -266,3 +270,11 @@ select distinct on (f.student_id) f.student_id, f.work_on, f.going_well, coalesc
 /** F14: a teacher who wants just registers (a personal setting). */
 export const MY_REGISTER_ONLY = `select app.my_register_only() as on`;
 export const SET_REGISTER_ONLY = `select app.set_register_only($1) as on`;
+
+/* ── Trials: the teacher's view, for the office's decision (0071) ────────── */
+export type TrialRecommendation = 'ready' | 'other_class' | 'not_ready';
+export const TRIAL_RECOMMENDATIONS: [TrialRecommendation, string][] = [
+  ['ready', 'Ready to join'], ['other_class', 'Better in another class'], ['not_ready', 'Not ready yet'],
+];
+export const SAVE_TRIAL_FEEDBACK = `select app.save_trial_feedback($1, $2, $3)`;
+export const TRIAL_FEEDBACK = `select recommendation, comments, written_by_name, updated_at from trial_feedback where trial_id = $1`;
