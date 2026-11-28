@@ -7,7 +7,7 @@ import { Shell } from './shell';
 import { useRows, useRow } from '@/lib/query';
 import { Beats, Button, EmptyState, ErrorState, Skeleton, SectionHead } from '@/components/ui';
 import * as Q from '@/lib/repos/dashboard';
-import { CHECK_GAPS_TODAY, type CheckGap } from '@/lib/repos/safeguarding';
+import { CHECK_GAPS_TODAY, SAFEGUARDING_TODAY, type CheckGap } from '@/lib/repos/safeguarding';
 import { SUMMARY, type BillingSummary } from '@/lib/repos/billing';
 import { money, time, dayRange, dateLong, relativeDay } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -129,12 +129,20 @@ function NeedsAttention() {
   const msgs = useRow<{ awaiting: number; names: string | null }>(['att-messages'], Q.ATTENTION_MESSAGES);
   // Staff checks missing or running out (UR-41): shown to the owner and the safeguarding lead only.
   const checks = useRows<CheckGap>(['att-checks'], CHECK_GAPS_TODAY);
-  const loading = checks.isLoading || pay.isLoading || cap.isLoading || trials.isLoading || lapsed.isLoading || reqs.isLoading || msgs.isLoading;
+  // Safeguarding setup (F1, N-06): until a lead is named, and anything to review.
+  const sg = useRow<{ no_lead: boolean; media_links: number; holds_due: number }>(['att-safeguarding'], SAFEGUARDING_TODAY);
+  const loading = sg.isLoading || checks.isLoading || pay.isLoading || cap.isLoading || trials.isLoading || lapsed.isLoading || reqs.isLoading || msgs.isLoading;
 
   const items: Item[] = [];
   const r = reqs.data;
   if (r && r.medical_updates > 0) items.push({ key: 'med', n: r.medical_updates, tone: 'critical', href: '/requests', action: 'Review',
     headline: `Medical update${r.medical_updates === 1 ? '' : 's'} to acknowledge`, detail: 'Teachers see the change once you record it' });
+  if (sg.data?.no_lead) items.push({ key: 'dsl', n: 1, tone: 'critical', href: '/safeguarding', action: 'Name your lead',
+    headline: 'No safeguarding lead named', detail: 'Concerns come only to the owner, and one about the owner reaches nobody' });
+  if (sg.data && sg.data.media_links > 0) items.push({ key: 'media-links', n: sg.data.media_links, tone: 'caution', href: '/safeguarding', action: 'See which',
+    headline: `Link${sg.data.media_links === 1 ? '' : 's'} to another site showing children`, detail: 'Hidden from families. Upload the file instead' });
+  if (sg.data && sg.data.holds_due > 0) items.push({ key: 'holds', n: sg.data.holds_due, tone: 'caution', href: '/safeguarding', action: 'Review',
+    headline: `Legal hold${sg.data.holds_due === 1 ? '' : 's'} to review`, detail: 'Keep a hold only while it is still needed' });
   if (checks.data?.length) items.push({ key: 'checks', n: checks.data.length, tone: 'critical', href: '/safeguarding', action: 'See who',
     headline: 'Staff checks to sort', detail: checks.data.slice(0, 2).map(c => `${c.name}: ${c.issue}`).join(' · ') + (checks.data.length > 2 ? '…' : '') });
   // Cards cannot be retried until a payment provider is connected, so the

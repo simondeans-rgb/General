@@ -179,6 +179,9 @@ function AddMaterial({ classId, className, isOffice, onClose }: {
   const [children, setChildren] = React.useState<string[]>([]);
   const [noneIdentifiable, setNoneIdentifiable] = React.useState(false);
   const [allStaff, setAllStaff] = React.useState(false);
+  // N-06: with the school's setting on (the default), media of children is uploaded, never linked.
+  const blockLinks = useRow<{ block_child_media_links: boolean }>(['sg-block-links'],
+    `select block_child_media_links from studio where deleted_at is null limit 1`).data?.block_child_media_links ?? true;
 
   const fileKind = file ? kindForFile(file) : null;
   const isPhoto = !!file && (file.type || '').startsWith('image/');
@@ -224,7 +227,8 @@ function AddMaterial({ classId, className, isOffice, onClose }: {
   });
 
   const tooBig = !!file && file.size > storage.maxBytes;
-  const valid = title.trim().length >= 2 && (!isMedia || showsAnswer !== null) && (
+  const linkBlocked = mode === 'link' && isMedia && !!showsAnswer && blockLinks;
+  const valid = !linkBlocked && title.trim().length >= 2 && (!isMedia || showsAnswer !== null) && (
     mode === 'file' ? !!file && !tooBig : /^https?:\/\/\S+$/.test(url.trim()));
 
   return (
@@ -307,7 +311,12 @@ function AddMaterial({ classId, className, isOffice, onClose }: {
                   isOffice={isOffice} noneIdentifiable={noneIdentifiable} onNoneIdentifiable={setNoneIdentifiable}
                   required={mode === 'file'} />
               )}
-              {isMedia && mode === 'link' && showsAnswer && (
+              {linkBlocked && (
+                <Notice word="Upload instead" tone="caution" title="Your school does not allow links for videos of children"
+                  detail="A link is only as private as the site it points to. Upload the file, and families see it only while every child in it has consent."
+                  action={<Button size="sm" onClick={() => setMode('file')}>Upload a file</Button>} />
+              )}
+              {isMedia && mode === 'link' && showsAnswer && !blockLinks && (
                 <p className="text-[0.8125rem] text-caution">
                   A link is only as private as the site it points to. For a video of children, upload the file instead.
                 </p>

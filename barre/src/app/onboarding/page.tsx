@@ -39,7 +39,7 @@ const STEPS: Step[] = [
   { key: 'privacy', title: 'Privacy notice', blurb: 'A link to your privacy notice, shown wherever families give their details.',
     count: `select (privacy_notice_url is not null)::int n from studio`,
     href: '/studio', cta: 'Add the link' },
-  { key: 'dsl', title: 'Safeguarding lead', blurb: 'Name who reads safeguarding concerns with you, and record staff DBS checks.',
+  { key: 'dsl', title: 'Safeguarding lead', blurb: 'Name your Designated Safeguarding Lead (and a deputy if you can), record the contact outside the school (your LADO), and record staff DBS checks. Until a lead is named, concerns come only to you.',
     count: `select (dsl_user_id is not null)::int n from studio`,
     href: '/safeguarding', cta: 'Name your lead' },
   { key: 'locations', title: 'Locations and rooms', blurb: 'Where classes happen, and which room each uses.',

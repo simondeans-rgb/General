@@ -16,6 +16,7 @@ import { useSelection } from '@/lib/use-selection';
 import * as E from '@/lib/repos/events';
 import * as C from '@/lib/repos/classes';
 import { CostumeSection, ProgrammeButton, RehearsalRegisterButton, TicketSection } from '@/components/app/show-tools';
+import { ConsentSnapshotButton } from '@/components/app/consent-snapshot';
 import { ExamsCard } from '@/components/app/exams';
 import { dateLong, money, time } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -197,6 +198,7 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
             </li>
           ))}
         </ul>
+        {!!people.data?.length && <ConsentSnapshotButton event={e} />}
         {!!e.cost_minor && (
           <Button size="sm" className="mt-2" disabled={!e.confirmed} onClick={() => go(E.BILL_EVENT, [e.id], r => r.n ? `${r.n} invoice${r.n === 1 ? '' : 's'} sent for the ${money(e.cost_minor)} fee.` : 'Everyone going has already been billed.')}>
             <Receipt className="size-4" aria-hidden /> Bill the fee to {e.confirmed - e.billed > 0 ? e.confirmed - e.billed : 0} new dancer{e.confirmed - e.billed === 1 ? '' : 's'}
