@@ -263,7 +263,7 @@ describe('branded email and notice templates (F15)', () => {
 
 /* ── Onboarding count ──────────────────────────────────────────────────── */
 describe('onboarding fills a count of eight (F16)', () => {
-  const keys = [...src('src/app/onboarding/page.tsx').matchAll(/\{ key: '([a-z]+)'/g)].map(m => m[1]);
+  const keys = [...src('src/app/onboarding/page.tsx').matchAll(/\{ key: '([a-z]+)'/g)].map(m => m[1]!);
 
   it('every setup step belongs to exactly one of the eight beats', () => {
     expect(SETUP_COUNTS).toHaveLength(8);
