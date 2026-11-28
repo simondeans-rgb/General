@@ -321,6 +321,7 @@ function Register() {
                 <li key={r.student_id}>
                   <RegisterLine entry={r} disabled={(closed && !amendMode) || locked} big={big}
                     workingOn={workBy.get(r.student_id)?.work_on ?? null}
+                    trialFeedback={state !== 'early'}
                     onMark={s => onMark(r.student_id, s)}
                     onReason={reason => onReason(r.student_id, reason)} />
                 </li>
@@ -410,13 +411,15 @@ function ClassLinks({ classId, name }: { classId: string; name: string }) {
  * the right. Here and Absent are the ninety-percent case; Late and Excused
  * sit one tap further in, under the name, with the medical brief.
  */
-function RegisterLine({ entry: r, onMark, onReason, disabled, big, workingOn }: {
+function RegisterLine({ entry: r, onMark, onReason, disabled, big, workingOn, trialFeedback }: {
   entry: Line; onMark: (s: Status) => void;
   onReason: (reason: string) => void; disabled?: boolean;
   /** Large text: name above, the two marks full width beneath. */
   big?: boolean;
   /** Last feedback's "to work on", compact on the row. */
   workingOn?: string | null;
+  /** The class has started: the teacher can say how a trial went (0071). */
+  trialFeedback?: boolean;
 }) {
   const [open, setOpen] = React.useState(false);
   const name = `${firstName(r)} ${r.last_name}`;
@@ -510,7 +513,7 @@ function RegisterLine({ entry: r, onMark, onReason, disabled, big, workingOn }: 
         <p className="mt-1 text-[0.8438rem] text-ink-2">{r.reason}</p>
       )}
 
-      {r.trial_id && !r.waiting && (
+      {r.trial_id && !r.waiting && trialFeedback && (
         <TrialFeedbackBox trialId={r.trial_id} name={firstName(r)} recommendation={r.trial_recommendation}
           comments={r.trial_comments} writtenBy={r.trial_written_by} />
       )}
