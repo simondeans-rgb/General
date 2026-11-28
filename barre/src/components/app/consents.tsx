@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { RecordSheet } from '@/components/app/record-sheet';
-import { Button, ErrorState, Field, Input, Select, Skeleton } from '@/components/ui';
+import { Button, ErrorState, Field, Input, Select, Skeleton, Choice } from '@/components/ui';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
@@ -100,18 +100,12 @@ export function FamilyConsents({ studentId, name, summary = false }: { studentId
                   Another parent or carer has said no, so the school treats this as not allowed until you agree.
                 </p>
               )}
-              <div role="group" aria-label={`${L.label(c.kind)} for ${name}`} className="mt-1.5 flex gap-2">
-                <Button size="sm" aria-pressed={c.granted === true} variant={c.granted === true ? 'primary' : undefined}
-                  disabled={set.isPending}
-                  onClick={() => set.mutate({ kind: c.kind, granted: true }, { onSuccess: () => setSaved(`${L.label(c.kind)}: allowed.`) })}>
-                  Allow
-                </Button>
-                <Button size="sm" aria-pressed={c.granted === false} variant={c.granted === false ? 'primary' : undefined}
-                  disabled={set.isPending}
-                  onClick={() => set.mutate({ kind: c.kind, granted: false }, { onSuccess: () => setSaved(`${L.label(c.kind)}: not allowed. This applies straight away.`) })}>
-                  Don’t allow
-                </Button>
-              </div>
+              <Choice label={`${L.label(c.kind)} for ${name}`} size="sm" className="mt-1.5" disabled={set.isPending}
+                value={c.granted === true ? 'yes' : c.granted === false ? 'no' : null}
+                onChange={v => v === 'yes'
+                  ? set.mutate({ kind: c.kind, granted: true }, { onSuccess: () => setSaved(`${L.label(c.kind)}: allowed.`) })
+                  : set.mutate({ kind: c.kind, granted: false }, { onSuccess: () => setSaved(`${L.label(c.kind)}: not allowed. This applies straight away.`) })}
+                options={[{ value: 'yes', label: 'Allow' }, { value: 'no', label: 'Don’t allow' }]} />
             </li>
           ))}
         </ul>

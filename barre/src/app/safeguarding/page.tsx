@@ -48,7 +48,7 @@ export default function SafeguardingPage() {
         {meQ.isLoading && <div role="status" aria-label="Loading"><Skeleton className="h-24" /></div>}
         {meQ.error != null && <ErrorState error={meQ.error} onRetry={() => meQ.refetch()} />}
         {owner && me && !me.dsl_user_id && (
-          <Notice word="Set up" tone="critical" title="Name your safeguarding lead"
+          <Notice word="Act now" tone="critical" title="Name your safeguarding lead"
             detail="Until you do, every concern comes only to you, and an allegation about you reaches nobody in the school. Staff are shown the contact outside the school below." />
         )}
         {me && !me.can_read && (

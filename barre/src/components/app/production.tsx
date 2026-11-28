@@ -8,7 +8,7 @@ import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
 import { DetailSection } from '@/components/app/detail-panel';
 import { CostumeSection } from '@/components/app/show-tools';
-import { Button, ErrorState, Field, Input, Notice, Select, Word } from '@/components/ui';
+import { Button, ErrorState, Field, Input, Notice, Select, Word, StatusLine } from '@/components/ui';
 import * as E from '@/lib/repos/events';
 import * as C from '@/lib/repos/classes';
 import * as S from '@/lib/repos/seasons';
@@ -171,7 +171,7 @@ export function CostumePlan({ event }: { event: EventLike }) {
   return (
     <>
       <DetailSection title="Costume budget">
-        {done && <div role="status" className="mb-2"><Notice word="Done" tone="positive" title={done} /></div>}
+        {done && <div role="status" className="mb-2"><StatusLine live={false} title={done} /></div>}
         {write.error != null && <div className="mb-2"><ErrorState error={write.error} /></div>}
         <dl className="grid grid-cols-2 gap-3 text-[0.875rem]">
           <div><dt className="label">Costumes cost</dt><dd className={cn('stat-number mt-1 text-[1.25rem]', over && 'text-caution')}>{money(total)}</dd></div>

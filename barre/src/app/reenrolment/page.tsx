@@ -4,7 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Shell } from '@/components/app/shell';
-import { Beats, Button, EmptyState, ErrorState, Field, Input, Notice, SectionHead, Select, Skeleton, Word } from '@/components/ui';
+import { Beats, Button, EmptyState, ErrorState, Field, Input, Notice, SectionHead, Select, Skeleton, Word, StatusLine } from '@/components/ui';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
@@ -125,7 +125,7 @@ function RoundView({ r }: { r: S.Round }) {
     <>
       <section aria-labelledby="round-h">
         <SectionHead id="round-h" title={`${r.from_term} → ${r.to_term}`} meta={`${ROUND_WORD[r.status]} · reply by ${dateLong(r.respond_by)}`} />
-        {done && <div role="status" className="py-3"><Notice word="Done" tone="positive" title={done} /></div>}
+        {done && <div role="status" className="py-3"><StatusLine live={false} title={done} /></div>}
         {write.error != null && <div className="py-3"><ErrorState error={write.error} /></div>}
         <dl className="grid grid-cols-3 gap-4 py-4 sm:grid-cols-6">
           {([['Children', r.offers], ['Confirmed', r.confirmed + r.placed], ['Waiting to reply', r.proposed], ['Not returning', r.declined + r.released],

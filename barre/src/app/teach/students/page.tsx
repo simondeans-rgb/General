@@ -18,7 +18,7 @@ import { DetailPanel, DetailSection, KeyValue } from '@/components/app/detail-pa
 import { MedicalBrief, medicalLine } from '@/components/app/medical-brief';
 import { useRows } from '@/lib/query';
 import { useSelection } from '@/lib/use-selection';
-import { Beats, Button, EmptyState, Input, Skeleton, ErrorState, ViewTabs } from '@/components/ui';
+import { Beats, Button, EmptyState, Input, Skeleton, ErrorState, ViewTabs, Choice } from '@/components/ui';
 import { FeedbackComposer } from '@/components/app/feedback-composer';
 import * as T from '@/lib/repos/teaching';
 import { ageFrom } from '@/lib/format';
@@ -66,14 +66,12 @@ function MyStudents() {
               <Input type="search" value={q} onChange={e => setQ(e.target.value)}
                      placeholder="Search by name" aria-label="Search your students" />
               {withNeeds > 0 && (
-                <Button aria-pressed={onlyNeeds} onClick={() => setOnlyNeeds(v => !v)}
-                        className={cn('shrink-0', onlyNeeds && 'border-ink bg-surface-2')}>
-                  Medical notes <span className="tnum text-ink-3">{withNeeds}</span>
-                </Button>
+                <Choice multiple label="Show only" className="shrink-0 flex-nowrap" value={onlyNeeds ? ['needs'] : []} onChange={v => setOnlyNeeds(v.length > 0)}
+                  options={[{ value: 'needs', label: <span className="whitespace-nowrap">Medical notes <span className="tnum font-normal text-ink-3">{withNeeds}</span></span> }]} />
               )}
             </div>
             <ViewTabs label="Which students" value={view} onChange={setView}
-              options={[['all', 'Everyone'], ['support', `May need support${support.data ? ` · ${needing}` : ''}`], ['progress', 'Class progress']]} />
+              options={[['all', 'Everyone'], ['support', 'May need support', support.data ? needing : null], ['progress', 'Class progress']]} />
             {view === 'progress' && <ClassProgress />}
             {view === 'support' && (
               <p className="text-[0.8125rem] text-ink-3">Attendance below {LOW_ATTENDANCE}% this term, absent two or more times in a row, skills marked not started, medical notes or a note from the office. Staff only; families never see this list.</p>

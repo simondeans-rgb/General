@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Download, FileSpreadsheet, X } from 'lucide-react';
-import { Notice, Button, ErrorState, Input, Select, ViewTabs } from '@/components/ui';
+import { Notice, Button, ErrorState, Input, Select, ViewTabs, StatusLine } from '@/components/ui';
 import { useRows } from '@/lib/query';
 import { money, dateShort } from '@/lib/format';
 import { inviteLink } from '@/lib/repos/platform';
@@ -207,14 +207,14 @@ export function ImportWizard({ onClose, initial: asked }: { onClose: () => void;
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
         {done ? (
           <div className="space-y-3 text-[0.875rem]">
-            {kind === 'families' && <Notice word="Imported" tone="positive" title={`${plural(done.families, 'new family', 'new families')} and ${plural(done.children, 'child', 'children')}`}
+            {kind === 'families' && <StatusLine title={`${plural(done.families, 'new family', 'new families')} and ${plural(done.children, 'child', 'children')}`}
               detail={`${plural(done.enrolled, 'class place')} taken${done.medical ? `; ${plural(done.medical, 'medical note')} added to records` : ''}.${done.skipped ? ` ${plural(done.skipped, 'child was', 'children were')} already here and left alone.` : ''}`} />}
-            {kind === 'classes' && <Notice word="Imported" tone="positive" title={`${plural(done.classes, 'class', 'classes')} with ${plural(done.sessions, 'session')}`}
+            {kind === 'classes' && <StatusLine title={`${plural(done.classes, 'class', 'classes')} with ${plural(done.sessions, 'session')}`}
               detail={done.skipped ? `${plural(done.skipped, 'class was', 'classes were')} already here and left alone.` : 'They are on Classes and the Schedule now.'} />}
-            {kind === 'balances' && <Notice word="Imported" tone="positive"
+            {kind === 'balances' && <StatusLine
               title={`${plural(done.invoices, 'opening-balance invoice')} (${money(done.owed_minor ?? 0)}) and ${plural(done.credits, 'credit')} (${money(done.credit_minor ?? 0)})`}
               detail={`Each is labelled “Opening balance as at …” on the family’s account.${done.skipped ? ` ${plural(done.skipped, 'family', 'families')} already had an opening balance and ${done.skipped === 1 ? 'was' : 'were'} left alone.` : ''}`} />}
-            {HISTORY.includes(kind) && <Notice word="Imported" tone="positive"
+            {HISTORY.includes(kind) && <StatusLine
               title={kind === 'invoices' ? plural(done.invoices, 'past invoice') : kind === 'attendance' ? plural(done.records, 'attendance record') : plural(done.results, 'exam result')}
               detail={`${kind === 'invoices' ? 'They are on each family’s record, marked “Imported”. They are history only: balances, aged debt and billing runs do not use them.'
                 : kind === 'attendance' ? 'They are on each child’s record, under earlier attendance.' : 'They are with each child’s exams and on their timetable.'}${done.skipped ? ` ${done.skipped} ${done.skipped === 1 ? 'was' : 'were'} already here and left alone.` : ''}`} />}
@@ -297,8 +297,8 @@ export function ImportWizard({ onClose, initial: asked }: { onClose: () => void;
             {check && (
               <section className="space-y-2" aria-live="polite">
                 {check.ok
-                  ? <Notice word="Ready" tone="positive" title={check.rows === 1 ? 'The row is fine' : `All ${plural(check.rows, 'row')} are fine`} detail={kind === 'families' ? `They make ${plural(check.families, 'family', 'families')}.` : undefined} />
-                  : <Notice word="Fix first" tone="critical" title={`${check.errors.length} problem${check.errors.length === 1 ? '' : 's'} to fix in the file`} detail="Nothing has been imported." />}
+                  ? <StatusLine title={check.rows === 1 ? 'The row is fine' : `All ${plural(check.rows, 'row')} are fine`} detail={kind === 'families' ? `They make ${plural(check.families, 'family', 'families')}.` : undefined} />
+                  : <Notice word="Check" tone="critical" title={`${check.errors.length} problem${check.errors.length === 1 ? '' : 's'} to fix in the file`} detail="Nothing has been imported." />}
                 {check.errors.length > 0 && (
                   <ul className="max-h-48 divide-y divide-line overflow-y-auto border-y border-line text-[0.8438rem]">
                     {check.errors.map((e, i) => (
@@ -379,7 +379,7 @@ function BulkInvites() {
       {make.error != null && <ErrorState error={make.error} />}
       {make.data && (
         <div className="space-y-3" aria-live="polite">
-          <Notice word={linked.length ? 'Downloaded' : 'Nothing new'} tone={linked.length ? 'positive' : 'ink'}
+          <StatusLine tone={linked.length ? 'positive' : 'ink'}
             title={linked.length ? `${linked.length} invitation link${linked.length === 1 ? '' : 's'}` : 'Everyone with an email already has a link or a login'}
             detail={linked.length ? 'The spreadsheet is in your downloads. The links are not shown again — keep the file until you have sent them.' : undefined} />
           {missing.length > 0 && (

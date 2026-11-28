@@ -15,7 +15,7 @@ import { useSession } from '@/lib/auth/session';
 import { useSelection } from '@/lib/use-selection';
 import { useSearchParams } from 'next/navigation';
 import {
-  Button, EmptyState, ErrorState, Field, Input, Notice, Select, Skeleton,
+  Button, EmptyState, ErrorState, Field, Input, Notice, Select, Skeleton, Choice, StatusLine
 } from '@/components/ui';
 import { SectionHead, ViewTabs, Word } from '@/components/app/session-row';
 import * as I from '@/lib/repos/inbox';
@@ -290,7 +290,7 @@ export function ReachSheet({ message, onClose }: { message: { id: string; subjec
         : reach.data ? `${seen} of ${rows.length} famil${rows.length === 1 ? 'y has' : 'ies have'} seen this` : undefined}
       onClose={onClose} onSave={() => remind.mutate()} saving={remind.isPending} error={remind.error}
       canSave={!message.scheduled && waiting > 0 && !done} saveLabel={waiting ? `Remind the ${waiting} who haven’t` : 'Everyone has seen it'}>
-      {done && <div role="status"><Notice word="Reminded" tone="positive" title={done} /></div>}
+      {done && <div role="status"><StatusLine live={false} title={done} /></div>}
       {reach.isLoading && <Skeleton className="h-24" />}
       {noLogin > 0 && <p className="text-[0.8125rem] text-ink-3">{noLogin} famil{noLogin === 1 ? 'y has' : 'ies have'} not signed up to the app, so cannot see messages yet.</p>}
       <ul className="max-h-72 divide-y divide-line overflow-y-auto border-y border-line">
@@ -423,7 +423,7 @@ function Composer({ onClose, onSentDirect }: { onClose: () => void; onSentDirect
   if (sent) {
     return (
       <RecordSheet title="New message" onClose={onClose} onSave={onClose} saveLabel="Done">
-        <Notice word={sent.startsWith('scheduled') ? 'Scheduled' : 'Sent'} tone="positive"
+        <StatusLine
           title={sent.startsWith('scheduled') ? `Message ${sent}.` : `Delivered in the app to ${sent}`}
           detail={sent.startsWith('scheduled') ? undefined : 'Kept in each family’s history.'} />
       </RecordSheet>
@@ -434,13 +434,8 @@ function Composer({ onClose, onSentDirect }: { onClose: () => void; onSentDirect
     <RecordSheet title="New message" onClose={onClose} onSave={() => send.mutate()} saving={send.isPending}
       error={send.error} canSave={valid}
       saveLabel={at ? 'Schedule' : reach > 1 ? `Send to ${reach} families` : 'Send'}>
-      <div role="radiogroup" aria-label="Who to" className="grid grid-cols-3 gap-1 rounded-[var(--radius-md)] bg-surface-2 p-1">
-        {([['family', 'A family'], ['class', 'A class'], ['studio', 'Everyone']] as const).map(([k, l]) => (
-          <button key={k} role="radio" aria-checked={audience === k} onClick={() => setAudience(k)}
-            className={cn('min-h-[40px] rounded-[calc(var(--radius-md)-2px)] text-[0.875rem]',
-              audience === k ? 'border border-line-strong bg-surface font-semibold text-ink' : 'text-ink-2 hover:text-ink')}>{l}</button>
-        ))}
-      </div>
+      <Choice label="Who to" layout="grid" className="grid-cols-3" value={audience} onChange={setAudience}
+        options={[{ value: 'family', label: 'A family' }, { value: 'class', label: 'A class' }, { value: 'studio', label: 'Everyone' }]} />
 
       {audience === 'family' && (
         <Field label="Family" htmlFor="cm-f" required>
@@ -459,7 +454,7 @@ function Composer({ onClose, onSentDirect }: { onClose: () => void; onSentDirect
         </Field>
       )}
       {audience === 'studio' && (
-        <Notice word="Everyone" tone="caution" title={`Every family${familyCount ? ` (${familyCount})` : ''} and every teacher`}
+        <Notice word="Check" tone="caution" title={`Every family${familyCount ? ` (${familyCount})` : ''} and every teacher`}
           detail="Save it for things everyone needs." />
       )}
 

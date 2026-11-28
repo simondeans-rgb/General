@@ -8,7 +8,7 @@ import { RecordSheet } from './record-sheet';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Beats, Button, Field, Input, Notice, Select } from '@/components/ui';
+import { Beats, Button, Field, Input, Notice, Select, StatusLine } from '@/components/ui';
 import * as Q from '@/lib/repos/dashboard';
 import { dateLong, time, isoDate } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -80,7 +80,7 @@ export function SessionSheet({ session: s, onClose, initial = 'menu' }: { sessio
   if (done) {
     return (
       <RecordSheet title={s.name} onClose={onClose} onSave={onClose} saveLabel="Close">
-        <Notice word="Done" tone="positive" title={done} />
+        <StatusLine title={done} />
       </RecordSheet>
     );
   }

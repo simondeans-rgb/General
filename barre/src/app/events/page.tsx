@@ -7,7 +7,7 @@ import { Plus, Receipt, Trash2, Users } from 'lucide-react';
 import { Shell } from '@/components/app/shell';
 import { DetailPanel, DetailSection } from '@/components/app/detail-panel';
 import { RecordSheet } from '@/components/app/record-sheet';
-import { Button, EmptyState, ErrorState, Field, Input, Notice, Select, Skeleton, ViewTabs } from '@/components/ui';
+import { Button, EmptyState, ErrorState, Field, Input, Notice, Select, Skeleton, ViewTabs, Choice, StatusLine } from '@/components/ui';
 import { SectionHead, Word } from '@/components/app/session-row';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
@@ -175,7 +175,7 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
     write.mutate({ sql, params }, { onSuccess: r => msg && setDone(msg(r)) });
   return (
     <DetailPanel open onClose={onClose} title={e.title} subtitle={`${dateLong(e.starts_at)} · ${time(e.starts_at)}${e.venue ? ` · ${e.venue}` : ''}`}>
-      {done && <div role="status" className="mb-5 border-l-2 border-positive pl-3"><Notice word="Done" tone="positive" title={done} /></div>}
+      {done && <StatusLine className="mb-5" title={done} />}
       {write.error != null && <div className="mb-5"><ErrorState error={write.error} /></div>}
       <ViewTabs label={`${e.title}: sections`} value={tab} onChange={setTab} options={tabs} className="mb-6 border-b border-line" />
       {tab === 'details' && <>
@@ -189,12 +189,8 @@ function EventDetail({ e, onEdit, onClose }: { e: E.OfficeEvent; onEdit: () => v
 
       {tab === 'participants' && <>
       <DetailSection title="Invite classes">
-        <div className="flex flex-wrap gap-1.5">
-          {classes.data?.map(c => (
-            <button key={c.id} aria-pressed={pick.includes(c.id)} onClick={() => setPick(p => p.includes(c.id) ? p.filter(x => x !== c.id) : [...p, c.id])}
-              className={cn('min-h-[36px] rounded-[var(--radius-sm)] border px-2.5 text-[0.8125rem]', pick.includes(c.id) ? 'border-ink bg-ink font-semibold text-surface' : 'border-line-strong text-ink-2 hover:border-ink-3')}>{c.name}</button>
-          ))}
-        </div>
+        <Choice multiple label="Classes to invite" size="sm" className="gap-1.5" value={pick} onChange={setPick}
+          options={(classes.data ?? []).map(c => ({ value: c.id, label: c.name }))} />
         <Button size="sm" className="mt-2" disabled={!pick.length} onClick={() => { go(E.INVITE_CLASSES, [e.id, pick], r => `${r.n} dancers invited; their families have been told.`); setPick([]); }}>
           <Users className="size-4" aria-hidden /> Invite {pick.length || ''} class{pick.length === 1 ? '' : 'es'}
         </Button>

@@ -33,7 +33,7 @@ function ConcernReceipt({ r, at, onClose }: { r: G.Receipt; at: Date; onClose: (
   return (
     <RecordSheet title="Concern recorded" onClose={onClose} onSave={onClose} saveLabel="Done">
       {r.nobody ? (
-        <Notice word="Act today" tone="critical" title="Nobody in the school has been told"
+        <Notice word="Act now" tone="critical" title="Nobody in the school has been told"
           detail="It is about the only person who could read it here, and no other safeguarding lead is named. It is saved, and a lead named later will be told. Report it outside the app today." />
       ) : (
         <p className="text-sm">
@@ -108,7 +108,7 @@ export function RaiseConcernSheet({ student, staff, onClose }: {
         <strong className="font-semibold text-critical">If a child is in immediate danger, call 999 first.</strong> Write what you saw or were told, in their words where you can. Do not investigate.
       </p>
       {noLead && !nobody && (
-        <Notice word="No lead" tone="caution" title="Your school has not named a safeguarding lead"
+        <Notice word="Act now" tone="caution" title="Your school has not named a safeguarding lead"
           detail={<>This goes to {readerNames.join(' and ')} (owner). If it is about them, or you are worried it will not be acted on, report it outside the school as well.</>} />
       )}
       {!fixed && (
@@ -154,7 +154,7 @@ export function RaiseConcernSheet({ student, staff, onClose }: {
       )}
       {nobody && (
         <div className="space-y-2">
-          <Notice word="Act today" tone="critical" title="Nobody in the school can be told about this"
+          <Notice word="Act now" tone="critical" title="Nobody in the school can be told about this"
             detail="It is about the only person who reads concerns here. It will be saved, and a lead named later will be told, but you must report it outside the school today." />
           <OutsideRoute route={routing?.outside_route} className="border-l-2 border-critical py-1 pl-3" />
         </div>

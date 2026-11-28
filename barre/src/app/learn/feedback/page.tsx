@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
-import { Skeleton, ErrorState } from '@/components/ui';
+import { Skeleton, ErrorState, Choice } from '@/components/ui';
 import { SectionHead } from '@/app/family/_parts/ui';
 import * as H from '@/lib/repos/hub';
 import * as P from '@/lib/repos/progress';
@@ -47,15 +47,8 @@ export function FeedbackView({ allow, title, showStudent }: {
     <Shell title={title} allow={allow}>
       <div className="mx-auto max-w-[1080px]">
         {several && (
-          <div role="tablist" aria-label="Child" className="-mt-1 mb-8 flex gap-6 border-b border-line">
-            {kids.data!.map(k => (
-              <button key={k.id} role="tab" aria-selected={k.id === kid?.id} onClick={() => setPick(k.id)}
-                className={cn('-mb-px min-h-[44px] border-b-2 px-0.5 font-display text-[1.1875rem]',
-                  k.id === kid?.id ? 'border-accent text-ink' : 'border-transparent text-ink-3 hover:text-ink')}>
-                {k.first_name}
-              </button>
-            ))}
-          </div>
+          <ViewTabs label="Child" value={kid?.id ?? ''} onChange={setPick} className="mx-0 -mt-1 mb-8 border-b border-line"
+            options={kids.data!.map(k => [k.id, k.first_name] as [string, string])} />
         )}
         <div className="grid gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
           <div className="min-w-0 space-y-10">
@@ -223,15 +216,9 @@ function ReflectCard() {
       {!done && <p className="pt-2 text-[0.8125rem] text-ink-3">Only you and your teachers see this.</p>}
       {done ? <p className="pt-3 text-[0.9375rem]">Your teacher will see it. Your parents won’t.</p> : (
         <div className="space-y-3 pt-2">
-          <div role="radiogroup" aria-label="How it went" className="grid grid-cols-5 gap-1.5">
-            {P.MOODS.map((_, i) => (
-              <button key={i} role="radio" aria-checked={mood === i + 1} aria-label={`${MOOD_WORDS[i]}, ${i + 1} of 5`} onClick={() => setMood(i + 1)}
-                className={cn('flex min-h-[48px] items-center justify-center rounded-[var(--radius-md)] border text-[0.7812rem]',
-                  mood === i + 1 ? 'border-accent bg-accent-soft font-semibold text-accent-ink' : 'border-line-strong bg-surface text-ink-2 hover:bg-surface-2')}>
-                {MOOD_WORDS[i]}
-              </button>
-            ))}
-          </div>
+          <Choice label="How it went" layout="grid" tick="corner" size="sm" className="grid-cols-5 gap-1.5" value={mood ? String(mood) : null}
+            onChange={v => setMood(Number(v))}
+            options={P.MOODS.map((_, i) => ({ value: String(i + 1), label: MOOD_WORDS[i], 'aria-label': `${MOOD_WORDS[i]}, ${i + 1} of 5` }))} />
           <Input aria-label="One sentence (optional)" placeholder="One sentence (optional)" maxLength={280} value={text} onChange={e => setText(e.target.value)} />
           {save.error != null && <ErrorState error={save.error} />}
           <Button variant="primary" disabled={!mood} loading={save.isPending} onClick={() => save.mutate()}>Save</Button>

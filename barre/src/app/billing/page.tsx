@@ -25,6 +25,7 @@ import { useSession } from '@/lib/auth/session';
 import { useSelection } from '@/lib/use-selection';
 import {
   Button, EmptyState, ErrorState, Field, Input, Select, Skeleton, type Tone,
+  FilterTabs,
 } from '@/components/ui';
 import * as B from '@/lib/repos/billing';
 import { money, dateShort, isoDate, toMinor } from '@/lib/format';
@@ -178,18 +179,8 @@ function Billing() {
                        placeholder="Family or invoice number" className="pl-9" />
               </label>
             </div>
-            <div role="tablist" aria-label="Show invoices" className="-mx-1 flex gap-0.5 overflow-x-auto border-b border-line px-1 py-1.5">
-              {FILTERS.map(f => (
-                <button key={f.key} role="tab" aria-selected={filter === f.key}
-                  onClick={() => setFilter(f.key)}
-                  className={cn('flex h-10 shrink-0 items-center gap-1.5 rounded-[var(--radius-md)] px-3 text-[0.875rem]',
-                    filter === f.key ? 'bg-ink font-semibold text-ink-invert' : 'text-ink-2 hover:bg-surface-2 hover:text-ink')}>
-                  {f.label}
-                  {invoices.data && <span className={cn('tnum text-[0.75rem]',
-                    filter === f.key ? 'opacity-75' : 'text-ink-3')}>{counts[f.key]}</span>}
-                </button>
-              ))}
-            </div>
+            <FilterTabs label="Show invoices" value={filter} onChange={setFilter} className="mx-0 border-b border-line"
+              options={FILTERS.map(f => [f.key, f.label, invoices.data ? counts[f.key] : null])} />
 
             {invoices.isLoading && <div className="space-y-3 pt-3">{[0,1,2,3].map(i => <Skeleton key={i} className="h-12" />)}</div>}
             {invoices.error && <div className="pt-4"><ErrorState error={invoices.error} onRetry={() => invoices.refetch()} /></div>}

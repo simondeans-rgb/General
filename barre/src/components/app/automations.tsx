@@ -6,7 +6,7 @@ import { Play } from 'lucide-react';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Button, EmptyState, ErrorState, Notice, Select, Skeleton } from '@/components/ui';
+import { Button, EmptyState, ErrorState, Notice, Select, Skeleton, StatusLine } from '@/components/ui';
 import { SectionHead, Word } from './session-row';
 import * as I from '@/lib/repos/inbox';
 import { relativeDay, time } from '@/lib/format';
@@ -57,7 +57,7 @@ export function Automations() {
             </Button>} />
         {result !== null && (
           <div role="status" className="border-b border-line py-3">
-            <Notice word={result ? 'Sent' : 'Nothing new'} tone={result ? 'positive' : 'ink'}
+            <StatusLine tone={result ? 'positive' : 'ink'}
               title={result ? `${result} message${result === 1 ? '' : 's'} sent.` : 'Everything due has already gone.'} />
           </div>
         )}

@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
-import { Button, ErrorState, Notice, Skeleton, Word } from '@/components/ui';
+import { Button, ErrorState, Notice, Skeleton, Word, StatusLine } from '@/components/ui';
 import { useRows } from '@/lib/query';
 import { runAs, type Query } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
@@ -141,7 +141,7 @@ export function HiddenFromFamilies({ r }: { r: H.Resource }) {
   const detail = r.needs_names
     ? 'Name the children in it, or the office can confirm none can be identified.'
     : 'It shows again on its own once every named child has consent.';
-  return <Notice className="mt-2" word="Staff only" tone="caution" title={title} detail={detail} />;
+  return <Notice className="mt-2" word="Limited" tone="caution" title={title} detail={detail} />;
 }
 
 /** Edit the children in a piece of material already shared. */
@@ -225,7 +225,7 @@ export function SavedConfirmation({ resourceId, status, className, titleId }: {
     return (
       <>
         <h2 id={titleId} className="sr-only">Shared with {className}</h2>
-        <Notice word="Shared" tone="positive" title={`Shared with ${className}`}
+        <StatusLine title={`Shared with ${className}`}
           detail="Everyone in the class finds it when they open this class from their timetable." />
       </>
     );
@@ -242,7 +242,7 @@ export function SavedConfirmation({ resourceId, status, className, titleId }: {
   return (
     <div className="space-y-4">
       <h2 id={titleId} className="sr-only">{title}</h2>
-      <Notice word="Staff only" tone="caution" title={title} detail={detail} />
+      <Notice word="Limited" tone="caution" title={title} detail={detail} />
       {!status.needs_names && n > 0 && !r && (
         <div className="space-y-1.5">
           <Button loading={ask.isPending} onClick={() => ask.mutate()}>Ask families for consent</Button>

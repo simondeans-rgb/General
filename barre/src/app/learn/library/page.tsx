@@ -4,7 +4,7 @@ import * as React from 'react';
 import { Shell } from '@/components/app/shell';
 import { ResourceRow } from '@/components/app/resource-row';
 import { useRows } from '@/lib/query';
-import { EmptyState, Input, Skeleton, ErrorState } from '@/components/ui';
+import { EmptyState, Input, Skeleton, ErrorState, FilterTabs } from '@/components/ui';
 import * as H from '@/lib/repos/hub';
 import { cn } from '@/lib/cn';
 
@@ -33,15 +33,8 @@ export function LibraryView({ allow, title }: { allow: any; title: string }) {
         <div className="flex flex-wrap items-center gap-3">
           <Input type="search" value={q} onChange={e => setQ(e.target.value)}
                  className="h-11 w-full" placeholder="Search videos, tracks and handouts" aria-label="Search the library" />
-          <div role="tablist" aria-label="Kind" className="-mb-px flex w-full gap-5 overflow-x-auto border-b border-line">
-            {([['all','All'],['video','Videos'],['audio','Tracks'],['document','Resources']] as [Tab,string][]).map(([k, label]) => (
-              <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
-                className={cn('-mb-px min-h-[44px] shrink-0 border-b-2 px-0.5 text-[0.9062rem]',
-                  tab === k ? 'border-accent font-semibold text-ink' : 'border-transparent text-ink-3 hover:text-ink')}>
-                {label} <span className="tnum text-[0.8125rem] text-ink-3">{counts[k]}</span>
-              </button>
-            ))}
-          </div>
+          <FilterTabs label="Kind" value={tab} onChange={setTab} className="mx-0 w-full border-b border-line"
+            options={([['all', 'All'], ['video', 'Videos'], ['audio', 'Tracks'], ['document', 'Resources']] as [Tab, string][]).map(([k, l]) => [k, l, counts[k]])} />
         </div>
 
         {rows.isLoading && <div className="space-y-3">{[0, 1, 2].map(i => <Skeleton key={i} className="h-16" />)}</div>}

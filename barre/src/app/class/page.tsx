@@ -314,7 +314,7 @@ function AddMaterial({ classId, className, isOffice, onClose }: {
                   required={mode === 'file'} />
               )}
               {linkBlocked && (
-                <Notice word="Upload instead" tone="caution" title="Your school does not allow links for videos of children"
+                <Notice word="Limited" tone="caution" title="Your school does not allow links for videos of children"
                   detail="A link is only as private as the site it points to. Upload the file, and families see it only while every child in it has consent."
                   action={<Button size="sm" onClick={() => setMode('file')}>Upload a file</Button>} />
               )}

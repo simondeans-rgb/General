@@ -123,7 +123,7 @@ export function RegisterSync() {
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-ink/30 p-4 sm:items-center" onClick={() => setBlocked(false)}>
       <div role="alertdialog" aria-modal="true" aria-labelledby="so-h" aria-describedby="so-d" onClick={e => e.stopPropagation()}
            className="w-full max-w-md rounded-[var(--radius-xl)] border border-line bg-surface p-4 shadow-lg">
-        <Notice word="Wait" tone="caution" title={<span id="so-h">Register marks have not been sent yet</span>}
+        <Notice word="Not sent" tone="caution" title={<span id="so-h">Register marks have not been sent yet</span>}
           detail={<span id="so-d">{n > 0 ? `${n} mark${n === 1 ? ' is' : 's are'}` : 'A register is'} saved on this phone and will be lost if you sign out now.
             {online ? ' They are sending now — try again in a moment.' : ' Connect to the internet so they can send, then sign out.'}</span>} />
         <Button className="mt-4 w-full" variant="primary" autoFocus onClick={() => setBlocked(false)}>Stay signed in</Button>

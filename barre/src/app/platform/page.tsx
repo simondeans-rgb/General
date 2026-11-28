@@ -15,6 +15,7 @@ import { useSession } from '@/lib/auth/session';
 import { useSelection } from '@/lib/use-selection';
 import {
   Beats, Button, EmptyState, ErrorState, Field, Input, Select, Skeleton, type Tone,
+  FilterTabs,
 } from '@/components/ui';
 import * as P from '@/lib/repos/platform';
 import { money, dateShort, relativeDay, time } from '@/lib/format';
@@ -86,14 +87,8 @@ function Schools() {
                 <Input value={query} onChange={e => setQuery(e.target.value)} placeholder="School or owner" className="pl-9" />
               </label>
             </div>
-            <div role="tablist" aria-label="Show schools" className="-mx-1 flex gap-0.5 overflow-x-auto border-b border-line px-1 py-1.5">
-              {([['all', 'All'], ['trialling', 'Trial'], ['active', 'Active'], ['attention', 'Need attention'], ['cancelled', 'Cancelled']] as const)
-                .map(([k, l]) => (
-                  <button key={k} role="tab" aria-selected={filter === k} onClick={() => setFilter(k)}
-                    className={cn('h-10 shrink-0 rounded-[var(--radius-md)] px-3 text-[0.875rem]',
-                      filter === k ? 'bg-ink font-semibold text-ink-invert' : 'text-ink-2 hover:bg-surface-2 hover:text-ink')}>{l}</button>
-                ))}
-            </div>
+            <FilterTabs label="Show schools" value={filter} onChange={setFilter} className="mx-0 border-b border-line"
+              options={[['all', 'All'], ['trialling', 'Trial'], ['active', 'Active'], ['attention', 'Need attention'], ['cancelled', 'Cancelled']]} />
 
             {schools.isLoading && <div className="space-y-3 pt-3">{[0,1,2].map(i => <Skeleton key={i} className="h-12" />)}</div>}
             {schools.error && <div className="pt-4"><ErrorState error={schools.error} onRetry={() => schools.refetch()} /></div>}

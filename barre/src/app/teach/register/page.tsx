@@ -14,7 +14,7 @@ import { Shell } from '@/components/app/shell';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Beats, Button, EmptyState, Input, Notice, Skeleton, ErrorState } from '@/components/ui';
+import { Beats, Button, EmptyState, Input, Notice, Skeleton, ErrorState, StatusLine } from '@/components/ui';
 import * as T from '@/lib/repos/teaching';
 import { time, ageFrom, dateLong, dateShort, dayName } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -229,9 +229,9 @@ function Register() {
               detail={closingHere ? 'The register will close once the marks have gone.' : 'Keep marking. Nothing is lost if the app closes.'} />
           </div>
         ) : queued.length > 0 ? (
-          <div role="status" aria-live="polite"><Notice word="Sending" tone="ink" title={`Sending ${plural(queued.length, 'mark')}…`} /></div>
+          <div role="status" aria-live="polite"><StatusLine live={false} tone="ink" title={`Sending ${plural(queued.length, 'mark')}…`} /></div>
         ) : justSent ? (
-          <div role="status" aria-live="polite"><Notice word="Sent" tone="positive" title="All marks sent" /></div>
+          <div role="status" aria-live="polite"><StatusLine live={false} title="All marks sent" /></div>
         ) : null}
         {rejected.length > 0 && (
           <Notice word="Not saved" tone="critical"
@@ -242,12 +242,12 @@ function Register() {
 
         {/* Outside its window a register is read-only, and says why (UR-37). */}
         {win && state === 'early' && (
-          <Notice word="Not yet" tone="ink" title={`This register opens at ${time(win.opens_at)} on ${dateLong(win.opens_at)}`}
+          <Notice word="Closed" tone="ink" title={`This register opens at ${time(win.opens_at)} on ${dateLong(win.opens_at)}`}
             detail={`Registers open ${win.before_min} minutes before the class, so a mark cannot land on the wrong day.`} />
         )}
         {win && state === 'late' && !amendMode && (
           <div className="space-y-3">
-            <Notice word="Read only" tone="ink" title="This register can no longer be changed"
+            <Notice word="Closed" tone="ink" title="This register can no longer be changed"
               detail={`Registers can be changed for ${plural(win.edit_days, 'day')} after the class.${office ? ' The office can amend it, giving a reason.' : ' Ask the office if something needs correcting.'}`}
               action={office && amending === 'no' ? <Button size="sm" onClick={() => setAmending('asking')}>Amend</Button> : undefined} />
             {office && amending === 'asking' && (
@@ -263,7 +263,7 @@ function Register() {
           </div>
         )}
         {amendMode && (
-          <Notice word="Amending" tone="caution" title="Changes are recorded with your reason"
+          <Notice word="Check" tone="caution" title="Changes are recorded with your reason"
             detail={amendReason} action={<Button size="sm" onClick={stopAmending}>Done</Button>} />
         )}
         {amend.isError && <ErrorState error={amend.error} />}

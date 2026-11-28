@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Button, ErrorState, Field, Input, Notice } from '@/components/ui';
+import { Button, ErrorState, Field, Input, Notice, StatusLine } from '@/components/ui';
 import * as H from '@/lib/repos/hub';
 
 /**
@@ -49,7 +49,7 @@ export function FeedbackComposer({
         {done ? (
           <div className="py-2" role="status">
             <h2 id="fb-title" className="sr-only">{share ? 'Shared with the family' : 'Saved as a draft'}</h2>
-            <Notice word={share ? 'Shared' : 'Saved'} tone="positive"
+            <StatusLine
               title={share ? `${student.first_name} and their guardians can see this now.` : 'Saved as a draft'}
               detail={share ? undefined : 'Only studio staff can see it until you share it.'} />
             <Button className="mt-5 w-full" variant="primary" size="lg" onClick={onClose}>Done</Button>

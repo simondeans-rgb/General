@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { RecordSheet } from '@/components/app/record-sheet';
-import { Field, Input, Notice, Select } from '@/components/ui';
+import { Field, Input, Notice, Select, StatusLine } from '@/components/ui';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
@@ -23,7 +23,7 @@ export function NewEnquirySheet({ onClose, onBook }: { onClose: () => void; onBo
   });
   if (saved != null) return <RecordSheet title="New enquiry" onClose={onClose}
       onSave={saved && onBook ? () => onBook(saved) : onClose} saveLabel={saved && onBook ? 'Book a trial now' : 'Done'}>
-    <Notice word="Saved" tone="positive" title={`${f.name} is in the pipeline`}
+    <StatusLine title={`${f.name} is in the pipeline`}
       detail={onBook ? 'Book their trial now and the details come with it, or later from the enquiry card.' : 'Book their trial from the enquiry card when you’re ready.'} /></RecordSheet>;
   return (
     <RecordSheet title="New enquiry" subtitle="A phone call, an email or someone at the door" onClose={onClose}

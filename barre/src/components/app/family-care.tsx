@@ -114,7 +114,7 @@ export function PendingLogins() {
       {waiting.map(l => (
         <li key={l.student_id} className="py-3.5">
           <Link href="/family/children" className="block rounded-[var(--radius-sm)] hover:bg-surface-2/60">
-            <Notice tone="accent" word="Approve?" title={`${l.first_name} has been invited to their own login`}
+            <Notice tone="accent" word="New" title={`${l.first_name} has been invited to their own login`}
               detail="It stays off until a parent or carer approves it. Open Your family to approve or say not now." />
           </Link>
         </li>

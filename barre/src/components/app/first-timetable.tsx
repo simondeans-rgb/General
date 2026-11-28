@@ -6,7 +6,7 @@ import { Copy, Plus, X } from 'lucide-react';
 import { useRows } from '@/lib/query';
 import { runAs } from '@/lib/db/client';
 import { useSession } from '@/lib/auth/session';
-import { Button, ErrorState, Field, Input, Notice, Select, Skeleton } from '@/components/ui';
+import { Button, ErrorState, Field, Input, Notice, Select, Skeleton, StatusLine } from '@/components/ui';
 import { SaveErrorSummary, useFirstErrorInView } from '@/components/app/form-error';
 import { PlanLimitNotice, isPlanLimit } from '@/components/app/plan-limit';
 import * as C from '@/lib/repos/classes';
@@ -101,7 +101,7 @@ export function FirstTimetable({ onDone }: { onDone?: () => void }) {
   if (done) {
     return (
       <div className="space-y-3">
-        <Notice word="Added" tone="positive" title={`${done.classes} class${done.classes === 1 ? '' : 'es'} on your timetable`}
+        <StatusLine title={`${done.classes} class${done.classes === 1 ? '' : 'es'} on your timetable`}
           detail={`${done.sessions} sessions were made for the term. Assign teachers, ages and descriptions from Classes when you are ready.`} />
         <div className="flex flex-wrap gap-2">
           <Button size="sm" onClick={() => { setDone(null); setRows([blank(styles.data?.[0]?.id ?? '')]); }}>Add more</Button>

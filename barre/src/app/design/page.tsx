@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Badge, Beats, Button, EmptyState, ErrorState, Field, Input, Notice, Select, Skeleton, Spinner } from '@/components/ui';
+import { Badge, Beats, Button, EmptyState, ErrorState, Field, Input, Notice, Select, Skeleton, Spinner, Choice } from '@/components/ui';
 import { SwayvoIcon, SwayvoLogo, SwayvoMark } from '@/components/app/swayvo';
 import { SWAYVO } from '@/lib/swayvo-logo';
 import { MessagePreview, ProgrammePreview } from '@/components/app/message-preview';
@@ -30,13 +30,8 @@ export default function DesignSystem() {
           <h1 className="display-xl mt-6 text-[2.75rem] sm:text-[4rem]">Design system</h1>
           <p className="mt-2 max-w-xl text-ink-2">The real components the product is built from. Rules and reasons are in docs/brand/DESIGN-SYSTEM.md.</p>
         </div>
-        <div role="group" aria-label="School style" className="flex gap-1">
-          {(['classic', 'urban'] as const).map(t => (
-            <Button key={t} size="sm" variant={theme === t ? 'primary' : 'secondary'} aria-pressed={theme === t} onClick={() => setTheme(t)}>
-              {t === 'classic' ? 'Classic (light)' : 'Urban (dark)'}
-            </Button>
-          ))}
-        </div>
+        <Choice label="School style" size="sm" value={theme} onChange={setTheme}
+          options={[{ value: 'classic', label: 'Classic (light)' }, { value: 'urban', label: 'Urban (dark)' }]} />
       </header>
 
       <Section title="Identity">

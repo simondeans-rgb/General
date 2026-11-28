@@ -50,7 +50,7 @@ export default function StartPage() {
               Free trial until {dateShort(done.trial_ends_on)}. Nothing to pay, and no card asked for.
             </p>
             <div className="mt-6 border-t-2 border-ink pt-5">
-              <Notice word="Your link" tone="accent" title="Open your owner invitation to sign in"
+              <Notice word="New" tone="accent" title="Open your owner invitation to sign in"
                 detail="Swayvo does not send email yet, so this is the only place the link is shown. Open it now, or copy it somewhere safe; it works for 14 days." />
               <div className="mt-4 flex flex-wrap gap-2">
                 <Link href={`/invite?token=${encodeURIComponent(done.invitation_token)}`}
