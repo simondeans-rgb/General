@@ -9,7 +9,7 @@ import { Beats, Button, EmptyState, ErrorState, Skeleton, SectionHead } from '@/
 import * as Q from '@/lib/repos/dashboard';
 import { CHECK_GAPS_TODAY, SAFEGUARDING_TODAY, type CheckGap } from '@/lib/repos/safeguarding';
 import { SUMMARY, type BillingSummary } from '@/lib/repos/billing';
-import { money, time, dayRange, dateLong, relativeDay } from '@/lib/format';
+import { money, time, dayRange, dateLong, dateShort, relativeDay } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { cardPaymentsEnabled } from '@/lib/payments/invoice-status';
 import { groupAttention } from '@/lib/office-words';
@@ -133,16 +133,22 @@ function NeedsAttention() {
   const follow = useRows<Q.FollowUp>(['att-follow-ups'], Q.ATTENTION_FOLLOW_UPS);
   // Staff checks missing or running out (UR-41): shown to the owner and the safeguarding lead only.
   const checks = useRows<CheckGap>(['att-checks'], CHECK_GAPS_TODAY);
+  const regs = useRows<Q.OverdueRegister>(['att-registers'], Q.ATTENTION_REGISTERS);
   // Safeguarding setup (F1, N-06): until a lead is named, and anything to review.
   const sg = useRow<{ no_lead: boolean; media_links: number; holds_due: number }>(['att-safeguarding'], SAFEGUARDING_TODAY);
   const [all, setAll] = React.useState(false);
-  const loading = sg.isLoading || checks.isLoading || pay.isLoading || cap.isLoading || trials.isLoading || lapsed.isLoading || reqs.isLoading || msgs.isLoading || follow.isLoading;
+  const loading = sg.isLoading || regs.isLoading || checks.isLoading || pay.isLoading || cap.isLoading || trials.isLoading || lapsed.isLoading || reqs.isLoading || msgs.isLoading || follow.isLoading;
   const names = (list: string[], max = 3) => list.slice(0, max).join(', ') + (list.length > max ? '…' : '');
 
   const items: Item[] = [];
   const r = reqs.data;
   if (r && r.medical_updates > 0) items.push({ key: 'med', n: r.medical_updates, when: 'today', urgent: true, href: '/requests', action: 'Review',
     headline: `Medical update${r.medical_updates === 1 ? '' : 's'} to acknowledge`, detail: 'Teachers see the change once you record it' });
+  if (regs.data?.length) items.push({ key: 'registers', n: regs.data.length, when: 'today', urgent: true,
+    href: `/teach/register/?session=${regs.data[0]!.session_id}`, action: 'Open',
+    headline: `Register${regs.data.length === 1 ? '' : 's'} not completed`,
+    detail: regs.data.slice(0, 2).map(r => `${r.class_name}, ${dateShort(r.starts_at)}${r.teacher_name ? ` (${r.teacher_name})` : ''}`).join(' · ')
+      + (regs.data.length > 2 ? '…' : '') });
   if (sg.data?.no_lead) items.push({ key: 'dsl', n: 1, when: 'today', urgent: true, href: '/safeguarding', action: 'Name your lead',
     headline: 'No safeguarding lead named', detail: 'Concerns come only to the owner, and one about the owner reaches nobody' });
   if (sg.data && sg.data.media_links > 0) items.push({ key: 'media-links', n: sg.data.media_links, when: 'week', href: '/safeguarding', action: 'See which',

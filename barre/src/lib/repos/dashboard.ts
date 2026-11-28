@@ -247,3 +247,8 @@ select cs.starts_at, t.name as term_name,
   left join term t on t.id = c.term_id
  where cs.deleted_at is null and c.deleted_at is null and cs.status <> 'cancelled' and cs.starts_at >= $1::timestamptz
  order by cs.starts_at limit 1`;
+
+/** Registers still open after the teacher was reminded (0070): the office was told. */
+export type OverdueRegister = { session_id: string; class_name: string; starts_at: string; teacher_name: string | null };
+export const ATTENTION_REGISTERS = `select r.* from app.overdue_registers(
+  (select id from studio where id in (select app.studio_ids()) limit 1)) r`;
